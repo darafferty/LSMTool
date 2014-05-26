@@ -132,7 +132,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
             aggregate=aggregate, weight=weight)
 
         if beamMS is not None and filterProp == 'I':
-            from operations_lib import applyBeam
+            from ..operations_lib import applyBeam
             RADeg = LSM.getColValues('RA')
             DecDeg = LSM.getColValues('Dec')
             colVals = applyBeam(beamMS, colVals, RADeg, DecDeg)

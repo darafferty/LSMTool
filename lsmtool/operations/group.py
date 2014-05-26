@@ -90,7 +90,7 @@ def group(LSM, algorithm, targetFlux=None, beamMS=None, numClusters=100,
         x, y = _tessellate.radec2xy(RA, Dec)
         f = LSM.getColValues('I', units=units)
         if beamMS is not None:
-            from operations_lib import applyBeam
+            from ..operations_lib import applyBeam
             f = applyBeam(beamMS, f, RA, Dec)
         vobin = _tessellate.bin2D(x, y, f, target_flux=targetFlux)
         vobin.bin_voronoi()
