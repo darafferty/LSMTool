@@ -356,6 +356,8 @@ def applyBeam(beamMS, fluxes, RADeg, DecDeg):
     """
     Returns flux attenuated by primary beam.
     """
+    import numpy as np
+
     try:
         import pyrap.tables as pt
     except ImportError:
