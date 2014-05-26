@@ -16,13 +16,31 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from astropy.table import Table, Column
-import numpy as np
-import math as m
 import logging
 import _logging
 import tableio
 import operations
+
+
+def load(fileName):
+    """
+    Loads a sky model from a file and returns a SkyModel object.
+
+    Parameters
+    ----------
+    fileName : str
+        Input ASCII file from which the sky model is read. Must
+        respect the makesourcedb format
+
+    Examples
+    --------
+    Create a SkyModel object::
+
+        >>> from lsmtool import skymodel
+        >>> s = skymodel.load('sky.model')
+
+    """
+    return SkyModel(fileName)
 
 
 class SkyModel(object):
@@ -43,8 +61,12 @@ class SkyModel(object):
         --------
         Create a SkyModel object::
 
+            >>> from lsmtool.skymodel import SkyModel
             >>> s = SkyModel('sky.model')
+
         """
+        from astropy.table import Table
+
         self.table = Table.read(fileName, format='makesourcedb')
         self._fileName = fileName
 
@@ -523,6 +545,9 @@ class SkyModel(object):
                     False, False, True, False])
 
         """
+        from astropy.table import Column
+        import numpy as np
+
         colName = self._verifyColName(colName, onlyExisting=False)
         if colName is None:
             return None
@@ -633,6 +658,8 @@ class SkyModel(object):
             ['bin1' 'bin1']
 
         """
+        import numpy as np
+
         sourceNames = self.getColValues('Name')
         patchNames = self.getColValues('Patch')
         if rowName in sourceNames:
@@ -708,6 +735,8 @@ class SkyModel(object):
             name; otherwise return the index of the source
 
         """
+        import numpy as np
+
         if patch:
             if self._hasPatches:
                 names = self.getColValues('Patch', aggregate=True).tolist()
@@ -784,6 +813,8 @@ class SkyModel(object):
             If given, use this table; otherwise use self.table
 
         """
+        import numpy as np
+
         if table is None:
             table = self.table
         return table[colName].groups.aggregate(np.sum)
@@ -801,6 +832,8 @@ class SkyModel(object):
             If given, use this table; otherwise use self.table
 
         """
+        import numpy as np
+
         if table is None:
             table = self.table
         return table[colName].groups.aggregate(np.min)
@@ -818,6 +851,8 @@ class SkyModel(object):
             If given, use this table; otherwise use self.table
 
         """
+        import numpy as np
+
         if table is None:
             table = self.table
         return table[colName].groups.aggregate(np.max)
@@ -836,6 +871,9 @@ class SkyModel(object):
         table : astropy Table, optional
             If given, use this table; otherwise use self.table
         """
+        from astropy.table import Column
+        import numpy as np
+
         if table is None:
             table = self.table
         if weight:
@@ -867,6 +905,9 @@ class SkyModel(object):
         table : astropy Table, optional
             If given, use this table; otherwise use self.table
         """
+        from astropy.table import Column
+        import numpy as np
+
         if table is None:
             table = self.table
         if self._hasPatches:
