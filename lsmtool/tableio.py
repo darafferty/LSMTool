@@ -151,8 +151,12 @@ def skyModelReader(fileName):
         outlines.append(','.join(colLines))
     modelFile.close()
 
-    table = Table.read('\n'.join(outlines), guess=False, format='ascii.basic', delimiter=',',
-        names=colNames, comment='#', data_start=0)
+    try:
+        table = Table.read('\n'.join(outlines), guess=False, format='ascii.basic', delimiter=',',
+            names=colNames, comment='#', data_start=0)
+    except:
+        table = Table.read('\n'.join(outlines), guess=False, format='ascii.basic', delimiter=',',
+            names=colNames, comment='#', data_start=0)
 
     # Convert RA and Dec columns to degrees
     RADeg = convertRAdeg(table['RA-HMS'].tolist())
