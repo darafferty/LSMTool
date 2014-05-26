@@ -132,6 +132,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
             aggregate=aggregate, weight=weight)
 
         if beamMS is not None and filterProp == 'I':
+            from operations_lib import applyBeam
             RADeg = LSM.getColValues('RA')
             DecDeg = LSM.getColValues('Dec')
             colVals = applyBeam(beamMS, colVals, RADeg, DecDeg)
@@ -350,37 +351,3 @@ def getMaskValues(mask, RARad, DecRad):
             vals.append(False)
 
     return np.array(vals)
-
-
-def applyBeam(beamMS, fluxes, RADeg, DecDeg):
-    """
-    Returns flux attenuated by primary beam.
-    """
-    import numpy as np
-
-    try:
-        import pyrap.tables as pt
-    except ImportError:
-        logger.error('Could not import pyrap.tables')
-    try:
-        import lofar.stationresponse as lsr
-    except ImportError:
-        logger.error('Could not import lofar.stationresponse')
-
-    t = pt.table(beamMS, ack=False)
-    tt = t.query('ANTENNA1==0 AND ANTENNA2==1', columns='TIME')
-    time = tt.getcol("TIME")
-    time = min(time) + ( max(time) - min(time) ) / 2.
-    t.close()
-
-    attFluxes = []
-    sr = lsr.stationresponse(beamMS, False, True)
-    for flux, RA, Dec in zip(fluxes, RADeg, DecDeg):
-        # Use station 0 to compute the beam and get mid channel
-        sr.setDirection(RA*np.pi/180., Dec*np.pi/180.)
-        beam = sr.evaluateStation(time, 0)
-        r = abs(beam[int(len(beam)/2.)])
-        beam = ( r[0][0] + r[1][1] ) / 2.
-        attFluxes.append(flux * beam)
-
-    return np.array(attFluxes)

@@ -26,14 +26,13 @@ def run(step, parset, LSM):
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     alogrithm = parset.getString('.'.join(["LSMTool.Steps", step, "Alogrithm"]), '' )
-    minFlux = parset.getString('.'.join(["LSMTool.Steps", step, "MinFlux"]), '' )
+    targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "MinFlux"]), '' )
     numClusters = parset.getString('.'.join(["LSMTool.Steps", step, "NumClusters"]), '' )
     radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '' )
     beamMS = parset.getString('.'.join(["LSMTool.Steps", step, "BeamMS"]), '' )
     method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), '' )
 
-    result = group(LSM, algorithm, radius, beamMS, beamFWHM, position,
-        numClusters, method)
+    result = group(LSM, algorithm, targetFlux, beamMS, numClusters, method)
 
     # Write to outFile
     if outFile == '' or outFile is None:
@@ -43,8 +42,8 @@ def run(step, parset, LSM):
     return result
 
 
-def group(LSM, algorithm, targetFlux=None, radius=None, beamMS=None,
-    numClusters=100, method='mid', mask=None):
+def group(LSM, algorithm, targetFlux=None, beamMS=None, numClusters=100,
+    method='mid'):
     """
     Groups sources into patches
 
@@ -90,6 +89,9 @@ def group(LSM, algorithm, targetFlux=None, radius=None, beamMS=None,
         Dec = LSM.getColValues('Dec')
         x, y = _tessellate.radec2xy(RA, Dec)
         f = LSM.getColValues('I', units=units)
+        if beamMS is not None:
+            from operations_lib import applyBeam
+            f = applyBeam(beamMS, f, RA, Dec)
         vobin = _tessellate.bin2D(x, y, f, target_flux=targetFlux)
         vobin.bin_voronoi()
         patchCol = _tessellate.bins2Patches(vobin)
