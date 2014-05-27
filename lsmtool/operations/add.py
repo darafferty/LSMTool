@@ -32,8 +32,13 @@ def run(step, parset, LSM):
         val = parset.getString('.'.join(["LSMTool.Steps",
             step, inputColumnNames[colName]]), '' )
         if val != '':
-            colNamesVals[colName] = val
-    print(colNamesVals)
+            try:
+                val = float(val)
+            except ValueError:
+                pass
+            colNamesVals[inputColumnNames[colName]] = val
+
+
     result = add(LSM, colNamesVals)
 
     if outFile != '':
