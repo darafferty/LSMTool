@@ -55,7 +55,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=10.0, keep='all'):
     if (LSM1._hasPatches and not LSM2._hasPatches):
          LSM2.group('every')
     if (LSM2._hasPatches and not LSM1._hasPatches):
-         LSM1.group('every')
+         LSM2.ungroup()
     table1 = LSM1.table.copy()
     table2 = LSM2.table.copy()
 
