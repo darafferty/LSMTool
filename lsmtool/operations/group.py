@@ -26,7 +26,7 @@ def run(step, parset, LSM):
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     algorithm = parset.getString('.'.join(["LSMTool.Steps", step, "Algorithm"]), 'single' )
-    targetFlux = parset.getFloat('.'.join(["LSMTool.Steps", step, "TargetFlux"]), 1.0 )
+    targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "TargetFlux"]), '1.0 Jy' )
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 10 )
     beamMS = parset.getString('.'.join(["LSMTool.Steps", step, "BeamMS"]), '' )
     method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), 'mid' )
@@ -76,7 +76,7 @@ def group(LSM, algorithm, targetFlux=None, beamMS=None, numClusters=100,
 
     elif algorithm.lower() == 'tessellate':
         if targetFlux is None:
-            logging.error('Please specify the targetFlux parameter in Jy.')
+            logging.error('Please specify the targetFlux parameter.')
             return 1
         else:
             units = 'Jy'
