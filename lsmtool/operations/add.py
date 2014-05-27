@@ -18,7 +18,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
-from lsmtool import tableio
+import lsmtool.tableio
 
 logging.debug('Loading ADD module.')
 
@@ -27,7 +27,7 @@ def run(step, parset, LSM):
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     colNamesVals = {}
-    for colName in tableio.inputColumnNames:
+    for colName in lsmtool.tableio.inputColumnNames:
         colNamesVals[colName] = parset.getString('.'.join(["LSMTool.Steps",
             step, tableio.inputColumnNames[colName]]), '' )
 
