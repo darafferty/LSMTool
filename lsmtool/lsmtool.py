@@ -12,7 +12,7 @@ import logging
 import _version
 import _logging
 import lofar.parameterset
-from skymodel import SkyModel
+from lsmtool.skymodel import SkyModel
 
 
 if __name__=='__main__':
