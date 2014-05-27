@@ -27,12 +27,13 @@ def run(step, parset, LSM):
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     filterExpression = parset.getString('.'.join(["LSMTool.Steps", step, "FilterExpression"]), '' )
     aggregate = parset.getBool('.'.join(["LSMTool.Steps", step, "Aggregate"]), False )
+    weight = parset.getBool('.'.join(["LSMTool.Steps", step, "Weight"]), False )
     beamMS = parset.getFloat('.'.join(["LSMTool.Steps", step, "BeamMS"]), 1. )
 
     if filterExpression == '':
         filterExpression = None
     LSM = remove(LSM, filterExpression, aggregate=aggregate, weight=weight,
-        beamMS=beamMS, useRegEx=useRegEx)
+        beamMS=beamMS)
 
     # Write to outFile
     if outFile == '' or outFile is None:
