@@ -1032,6 +1032,20 @@ class SkyModel(object):
         self.table.write(fileName, format=format)
 
 
+    def clean(self):
+        """
+        Removes duplicate entries.
+        """
+        filt = []
+        for i, name in enumerate(self.getColValues('Name')):
+            if name not in sourceNames:
+                filt.append(i)
+        nRowsOrig = len(self.table)
+        self.table = self.table[filt]
+        nRowsNew = len(self.table)
+        logging.info('Removed {0} duplicate sources.'.format(nRowsOrig-nRowsNew))
+
+
     def select(self, *args, **kwargs):
         """
         Selects table rows on column values with the given expression.

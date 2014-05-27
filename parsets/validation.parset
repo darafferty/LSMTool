@@ -1,135 +1,56 @@
 # Validation of LSMTool parset
-# Run with lsmtool.py tests/validation.sky parsets/validation.parset
+# Run with lsmtool.py tests/test.sky parsets/validation.parset
 
-LoSoTo.Steps = [plot0,abs,plot1,clip,plot2,interp,plot3,interp2,plot3b,norm,plot4,smooth,plot5,reset,plot6]
-LoSoTo.Solset = [sol000]
-LoSoTo.Soltab = [sol000/amplitude000,sol000/phase000]
-LoSoTo.SolType = []
-LoSoTo.ant = []
-LoSoTo.pol = [XX, YY]
-LoSoTo.dir = []
+LSMTool.Steps = [select, remove, transfer, group, ungroup, merge, move, concatenate, add, plot]
 
-# initial plotting
-LoSoTo.Steps.plot1.Operation = PLOT
-LoSoTo.Steps.plot1.PlotType = 1D
-LoSoTo.Steps.plot1.Axes = [time]
-LoSoTo.Steps.plot1.Prefix = init_
-LoSoTo.Steps.plot1.ant = [CS001LBA]
-LoSoTo.Steps.plot1.pol = [XX]
-LoSoTo.Steps.plot1.Soltab = [sol000/amplitude000]
+# Select individual sources with Stokes I fluxes above 1 Jy
+LSMTool.Steps.select.Operation = SELECT
+LSMTool.Steps.select.FilterExpression = I > 1.0 Jy
 
-# make the abs of all amplitudes
-LoSoTo.Steps.abs.Operation = ABS
+# Transfer pathces from sky_model_with_patches.sky
+LSMTool.Steps.transfer.Operation = TRANSFER
+LSMTool.Steps.transfer.PatchFile = sky_model_with_patches.sky
 
-# plotting
-LoSoTo.Steps.plot1.Operation = PLOT
-LoSoTo.Steps.plot1.PlotType = 1D
-LoSoTo.Steps.plot1.Axes = [time]
-LoSoTo.Steps.plot1.Prefix = abs_
-LoSoTo.Steps.plot1.ant = [CS001LBA]
-LoSoTo.Steps.plot1.pol = [XX]
-LoSoTo.Steps.plot1.Soltab = [sol000/amplitude000]
+# Remove patches with total fluxes below 2 Jy
+LSMTool.Steps.remove.Operation = REMOVE
+LSMTool.Steps.remove.FilterExpression = I < 2.0 Jy
+LSMTool.Steps.remove.Aggregate = True
 
-# clip above a 3 sigma
-LoSoTo.Steps.clip.Operation = CLIP
-LoSoTo.Steps.clip.ClipLevel = 3
-LoSoTo.Steps.clip.Axes = [time]
-LoSoTo.Steps.clip.Soltab = [sol000/amplitude000]
+# Remove all patches
+LSMTool.Steps.ungroup.Operation = UNGROUP
 
-# plotting
-LoSoTo.Steps.plot2.Operation = PLOT
-LoSoTo.Steps.plot2.PlotType = 1D
-LoSoTo.Steps.plot2.Axes = [time]
-LoSoTo.Steps.plot2.Prefix = clip_
-LoSoTo.Steps.plot2.ant = [CS001LBA]
-LoSoTo.Steps.plot2.pol = [XX]
-LoSoTo.Steps.plot2.Soltab = [sol000/amplitude000]
+# Group using tessellation to a target flux of 50 Jy
+LSMTool.Steps.group.Operation = GROUP
+LSMTool.Steps.group.Algorithm = tessellate
+LSMTool.Steps.group.TargetFlux = 50.0 Jy
+LSMTool.Steps.group.Method = mid
 
-# calculate interpolated solutions
-LoSoTo.Steps.interp.Operation = INTERP
-LoSoTo.Steps.interp.CalSoltab = cal/amplitude000
-LoSoTo.Steps.interp.CalDir = 3C196
-LoSoTo.Steps.interp.InterpAxes = [time, freq]
-LoSoTo.Steps.interp.InterpMethod = linear
-LoSoTo.Steps.interp.Rescale = False
-LoSoTo.Steps.interp.MedAxis = time
+# Move patch 'bin1' by 0.001 degrees in RA
+LSMTool.Steps.move.Operation = MOVE
+LSMTool.Steps.move.Name = bin1
+LSMTool.Steps.move.Shift = [0.001, 0.0]
 
-# plotting
-LoSoTo.Steps.plot3.Operation = PLOT
-LoSoTo.Steps.plot3.PlotType = 1D
-LoSoTo.Steps.plot3.Axes = [time]
-LoSoTo.Steps.plot3.Prefix = interp_
-LoSoTo.Steps.plot3.ant = [CS001LBA]
-LoSoTo.Steps.plot3.pol = [XX]
-LoSoTo.Steps.plot3.Soltab = [sol000/amplitude000]
+# Merge patches 'bin0' and 'bin2'
+LSMTool.Steps.merge.Operation = MERGE
+LSMTool.Steps.merge.Patches = [bin0, bin2]
+LSMTool.Steps.merge.Name = merged_patch
 
-# calculate rescaling only in time
-LoSoTo.Steps.interp2.Operation = INTERP
-LoSoTo.Steps.interp2.CalSoltab = cal/amplitude000
-LoSoTo.Steps.interp2.CalDir = 3C196 # use a specific dir instead that the same of the tgt
-LoSoTo.Steps.interp2.InterpAxes = [time, freq]
-LoSoTo.Steps.interp2.InterpMethod = linear # nearest, linear, cubic
-LoSoTo.Steps.interp2.Rescale = True
-LoSoTo.Steps.interp2.MedAxis = time # rescale the median of this axis
+# Concatenate with concat_sky_model.sky
+LSMTool.Steps.concatenate.Operation = CONCATENATE
+LSMTool.Steps.concatenate.Skymodel2 = test2.sky
+LSMTool.Steps.concatenate.MatchBy = radius
+LSMTool.Steps.concatenate.Radius = 30 arcsec
+LSMTool.Steps.concatenate.Keep = from2
 
-# plotting
-LoSoTo.Steps.plot3b.Operation = PLOT
-LoSoTo.Steps.plot3b.PlotType = 1D
-LoSoTo.Steps.plot3b.Axes = [time]
-LoSoTo.Steps.plot3b.Prefix = interp-res_
-LoSoTo.Steps.plot3b.ant = [CS001LBA]
-LoSoTo.Steps.plot3b.pol = [XX]
-LoSoTo.Steps.plot3b.Soltab = [sol000/amplitude000]
+# Add a source and write final sky model
+LSMTool.Steps.add.Operation = ADD
+LSMTool.Steps.add.Name = src1
+LSMTool.Steps.add.Type = POINT
+LSMTool.Steps.add.RA = 12:45:30.4
+LSMTool.Steps.add.Dec = +76.45.02.48
+LSMTool.Steps.add.I = 0.69
+LSMTool.Steps.add.OutFile = out_sky_model.sky
 
-# normalize values to 1
-LoSoTo.Steps.norm.Operation = NORM
-LoSoTo.Steps.norm.NormVal = 1.
-LoSoTo.Steps.norm.NormAxis = time
-
-# plotting
-LoSoTo.Steps.plot4.Operation = PLOT
-LoSoTo.Steps.plot4.PlotType = 1D
-LoSoTo.Steps.plot4.Axes = [time]
-LoSoTo.Steps.plot4.Prefix = norm_
-LoSoTo.Steps.plot4.ant = [CS001LBA]
-LoSoTo.Steps.plot4.pol = [XX]
-LoSoTo.Steps.plot4.Soltab = [sol000/amplitude000]
-
-# smooth in time/freq
-LoSoTo.Steps.smooth.Operation = SMOOTH
-LoSoTo.Steps.smooth.FWHM = [10, 5]
-LoSoTo.Steps.smooth.Axes = [freq, time]
-
-# plotting
-LoSoTo.Steps.plot5.Operation = PLOT
-LoSoTo.Steps.plot5.PlotType = 1D
-LoSoTo.Steps.plot5.Axes = [time]
-LoSoTo.Steps.plot5.Prefix = smooth_
-LoSoTo.Steps.plot5.ant = [CS001LBA]
-LoSoTo.Steps.plot5.pol = [XX]
-LoSoTo.Steps.plot5.Soltab = [sol000/amplitude000]
-
-# reset solutions
-LoSoTo.Steps.reset.Operation = RESET
-LoSoTo.Steps.reset.Weight = False # True to reset Weights to 1
-
-# plotting
-LoSoTo.Steps.plot6.Operation = PLOT
-LoSoTo.Steps.plot6.PlotType = 1D
-LoSoTo.Steps.plot6.Axes = [time]
-LoSoTo.Steps.plot6.Prefix = reset_
-LoSoTo.Steps.plot6.ant = [CS001LBA]
-LoSoTo.Steps.plot6.pol = [XX]
-LoSoTo.Steps.plot6.Soltab = [sol000/amplitude000]
-
-#####################################################################################33
-LoSoTo.Steps.tecfit.Operation = TECFIT
-LoSoTo.Steps.tecfit.Algorithm = sourcediff # only "sourcediff" available for now
-LoSoTo.Steps.tecfit.MinBands = 4
-LoSoTo.Steps.tecfit.MaxStations = 26 # Limit to MaxStations number of stations closest to core
-LoSoTo.Steps.tecfit.OutSoltab = ion000/tec000
-
-LoSoTo.Steps.tecscreen.Operation = TECSCREEN
-LoSoTo.Steps.tecscreen.Height = 200e3
-LoSoTo.Steps.tecscreen.Order = 15
-LoSoTo.Steps.tecscreen.OutSoltab = [ion000/tecscreen000]
+# Plot the sky model
+LSMTool.Steps.plot.Operation = PLOT
+LSMTool.Steps.plot.OutFile = out_sky_model.pdf
