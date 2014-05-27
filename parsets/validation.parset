@@ -9,7 +9,7 @@ LSMTool.Steps.select.FilterExpression = I > 1.0 Jy
 
 # Transfer patches from test2.sky
 LSMTool.Steps.transfer.Operation = TRANSFER
-LSMTool.Steps.transfer.PatchFile = test2.sky
+LSMTool.Steps.transfer.PatchFile = tests/test2.sky
 
 # Remove patches with total fluxes below 2 Jy
 LSMTool.Steps.remove.Operation = REMOVE
@@ -37,7 +37,7 @@ LSMTool.Steps.merge.Name = merged_patch
 
 # Concatenate with concat_sky_model.sky
 LSMTool.Steps.concatenate.Operation = CONCATENATE
-LSMTool.Steps.concatenate.Skymodel2 = test2.sky
+LSMTool.Steps.concatenate.Skymodel2 = tests/test2.sky
 LSMTool.Steps.concatenate.MatchBy = radius
 LSMTool.Steps.concatenate.Radius = 30 arcsec
 LSMTool.Steps.concatenate.Keep = from2
@@ -53,4 +53,4 @@ LSMTool.Steps.add.OutFile = tests/test_out.sky
 
 # Plot the sky model
 LSMTool.Steps.plot.Operation = PLOT
-LSMTool.Steps.plot.OutFile = test_plot.pdf
+LSMTool.Steps.plot.OutFile = tests/test_plot.pdf
