@@ -60,6 +60,9 @@ def merge(LSM, patches, name=None):
 
     for patchName in patches:
         indices = LSM.getRowIndex(patchName)
-        LSM.table['Patch'][indices] = name
+        if indices is None:
+            return 1
+        else:
+            LSM.table['Patch'][indices] = name
 
     return 0

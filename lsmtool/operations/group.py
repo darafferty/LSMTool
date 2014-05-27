@@ -25,7 +25,7 @@ logging.debug('Loading GROUP module.')
 def run(step, parset, LSM):
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
-    algorithm = parset.getString('.'.join(["LSMTool.Steps", step, "Alogrithm"]), 'single' )
+    algorithm = parset.getString('.'.join(["LSMTool.Steps", step, "Algorithm"]), 'single' )
     targetFlux = parset.getFloat('.'.join(["LSMTool.Steps", step, "MinFlux"]), 1.0 )
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 10 )
     beamMS = parset.getString('.'.join(["LSMTool.Steps", step, "BeamMS"]), '' )
