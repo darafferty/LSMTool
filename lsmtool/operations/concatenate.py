@@ -137,6 +137,6 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=10.0, keep='all'):
         LSM1.table.remove_column('match')
 
     if LSM1._hasPatches:
-        LSM1._updateGroups()
+        LSM1._updateGroups(method='mid')
     return 0
 

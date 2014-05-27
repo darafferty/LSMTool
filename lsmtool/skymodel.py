@@ -99,8 +99,7 @@ class SkyModel(object):
         """
         self.table = self.table.group_by('Patch')
         self._hasPatches = True
-        if method is not None:
-            self.setPatchPositions(method=method)
+        self.setPatchPositions(method=method)
 
 
     def info(self):
@@ -336,13 +335,14 @@ class SkyModel(object):
         patchDict : dict
             Dict specifying patch names and positions as {'patchName':[RA, Dec]}
             where both RA and Dec are degrees J2000.
-        method : 'mid', 'mean', or 'wmean'
+        method : None or str, optional
             If no patchDict is given, this parameter specifies the method used
             to set the patch positions:
             - 'mid' => the position is set to the midpoint of the patch
             - 'mean' => the positions is set to the mean RA and Ded of the patch
             - 'wmean' => the position is set to the flux-weighted mean RA and
                Dec of the patch
+            - None => set all positions to [0.0, 0.0]
 
         Examples
         --------
@@ -361,6 +361,11 @@ class SkyModel(object):
 
         """
         if self._hasPatches:
+            # Delete any previous patch positions
+            for patchName in self.getColValues('Patch', aggregate=True):
+                if patchName in self.table.meta:
+                    self.table.meta.pop(patchName)
+
             if patchDict is None:
                 patchDict = {}
                 patchNames = self.getColValues('Patch', aggregate=True)
@@ -384,13 +389,8 @@ class SkyModel(object):
                     for n, r, d in zip(patchNames, RA, Dec):
                         patchDict[n] = [r, d]
                 else:
-                    logging.error("Method should be one of 'mid', 'mean', or 'wmean'.")
-                    return
-
-            # Delete any previous patch positions
-            for patchName in self.getColValues('Patch', aggregate=True):
-                if patchName in self.table.meta:
-                    self.table.meta.pop(patchName)
+                    for n in patchNames:
+                        patchDict[n] = [0.0, 0.0]
 
             for patch, pos in patchDict.iteritems():
                 self.table.meta[patch] = pos
