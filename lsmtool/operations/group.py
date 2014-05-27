@@ -25,12 +25,14 @@ logging.debug('Loading GROUP module.')
 def run(step, parset, LSM):
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
-    alogrithm = parset.getString('.'.join(["LSMTool.Steps", step, "Alogrithm"]), '' )
-    targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "MinFlux"]), '' )
-    numClusters = parset.getString('.'.join(["LSMTool.Steps", step, "NumClusters"]), '' )
-    radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '' )
+    algorithm = parset.getString('.'.join(["LSMTool.Steps", step, "Alogrithm"]), 'single' )
+    targetFlux = parset.getFloat('.'.join(["LSMTool.Steps", step, "MinFlux"]), 1.0 )
+    numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 10 )
     beamMS = parset.getString('.'.join(["LSMTool.Steps", step, "BeamMS"]), '' )
-    method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), '' )
+    method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), 'mid' )
+
+    if beamMS == '':
+        beamMS = None
 
     result = group(LSM, algorithm, targetFlux, beamMS, numClusters, method)
 
