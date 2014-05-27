@@ -712,7 +712,7 @@ class SkyModel(object):
                 for val in values:
                     if self._verifyColName(valReq) == self._verifyColName(val):
                         found = True
-                        verifiedValues[self._verifyColName(colName)] = values[val]
+                        verifiedValues[self._verifyColName(val)] = values[val]
                 if not found:
                     logging.error("A value must be specified for '{0}'.".format(valReq))
                     return 1
