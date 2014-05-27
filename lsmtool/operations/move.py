@@ -29,6 +29,10 @@ def run(step, parset, LSM):
     position = parset.getString('.'.join(["LSMTool.Steps", step, "Position"]), '' )
     shift = parset.getString('.'.join(["LSMTool.Steps", step, "Shift"]), '' )
 
+    if position == '':
+        position = None
+    if shift == '':
+        shift = None
     result = move(LSM, name, position, shift)
 
     # Write to outFile
@@ -41,13 +45,13 @@ def run(step, parset, LSM):
 def move(LSM, name, position=None, shift=None):
 
     if position is None and shift is None:
-        logging.error("One of positon or shift must be specified.".format(rowName))
+        logging.error("One of positon or shift must be specified.")
         return 1
 
     sourceNames = LSM.getColValues('Name')
 
-    if rowName in sourceNames:
-        indx = LSM._getNameIndx(rowName)
+    if name in sourceNames:
+        indx = LSM._getNameIndx(name)
         if position is not None:
             LSM.table['RA-HMS'][indx] = position[0]
             LSM.table['Dec-DMS'][indx] = position[1]
@@ -63,16 +67,16 @@ def move(LSM, name, position=None, shift=None):
         return 0
     elif LSM._hasPatches:
         patchNames = self.getColValues('Patch', aggregate=True)
-        if rowName in patchNames:
+        if name in patchNames:
             if position is not None:
-                LSM.table.meta[rowName] = position
+                LSM.table.meta[name] = position
             elif shift is not None:
-                position = LSM.table.meta[rowName]
-                LSM.table.meta[rowName] = [position[0] + shift[0], position[1] + shift[1]]
+                position = LSM.table.meta[name]
+                LSM.table.meta[name] = [position[0] + shift[0], position[1] + shift[1]]
             return 0
         else:
-            logging.error("Row name '{0}' not recognized.".format(rowName))
+            logging.error("Row name '{0}' not recognized.".format(name))
             return 1
     else:
-        logging.error("Row name '{0}' not recognized.".format(rowName))
+        logging.error("Row name '{0}' not recognized.".format(name))
         return 1
