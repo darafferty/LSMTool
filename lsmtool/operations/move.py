@@ -66,7 +66,7 @@ def move(LSM, name, position=None, shift=None):
             LSM.table['Dec-DMS'][indx] = convertDecDDMMSS(Dec)
         return 0
     elif LSM._hasPatches:
-        patchNames = self.getColValues('Patch', aggregate=True)
+        patchNames = LSM.getColValues('Patch', aggregate=True)
         if name in patchNames:
             if position is not None:
                 LSM.table.meta[name] = position
