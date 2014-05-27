@@ -26,12 +26,12 @@ def run(step, parset, LSM):
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     name = parset.getString('.'.join(["LSMTool.Steps", step, "Name"]), '' )
-    position = parset.getString('.'.join(["LSMTool.Steps", step, "Position"]), '' )
-    shift = parset.getString('.'.join(["LSMTool.Steps", step, "Shift"]), '' )
+    position = parset.getFloatVector('.'.join(["LSMTool.Steps", step, "Position"]), [] )
+    shift = parset.getFloatVector('.'.join(["LSMTool.Steps", step, "Shift"]), [] )
 
-    if position == '':
+    if len(position) < 2:
         position = None
-    if shift == '':
+    if len(shift) < 2:
         shift = None
     result = move(LSM, name, position, shift)
 
