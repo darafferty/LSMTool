@@ -30,7 +30,7 @@ def run(step, parset, LSM):
     colNamesVals = {}
     for colName in inputColumnNames:
         colNamesVals[colName] = parset.getString('.'.join(["LSMTool.Steps",
-            step, tableio.inputColumnNames[colName]]), '' )
+            step, inputColumnNames[colName]]), '' )
 
     result = add(LSM, colNamesVals)
 
