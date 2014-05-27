@@ -695,12 +695,6 @@ class SkyModel(object):
                 'I':23.2, 'Type':'POINT'}
 
         """
-        if len(indx) > 1:
-            logging.error('Only one row can be specified.')
-            return
-        else:
-            indx = indx[0]
-
         if isinstance(values, dict):
             if 'Name' not in values:
                 logging.error("A value must be specified for 'Name'.")
