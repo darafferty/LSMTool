@@ -35,9 +35,8 @@ def run(step, parset, LSM):
     result = group(LSM, algorithm, targetFlux, beamMS, numClusters, method)
 
     # Write to outFile
-    if outFile == '' or outFile is None:
-        outFile = LSM._fileName
-    LSM.writeFile(outFile, clobber=True)
+    if outFile != '' or outFile is not None:
+        LSM.write(outFile, clobber=True)
 
     return result
 

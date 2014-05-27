@@ -31,11 +31,10 @@ def run(step, parset, LSM):
     result = merge(LSM, patches, name)
 
     # Write to outFile
-    if outFile == '' or outFile is None:
-        outFile = LSM._fileName
-    LSM.writeFile(outFile, clobber=True)
+    if outFile != '' or outFile is not None:
+        LSM.write(outFile, clobber=True)
 
-    return 0
+    return result
 
 
 def merge(LSM, patches, name=None):
@@ -63,3 +62,4 @@ def merge(LSM, patches, name=None):
         indices = LSM.getRowIndex(patchName)
         LSM.table['Patch'][indices] = name
 
+    return 0

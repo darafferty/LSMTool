@@ -30,14 +30,13 @@ def run(step, parset, LSM):
     radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '' )
     keep = parset.getString('.'.join(["LSMTool.Steps", step, "KeepMatches"]), '' )
 
-    concatenate(LSM, skyModel2, matchBy, radius, keep)
+    result = concatenate(LSM, skyModel2, matchBy, radius, keep)
 
     # Write to outFile
-    if outFile == '' or outFile is None:
-        outFile = LSM._fileName
-    LSM.writeFile(outFile, clobber=True)
+    if outFile != '' or outFile is not None:
+        LSM.write(outFile, clobber=True)
 
-    return 0
+    return result
 
 
 def concatenate(LSM1, LSM2, matchBy='name', radius=10.0, keep='all'):
@@ -139,4 +138,5 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=10.0, keep='all'):
 
     if LSM1._hasPatches:
         LSM1._updateGroups()
+    return 0
 

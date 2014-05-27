@@ -34,14 +34,13 @@ def run(step, parset, LSM):
 
     result = add(LSM, colNamesVals)
 
-    # Write to outFile
-    if outFile == '' or outFile is None:
-        outFile = LSM._fileName
-    LSM.writeFile(outFile, clobber=True)
+    if outFile != '' or outFile is not None:
+        LSM.write(outFile, clobber=True)
 
-    return 0
+    return result
 
 
 def add(LSM, colNamesVals):
 
     LSM.setRowValues(colNamesVals)
+    return 0

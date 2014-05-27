@@ -29,14 +29,13 @@ def run(step, parset, LSM):
     patchFile = parset.getString('.'.join(["LSMTool.Steps", step, "PatchFile"]), '' )
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
 
-    transfer(LSM, patchFile)
+    result = transfer(LSM, patchFile)
 
     # Write to outFile
-    if outFile == '' or outFile is None:
-        outFile = LSM._fileName
-    LSM.writeFile(outFile, clobber=True)
+    if outFile != '' or outFile is not None:
+        LSM.write(outFile, clobber=True)
 
-    return 0
+    return result
 
 
 def transfer(LSM, patchFile):
@@ -59,3 +58,4 @@ def transfer(LSM, patchFile):
             patchNames[i] = masterPatchNames[indx]
 
     LSM.setColValues('Patch', patchNames)
+    return 0

@@ -32,9 +32,8 @@ def run(step, parset, LSM):
     result = move(LSM, name, position, shift)
 
     # Write to outFile
-    if outFile == '' or outFile is None:
-        outFile = LSM._fileName
-    LSM.writeFile(outFile, clobber=True)
+    if outFile != '' or outFile is not None:
+        LSM.write(outFile, clobber=True)
 
     return result
 
@@ -61,7 +60,7 @@ def move(LSM, name, position=None, shift=None):
             LSM.table['Dec'][indx] = Dec
             LSM.table['RA-HMS'][indx] = tableio.convertRAHHMMSS(RA)
             LSM.table['Dec-DMS'][indx] = convertDecDDMMSS(Dec)
-
+        return 0
     elif LSM._hasPatches:
         patchNames = self.getColValues('Patch', aggregate=True)
         if rowName in patchNames:
@@ -70,6 +69,7 @@ def move(LSM, name, position=None, shift=None):
             elif shift is not None:
                 position = LSM.table.meta[rowName]
                 LSM.table.meta[rowName] = [position[0] + shift[0], position[1] + shift[1]]
+            return 0
         else:
             logging.error("Row name '{0}' not recognized.".format(rowName))
             return 1
