@@ -40,7 +40,7 @@ def run(step, parset, LSM):
 
 def transfer(LSM, patchFile):
 
-    from .. import skymodel
+    import skymodel
 
     masterLSM = skymodel.SkyModel(patchFile)
     masterNames = masterLSM.getColValues('Name')
