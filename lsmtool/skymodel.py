@@ -387,6 +387,11 @@ class SkyModel(object):
                     logging.error("Method should be one of 'mid', 'mean', or 'wmean'.")
                     return
 
+            # Delete any previous patch positions
+            for patchName in self.getColValues('Patch', aggregate=True):
+                if patchName in self.table.meta:
+                    self.table.meta.pop(patchName)
+
             for patch, pos in patchDict.iteritems():
                 self.table.meta[patch] = pos
         else:
