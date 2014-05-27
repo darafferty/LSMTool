@@ -29,7 +29,7 @@ def run(step, parset, LSM):
     LSM.ungroup()
 
     # Write to outFile
-    if outFile != '' or outFile is not None:
+    if outFile != '':
         LSM.write(outFile, clobber=True)
 
     return 0

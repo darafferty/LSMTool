@@ -32,7 +32,7 @@ def run(step, parset, LSM):
     result = transfer(LSM, patchFile)
 
     # Write to outFile
-    if outFile != '' or outFile is not None:
+    if outFile != '':
         LSM.write(outFile, clobber=True)
 
     return result

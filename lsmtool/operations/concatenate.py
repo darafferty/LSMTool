@@ -33,7 +33,7 @@ def run(step, parset, LSM):
     result = concatenate(LSM, skyModel2, matchBy, radius, keep)
 
     # Write to outFile
-    if outFile != '' or outFile is not None:
+    if outFile != '':
         LSM.write(outFile, clobber=True)
 
     return result

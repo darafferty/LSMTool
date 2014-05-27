@@ -1,13 +1,13 @@
 # Validation LSMTool parset
 # Run with "lsmtool.py tests/test1.sky parsets/validation.parset"
 
-LSMTool.Steps = [select, remove, transfer, group, ungroup, merge, move, concatenate, add, plot]
+LSMTool.Steps = [select, transfer, remove, ungroup, group, move, merge, concatenate, add, plot]
 
 # Select individual sources with Stokes I fluxes above 1 Jy
 LSMTool.Steps.select.Operation = SELECT
 LSMTool.Steps.select.FilterExpression = I > 1.0 Jy
 
-# Transfer pathces from sky_model_with_patches.sky
+# Transfer patches from test2.sky
 LSMTool.Steps.transfer.Operation = TRANSFER
 LSMTool.Steps.transfer.PatchFile = test2.sky
 

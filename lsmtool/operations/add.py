@@ -34,7 +34,7 @@ def run(step, parset, LSM):
 
     result = add(LSM, colNamesVals)
 
-    if outFile != '' or outFile is not None:
+    if outFile != '':
         LSM.write(outFile, clobber=True)
 
     return result
