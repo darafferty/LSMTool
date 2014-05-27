@@ -209,13 +209,13 @@ def parseFilter(filterExpression):
 
     # Get the column to filter on
     filterProp = filterParts[0].strip().lower()
-    if filterProp not in tableio.allowedColumnNames:
+    if filterProp not in allowedColumnNames:
         logging.error('Column name "{0}" is not a valid column.'.format(colName))
         return (None, None, None, None)
 
     # Get the filter value(s)
     filterValAndUnits = filterParts[1].strip()
-    if tableio.allowedColumnDefaults[filterProp] == 'N/A':
+    if allowedColumnDefaults[filterProp] == 'N/A':
         # Column values are strings. Allow only '==' and '!=' operators
         if filterOperStr not in ['=', '==', '!=']:
             logging.error("Filter operator '{0}' not allow with string columns. "
