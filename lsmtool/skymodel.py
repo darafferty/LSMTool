@@ -93,13 +93,14 @@ class SkyModel(object):
         return self.table.__str__()
 
 
-    def _updateGroups(self, method='mid'):
+    def _updateGroups(self, method=None):
         """
         Updates the grouping of the table by patch name.
         """
         self.table = self.table.group_by('Patch')
         self._hasPatches = True
-        self.setPatchPositions(method=method)
+        if method is not None:
+            self.setPatchPositions(method=method)
 
 
     def info(self):
@@ -735,14 +736,14 @@ class SkyModel(object):
             if self._hasPatches:
                 names = self.getColValues('Patch', aggregate=True).tolist()
             else:
-                logging.error('Sky model does not have patches.')
+#                 logging.error('Sky model does not have patches.')
                 return None
         else:
             names = self.getColValues('Name').tolist()
 
         if type(name) is str or type(name) is np.string_:
             if name not in names:
-                logging.error("Name '{0}' not recognized.".format(name))
+#                 logging.error("Name '{0}' not recognized.".format(name))
                 return None
             indx = names.index(name)
             return [indx]

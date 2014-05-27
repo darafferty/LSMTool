@@ -271,6 +271,7 @@ def skyModelWriter(table, fileName, groupByPatch=False):
 
     # Add source lines
     if 'Patch' in table.keys():
+        table = table.group_by('Patch')
         patchNames = table.groups.keys['Patch']
         for i, patchName in enumerate(patchNames):
             if patchName in table.meta:

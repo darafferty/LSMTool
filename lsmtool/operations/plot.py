@@ -22,7 +22,7 @@ import logging
 logging.debug('Loading PLOT module.')
 
 
-def run( step, parset, H ):
+def run( step, parset, LSM ):
 
     import numpy as np
 
