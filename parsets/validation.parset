@@ -1,5 +1,5 @@
-# Validation of LSMTool parset
-# Run with lsmtool.py tests/test1.sky parsets/validation.parset
+# Validation LSMTool parset
+# Run with "lsmtool.py tests/test1.sky parsets/validation.parset"
 
 LSMTool.Steps = [select, remove, transfer, group, ungroup, merge, move, concatenate, add, plot]
 
@@ -49,7 +49,7 @@ LSMTool.Steps.add.Type = POINT
 LSMTool.Steps.add.RA = 12:45:30.4
 LSMTool.Steps.add.Dec = +76.45.02.48
 LSMTool.Steps.add.I = 0.69
-LSMTool.Steps.add.OutFile = test_out.sky
+LSMTool.Steps.add.OutFile = tests/test_out.sky
 
 # Plot the sky model
 LSMTool.Steps.plot.Operation = PLOT
