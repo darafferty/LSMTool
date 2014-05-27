@@ -28,7 +28,7 @@ def run(step, parset, LSM):
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     colNamesVals = {}
-    for colName in inputColumnNames:
+    for colName in outputColumnNames:
         val = parset.getString('.'.join(["LSMTool.Steps",
             step, outputColumnNames[colName]]), '' )
         if val != '':
