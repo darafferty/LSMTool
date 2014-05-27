@@ -701,10 +701,19 @@ class SkyModel(object):
                 'I':23.2, 'Type':'POINT'}
 
         """
+        requiredValues = ['Name', 'RA', 'Dec', 'I', 'Type']
+        if self._hasPatches:
+            requiredValues.append('Patch')
+
         if isinstance(values, dict):
-            if 'Name' not in values:
-                logging.error("A value must be specified for 'Name'.")
-                return
+            for valReq in requiredValues:
+                found = False
+                for val in values:
+                    if self._verifyColName(valReq) == self._verifyColName(val):
+                        found = True
+                if not found:
+                    logging.error("A value must be specified for '{0}'.".format(valReq))
+                    return
             rowName = str(values['Name'])
             indx = self._getNameIndx(rowName)
             if indx is None:

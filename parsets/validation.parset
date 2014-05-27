@@ -46,6 +46,7 @@ LSMTool.Steps.concatenate.Keep = from2
 LSMTool.Steps.add.Operation = ADD
 LSMTool.Steps.add.Name = src1
 LSMTool.Steps.add.Type = POINT
+LSMTool.Steps.add.Patch = src1_patch
 LSMTool.Steps.add.RA = 12:45:30.4
 LSMTool.Steps.add.Dec = +76.45.02.48
 LSMTool.Steps.add.I = 0.69
