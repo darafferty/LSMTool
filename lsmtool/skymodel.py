@@ -706,27 +706,28 @@ class SkyModel(object):
             requiredValues.append('Patch')
 
         if isinstance(values, dict):
+            verifiedValues = {}
             for valReq in requiredValues:
                 found = False
                 for val in values:
                     if self._verifyColName(valReq) == self._verifyColName(val):
                         found = True
+                        verifiedValues[self._verifyColName(colName)] = values[val]
                 if not found:
                     logging.error("A value must be specified for '{0}'.".format(valReq))
-                    return
+                    return 1
             rowName = str(values['Name'])
             indx = self._getNameIndx(rowName)
             if indx is None:
-                self.table.add_row(values)
+                self.table.add_row(verifiedValues)
             else:
-                for colName, value in values.iteritems():
-                    colName = self._verifyColName(colName)
+                for colName, value in verifiedValues.iteritems():
                     self.table[colName][indx] = value
                     self.table[colName][indx].mask = False
         else:
             if len(values) != len(self.table.columns):
                 logging.error('Length of input values must match number of tables.')
-                return
+                return 1
             else:
                 self.table.add_row(values, mask=mask)
 

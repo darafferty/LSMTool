@@ -49,5 +49,5 @@ def run(step, parset, LSM):
 
 def add(LSM, colNamesVals):
 
-    LSM.setRowValues(colNamesVals)
-    return 0
+    result = LSM.setRowValues(colNamesVals)
+    return result
