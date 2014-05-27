@@ -16,7 +16,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 import logging
-from .. import tableio
 
 
 def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False,
@@ -194,6 +193,9 @@ def parseFilter(filterExpression):
     Takes a filter expression and returns tuple of
     (property, operation, val, units), all as strings
     """
+    from tableio import allowedColumnNames
+    from tableio import allowedColumnDefaults
+
     # Get operator function
     filterOper, filterOperStr = convertOperStr(filterExpression)
     if filterOper is None:
