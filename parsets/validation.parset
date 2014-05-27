@@ -1,5 +1,5 @@
 # Validation of LSMTool parset
-# Run with lsmtool.py tests/test.sky parsets/validation.parset
+# Run with lsmtool.py tests/test1.sky parsets/validation.parset
 
 LSMTool.Steps = [select, remove, transfer, group, ungroup, merge, move, concatenate, add, plot]
 
@@ -9,7 +9,7 @@ LSMTool.Steps.select.FilterExpression = I > 1.0 Jy
 
 # Transfer pathces from sky_model_with_patches.sky
 LSMTool.Steps.transfer.Operation = TRANSFER
-LSMTool.Steps.transfer.PatchFile = sky_model_with_patches.sky
+LSMTool.Steps.transfer.PatchFile = test2.sky
 
 # Remove patches with total fluxes below 2 Jy
 LSMTool.Steps.remove.Operation = REMOVE
@@ -49,8 +49,8 @@ LSMTool.Steps.add.Type = POINT
 LSMTool.Steps.add.RA = 12:45:30.4
 LSMTool.Steps.add.Dec = +76.45.02.48
 LSMTool.Steps.add.I = 0.69
-LSMTool.Steps.add.OutFile = out_sky_model.sky
+LSMTool.Steps.add.OutFile = test_out.sky
 
 # Plot the sky model
 LSMTool.Steps.plot.Operation = PLOT
-LSMTool.Steps.plot.OutFile = out_sky_model.pdf
+LSMTool.Steps.plot.OutFile = test_plot.pdf
