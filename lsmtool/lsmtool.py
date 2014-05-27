@@ -12,7 +12,7 @@ import logging
 import _version
 import _logging
 import lofar.parameterset
-from lsmtool.skymodel import SkyModel
+import skymodel
 
 
 if __name__=='__main__':
@@ -50,7 +50,7 @@ if __name__=='__main__':
         sys.exit(1)
 
     # Load the skymodel
-    LSM = SkyModel(skyModelFile)
+    LSM = skymodel.SkyModel(skyModelFile)
 
     # from ~vdtol/Expion-2011-05-03/src
     parset = lofar.parameterset.parameterset( parsetFile )
