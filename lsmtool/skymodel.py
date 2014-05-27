@@ -724,12 +724,14 @@ class SkyModel(object):
                 for colName, value in verifiedValues.iteritems():
                     self.table[colName][indx] = value
                     self.table[colName][indx].mask = False
+            return 0
         else:
             if len(values) != len(self.table.columns):
                 logging.error('Length of input values must match number of tables.')
                 return 1
             else:
                 self.table.add_row(values, mask=mask)
+                return 0
 
 
     def _getNameIndx(self, name, patch=False):
