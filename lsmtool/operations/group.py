@@ -104,6 +104,7 @@ def group(LSM, algorithm, targetFlux=None, beamMS=None, numClusters=100,
 
     # Calculate/update patch positions
     LSM._updateGroups(method=method)
+    LSM.info()
     return 0
 
 
