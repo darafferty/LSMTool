@@ -541,11 +541,7 @@ class SkyModel(object):
         if units is not None:
             outcol.convert_unit_to(units)
 
-        if beamMS is not None and colName == 'I':
-        else:
-            vals = outcol.data
-
-        return vals
+        return outcol.data
 
 
     def setColValues(self, colName, values, mask=None, index=None):
