@@ -1053,7 +1053,7 @@ class SkyModel(object):
         """
         filt = []
         for i, name in enumerate(self.getColValues('Name')):
-            if name not in sourceNames:
+            if name not in filt:
                 filt.append(i)
         nRowsOrig = len(self.table)
         self.table = self.table[filt]
