@@ -193,8 +193,8 @@ def parseFilter(filterExpression):
     Takes a filter expression and returns tuple of
     (property, operation, val, units), all as strings
     """
-    from tableio import allowedColumnNames
-    from tableio import allowedColumnDefaults
+    from lsmtool.tableio import allowedColumnNames
+    from lsmtool.tableio import allowedColumnDefaults
 
     # Get operator function
     filterOper, filterOperStr = convertOperStr(filterExpression)

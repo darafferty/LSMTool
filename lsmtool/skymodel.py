@@ -77,7 +77,7 @@ class SkyModel(object):
 
         logging.info("Successfully read file '{0}'".format(fileName))
         self._clean()
-        self.info()
+#         self.info()
 
 
     def __len__(self):
