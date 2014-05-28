@@ -79,7 +79,7 @@ class SkyModel(object):
             DecDeg = self.table['Dec']
             flux = self.table['I']
             vals = applyBeam(beamMS, flux, RADeg, DecDeg)
-            fluxCol = Column(name='IApparent', data=vals, unit='Jy')
+            fluxCol = Column(name='I-Apparent', data=vals, unit='Jy')
             fluxIndx = self.table.index_column('I')
             self.table.add_column(fluxCol, index=fluxIndx+1)
             self._hasBeam = True
