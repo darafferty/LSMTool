@@ -134,7 +134,10 @@ def skyModelReader(fileName):
         a = re.search('\[.*\]', line)
         if a is not None:
             b = line[a.start(): a.end()]
-            c = b.replace(',', ';')
+            if ',' in b:
+                c = b.replace(',', ';')
+            else:
+                c = b.strip('[]')
             line = line.replace(b, c)
         colLines = line.split(',')
 
