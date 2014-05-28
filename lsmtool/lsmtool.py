@@ -18,7 +18,7 @@ import skymodel
 if __name__=='__main__':
     # Options
     import optparse
-    opt = optparse.OptionParser(usage='%prog <skymodel> [<parset>] \n'
+    opt = optparse.OptionParser(usage='%prog <skymodel> <parset> [<beam MS>] \n'
             +_author, version='%prog '+_version.__version__)
     opt.add_option('-q', help='Quiet', action='store_true', default=False)
     opt.add_option('-v', help='Verbose', action='store_true', default=False)
@@ -30,17 +30,20 @@ if __name__=='__main__':
         _logging.setLevel('debug')
 
     # Check options
-    if len(args) not in [1, 2]:
+    if len(args) not in [2, 3]:
         opt.print_help()
         sys.exit()
 
-    try: skyModelFile = args[0]
+    try:
+        skyModelFile = args[0]
     except:
         logging.critical('Missing skymodel file.')
         sys.exit(1)
 
-    try: parsetFile = args[1]
-    except: parsetFile = 'lsmtool.parset'
+    try:
+        beamMS = args[2]
+    except:
+        beamMS = None
 
     if not os.path.isfile(skyModelFile):
         logging.critical("Missing skymodel file.")
@@ -50,7 +53,7 @@ if __name__=='__main__':
         sys.exit(1)
 
     # Load the skymodel
-    LSM = skymodel.SkyModel(skyModelFile)
+    LSM = skymodel.SkyModel(skyModelFile, beamMS=beamMS)
 
     # from ~vdtol/Expion-2011-05-03/src
     parset = lofar.parameterset.parameterset( parsetFile )
