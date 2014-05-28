@@ -482,7 +482,7 @@ class SkyModel(object):
             271.63612   ,  272.05412   ])
 
         """
-        if colName.lower() == 'i' and applyBeam:
+        if colName.lower() == 'i' and applyBeam and self._hasBeam:
             colName = 'I-Apparent'
 
         colName = self._verifyColName(colName)
