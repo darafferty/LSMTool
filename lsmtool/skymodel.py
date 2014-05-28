@@ -22,7 +22,7 @@ import tableio
 import operations
 
 
-def load(fileName):
+def load(fileName, beamMS=None):
     """
     Loads a sky model from a file and returns a SkyModel object.
 
@@ -40,7 +40,7 @@ def load(fileName):
         >>> s = skymodel.load('sky.model')
 
     """
-    return SkyModel(fileName)
+    return SkyModel(fileName, beamMS)
 
 
 class SkyModel(object):
