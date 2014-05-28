@@ -76,6 +76,7 @@ class SkyModel(object):
             self._hasPatches = False
 
         logging.info("Successfully read file '{0}'".format(fileName))
+        self._clean()
         self.info()
 
 
@@ -1046,7 +1047,7 @@ class SkyModel(object):
         self.table.write(fileName, format=format)
 
 
-    def clean(self):
+    def _clean(self):
         """
         Removes duplicate entries.
         """
@@ -1057,7 +1058,8 @@ class SkyModel(object):
         nRowsOrig = len(self.table)
         self.table = self.table[filt]
         nRowsNew = len(self.table)
-        logging.info('Removed {0} duplicate sources.'.format(nRowsOrig-nRowsNew))
+        if nRowsOrig-nRowsNew > 0:
+            logging.info('Removed {0} duplicate sources.'.format(nRowsOrig-nRowsNew))
 
 
     def select(self, *args, **kwargs):

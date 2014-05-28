@@ -103,8 +103,10 @@ def skyModelReader(fileName):
         parts = colNames[i].split('=')
         colName = parts[0].strip().lower()
         if len(parts) == 2:
-            defaultVal = float(parts[1].strip("'[]"))
-
+            try:
+                defaultVal = float(parts[1].strip("'[]"))
+            except ValueError:
+                defaultVal = None
         else:
             defaultVal = None
 
