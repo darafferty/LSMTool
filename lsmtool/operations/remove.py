@@ -28,14 +28,14 @@ def run(step, parset, LSM):
     filterExpression = parset.getString('.'.join(["LSMTool.Steps", step, "FilterExpression"]), '' )
     aggregate = parset.getBool('.'.join(["LSMTool.Steps", step, "Aggregate"]), False )
     weight = parset.getBool('.'.join(["LSMTool.Steps", step, "Weight"]), False )
-    beamMS = parset.getString('.'.join(["LSMTool.Steps", step, "BeamMS"]), '' )
+    applyBeam = parset.getString('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), '' )
 
     if filterExpression == '':
         filterExpression = None
     if beamMS == '':
         beamMS = None
     LSM = remove(LSM, filterExpression, aggregate=aggregate, weight=weight,
-        beamMS=beamMS)
+        applyBeam=applyBeam)
 
     # Write to outFile
     if outFile != '':
@@ -45,7 +45,7 @@ def run(step, parset, LSM):
 
 
 def remove(LSM, filterExpression, aggregate=False, weight=False,
-    beamMS=None, useRegEx=False):
+    applyBeam=None, useRegEx=False):
     """
     Filters the sky model, removing all sources that meet the given expression.
 
@@ -80,10 +80,8 @@ def remove(LSM, filterExpression, aggregate=False, weight=False,
     weight : bool, optional
         If True, aggregated values will be calculated when appropriate using
         the Stokes I fluxes of sources in each patch as weights
-    beamMS : string, optional
-        Measurement set from which the primary beam will be estimated. Either
-        beamMS or beamFWHM and position must be specified for ApparentFlux
-        filters.
+    applyBeam : bool, optional
+        If True, apparent fluxes will be used.
     useRegEx : bool, optional
         If True, string matching will use regular expression matching. If
         False, string matching uses Unix filename matching.
@@ -114,4 +112,4 @@ def remove(LSM, filterExpression, aggregate=False, weight=False,
     from _filter import filter
 
     return filter(LSM, filterExpression, aggregate=aggregate, weight=weight,
-        beamMS=beamMS, useRegEx=useRegEx, exclusive=True)
+        applyBeam=applyBeam, useRegEx=useRegEx, exclusive=True)

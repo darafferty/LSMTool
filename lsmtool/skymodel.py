@@ -47,7 +47,7 @@ class SkyModel(object):
     """
     Object that stores the sky model and provides methods for accessing it.
     """
-    def __init__(self, fileName):
+    def __init__(self, fileName, beamMS=None):
         """
         Initializes SkyModel object.
 
@@ -56,6 +56,9 @@ class SkyModel(object):
         fileName : str
             Input ASCII file from which the sky model is read. Must
             respect the makesourcedb format
+        beamMS: str, optional
+            Measurement set from which the primary beam will be estimated. A
+            column of attenuated Stokes I fluxes will be added to the table.
 
         Examples
         --------
@@ -69,15 +72,25 @@ class SkyModel(object):
 
         self.table = Table.read(fileName, format='makesourcedb')
         self._fileName = fileName
+        if beamMS is not None:
+            from operations_lib import applyBeam
+            RADeg = table['RA']
+            DecDeg = table['Dec']
+            vals = applyBeam(beamMS, outcol.data, RADeg, DecDeg)
+            fluxCol = Column(name='IApparent', data=vals, unit='Jy')
+            fluxIndx = table.index_column('I')
+            self.table.add_column(fluxCol, index=fluxIndx+1)
+            self._hasBeam = True
+        else:
+            self._hasBeam = False
 
         if 'Patch' in self.table.keys():
             self._hasPatches = True
         else:
             self._hasPatches = False
 
-        logging.info("Successfully read file '{0}'".format(fileName))
+        logging.debug("Successfully read file '{0}'".format(fileName))
         self._clean()
-#         self.info()
 
 
     def __len__(self):
@@ -193,7 +206,7 @@ class SkyModel(object):
             table.pprint(show_unit=True)
 
 
-    def _verifyColName(self, colName, onlyExisting=True):
+    def _verifyColName(self, colName, onlyExisting=True, applyBeam=False):
         """
         Verifies that column(s) exist and returns correctly formatted string or
         list of strings suitable for accessing the data table.
@@ -206,6 +219,9 @@ class SkyModel(object):
             If True, only columns that exist in the table are allowed. If False,
             columns that are valid but do not exist in the table are returned
             without error.
+        applyBeam : bool, optional
+            If True and colName = 'I', the attenuated Stokes I column will be
+            returned
 
         Returns
         -------
@@ -413,7 +429,7 @@ class SkyModel(object):
 
 
     def getColValues(self, colName, units=None, rowName=None,
-        aggregate=False, weight=False, beamMS=None):
+        aggregate=False, weight=False, applyBeam=False):
         """
         Returns a numpy array of column values.
 
@@ -438,9 +454,8 @@ class SkyModel(object):
         weight : bool, optional
             If True, aggregated values will be weighted when appropriate by the
             Stokes I flux
-        beamMS : string, optional
-            Measurement set from which the primary beam will be estimated. If
-            beamMS is specified, fluxes will be attenuated by the beam.
+        applyBeam : bool, optional
+            If True, fluxes will be attenuated by the beam.
 
         Examples
         --------
@@ -467,6 +482,9 @@ class SkyModel(object):
             271.63612   ,  272.05412   ])
 
         """
+        if colName.lower() == 'i' and applyBeam:
+            colName = 'I-Apparent'
+
         colName = self._verifyColName(colName)
         if colName is None:
             return None
@@ -508,7 +526,7 @@ class SkyModel(object):
 
         if aggregate and self._hasPatches:
             col = self._getAggregatedColumn(colName, weight=weight,
-                table=table)
+                table=table, applyBeam=applyBeam)
         else:
             col = table[colName]
 
@@ -524,10 +542,6 @@ class SkyModel(object):
             outcol.convert_unit_to(units)
 
         if beamMS is not None and colName == 'I':
-            from operations_lib import applyBeam
-            RADeg = table['RA']
-            DecDeg = table['Dec']
-            vals = applyBeam(beamMS, outcol.data, RADeg, DecDeg)
         else:
             vals = outcol.data
 
@@ -799,7 +813,8 @@ class SkyModel(object):
             return None
 
 
-    def _getAggregatedColumn(self, colName, weight=False, table=None):
+    def _getAggregatedColumn(self, colName, weight=False, table=None,
+        applyBeam=False):
         """
         Returns the appropriate colum values aggregated by group.
         """
@@ -812,11 +827,12 @@ class SkyModel(object):
 
         if colName in colsToAverage:
             col = self._getAveragedColumn(colName, weight=weight,
-                table=table)
+                table=table, applyBeam=applyBeam)
         elif colName in colsToSum:
             col = self._getSummedColumn(colName, table=table)
         elif colName == 'MajorAxis' or colName == 'MinorAxis':
-            col = self._getSizeColumn(weight=weight, table=table)
+            col = self._getSizeColumn(weight=weight, table=table,
+                applyBeam=applyBeam)
         elif colName == 'Patch':
             col = self.table.groups.keys['Patch']
         else:
@@ -882,7 +898,8 @@ class SkyModel(object):
         return table[colName].groups.aggregate(np.max)
 
 
-    def _getAveragedColumn(self, colName, weight=True, table=None):
+    def _getAveragedColumn(self, colName, weight=True, table=None,
+        applyBeam=False):
         """
         Returns column averaged by group.
 
@@ -901,9 +918,14 @@ class SkyModel(object):
         if table is None:
             table = self.table
         if weight:
-            weightCol = Column(name='Weight', data=table['I'].filled().data)
-            valWeightCol = Column(name='ValWeight', data=table[colName].filled().data*
-                table['I'].filled().data)
+            if applyBeam and self._hasBeam:
+                weightCol = Column(name='Weight', data=table['I-apparent'].filled().data)
+                valWeightCol = Column(name='ValWeight', data=table[colName].filled().data*
+                    table['I-apparent'].filled().data)
+            else:
+                weightCol = Column(name='Weight', data=table['I'].filled().data)
+                valWeightCol = Column(name='ValWeight', data=table[colName].filled().data*
+                    table['I'].filled().data)
             table.add_column(valWeightCol)
             table.add_column(weightCol)
             numer = table['ValWeight'].groups.aggregate(np.sum).data
@@ -918,7 +940,7 @@ class SkyModel(object):
             return table[colName].groups.aggregate(avg)
 
 
-    def _getSizeColumn(self, weight=True, table=None):
+    def _getSizeColumn(self, weight=True, table=None, applyBeam=False):
         """
         Returns column of source largest angular sizes.
 
@@ -950,8 +972,12 @@ class SkyModel(object):
             dist = self._calculateSeparation(table['RA'],
                 table['Dec'], RAAvgFull, DecAvgFull)
             if weight:
-                weightCol = Column(name='Weight', data=table['I'].filled().data)
-                valWeightCol = Column(name='ValWeight', data=dist*table['I'].filled().data)
+                if applyBeam and self._hasBeam:
+                    weightCol = Column(name='Weight', data=table['I-apparent'].filled().data)
+                    valWeightCol = Column(name='ValWeight', data=dist*table['I-apparent'].filled().data)
+                else:
+                    weightCol = Column(name='Weight', data=table['I'].filled().data)
+                    valWeightCol = Column(name='ValWeight', data=dist*table['I'].filled().data)
                 table.add_column(valWeightCol)
                 table.add_column(weightCol)
                 numer = table['ValWeight'].groups.aggregate(np.sum).data * 2.0

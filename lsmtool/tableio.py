@@ -41,14 +41,14 @@ outputColumnNames = {'name':'Name', 'type':'Type', 'patch':'Patch',
 
 allowedColumnNames = {'name':'Name', 'type':'Type', 'patch':'Patch',
     'ra':'RA', 'dec':'Dec', 'ra-hms':'RA-HMS', 'dec-dms':'Dec-DMS', 'i':'I',
-    'q':'Q', 'u':'U', 'v':'V', 'majoraxis':'MajorAxis', 'minoraxis':'MinorAxis',
-    'orientation':'Orientation', 'referencefrequency':'ReferenceFrequency',
-    'spectralindex':'SpectralIndex'}
+    'i-apparent':'I-Apparent', 'q':'Q', 'u':'U', 'v':'V', 'majoraxis':'MajorAxis',
+    'minoraxis':'MinorAxis', 'orientation':'Orientation',
+    'referencefrequency':'ReferenceFrequency', 'spectralindex':'SpectralIndex'}
 
 allowedColumnUnits = {'name':None, 'type':None, 'patch':None, 'ra':'degree',
-    'dec':'degree', 'ra-hms':None, 'dec-dms':None, 'i':'Jy', 'q':'Jy', 'u':'Jy',
-    'v':'Jy', 'majoraxis':'arcsec', 'minoraxis':'arcsec', 'orientation':'degree',
-    'referencefrequency':'Hz', 'spectralindex':None}
+    'dec':'degree', 'ra-hms':None, 'dec-dms':None, 'i':'Jy', 'i-apparent':'Jy',
+    'q':'Jy', 'u':'Jy', 'v':'Jy', 'majoraxis':'arcsec', 'minoraxis':'arcsec',
+    'orientation':'degree', 'referencefrequency':'Hz', 'spectralindex':None}
 
 allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':0.0,
     'dec':0.0, 'ra-hms':'N/A', 'dec-dms': 'N/A', 'i':0.0, 'q':0.0, 'u':0.0,
@@ -254,7 +254,7 @@ def skyModelWriter(table, fileName, groupByPatch=False):
     outLines = []
     formatString = []
     for colKey in table.keys():
-        if colKey == 'RA' or colKey == 'Dec':
+        if colKey.lower() not in outputColumnNames:
             continue
         colName = outputColumnNames[colKey.lower()]
 
