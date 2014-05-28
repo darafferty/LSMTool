@@ -72,11 +72,13 @@ class SkyModel(object):
 
         self.table = Table.read(fileName, format='makesourcedb')
         self._fileName = fileName
+
         if beamMS is not None:
             from operations_lib import applyBeam
-            RADeg = table['RA']
-            DecDeg = table['Dec']
-            vals = applyBeam(beamMS, outcol.data, RADeg, DecDeg)
+            RADeg = self.table['RA']
+            DecDeg = self.table['Dec']
+            flux = self.table['I']
+            vals = applyBeam(beamMS, flux, RADeg, DecDeg)
             fluxCol = Column(name='IApparent', data=vals, unit='Jy')
             fluxIndx = table.index_column('I')
             self.table.add_column(fluxCol, index=fluxIndx+1)
