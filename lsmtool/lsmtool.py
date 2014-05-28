@@ -18,7 +18,7 @@ import skymodel
 if __name__=='__main__':
     # Options
     import optparse
-    opt = optparse.OptionParser(usage='%prog [-v|-V] <skymodel> <parset [default: lsmtool.parset]> \n'
+    opt = optparse.OptionParser(usage='%prog <skymodel> [<parset>] \n'
             +_author, version='%prog '+_version.__version__)
     opt.add_option('-q', help='Quiet', action='store_true', default=False)
     opt.add_option('-v', help='Verbose', action='store_true', default=False)

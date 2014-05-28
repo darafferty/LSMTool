@@ -413,7 +413,7 @@ class SkyModel(object):
 
 
     def getColValues(self, colName, units=None, rowName=None,
-        aggregate=False, weight=False):
+        aggregate=False, weight=False, beamMS=None):
         """
         Returns a numpy array of column values.
 
@@ -438,6 +438,9 @@ class SkyModel(object):
         weight : bool, optional
             If True, aggregated values will be weighted when appropriate by the
             Stokes I flux
+        beamMS : string, optional
+            Measurement set from which the primary beam will be estimated. If
+            beamMS is specified, fluxes will be attenuated by the beam.
 
         Examples
         --------
@@ -520,7 +523,15 @@ class SkyModel(object):
         if units is not None:
             outcol.convert_unit_to(units)
 
-        return outcol.data
+        if beamMS is not None and colName == 'I':
+            from operations_lib import applyBeam
+            RADeg = table['RA']
+            DecDeg = table['Dec']
+            vals = applyBeam(beamMS, outcol.data, RADeg, DecDeg)
+        else:
+            vals = outcol.data
+
+        return vals
 
 
     def setColValues(self, colName, values, mask=None, index=None):
@@ -756,14 +767,12 @@ class SkyModel(object):
             if self._hasPatches:
                 names = self.getColValues('Patch', aggregate=True).tolist()
             else:
-#                 logging.error('Sky model does not have patches.')
                 return None
         else:
             names = self.getColValues('Name').tolist()
 
         if type(name) is str or type(name) is np.string_:
             if name not in names:
-#                 logging.error("Name '{0}' not recognized.".format(name))
                 return None
             indx = names.index(name)
             return [indx]

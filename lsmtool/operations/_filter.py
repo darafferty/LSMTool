@@ -58,9 +58,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
         If True, aggregated values will be calculated when appropriate using
         the Stokes I fluxes of sources in each patch as weights
     beamMS : string, optional
-        Measurement set from which the primary beam will be estimated. Either
-        beamMS or beamFWHM and position must be specified for ApparentFlux
-        filters.
+        Measurement set from which the primary beam will be estimated.
     useRegEx : bool, optional
         If True, string matching will use regular expression matching. If
         False, string matching uses Unix filename matching.
@@ -128,13 +126,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
     if LSM._verifyColName(filterProp) in LSM.table.colnames:
         filterProp = LSM._verifyColName(filterProp)
         colVals = LSM.getColValues(filterProp, units=filterUnits,
-            aggregate=aggregate, weight=weight)
-
-        if beamMS is not None and filterProp == 'I':
-            from lsmtool.operations_lib import applyBeam
-            RADeg = LSM.getColValues('RA')
-            DecDeg = LSM.getColValues('Dec')
-            colVals = applyBeam(beamMS, colVals, RADeg, DecDeg)
+            aggregate=aggregate, weight=weight, beamMS=beamMS)
     else:
         # Assume filterProp is a mask filename and try to load mask
         if os.path.exists(fileName):
