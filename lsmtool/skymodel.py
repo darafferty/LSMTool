@@ -68,7 +68,7 @@ class SkyModel(object):
             >>> s = SkyModel('sky.model')
 
         """
-        from astropy.table import Table
+        from astropy.table import Table, Column
 
         self.table = Table.read(fileName, format='makesourcedb')
         self._fileName = fileName
