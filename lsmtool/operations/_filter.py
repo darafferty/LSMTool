@@ -170,20 +170,28 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
         LSM.table = LSM.table.groups.filter(filterByName) # filter
         LSM.table = LSM.table.group_by('Patch') # regroup
         nPatchesNew = len(LSM.table.groups)
-        if exclusive:
-            logging.info('Removed {0} patches.'.format(nPatchesOrig-nPatchesNew))
+        if nPatchesOrig-nPatchesNew == 1:
+            plustr = ''
         else:
-            logging.info('Kept {0} patches.'.format(nPatchesNew))
+            plustr = 'es'
+        if exclusive:
+            logging.info('Removed {0} patch{1}.'.format(nPatchesOrig-nPatchesNew, plustr))
+        else:
+            logging.info('Kept {0} patch{1}.'.format(nPatchesNew, plustr))
     else:
         nRowsOrig = len(LSM.table)
         LSM.table = LSM.table[filt]
         nRowsNew = len(LSM.table)
         if LSM._hasPatches:
             LSM.table = LSM.table.group_by('Patch') # regroup
-        if exclusive:
-            logging.info('Removed {0} sources.'.format(nRowsOrig-nRowsNew))
+        if nRowsOrig-nRowsNew == 1:
+            plustr = ''
         else:
-            logging.info('Kept {0} sources.'.format(nRowsNew))
+            plustr = 's'
+        if exclusive:
+            logging.info('Removed {0} source{1}.'.format(nRowsOrig-nRowsNew, plustr))
+        else:
+            logging.info('Kept {0} source{1}.'.format(nRowsNew, plustr))
 
     return LSM
 
