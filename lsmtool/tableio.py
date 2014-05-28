@@ -123,7 +123,7 @@ def skyModelReader(fileName):
     # Read model into astropy table object
     modelFile = open(fileName)
     lines = modelFile.readlines()
-    outlines = ['# Sky model']
+    outlines = []
     for line in lines:
         if line.startswith("FORMAT") or line.startswith("format"):
             continue
