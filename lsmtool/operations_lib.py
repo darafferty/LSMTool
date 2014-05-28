@@ -16,6 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import logging
 
 def applyBeam(beamMS, fluxes, RADeg, DecDeg):
     """
@@ -26,13 +27,18 @@ def applyBeam(beamMS, fluxes, RADeg, DecDeg):
     try:
         import pyrap.tables as pt
     except ImportError:
-        logger.error('Could not import pyrap.tables')
+        logging.error('Could not import pyrap.tables')
+        return None
     try:
         import lofar.stationresponse as lsr
     except ImportError:
-        logger.error('Could not import lofar.stationresponse')
+        logging.error('Could not import lofar.stationresponse')
 
-    t = pt.table(beamMS, ack=False)
+    try:
+        t = pt.table(beamMS, ack=False)
+    except:
+        raise Exception('Could not open {0}'.format(beamMS))
+
     tt = t.query('ANTENNA1==0 AND ANTENNA2==1', columns='TIME')
     time = tt.getcol("TIME")
     time = min(time) + ( max(time) - min(time) ) / 2.

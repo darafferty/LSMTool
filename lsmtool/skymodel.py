@@ -79,20 +79,22 @@ class SkyModel(object):
             DecDeg = self.table['Dec']
             flux = self.table['I']
             vals = applyBeam(beamMS, flux, RADeg, DecDeg)
-            fluxCol = Column(name='I-Apparent', data=vals, unit='Jy')
-            fluxIndx = self.table.index_column('I')
-            self.table.add_column(fluxCol, index=fluxIndx+1)
-            self._hasBeam = True
+            if vals is None:
+                logging.error('The beam MS could not be read. Apparent fluxes will '
+                    'not be available.')
+                self._hasBeam = False
+            else:
+                fluxCol = Column(name='I-Apparent', data=vals, unit='Jy')
+                fluxIndx = self.table.index_column('I')
+                self.table.add_column(fluxCol, index=fluxIndx+1)
+                self._hasBeam = True
         else:
             self._hasBeam = False
 
-        if 'Patch' in self.table.keys():
-            self._hasPatches = True
-        else:
-            self._hasPatches = False
+        self._clean()
+        self._updateGroups()
 
         logging.debug("Successfully read file '{0}'".format(fileName))
-        self._clean()
 
 
     def __len__(self):
@@ -113,9 +115,12 @@ class SkyModel(object):
         """
         Updates the grouping of the table by patch name.
         """
-        self.table = self.table.group_by('Patch')
-        self._hasPatches = True
-        self.setPatchPositions(method=method)
+        if 'Patch' in self.table.keys():
+            self.table = self.table.group_by('Patch')
+            self._hasPatches = True
+            self.setPatchPositions(method=method)
+        else:
+            self._hasPatches = False
 
 
     def info(self):
