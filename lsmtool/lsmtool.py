@@ -37,9 +37,13 @@ if __name__=='__main__':
     try:
         skyModelFile = args[0]
     except:
-        logging.critical('Missing skymodel file.')
+        logging.critical('Missing sky model file.')
         sys.exit(1)
-
+    try:
+        parsetFile = args[1]
+    except:
+        logging.critical('Missing parset file.')
+        sys.exit(1)
     try:
         beamMS = args[2]
     except:
