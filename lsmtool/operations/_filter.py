@@ -36,7 +36,8 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
             {'filterProp':property, 'filterOper':operator,
                 'filterVal':value, 'filterUnits':units}
         or as a list:
-            [property, operator, value, value]
+            [property, operator, value] or
+            [property, operator, value, units]
         The property to filter on must be a valid column name or the filename
         of a mask image.
 
@@ -95,8 +96,17 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
         return 1
 
     if type(filterExpression) is list:
-        filterProp, filterOperStr, filterVal, filterUnits = filterExpression
-        filterOper, f = convertOperStr(filterOperStr)
+        if len(filterExpression) == 3:
+            filterProp, filterOperStr, filterVal = filterExpression
+            filterUnits = None
+            filterOper, f = convertOperStr(filterOperStr)
+        elif len(filterExpression) == 4:
+            filterProp, filterOperStr, filterVal, filterUnits = filterExpression
+            filterOper, f = convertOperStr(filterOperStr)
+        else:
+            logging.error("Please specify filter list as "
+                "[property, operator, value, units].")
+            return 1
 
     elif type(filterExpression) is dict:
         if ('filterProp' in filterExpression.keys() and

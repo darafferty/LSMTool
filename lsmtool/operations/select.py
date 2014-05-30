@@ -91,7 +91,6 @@ def select(LSM, filterExpression, aggregate=False, weight=False,
     Filter on column 'I' (Stokes I flux). This filter will select all sources
     with Stokes I flux greater than 1.5 Jy::
 
-        >>> s = SkyModel('sky.model')
         >>> s.select('I > 1.5 Jy')
         INFO: Filtered out 1102 sources.
 

@@ -22,27 +22,6 @@ import tableio
 import operations
 
 
-def load(fileName, beamMS=None):
-    """
-    Loads a sky model from a file and returns a SkyModel object.
-
-    Parameters
-    ----------
-    fileName : str
-        Input ASCII file from which the sky model is read. Must
-        respect the makesourcedb format
-
-    Examples
-    --------
-    Create a SkyModel object::
-
-        >>> from lsmtool import skymodel
-        >>> s = skymodel.load('sky.model')
-
-    """
-    return SkyModel(fileName, beamMS)
-
-
 class SkyModel(object):
     """
     Object that stores the sky model and provides methods for accessing it.
@@ -56,7 +35,7 @@ class SkyModel(object):
         fileName : str
             Input ASCII file from which the sky model is read. Must
             respect the makesourcedb format
-        beamMS: str, optional
+        beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table.
 
@@ -64,8 +43,12 @@ class SkyModel(object):
         --------
         Create a SkyModel object::
 
-            >>> from lsmtool.skymodel import SkyModel
             >>> s = SkyModel('sky.model')
+
+        Create a SkyModel object with a beam MS so that apparent fluxes will
+        be available as well as intrinsic fluxes:::
+
+            >>> s = SkyModel('sky.model', 'SB100.MS')
 
         """
         from astropy.table import Table, Column
@@ -170,7 +153,6 @@ class SkyModel(object):
         --------
         Print the entire model::
 
-            >>> s = SkyModel('sky.model')
             >>> s.show()
 
         Page through the model using more-like commands::
@@ -194,6 +176,7 @@ class SkyModel(object):
             if type(colName) is str:
                 colName = [colName] # needed in order to get a table instead of a column
             table = table[colName]
+
 
         # Get patches
         if patchName is not None:
@@ -294,7 +277,6 @@ class SkyModel(object):
         --------
         Sort on Stokes I flux, with largest values first::
 
-            >>> s = SkyModel('sky.model')
             >>> s.sort()
 
         Sort on RA, with smallest values first::
@@ -331,7 +313,6 @@ class SkyModel(object):
         --------
         Get all patch positions::
 
-            >>> s = SkyModel('sky.model')
             >>> s.getPatchPositions()
             {'bin0': [0.0, 0.0], 'bin1': [0.0, 0.0], 'bin2': [0.0, 0.0],
             'bin3': [0.0, 0.0]}
@@ -372,7 +353,6 @@ class SkyModel(object):
         --------
         Set all patch positions to their midpoints::
 
-            >>> s = SkyModel('sky.model')
             >>> s.setPatchPositions()
 
         Set all patch positions to their flux-weighted mean postions::
@@ -426,6 +406,13 @@ class SkyModel(object):
     def ungroup(self):
         """
         Removes all patches from the sky model.
+
+        Examples
+        --------
+        Remove all patches::
+
+            >>> s.ungroup()
+
         """
         if self._hasPatches:
             for patchName in self.getColValues('Patch', aggregate=True):
@@ -433,6 +420,20 @@ class SkyModel(object):
                     self.table.meta.pop(patchName)
             self.table.remove_column('Patch')
             self._hasPatches = False
+
+
+    def getColNames(self):
+        """
+        Returns a list of column names.
+
+        Examples
+        --------
+        Get column names::
+
+            >>> s.getColNames()
+
+        """
+        return self.table.keys()
 
 
     def getColValues(self, colName, units=None, rowName=None,
@@ -468,7 +469,6 @@ class SkyModel(object):
         --------
         Get Stokes I fluxes in Jy::
 
-            >>> s = SkyModel('sky.model')
             >>> s.getColValues('I')
             array([ 60.4892,   1.2413,   1.216 , ...,   1.12  ,   1.25  ,   1.16  ])
 
@@ -575,7 +575,6 @@ class SkyModel(object):
         --------
         Set Stokes I fluxes::
 
-            >>> s = SkyModel('sky.model')
             >>> s.setColValues('I', [1.0, 1.1, 1.2, 0.0, 1.3], mask=[False,
                     False, False, True, False])
 
@@ -638,7 +637,6 @@ class SkyModel(object):
         --------
         Get row values for the source 'src1'::
 
-            >>> s = SkyModel('sky.model')
             >>> r = s.getRowValues('src1')
 
         Sum over the fluxes of sources in the 'bin1' patch::
@@ -681,13 +679,11 @@ class SkyModel(object):
         --------
         Get row index for the source 'src1'::
 
-            >>> s = SkyModel('sky.model')
             >>> s.getRowIndex('src1')
             [0]
 
         Get row indices for the patch 'bin1' and verify the patch name::
 
-            >>> s = SkyModel('sky.model')
             >>> ind = s.getRowIndex('bin1')
             >>> print(s.getColValues('Patch')[ind])
             ['bin1' 'bin1']
@@ -725,7 +721,6 @@ class SkyModel(object):
         --------
         Set row values for the source 'src1'::
 
-            >>> s = SkyModel('sky.model')
             >>> s.setRowValues({'Name':'src1', 'RA':213.123, 'Dec':23.1232,
                 'I':23.2, 'Type':'POINT'}
 
@@ -745,6 +740,28 @@ class SkyModel(object):
                 if not found:
                     logging.error("A value must be specified for '{0}'.".format(valReq))
                     return 1
+
+            RA = verifiedValues['RA']
+            if type(RA) is str:
+                verifiedValues['RA-HMS'] = RA
+                verifiedValues['RA'] = tableio.convertRAdeg(RA)
+            elif type(RA) is float:
+                verifiedValues['RA'][indx] = RA
+                LSM.table['RA-HMS'][indx] = tableio.convertRAHHMMSS(RA)
+            else:
+                logging.error('RA not understood.')
+                return 1
+            Dec = verifiedValues['Dec']
+            if type(Dec) is str:
+                LSM.table['Dec-DMS'][indx] = Dec
+                LSM.table['Dec'][indx] = tableio.convertDecdeg(Dec)
+            elif type(Dec) is float:
+                LSM.table['Dec'][indx] = Dec
+                LSM.table['Dec-DMS'][indx] = tableio.convertDecDDMMSS(Dec)
+            else:
+                logging.error('Dec not understood.')
+                return 1
+
             rowName = str(values['Name'])
             indx = self._getNameIndx(rowName)
             if indx is None:
@@ -753,12 +770,15 @@ class SkyModel(object):
                 for colName, value in verifiedValues.iteritems():
                     self.table[colName][indx] = value
                     self.table[colName][indx].mask = False
-        else:
+        elif type(dict) is list:
             if len(values) != len(self.table.columns):
                 logging.error('Length of input values must match number of tables.')
                 return 1
             else:
                 self.table.add_row(values, mask=mask)
+        else:
+            logging.error('Input row values not understood.')
+            return 1
 
         if self._hasPatches:
             self._updateGroups(method='mid')
@@ -820,7 +840,21 @@ class SkyModel(object):
         applyBeam=False):
         """
         Returns the appropriate colum values aggregated by group.
-        """
+
+        Parameters
+        ----------
+        colName : str
+            Name of column. If not already present in the table, a new column
+            will be created.
+        weight : bool, optional
+            If True, aggregated values will be weighted when appropriate by the
+            Stokes I flux
+        table : astropy Table, optional
+            If given, use this table; otherwise use self.table
+        applyBeam : bool, optional
+            If True, fluxes will be attenuated by the beam.
+
+         """
         colsToAverage = ['RA', 'Dec', 'ReferenceFrequency',
             'SpectralIndex', 'Orientation']
         colsToSum = ['I', 'Q', 'U', 'V']
@@ -914,6 +948,9 @@ class SkyModel(object):
             If True, return average weighted by flux
         table : astropy Table, optional
             If given, use this table; otherwise use self.table
+        applyBeam : bool, optional
+            If True, fluxes will be attenuated by the beam.
+
         """
         from astropy.table import Column
         import numpy as np
@@ -953,6 +990,9 @@ class SkyModel(object):
             If True, return size weighted by flux
         table : astropy Table, optional
             If given, use this table; otherwise use self.table
+        applyBeam : bool, optional
+            If True, fluxes will be attenuated by the beam.
+
         """
         from astropy.table import Column
         import numpy as np
@@ -1023,6 +1063,7 @@ class SkyModel(object):
             RA of coordinate 2 in degrees
         dec2 : float
             Dec of coordinate 2 in degrees
+
         """
         from astropy.coordinates import FK5
         import astropy.units as u
@@ -1058,7 +1099,6 @@ class SkyModel(object):
         Write the model to a makesourcedb sky model file suitable for use with
         BBS::
 
-            >>> s = SkyModel('sky.model')
             >>> s.write('modsky.model')
 
         Write to a fits catalog::

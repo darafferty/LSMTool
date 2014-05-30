@@ -38,7 +38,7 @@ LSMTool.Steps.merge.Name = merged_patch
 # Concatenate with concat_sky_model.sky
 LSMTool.Steps.concatenate.Operation = CONCATENATE
 LSMTool.Steps.concatenate.Skymodel2 = tests/patches.sky
-LSMTool.Steps.concatenate.MatchBy = radius
+LSMTool.Steps.concatenate.MatchBy = position
 LSMTool.Steps.concatenate.Radius = 30 arcsec
 LSMTool.Steps.concatenate.Keep = from2
 

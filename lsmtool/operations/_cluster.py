@@ -96,21 +96,12 @@ def dectodms_string(dec):
     return str(decd) + '.' + str(decm) + '.' +str(round(decs,2))
 
 
-def compute_patch_center(data, beam_ms = None):
+def compute_patch_center(data, applyBeam=False):
     """
     Return the patches names, central (weighted) RA and DEC and total flux
     """
     patch_names = np.unique(data['Name'])
     patches = []
-
-    # get the average time of the obs, OK for 1st order correction
-    if beam_ms != None:
-        t = pt.table(beam_ms, ack=False)
-        tt = t.query('ANTENNA1==0 AND ANTENNA2==1', columns='TIME')
-        time = tt.getcol("TIME")
-        time = min(time) + ( max(time) - min(time) ) / 2.
-        t.close()
-        sr = lsr.stationresponse(beam_ms, False, True)
 
     for patch_name in patch_names:
         comp_ids = np.where(data['Name'] == patch_name)[0]
@@ -125,17 +116,10 @@ def compute_patch_center(data, beam_ms = None):
 
             comp_ra   = data['RA'][comp_id]
             comp_dec  = data['Dec'][comp_id]
-            comp_flux = np.float(data['I'][comp_id])
-
-            # beam correction
-            if beam_ms != None:
-                sr.setDirection(comp_ra*np.pi/180.,comp_dec*np.pi/180.)
-                # use station 0 to compute the beam and get mid channel
-                beam = sr.evaluateStation(time,0)
-                r = abs(beam[int(len(beam)/2.)])
-                beam = ( r[0][0] + r[1][1] ) / 2.
-                #print "Beam:", beam,
-                comp_flux *= beam
+            if applyBeam and 'I-Apparent' in data:
+                comp_flux = np.float(data['I-Apparent'][comp_id])
+            else:
+                comp_flux = np.float(data['I'][comp_id])
 
             # calculate the average weighted patch center, and patch flux
             patch_flux  += comp_flux

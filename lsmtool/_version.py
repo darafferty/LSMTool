@@ -7,9 +7,10 @@ __version__ = '1.0.0'
 
 # Change log
 def changelog():
-    """
+    log = """
     LSMTool Changelog.
     -----------------------------------------------
     2014/05/25 - Version 1.0.0 (initial release)
     """
-    pass
+
+    print(log)

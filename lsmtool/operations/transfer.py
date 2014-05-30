@@ -39,7 +39,19 @@ def run(step, parset, LSM):
 
 
 def transfer(LSM, patchFile):
+    """
+    Transfer patches from the input sky model.
 
+    Sources with the same name as those in patchFile will be grouped into
+    the patches defined in patchFile. Sources that do not appear in patchFile
+    will be placed into separate patches (one per source).
+
+    Parameters
+    ----------
+    patchFile : str
+        Input sky model from which to transfer patches.
+
+    """
     import skymodel
 
     masterLSM = skymodel.SkyModel(patchFile)

@@ -48,6 +48,22 @@ def run(step, parset, LSM):
 
 
 def add(LSM, colNamesVals):
+    """
+    Add a source to the sky model.
 
+    Parameters
+    ----------
+    colNamesVals : dict
+        A dictionary that specifies the row values for the source to be added.
+
+    Examples:
+    ---------
+    Add a point source::
+
+        >>> source = {'Name':'src1', 'Type':'POINT', 'Ra':'12:32:10.1',
+            'Dec':'23.43.21.21', 'I':2.134}
+        >>> s.add(source)
+
+    """
     result = LSM.setRowValues(colNamesVals)
     return result

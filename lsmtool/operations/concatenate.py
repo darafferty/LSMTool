@@ -39,9 +39,48 @@ def run(step, parset, LSM):
     return result
 
 
-def concatenate(LSM1, LSM2, matchBy='name', radius=10.0, keep='all'):
+def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     """
     Concatenate two sky models
+
+    Parameters
+    ----------
+    LSM2 : SkyModel object
+        Sky model to concatenate to the parent sky model
+    matchBy : str, optional
+        Determines how duplicate sources are determined:
+        - 'name' => duplicates are identified by name
+        - 'position' => duplicates are identified by radius. Sources within the
+            radius specified by the radius parameter are considered duplicates
+    radius : float, optional
+        Radius in degrees for matching when matchBy='position'
+    keep : str, optional
+        Determines how duplicates are treated:
+        - 'all' => all duplicates are kept; those with identical names are re-
+            named
+        - 'from1' => duplicates kept are those from sky model 1 (the parent)
+        - 'from2' => duplicates kept are those from sky model 2 (LSM2)
+
+    Examples
+    --------
+    Concatenate two sky models, identifying duplicates by matching to the source
+    names. When duplicates are found, keep the source from the parent sky model
+    and discard the duplicate from second sky model (this might be useful when
+    merging two gsm.py sky models that have some overlap)::
+
+        >>> LSM2 = lsmtool.load('gsm_sky2.model')
+        >>> s.concatenate(LSM2, matchBy='name', keep='from1')
+
+    Concatenate two sky models, identifying duplicates by matching to the source
+    positions within a radius of 10 arcsec. When duplicates are found, keep the
+    source from the second sky model and discard the duplicate from the parent
+    sky model (this might be useful when replacing parts of a low-resolution
+    sky model with a high-resolution one)::
+
+        >>> LSM2 = lsmtool.load('high_res_sky.model')
+        >>> s.concatenate(LSM2, matchBy='position', radius=10.0/3600.0,
+            keep='from2')
+
     """
     from astropy.table import vstack, Column
     from astropy.coordinates import ICRS
@@ -71,9 +110,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=10.0, keep='all'):
 
     if matchBy.lower() == 'name':
         LSM1.table = vstack([table1, table2])
-    if matchBy.lower() == 'patch':
-        LSM1.table = vstack([table1, table2])
-    elif matchBy.lower() == 'radius':
+    elif matchBy.lower() == 'position':
         # Create catalogs
         catalog1 = ICRS(LSM1.getColValues('RA'), LSM1.getColValues('Dec'),
             unit=(u.degree, u.degree))
@@ -112,7 +149,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=10.0, keep='all'):
         # Remove any duplicates
         if matchBy.lower() == 'name':
             colName = 'Name'
-        elif matchBy.lower() == 'radius':
+        elif matchBy.lower() == 'position':
             colName = 'match'
         vals = LSM1.table[colName]
         toRemove = []
@@ -133,7 +170,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=10.0, keep='all'):
             LSM1.table['Name'][indx[0]] = name + '_1'
             LSM1.table['Name'][indx[1]] = name + '_2'
 
-    if matchBy.lower() == 'radius':
+    if matchBy.lower() == 'position':
         LSM1.table.remove_column('match')
 
     if LSM1._hasPatches:

@@ -47,6 +47,17 @@ def plot(LSM, fileName=None):
     ----------
     fileName : str, optional
         If given, the plot is saved to a file instead of displayed.
+
+    Examples:
+    ---------
+    Plot and display to the screen::
+
+        >>> s.plot()
+
+    Plot and save to a PDF file::
+
+        >>>s.plot('sky_plot.pdf')
+
     """
     import matplotlib.pyplot as plt
 

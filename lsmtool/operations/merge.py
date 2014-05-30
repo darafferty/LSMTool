@@ -54,7 +54,6 @@ def merge(LSM, patches, name=None, method='mid'):
     --------
     Merge three patches into one:
 
-        >>> s = SkyModel('sky.model')
         >>> s.merge(['bin0', 'bin1', 'bin2'], 'binmerged')
     """
     if name is None:

@@ -34,7 +34,7 @@ def run(step, parset, LSM):
     if beamMS == '':
         beamMS = None
 
-    result = group(LSM, algorithm, targetFlux, beamMS, numClusters, method)
+    result = group(LSM, algorithm, targetFlux, numClusters, beamMS, method)
 
     # Write to outFile
     if outFile != '':
@@ -43,7 +43,7 @@ def run(step, parset, LSM):
     return result
 
 
-def group(LSM, algorithm, targetFlux=None, beamMS=None, numClusters=100,
+def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
     method='mid'):
     """
     Groups sources into patches
@@ -52,10 +52,34 @@ def group(LSM, algorithm, targetFlux=None, beamMS=None, numClusters=100,
     ----------
     algorithm : str
         Algorithm to use for grouping:
-        - 'single'
-        - 'every'
-        - 'cluster'
-        - 'tessellate'
+        - 'single' => all sources are grouped into a single patch
+        - 'every' => every source gets a separate patch
+        - 'cluster' => SAGECAL clustering algorithm that groups sources into
+            specified number of clusters (specified by the numClusters parameter).
+        - 'tessellate' => group into tiles whose total flux approximates
+            the target flux (specified by the targetFlux parameter).
+    targetFlux : str or float, optional
+        Target flux for tessellation (the total flux of each tile will be close
+        to this value). The target flux can be specified as either a float in Jy
+        or as a string with units (e.g., '25.0 mJy').
+    numClusters : int, optional
+        Number of clusters for clustering. Sources are grouped around the
+        numClusters brightest sources.
+    applyBeam : bool, optional
+        If True, fluxes will be attenuated by the beam.
+    method : str, optional
+        Method by which patch positions will be calculated:
+        - 'mid' => use the midpoint of the patch
+        - 'mean' => use the mean position
+        - 'wmean' => use the flux-weighted mean position
+
+    Examples
+    --------
+    Tesselate the sky model into patches with approximately 30 Jy total
+    flux:
+
+        >>> s.group('tessellate', targetFlux=30.0)
+
     """
     import _tessellate
     import _cluster
@@ -70,7 +94,7 @@ def group(LSM, algorithm, targetFlux=None, beamMS=None, numClusters=100,
 
     elif algorithm.lower() == 'cluster':
         LSM.ungroup()
-        patches = _cluster.compute_patch_center(LSM.table, beamMS)
+        patches = _cluster.compute_patch_center(LSM.table, applyBeam=applyBeam)
         patchCol = _cluster.create_clusters(patches, numClusters)
         LSM.setColValues('Patch', patchCol, index=2)
 
@@ -89,10 +113,7 @@ def group(LSM, algorithm, targetFlux=None, beamMS=None, numClusters=100,
         RA = LSM.getColValues('RA')
         Dec = LSM.getColValues('Dec')
         x, y = _tessellate.radec2xy(RA, Dec)
-        f = LSM.getColValues('I', units=units)
-        if beamMS is not None:
-            from ..operations_lib import applyBeam
-            f = applyBeam(beamMS, f, RA, Dec)
+        f = LSM.getColValues('I', units=units, applyBeam=applyBeam)
         vobin = _tessellate.bin2D(x, y, f, target_flux=targetFlux)
         vobin.bin_voronoi()
         patchCol = _tessellate.bins2Patches(vobin)
