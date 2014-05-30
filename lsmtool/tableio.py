@@ -185,6 +185,7 @@ def skyModelReader(fileName):
             elif type(l) is float:
                 specVec.append([l])
             else:
+                print type(l)
                 specVec.append([0, 0])
                 maskVec.append([True, True])
         specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec))
