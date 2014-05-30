@@ -184,6 +184,7 @@ def skyModelReader(fileName):
                 maskVec.append([False, False])
             elif type(l) is np.float64:
                 specVec.append([l])
+                maskVec.append([False])
             else:
                 specVec.append([0, 0])
                 maskVec.append([True, True])
