@@ -34,7 +34,7 @@ def run(step, parset, LSM):
     result = group(LSM, algorithm, targetFlux, numClusters, applyBeam, method)
 
     # Write to outFile
-    if outFile != '':
+    if outFile != '' and result == 0:
         LSM.write(outFile, clobber=True)
 
     return result
@@ -47,6 +47,8 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
 
     Parameters
     ----------
+    LSM : SkyModel object
+        Input sky model.
     algorithm : str
         Algorithm to use for grouping:
         - 'single' => all sources are grouped into a single patch
@@ -75,7 +77,8 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
     Tesselate the sky model into patches with approximately 30 Jy total
     flux:
 
-        >>> s.group('tessellate', targetFlux=30.0)
+        >>> LSM = lsmtool.load('sky.model')
+        >>> group(LSM, 'tessellate', targetFlux=30.0)
 
     """
     import _tessellate

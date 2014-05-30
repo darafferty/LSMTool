@@ -28,7 +28,7 @@ def run( step, parset, LSM ):
 
     if outFile == '':
         outFile = None
-    result = plot(LSM, outFile)
+    plot(LSM, outFile)
 
     return 0
 

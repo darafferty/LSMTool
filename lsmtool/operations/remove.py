@@ -32,14 +32,14 @@ def run(step, parset, LSM):
 
     if filterExpression == '':
         filterExpression = None
-    LSM = remove(LSM, filterExpression, aggregate=aggregate, weight=weight,
+    result = remove(LSM, filterExpression, aggregate=aggregate, weight=weight,
         applyBeam=applyBeam)
 
     # Write to outFile
-    if outFile != '':
+    if outFile != '' and result == 0:
         LSM.write(outFile, clobber=True)
 
-    return 0
+    return result
 
 
 def remove(LSM, filterExpression, aggregate=False, weight=False,

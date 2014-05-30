@@ -31,7 +31,7 @@ def run(step, parset, LSM):
     result = merge(LSM, patches, name)
 
     # Write to outFile
-    if outFile != '':
+    if outFile != '' and result == 0:
         LSM.write(outFile, clobber=True)
 
     return result

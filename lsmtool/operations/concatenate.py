@@ -33,7 +33,7 @@ def run(step, parset, LSM):
     result = concatenate(LSM, skyModel2, matchBy, radius, keep)
 
     # Write to outFile
-    if outFile != '':
+    if outFile != '' and result == 0:
         LSM.write(outFile, clobber=True)
 
     return result
@@ -45,8 +45,10 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
 
     Parameters
     ----------
+    LSM1 : SkyModel object
+        Parent sky model
     LSM2 : SkyModel object
-        Sky model to concatenate to the parent sky model
+        Sky model to concatenate with the parent sky model
     matchBy : str, optional
         Determines how duplicate sources are determined:
         - 'name' => duplicates are identified by name
@@ -68,8 +70,9 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     and discard the duplicate from second sky model (this might be useful when
     merging two gsm.py sky models that have some overlap)::
 
+        >>> LSM1 = lsmtool.load('gsm_sky1.model')
         >>> LSM2 = lsmtool.load('gsm_sky2.model')
-        >>> s.concatenate(LSM2, matchBy='name', keep='from1')
+        >>> concatenate(LSM1, LSM2, matchBy='name', keep='from1')
 
     Concatenate two sky models, identifying duplicates by matching to the source
     positions within a radius of 10 arcsec. When duplicates are found, keep the
@@ -78,7 +81,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     sky model with a high-resolution one)::
 
         >>> LSM2 = lsmtool.load('high_res_sky.model')
-        >>> s.concatenate(LSM2, matchBy='position', radius=10.0/3600.0,
+        >>> concatenate(LSM1, LSM2, matchBy='position', radius=10.0/3600.0,
             keep='from2')
 
     """

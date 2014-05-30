@@ -134,6 +134,15 @@ class SkyModel(object):
             nPoint, nGaus))
 
 
+    def copy(self):
+        """
+        Returns a copy of the sky model
+        """
+        import copy
+
+        return copy.deepcopy(self)
+
+
     def show(self, colName=None, patchName=None, sourceName=None, more=False):
         """
         Prints the sky model table to the screen.
@@ -1158,13 +1167,46 @@ class SkyModel(object):
         operations.remove.remove(self, *args, **kwargs)
 
 
-    def group(self, *args, **kwargs):
+    def group(self, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
+        method='mid'):
         """
-        Groups sources into patches.
+        Groups sources into patches
 
-        See operations.group.group() for details.
+        Parameters
+        ----------
+        algorithm : str
+            Algorithm to use for grouping:
+            - 'single' => all sources are grouped into a single patch
+            - 'every' => every source gets a separate patch
+            - 'cluster' => SAGECAL clustering algorithm that groups sources into
+                specified number of clusters (specified by the numClusters parameter).
+            - 'tessellate' => group into tiles whose total flux approximates
+                the target flux (specified by the targetFlux parameter).
+        targetFlux : str or float, optional
+            Target flux for tessellation (the total flux of each tile will be close
+            to this value). The target flux can be specified as either a float in Jy
+            or as a string with units (e.g., '25.0 mJy').
+        numClusters : int, optional
+            Number of clusters for clustering. Sources are grouped around the
+            numClusters brightest sources.
+        applyBeam : bool, optional
+            If True, fluxes will be attenuated by the beam.
+        method : str, optional
+            Method by which patch positions will be calculated:
+            - 'mid' => use the midpoint of the patch
+            - 'mean' => use the mean position
+            - 'wmean' => use the flux-weighted mean position
+
+        Examples
+        --------
+        Tesselate the sky model into patches with approximately 30 Jy total
+        flux:
+
+            >>> s.group('tessellate', targetFlux=30.0)
+
         """
-        operations.group.group(self, *args, **kwargs)
+        operations.group.group(self, algorithm, targetFlux, numClusters, applyBeam,
+        method)
 
 
     def transfer(self, *args, **kwargs):
@@ -1185,13 +1227,25 @@ class SkyModel(object):
         operations.move.move(self, *args, **kwargs)
 
 
-    def add(self, *args, **kwargs):
+    def add(self, colNamesVals):
         """
-        Adds a source.
+        Add a source to the sky model.
 
-        See operations.add.add() for details.
+        Parameters
+        ----------
+        colNamesVals : dict
+            A dictionary that specifies the row values for the source to be added.
+
+        Examples:
+        ---------
+        Add a point source::
+
+            >>> source = {'Name':'src1', 'Type':'POINT', 'Ra':'12:32:10.1',
+                'Dec':'23.43.21.21', 'I':2.134}
+            >>> s.add(source)
+
         """
-        operations.add.add(self, *args, **kwargs)
+        operations.add.add(self, colNamesVals)
 
 
     def merge(self, *args, **kwargs):
@@ -1203,13 +1257,50 @@ class SkyModel(object):
         operations.merge.merge(self, *args, **kwargs)
 
 
-    def concatenate(self, *args, **kwargs):
+    def concatenate(self, LSM2, matchBy='name', radius=0.1, keep='all'):
         """
-        Concatenate two sky models.
+        Concatenate two sky models
 
-        See operations.concatenate.concatenate() for details.
+        Parameters
+        ----------
+        LSM2 : SkyModel object
+            Sky model to concatenate with the parent sky model
+        matchBy : str, optional
+            Determines how duplicate sources are determined:
+            - 'name' => duplicates are identified by name
+            - 'position' => duplicates are identified by radius. Sources within the
+                radius specified by the radius parameter are considered duplicates
+        radius : float, optional
+            Radius in degrees for matching when matchBy='position'
+        keep : str, optional
+            Determines how duplicates are treated:
+            - 'all' => all duplicates are kept; those with identical names are re-
+                named
+            - 'from1' => duplicates kept are those from sky model 1 (the parent)
+            - 'from2' => duplicates kept are those from sky model 2 (LSM2)
+
+        Examples
+        --------
+        Concatenate two sky models, identifying duplicates by matching to the source
+        names. When duplicates are found, keep the source from the parent sky model
+        and discard the duplicate from second sky model (this might be useful when
+        merging two gsm.py sky models that have some overlap)::
+
+            >>> LSM2 = lsmtool.load('gsm_sky2.model')
+            >>> s.concatenate(LSM2, matchBy='name', keep='from1')
+
+        Concatenate two sky models, identifying duplicates by matching to the source
+        positions within a radius of 10 arcsec. When duplicates are found, keep the
+        source from the second sky model and discard the duplicate from the parent
+        sky model (this might be useful when replacing parts of a low-resolution
+        sky model with a high-resolution one)::
+
+            >>> LSM2 = lsmtool.load('high_res_sky.model')
+            >>> s.concatenate(LSM2, matchBy='position', radius=10.0/3600.0,
+                keep='from2')
+
         """
-        operations.concatenate.concatenate(self, *args, **kwargs)
+        operations.concatenate.concatenate(self, LSM2, matchBy, radius, keep)
 
 
     def plot(self, *args, **kwargs):
@@ -1225,11 +1316,8 @@ class SkyModel(object):
 # object.
 SkyModel.remove.__func__.__doc__ = operations.remove.remove.__doc__
 SkyModel.select.__func__.__doc__ = operations.select.select.__doc__
-SkyModel.group.__func__.__doc__ = operations.group.group.__doc__
 SkyModel.transfer.__func__.__doc__ = operations.transfer.transfer.__doc__
 SkyModel.move.__func__.__doc__ = operations.move.move.__doc__
-SkyModel.add.__func__.__doc__ = operations.add.add.__doc__
 SkyModel.plot.__func__.__doc__ = operations.plot.plot.__doc__
 SkyModel.merge.__func__.__doc__ = operations.merge.merge.__doc__
-SkyModel.concatenate.__func__.__doc__ = operations.concatenate.concatenate.__doc__
 
