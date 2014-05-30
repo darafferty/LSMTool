@@ -28,13 +28,10 @@ def run(step, parset, LSM):
     algorithm = parset.getString('.'.join(["LSMTool.Steps", step, "Algorithm"]), 'single' )
     targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "TargetFlux"]), '1.0 Jy' )
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 10 )
-    beamMS = parset.getString('.'.join(["LSMTool.Steps", step, "BeamMS"]), '' )
+    applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "applyBeam"]), False )
     method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), 'mid' )
 
-    if beamMS == '':
-        beamMS = None
-
-    result = group(LSM, algorithm, targetFlux, numClusters, beamMS, method)
+    result = group(LSM, algorithm, targetFlux, numClusters, applyBeam, method)
 
     # Write to outFile
     if outFile != '':

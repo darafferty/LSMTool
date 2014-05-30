@@ -28,12 +28,10 @@ def run(step, parset, LSM):
     filterExpression = parset.getString('.'.join(["LSMTool.Steps", step, "FilterExpression"]), '' )
     aggregate = parset.getBool('.'.join(["LSMTool.Steps", step, "Aggregate"]), False )
     weight = parset.getBool('.'.join(["LSMTool.Steps", step, "Weight"]), False )
-    applyBeam = parset.getString('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), '' )
+    applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), False )
 
     if filterExpression == '':
         filterExpression = None
-    if beamMS == '':
-        beamMS = None
     LSM = remove(LSM, filterExpression, aggregate=aggregate, weight=weight,
         applyBeam=applyBeam)
 
