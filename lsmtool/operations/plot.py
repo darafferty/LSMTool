@@ -24,8 +24,6 @@ logging.debug('Loading PLOT module.')
 
 def run( step, parset, LSM ):
 
-    import numpy as np
-
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
 
     if outFile == '':

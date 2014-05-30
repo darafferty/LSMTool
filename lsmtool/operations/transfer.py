@@ -24,8 +24,6 @@ logging.debug('Loading TRANSFER module.')
 
 def run(step, parset, LSM):
 
-    import numpy as np
-
     patchFile = parset.getString('.'.join(["LSMTool.Steps", step, "PatchFile"]), '' )
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
 
@@ -66,8 +64,9 @@ def transfer(LSM, patchFile):
 
     for i, name in enumerate(names):
         if name in masterNames:
-            indx = masterNames.tolist().index(name)
+            indx = masterNames._getNameIndx(name)
             patchNames[i] = masterPatchNames[indx]
 
     LSM.setColValues('Patch', patchNames)
+    LSM._updateGroups()
     return 0
