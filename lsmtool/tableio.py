@@ -182,7 +182,7 @@ def skyModelReader(fileName):
                     vals.append('0.0')
                 specVec.append(np.array(vals[0:2]).astype(float).tolist())
                 maskVec.append([False, False])
-            elif:
+            elif type(l) is float:
                 specVec.append([l])
             else:
                 specVec.append([0, 0])
