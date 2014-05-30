@@ -56,9 +56,10 @@ LSMTool.Steps.add.RA = 12:45:30.4 # required
 LSMTool.Steps.add.Dec = +76.45.02.48 # required
 LSMTool.Steps.add.I = 0.69 # required
 LSMTool.Steps.add.AnyValidColumnName = value # Any valid column name can be specified
+LSMTool.Steps.add.OutFile = out_sky_model.sky
 
 LSMTool.Steps.setpos.Operation = SETPOSITIONS # Set patch positions
-LSMTool.Steps.setpos.method = mid # one of mid, mean, or wmean
+LSMTool.Steps.setpos.Method = mid # one of mid, mean, or wmean
 LSMTool.Steps.setpos.OutFile = out_sky_model.sky
 
 LSMTool.Steps.plot.Operation = PLOT # Plot sky model

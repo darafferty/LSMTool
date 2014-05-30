@@ -36,7 +36,7 @@ def run(step, parset, LSM):
     return result
 
 
-def transfer(LSM, patchFile):
+def transfer(LSM, patchFile, method='mid'):
     """
     Transfer patches from the input sky model.
 
@@ -48,6 +48,8 @@ def transfer(LSM, patchFile):
     ----------
     patchFile : str
         Input sky model from which to transfer patches.
+    method : str, optional
+        Method to use in setting patch positons: 'mid', 'mean', or 'wmean'
 
     """
     import skymodel
@@ -68,5 +70,6 @@ def transfer(LSM, patchFile):
             patchNames[i] = masterPatchNames[indx]
 
     LSM.setColValues('Patch', patchNames)
-    LSM._updateGroups()
+    LSM._updateGroups(method=method)
+    LSM.info()
     return 0
