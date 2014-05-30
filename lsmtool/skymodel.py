@@ -747,17 +747,17 @@ class SkyModel(object):
                 verifiedValues['RA'] = tableio.convertRAdeg(RA)
             elif type(RA) is float:
                 verifiedValues['RA'] = RA
-                LSM.table['RA-HMS'] = tableio.convertRAHHMMSS(RA)
+                verifiedValues['RA-HMS'] = tableio.convertRAHHMMSS(RA)
             else:
                 logging.error('RA not understood.')
                 return 1
             Dec = verifiedValues['Dec']
             if type(Dec) is str:
-                LSM.table['Dec-DMS'] = Dec
-                LSM.table['Dec'] = tableio.convertDecdeg(Dec)
+                verifiedValues['Dec-DMS'] = Dec
+                verifiedValues['Dec'] = tableio.convertDecdeg(Dec)
             elif type(Dec) is float:
-                LSM.table['Dec'] = Dec
-                LSM.table['Dec-DMS'] = tableio.convertDecDDMMSS(Dec)
+                verifiedValues['Dec'] = Dec
+                verifiedValues['Dec-DMS'] = tableio.convertDecDDMMSS(Dec)
             else:
                 logging.error('Dec not understood.')
                 return 1
