@@ -182,6 +182,8 @@ def skyModelReader(fileName):
                     vals.append('0.0')
                 specVec.append(np.array(vals[0:2]).astype(float).tolist())
                 maskVec.append([False, False])
+            elif:
+                specVec.append([l])
             else:
                 specVec.append([0, 0])
                 maskVec.append([True, True])
@@ -263,6 +265,8 @@ def skyModelWriter(table, fileName, groupByPatch=False):
                 colHeader = "{0}='[{1}]'".format(colName, table.meta[colName])
             else:
                 colHeader = "{0}='{1}'".format(colName, table.meta[colName])
+        elif colName == 'SpectralIndex':
+            colHeader = "{0}='[]'".format(colName)
         else:
             colHeader = colName
         formatString.append(colHeader)
