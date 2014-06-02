@@ -142,6 +142,7 @@ def skyModelReader(fileName):
     modelFile = open(fileName)
     lines = modelFile.readlines()
     outlines = []
+    spIsVec = False
     for line in lines:
         if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
             continue
@@ -152,9 +153,10 @@ def skyModelReader(fileName):
         a = re.search('\[.*\]', line)
         if a is not None:
             b = line[a.start(): a.end()]
-            if ',' in b:
-                c = b.replace(',', ';')
             c = b.strip('[]')
+            if ',' in b:
+                c = c.replace(',', ';')
+                spIsVec = True
             line = line.replace(b, c)
         colLines = line.split(',')
 
@@ -186,14 +188,14 @@ def skyModelReader(fileName):
     table.add_column(DecCol, index=RAIndx+3)
 
     # Convert spectral index values from strings to arrays.
-    print('Converting spectral index...')
-    if 'SpectralIndex' in table.keys():
+    if 'SpectralIndex' in table.keys() and spIsVec:
+        print('Converting spectral index...')
         specOld = table['SpectralIndex'].data.tolist()
         specVec = []
         maskVec = []
         for l in specOld:
             try:
-                specEntry = np.fromstring(str(l), dtype=float, sep=';')
+                specEntry = [float(f) for f in l.split(';')]  # np.fromstring(str(l), dtype=float, sep=';')
                 specVec.append(specEntry)
                 maskVec.append([False]*len(specEntry))
             except:

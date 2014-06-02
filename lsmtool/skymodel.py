@@ -143,9 +143,9 @@ class SkyModel(object):
         return copy.deepcopy(self)
 
 
-    def show(self, colName=None, patchName=None, sourceName=None, more=False):
+    def more(self, colName=None, patchName=None, sourceName=None, more=False):
         """
-        Prints the sky model table to the screen.
+        Prints the sky model table to the screen with more-like commands
 
         Parameters
         ----------
@@ -155,22 +155,16 @@ class SkyModel(object):
             If given, returns column values for specified patch or patches only
         sourceName : str, list of str, optional
             If given, returns column value for specified source or sources only
-        more : bool, optional
-            If True, allows interactive paging
 
         Examples
         --------
         Print the entire model::
 
-            >>> s.show()
-
-        Page through the model using more-like commands::
-
-            >>> s.show(more=True)
+            >>> s.more()
 
         Print only the 'Name' and 'I' columns for the 'bin0' patch::
 
-            >>> s.show(['Name', 'I'], 'bin0')
+            >>> s.more(['Name', 'I'], 'bin0')
 
         """
         if patchName is not None and sourceName is not None:
@@ -199,10 +193,7 @@ class SkyModel(object):
             if sindx is not None:
                 table = table[sindx]
 
-        if more:
-            table.more(show_unit=True)
-        else:
-            table.pprint(show_unit=True)
+        table.more(show_unit=True)
 
 
     def _verifyColName(self, colName, onlyExisting=True, applyBeam=False):
