@@ -142,7 +142,6 @@ def skyModelReader(fileName):
     modelFile = open(fileName)
     lines = modelFile.readlines()
     outlines = []
-    print('Reading lines...')
     for line in lines:
         if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
             continue
@@ -155,8 +154,7 @@ def skyModelReader(fileName):
             b = line[a.start(): a.end()]
             if ',' in b:
                 c = b.replace(',', ';')
-            else:
-                c = b.strip('[]')
+            c = b.strip('[]')
             line = line.replace(b, c)
         colLines = line.split(',')
 
@@ -175,7 +173,6 @@ def skyModelReader(fileName):
         outlines.append(','.join(colLines))
     modelFile.close()
 
-    print('Parsing lines...')
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
         names=colNames, comment='#', data_start=0)
 
@@ -196,17 +193,11 @@ def skyModelReader(fileName):
         specVec = []
         maskVec = []
         for l in specOld:
-            if type(l) is np.string_:
-                ls = l.strip('[]')
-                vals = ls.split(';')
-                if len(vals) == 1:
-                    vals.append('0.0')
-                specVec.append(np.array(vals[0:2]).astype(float).tolist())
-                maskVec.append([False, False])
-            elif type(l) is np.float64:
-                specVec.append([l])
-                maskVec.append([False])
-            else:
+            try:
+                specEntry = np.fromstring(str(l), dtype=float, sep=';')
+                specVec.append(specEntry)
+                maskVec.append([False]*len(specEntry))
+            except:
                 specVec.append([0, 0])
                 maskVec.append([True, True])
         specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec))
