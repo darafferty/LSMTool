@@ -200,8 +200,8 @@ def skyModelReader(fileName):
 
         toStack = []
         for k in SItable.keys():
-            toStack.append(SItable[k].data)
-        specVec = np.ma.dstack(toStack)
+            toStack.append(SItable[k].data.filled(fill_value=0.0))
+        specVec = np.dstack(toStack)
 
 #         specVec = []
 #         maskVec = []
