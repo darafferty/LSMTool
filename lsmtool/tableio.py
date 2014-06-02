@@ -201,6 +201,7 @@ def skyModelReader(fileName):
             except:
                 specVec.append([0])
                 maskVec.append([True])
+        print('...done.')
         specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec))
         specIndx = table.keys().index('SpectralIndex')
         table.remove_column('SpectralIndex')
