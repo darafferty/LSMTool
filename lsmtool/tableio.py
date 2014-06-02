@@ -142,8 +142,10 @@ def skyModelReader(fileName):
     modelFile = open(fileName)
     lines = modelFile.readlines()
     outlines = []
+    print('Reading lines...')
     for line in lines:
-        if line.startswith("FORMAT") or line.startswith("format"):
+        if line.startswith("FORMAT") or line.startswith("format") or
+            line.startswith("#"):
             continue
 
         # Check for SpectralIndex entries, which are unreadable as they use
@@ -174,6 +176,7 @@ def skyModelReader(fileName):
         outlines.append(','.join(colLines))
     modelFile.close()
 
+    print('Parsing lines...')
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
         names=colNames, comment='#', data_start=0)
 
@@ -188,6 +191,7 @@ def skyModelReader(fileName):
 
     # Convert spectral index values from strings to arrays. Note that only
     # two terms are supported.
+    print('Converting spectral index...')
     if 'SpectralIndex' in table.keys():
         specOld = table['SpectralIndex'].data
         specVec = []
