@@ -142,7 +142,7 @@ def skyModelReader(fileName):
     modelFile = open(fileName)
     lines = modelFile.readlines()
     outlines = []
-    spIsVec = False
+    lenSI = 0
     for line in lines:
         if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
             continue
@@ -154,9 +154,10 @@ def skyModelReader(fileName):
         if a is not None:
             b = line[a.start(): a.end()]
             c = b.strip('[]')
-            if ',' in b:
+            if ',' in c:
+                if len(c.split(',')) > lenSI:
+                    lenSI = len(c.split(','))
                 c = c.replace(',', ';')
-                spIsVec = True
             line = line.replace(b, c)
         colLines = line.split(',')
 
@@ -188,21 +189,33 @@ def skyModelReader(fileName):
     table.add_column(DecCol, index=RAIndx+3)
 
     # Convert spectral index values from strings to arrays.
-    if 'SpectralIndex' in table.keys() and spIsVec:
-        print('Converting spectral index...')
+    if 'SpectralIndex' in table.keys():
         specOld = table['SpectralIndex'].data.tolist()
-        specVec = []
-        maskVec = []
-        for l in specOld:
-            try:
-                specEntry = [float(f) for f in l.split(';')]  # np.fromstring(str(l), dtype=float, sep=';')
-                specVec.append(specEntry)
-                maskVec.append([False]*len(specEntry))
-            except:
-                specVec.append([0])
-                maskVec.append([True])
-        print('...done.')
-        specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec))
+        specNew = []
+        for spec in specOld:
+            while len(spec.split(';')) < lenSI:
+                spec += '; '
+            specNew.append(spec)
+        SItable = Table.read('\n'.join(specNew), guess=False, format='ascii.no_header', delimiter=';', comment='#', data_start=0)
+
+        toStack = []
+        for k in SItable.keys():
+            toStack.append(SItable[k].data)
+        specVec = np.ma.dstack(toStack)
+
+#         specVec = []
+#         maskVec = []
+#         for l in specOld:
+#             try:
+#                 specEntry = [float(f) for f in l.split(';')]  # np.fromstring(str(l), dtype=float, sep=';')
+#                 specVec.append(specEntry)
+#                 maskVec.append([False]*len(specEntry))
+#             except:
+#                 specVec.append([0])
+#                 maskVec.append([True])
+#         specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec))
+
+        specCol = Column(name='SpectralIndex', data=specVec[0])
         specIndx = table.keys().index('SpectralIndex')
         table.remove_column('SpectralIndex')
         table.add_column(specCol, index=specIndx)
