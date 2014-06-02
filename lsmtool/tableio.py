@@ -190,19 +190,18 @@ def skyModelReader(fileName):
 
     # Convert spectral index values from strings to arrays.
     if 'SpectralIndex' in table.keys():
-        specOld = table['SpectralIndex'].data.tolist()
+        specOld = table['SpectralIndex'].data
         specVec = []
         maskVec = []
         for l in specOld:
             try:
-                specEntry = [float(f) for f in l.split(';')]  # np.fromstring(str(l), dtype=float, sep=';')
-                while len(specEntry) < lenSI:
-                    specEntry.append(0.0)
+                specEntry = np.fromstring(str(l), dtype=float, sep=';')
                 specVec.append(specEntry)
+                maskVec.append([False]*len(specEntry))
             except:
-                specVec.append([0.0]*lenSI)
-#                 maskVec.append([True])
-        specCol = Column(name='SpectralIndex', data=specVec)
+                specVec.append([0])
+                maskVec.append([True])
+        specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec))
         specIndx = table.keys().index('SpectralIndex')
         table.remove_column('SpectralIndex')
         table.add_column(specCol, index=specIndx)
