@@ -144,8 +144,7 @@ def skyModelReader(fileName):
     outlines = []
     print('Reading lines...')
     for line in lines:
-        if line.startswith("FORMAT") or line.startswith("format") or
-            line.startswith("#"):
+        if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
             continue
 
         # Check for SpectralIndex entries, which are unreadable as they use
