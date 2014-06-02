@@ -185,8 +185,7 @@ def skyModelReader(fileName):
     table.add_column(RACol, index=RAIndx+2)
     table.add_column(DecCol, index=RAIndx+3)
 
-    # Convert spectral index values from strings to arrays. Note that only
-    # two terms are supported.
+    # Convert spectral index values from strings to arrays.
     print('Converting spectral index...')
     if 'SpectralIndex' in table.keys():
         specOld = table['SpectralIndex'].data
@@ -198,8 +197,8 @@ def skyModelReader(fileName):
                 specVec.append(specEntry)
                 maskVec.append([False]*len(specEntry))
             except:
-                specVec.append([0, 0])
-                maskVec.append([True, True])
+                specVec.append([0])
+                maskVec.append([True])
         specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec))
         specIndx = table.keys().index('SpectralIndex')
         table.remove_column('SpectralIndex')
