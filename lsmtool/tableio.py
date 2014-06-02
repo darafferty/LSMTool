@@ -100,7 +100,7 @@ def skyModelReader(fileName):
             for i, part in enumerate(parts[:]):
                 if 'SpectralIndexDegree' in part:
                     parts.pop(i)
-            formatString = ','.join(parts)
+            formatString = 'FORMAT = ' + ','.join(parts)
         else:
             raise Exception("File '{0}' does not appear to be a valid makesourcedb "
                 'sky model (no format line found).'.format(fileName))
