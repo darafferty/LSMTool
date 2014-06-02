@@ -855,8 +855,7 @@ class SkyModel(object):
             If True, fluxes will be attenuated by the beam.
 
          """
-        colsToAverage = ['RA', 'Dec', 'ReferenceFrequency',
-            'SpectralIndex', 'Orientation']
+        colsToAverage = ['RA', 'Dec', 'ReferenceFrequency', 'Orientation']
         colsToSum = ['I', 'Q', 'U', 'V']
         colName = self._verifyColName(colName)
         if colName is None:
