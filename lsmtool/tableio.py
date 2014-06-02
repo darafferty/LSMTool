@@ -191,31 +191,18 @@ def skyModelReader(fileName):
     # Convert spectral index values from strings to arrays.
     if 'SpectralIndex' in table.keys():
         specOld = table['SpectralIndex'].data.tolist()
-        specNew = []
-        for spec in specOld:
-            while len(spec.split(';')) < lenSI:
-                spec += '; '
-            specNew.append(spec)
-        SItable = Table.read('\n'.join(specNew), guess=False, format='ascii.no_header', delimiter=';', comment='#', data_start=0)
-
-        toStack = []
-        for k in SItable.keys():
-            toStack.append(SItable[k].data.filled(fill_value=0.0))
-        specVec = np.dstack(toStack)
-
-#         specVec = []
-#         maskVec = []
-#         for l in specOld:
-#             try:
-#                 specEntry = [float(f) for f in l.split(';')]  # np.fromstring(str(l), dtype=float, sep=';')
-#                 specVec.append(specEntry)
-#                 maskVec.append([False]*len(specEntry))
-#             except:
-#                 specVec.append([0])
+        specVec = []
+        maskVec = []
+        for l in specOld:
+            try:
+                specEntry = [float(f) for f in l.split(';')]  # np.fromstring(str(l), dtype=float, sep=';')
+                while len(specEntry) < lenSI:
+                    specEntry.append(0.0)
+                specVec.append(specEntry)
+            except:
+                specVec.append([0.0]*lenSI)
 #                 maskVec.append([True])
-#         specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec))
-
-        specCol = Column(name='SpectralIndex', data=specVec[0])
+        specCol = Column(name='SpectralIndex', data=specVec)
         specIndx = table.keys().index('SpectralIndex')
         table.remove_column('SpectralIndex')
         table.add_column(specCol, index=specIndx)
