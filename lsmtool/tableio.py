@@ -88,7 +88,7 @@ def skyModelReader(fileName):
         modelFile = open(fileName)
         for l, line in enumerate(modelFile):
             line.strip()
-            if line.startswith("#") and line.endswith("format"):
+            if line.startswith("#") and "format" in line and 'Name' in line:
                 formatString = line
         modelFile.close()
         if formatString is not None:
