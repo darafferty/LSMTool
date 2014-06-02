@@ -188,7 +188,7 @@ def skyModelReader(fileName):
     # Convert spectral index values from strings to arrays.
     print('Converting spectral index...')
     if 'SpectralIndex' in table.keys():
-        specOld = table['SpectralIndex'].data
+        specOld = table['SpectralIndex'].data.tolist()
         specVec = []
         maskVec = []
         for l in specOld:
