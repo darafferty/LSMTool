@@ -189,7 +189,7 @@ def skyModelReader(fileName):
     table.add_column(DecCol, index=RAIndx+3)
 
     # Convert spectral index values from strings to arrays.
-    if 'SpectralIndex' in table.keys():
+    if 'SpectralIndex' in table.keys() and lenSI > 1:
         specOld = table['SpectralIndex'].data.tolist()
         specVec = []
         maskVec = []
@@ -221,6 +221,7 @@ def skyModelReader(fileName):
     table.meta = metaDict
 
     # Group by patch name
+    print('grouping...')
     if hasPatches:
         table = table.group_by('Patch')
 
