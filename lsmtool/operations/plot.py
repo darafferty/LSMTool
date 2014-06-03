@@ -105,6 +105,8 @@ def plot(LSM, fileName=None):
             RAp.append(posDict[patchName][0])
             Decp.append(posDict[patchName][1])
         xp, yp, minx, miny, pscale = radec2xy(RAp, Decp, minx, miny)
+        xp = (xp - np.min(xp)) * pscale / 3600.0 + min(RA)
+        yp = (yp - np.min(yp)) * pscale / 3600.0 + min(Dec)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
     ax.set_xlim(ax.get_xlim()[::-1])
     plt.xlabel("RA (degrees)")
