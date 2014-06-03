@@ -30,6 +30,8 @@ The following operations are available:
 * ADD: Add a source
 * PLOT: Plot the sky model
 
+For details, please see the full documentation (doc/lsmtool.tex).
+
 Usage
 -----
 LSMTool can be used from the command line with a parset that defines the steps
@@ -47,7 +49,7 @@ The parset follows the usual NDPPP/BBS format. E.g.:
 LSMTool can also be used in Python scripts by importing the lsmtool module. E.g.:
 
     >>> import lsmtool
-    >>> skymod = lsmtool.skymodel.load('model.sky')
+    >>> skymod = lsmtool.load('model.sky')
     >>> skymod.select('I > 1.0 Jy')
     >>> skymod.write('out_model.sky')
 

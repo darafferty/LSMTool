@@ -95,7 +95,7 @@ def skyModelReader(fileName):
             # Change old version to new one
             formatString = '='.join(formatString.split('=')[:-1])
             formatString = formatString.strip('#() ')
-            formatString.replace('SpectralIndex:0', 'SpectralIndex')
+            formatString = formatString.replace('SpectralIndex:0', 'SpectralIndex')
             parts = formatString.split(',')
             for i, part in enumerate(parts[:]):
                 if 'SpectralIndexDegree' in part:
