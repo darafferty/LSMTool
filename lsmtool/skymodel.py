@@ -75,6 +75,7 @@ class SkyModel(object):
             self._hasBeam = False
 
         self._clean()
+        self._patchMethod = None
         self._updateGroups()
 
         logging.debug("Successfully read file '{0}'".format(fileName))
@@ -101,7 +102,12 @@ class SkyModel(object):
         if 'Patch' in self.table.keys():
             self.table = self.table.group_by('Patch')
             self._hasPatches = True
+            if method is None:
+                method = self._patchMethod
+            else:
+                self._patchMethod = method
             self.setPatchPositions(method=method)
+            self.sortedtable = self.table
         else:
             self._hasPatches = False
 
@@ -171,7 +177,7 @@ class SkyModel(object):
             logging.error('patchName and sourceName cannot both be specified.')
             return
 
-        table = self.table
+        table = self.sortedtable
 
         # Get columns
         colName = self._verifyColName(colName)
@@ -265,6 +271,9 @@ class SkyModel(object):
         """
         Sorts the sky model table by column values (high to low).
 
+        Note that sorting destroys the grouping, so a copy is made and stored
+        as s.sortedtable
+
         Parameters
         ----------
         colName : str or list of str, optional
@@ -294,10 +303,11 @@ class SkyModel(object):
             logging.info('No column name specified. Sorting on Stokes I flux.')
 
         colName = self._verifyColName(colName)
-        self.table.sort(colName)
-
+        indx = self.table.argsort(colName)
         if not reverse:
-            self.table.reverse()
+            indx = indx[::-1]
+
+        self.sortedtable = self.table[indx]
 
 
     def getPatchPositions(self, patchName=None):
@@ -1121,7 +1131,7 @@ class SkyModel(object):
                     format(fileName))
                 return
 
-        self.table.write(fileName, format=format)
+        self.sortedtable.write(fileName, format=format)
 
 
     def _clean(self):
