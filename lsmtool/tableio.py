@@ -221,7 +221,6 @@ def skyModelReader(fileName):
     table.meta = metaDict
 
     # Group by patch name
-    print('grouping...')
     if hasPatches:
         table = table.group_by('Patch')
 
