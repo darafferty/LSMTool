@@ -58,6 +58,7 @@ def plot(LSM, fileName=None):
 
     """
     import matplotlib.pyplot as plt
+    import numpy as np
 
     fig = plt.figure(1,figsize=(7,7))
     plt.clf()
@@ -91,7 +92,9 @@ def plot(LSM, fileName=None):
     # Plot sources
     RA = LSM.getColValues('RA')
     Dec = LSM.getColValues('Dec')
-    x, y, minx, miny = radec2xy(RA, Dec)
+    x, y, minx, miny, scale = radec2xy(RA, Dec)
+    x = (x - np.min(x)) * scale / 3600.0 + min(RA)
+    y = (y - np.min(y)) * scale / 3600.0 + min(Dec)
 
     plt.scatter(x, y, s=s, c=c)
     if LSM._hasPatches:
@@ -101,12 +104,11 @@ def plot(LSM, fileName=None):
         for patchName in LSM.getColValues('Patch', aggregate=True):
             RAp.append(posDict[patchName][0])
             Decp.append(posDict[patchName][1])
-        xp, yp, minx, miny = radec2xy(RAp, Decp, minx, miny)
+        xp, yp, minx, miny, pscale = radec2xy(RAp, Decp, minx, miny)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
-    plt.xlim(x[-1], x[0])
-    plt.axis('image')
-    plt.xlabel("RA (arbitrary units)")
-    plt.ylabel("Dec (arbitrary units)")
+    ax.set_xlim(ax.get_xlim()[::-1])
+    plt.xlabel("RA (degrees)")
+    plt.ylabel("Dec (degrees)")
 
     if fileName is not None:
         plt.savefig(fileName)
@@ -144,5 +146,4 @@ def radec2xy(RA, Dec, minx=None, miny=None):
         miny = np.min(y)
     x += abs(minx)
     y += abs(miny)
-    return x, y, minx, miny
-
+    return x, y, minx, miny, arcsec_per_pix

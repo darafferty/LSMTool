@@ -110,6 +110,7 @@ class SkyModel(object):
             self.sortedtable = self.table
         else:
             self._hasPatches = False
+            self.sortedtable = self.table
 
 
     def info(self):
@@ -429,7 +430,7 @@ class SkyModel(object):
                 if patchName in self.table.meta:
                     self.table.meta.pop(patchName)
             self.table.remove_column('Patch')
-            self._hasPatches = False
+            self._updateGroups()
 
 
     def getColNames(self):

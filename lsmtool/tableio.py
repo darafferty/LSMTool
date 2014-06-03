@@ -84,26 +84,8 @@ def skyModelReader(fileName):
             formatString = line
     modelFile.close()
     if formatString is None:
-        # Look for old version of format
-        modelFile = open(fileName)
-        for l, line in enumerate(modelFile):
-            line.strip()
-            if line.startswith("#") and "format" in line and 'Name' in line:
-                formatString = line
-        modelFile.close()
-        if formatString is not None:
-            # Change old version to new one
-            formatString = '='.join(formatString.split('=')[:-1])
-            formatString = formatString.strip('#() ')
-            formatString = formatString.replace('SpectralIndex:0', 'SpectralIndex')
-            parts = formatString.split(',')
-            for i, part in enumerate(parts[:]):
-                if 'SpectralIndexDegree' in part:
-                    parts.pop(i)
-            formatString = 'FORMAT = ' + ','.join(parts)
-        else:
-            raise Exception("File '{0}' does not appear to be a valid makesourcedb "
-                'sky model (no format line found).'.format(fileName))
+        raise Exception("File '{0}' does not appear to be a valid makesourcedb "
+            'sky model (no valid format line found).'.format(fileName))
 
     # Check whether sky model has patches
     if 'Patch' in formatString:
