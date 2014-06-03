@@ -101,16 +101,6 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     table1 = LSM1.table.copy()
     table2 = LSM2.table.copy()
 
-    # Due to a bug in astropy, the spectral index column must be removed before
-    # joining
-    nameCol1 = table1['Name']
-    nameCol2 = table2['Name']
-    spCol1 = table1['SpectralIndex']
-    spCol1Indx = table1.index_column('SpectralIndex')
-    spCol2 = table2['SpectralIndex']
-    table1.remove_column('SpectralIndex')
-    table2.remove_column('SpectralIndex')
-
     if matchBy.lower() == 'name':
         LSM1.table = vstack([table1, table2])
     elif matchBy.lower() == 'position':
@@ -136,18 +126,6 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
         table2.add_column(col2)
         LSM1.table = vstack([table1, table2])
 
-    # Add spectral index column back
-    spData = np.zeros((len(LSM1), 2), dtype=np.float)
-    for i, name in enumerate(LSM1.getColValues('Name')):
-        if name in nameCol2:
-            indx = np.where(nameCol2.data == name)
-            spData[i] = spCol2[indx]
-        else:
-            indx = np.where(nameCol1.data == name)
-            spData[i] = spCol1[indx]
-    spCol = Column(name='SpectralIndex', data=spData)
-    LSM1.table.add_column(spCol, index=spCol1Indx)
-
     if keep == 'from1' or keep == 'from2':
         # Remove any duplicates
         if matchBy.lower() == 'name':
@@ -155,15 +133,16 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
         elif matchBy.lower() == 'position':
             colName = 'match'
         vals = LSM1.table[colName]
-        toRemove = []
         for val in vals:
-            indx = np.where(vals == val)[0]
+            valsCur = LSM1.table[colName]
+            toRemove = []
+            indx = np.where(valsCur == val)[0]
             if len(indx) > 1:
                 if keep == 'from1':
                     toRemove.append(indx[1:])
                 else:
                     toRemove.append(indx[0])
-        LSM1.table.remove_rows(toRemove)
+                LSM1.table.remove_rows(toRemove)
 
     # Rename any duplicates
     names = LSM1.getColValues('Name')

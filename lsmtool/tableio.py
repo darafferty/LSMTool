@@ -142,7 +142,6 @@ def skyModelReader(fileName):
     modelFile = open(fileName)
     lines = modelFile.readlines()
     outlines = []
-    lenSI = 0
     for line in lines:
         if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
             continue
@@ -155,15 +154,13 @@ def skyModelReader(fileName):
             b = line[a.start(): a.end()]
             c = b.strip('[]')
             if ',' in c:
-                if len(c.split(',')) > lenSI:
-                    lenSI = len(c.split(','))
                 c = c.replace(',', ';')
             line = line.replace(b, c)
         colLines = line.split(',')
 
-        # Check for patch lines. If found, store patch positions in the table
-        # meta data
-        if colLines[0] == '':
+        # Check for patch lines as any line with an empty Name entry. If found,
+        # store patch positions in the table meta data.
+        if colLines[0].strip() == '':
             if len(colLines) > 4:
                 patchName = colLines[2].strip()
                 patchRA = convertRAdeg(colLines[3].strip())
@@ -189,7 +186,7 @@ def skyModelReader(fileName):
     table.add_column(DecCol, index=RAIndx+3)
 
     # Convert spectral index values from strings to arrays.
-    if 'SpectralIndex' in table.keys() and lenSI > 1:
+    if 'SpectralIndex' in table.keys():
         specOld = table['SpectralIndex'].data.tolist()
         specVec = []
         maskVec = []
