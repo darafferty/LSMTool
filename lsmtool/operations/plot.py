@@ -93,8 +93,10 @@ def plot(LSM, fileName=None):
     RA = LSM.getColValues('RA')
     Dec = LSM.getColValues('Dec')
     x, y, minx, miny, scale = radec2xy(RA, Dec)
-    x = (x - np.min(x)) * scale / 3600.0 + min(RA)
-    y = (y - np.min(y)) * scale / 3600.0 + min(Dec)
+    scaleRA = (np.max(RA) - np.min(RA))/(np.max(x) - np.min(x))
+    scaleDec = (np.max(Dec) - np.min(Dec))/(np.max(y) - np.min(y))
+    x = (x - np.min(x)) * scaleRA + np.min(RA)
+    y = (y - np.min(y)) * scaleDec + min(Dec)
 
     plt.scatter(x, y, s=s, c=c)
     if LSM._hasPatches:
@@ -109,6 +111,7 @@ def plot(LSM, fileName=None):
         yp = (yp - np.min(yp)) * pscale / 3600.0 + min(Dec)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
     ax.set_xlim(ax.get_xlim()[::-1])
+#     plt.axis('image')
     plt.xlabel("RA (degrees)")
     plt.ylabel("Dec (degrees)")
 
@@ -131,7 +134,7 @@ def radec2xy(RA, Dec, minx=None, miny=None):
     # Make wcs object to handle transformation from ra and dec to pixel coords.
     w = WCS(naxis=2)
     w.wcs.crpix = [-234.75, 8.3393]
-    w.wcs.cdelt = np.array([-0.066667, 0.066667])
+    w.wcs.cdelt = np.array([0.066667, 0.066667])
     w.wcs.crval = [0, -90]
     w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
     w.wcs.set_pv([(2, 1, 45.0)])
@@ -146,6 +149,7 @@ def radec2xy(RA, Dec, minx=None, miny=None):
         minx = np.min(x)
     if miny is None:
         miny = np.min(y)
+
     x += abs(minx)
     y += abs(miny)
-    return x, y, minx, miny, arcsec_per_pix
+    return y, x, minx, miny, arcsec_per_pix
