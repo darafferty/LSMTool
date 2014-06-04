@@ -174,13 +174,17 @@ def skyModelReader(fileName):
         maskVec = []
         for l in specOld:
             try:
-                specEntry = [float(f) for f in l.split(';')]
+                specEntry = [float(f) for f in l.split(';')][0:2]
+                specMask = [False]*len(specEntry)
+                if len(specEntry < 2):
+                    specEntry.append(0.0)
+                    specMask.append(True)
                 specVec.append(specEntry)
-                maskVec.append([False]*len(specEntry))
+                maskVec.append(specMask)
             except:
-                specVec.append([0])
-                maskVec.append([True])
-        specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec))
+                specVec.append([0.0, 0.0])
+                maskVec.append([True, True])
+        specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec, dtype=np.float))
         specIndx = table.keys().index('SpectralIndex')
         table.remove_column('SpectralIndex')
         table.add_column(specCol, index=specIndx)

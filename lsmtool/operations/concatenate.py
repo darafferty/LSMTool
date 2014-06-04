@@ -98,8 +98,8 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
          LSM2.group('every')
     if (LSM2._hasPatches and not LSM1._hasPatches):
          LSM2.ungroup()
-    table1 = LSM1.table.copy()
-    table2 = LSM2.table.copy()
+    table1 = LSM1.table.filled()
+    table2 = LSM2.table.filled()
 
     if matchBy.lower() == 'name':
         LSM1.table = vstack([table1, table2])
@@ -155,7 +155,6 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     if matchBy.lower() == 'position':
         LSM1.table.remove_column('match')
 
-    if LSM1._hasPatches:
-        LSM1._updateGroups(method='mid')
+    LSM1._updateGroups(method='mid')
     return 0
 
