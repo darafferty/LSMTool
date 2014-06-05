@@ -144,5 +144,5 @@ def addEvery(LSM):
     """Add a Patch column with a different name for each source"""
     import numpy as np
 
-    names = LSM.table['Name'].filled().copy().data
+    names = LSM.getColValues('Name').copy()
     LSM.setColValues('Patch', names, index=2)
