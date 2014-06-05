@@ -203,7 +203,8 @@ class SkyModel(object):
         table.more(show_unit=True)
 
 
-    def _verifyColName(self, colName, onlyExisting=True, applyBeam=False):
+    def _verifyColName(self, colName, onlyExisting=True, applyBeam=False,
+        quiet=False):
         """
         Verifies that column(s) exist and returns correctly formatted string or
         list of strings suitable for accessing the data table.
@@ -219,6 +220,8 @@ class SkyModel(object):
         applyBeam : bool, optional
             If True and colName = 'I', the attenuated Stokes I column will be
             returned
+        quiet : bool, optional
+            If True, errors will be suppressed
 
         Returns
         -------
@@ -228,14 +231,16 @@ class SkyModel(object):
         if type(colName) is str:
             colNameLower = colName.lower()
             if colNameLower not in tableio.allowedColumnNames:
-                logging.error('Column name "{0}" is not a valid makesourcedb '
-                    'column.'.format(colName))
+                if not quiet:
+                    logging.error('Column name "{0}" is not a valid makesourcedb '
+                        'column.'.format(colName))
                 return None
             else:
                 colNameKey = tableio.allowedColumnNames[colNameLower]
             if colNameKey not in self.table.keys() and onlyExisting:
-                logging.error('Column name "{0}" not found in sky model.'.
-                    format(colName))
+                if not quiet:
+                    logging.error('Column name "{0}" not found in sky model.'.
+                        format(colName))
                 return None
 
         elif type(colName) is list:
@@ -256,8 +261,9 @@ class SkyModel(object):
                     plur = ''
                 else:
                     plur = 's'
-                logging.error("Column name{0} '{1}' not recognized. Ignoring".
-                    format(plur, ','.join(badNames)))
+                if not quiet:
+                    logging.error("Column name{0} '{1}' not recognized. Ignoring".
+                        format(plur, ','.join(badNames)))
             if len(colNameLower) == 0:
                 return None
             else:
