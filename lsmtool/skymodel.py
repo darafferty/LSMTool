@@ -352,7 +352,8 @@ class SkyModel(object):
             - 'mean' => the positions is set to the mean RA and Ded of the patch
             - 'wmean' => the position is set to the flux-weighted mean RA and
                Dec of the patch
-            - None => set all positions to [0.0, 0.0]
+            - 'zero' => set all positions to [0.0, 0.0]
+            - None => no changes are made
 
         Examples
         --------
@@ -370,6 +371,9 @@ class SkyModel(object):
 
         """
         if self._hasPatches:
+            if method is None:
+                return None
+
             # Delete any previous patch positions
             for patchName in self.getColValues('Patch', aggregate=True):
                 if patchName in self.table.meta:
@@ -397,7 +401,7 @@ class SkyModel(object):
                     Dec = self.getColValues('Dec', aggregate=True, weight=True)
                     for n, r, d in zip(patchNames, RA, Dec):
                         patchDict[n] = [r, d]
-                else:
+                elif method == 'zero':
                     for n in patchNames:
                         patchDict[n] = [0.0, 0.0]
 

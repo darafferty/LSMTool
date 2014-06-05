@@ -209,7 +209,6 @@ def skyModelReader(fileName):
     # Group by patch name
     if hasPatches:
         table = table.group_by('Patch')
-
     return table
 
 
