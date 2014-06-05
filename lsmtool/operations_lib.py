@@ -46,6 +46,13 @@ def applyBeam(beamMS, fluxes, RADeg, DecDeg):
 
     attFluxes = []
     sr = lsr.stationresponse(beamMS, False, True)
+    if type(fluxes) is not list:
+        fluxes = list(fluxes)
+    if type(RADeg) is not list:
+        RADeg= list(RADeg)
+    if type(DecDeg) is not list:
+        DecDeg = list(DecDeg)
+
     for flux, RA, Dec in zip(fluxes, RADeg, DecDeg):
         # Use station 0 to compute the beam and get mid channel
         sr.setDirection(RA*np.pi/180., Dec*np.pi/180.)

@@ -96,10 +96,12 @@ def dectodms_string(dec):
     return str(decd) + '.' + str(decm) + '.' +str(round(decs,2))
 
 
-def compute_patch_center(data, applyBeam=False):
+def compute_patch_center(LSM, applyBeam=False):
     """
     Return the patches names, central (weighted) RA and DEC and total flux
     """
+    from lsmtool.operations_lib import applyBeam
+    data = LSM.table
     patch_names = np.unique(data['Name'])
     patches = []
 
@@ -111,15 +113,12 @@ def compute_patch_center(data, applyBeam=False):
         weights_ra  = 0.
         weights_dec = 0.
         patch_flux  = 0.
-
+        fluxes = LSM.getColValues('I', applyBeam=applyBeam)
         for comp_id in comp_ids:
 
             comp_ra   = data['RA'][comp_id]
             comp_dec  = data['Dec'][comp_id]
-            if applyBeam and 'I-Apparent' in data:
-                comp_flux = np.float(data['I-Apparent'][comp_id])
-            else:
-                comp_flux = np.float(data['I'][comp_id])
+            comp_flux = fluxes[comp_id]
 
             # calculate the average weighted patch center, and patch flux
             patch_flux  += comp_flux

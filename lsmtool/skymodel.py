@@ -57,20 +57,8 @@ class SkyModel(object):
         self._fileName = fileName
 
         if beamMS is not None:
-            from operations_lib import applyBeam
-            RADeg = self.table['RA']
-            DecDeg = self.table['Dec']
-            flux = self.table['I']
-            vals = applyBeam(beamMS, flux, RADeg, DecDeg)
-            if vals is None:
-                logging.error('The beam MS could not be read. Apparent fluxes will '
-                    'not be available.')
-                self._hasBeam = False
-            else:
-                fluxCol = Column(name='I-Apparent', data=vals, unit='Jy')
-                fluxIndx = self.table.index_column('I')
-                self.table.add_column(fluxCol, index=fluxIndx+1)
-                self._hasBeam = True
+            self._beamMS = beamMS
+            self._hasBeam = True
         else:
             self._hasBeam = False
 
@@ -506,9 +494,6 @@ class SkyModel(object):
             271.63612   ,  272.05412   ])
 
         """
-        if colName.lower() == 'i' and applyBeam and self._hasBeam:
-            colName = 'I-Apparent'
-
         colName = self._verifyColName(colName)
         if colName is None:
             return None
@@ -565,7 +550,14 @@ class SkyModel(object):
         if units is not None:
             outcol.convert_unit_to(units)
 
-        return outcol.data
+        if colName.lower() == 'i' and applyBeam and self._hasBeam:
+            RADeg = table['RA']
+            DecDeg = table['Dec']
+            flux = table['I']
+            vals = applyBeam(beamMS, flux, RADeg, DecDeg)
+            return vals
+        else:
+            return outcol.data
 
 
     def setColValues(self, colName, values, mask=None, index=None):
@@ -975,9 +967,10 @@ class SkyModel(object):
             table = self.table
         if weight:
             if applyBeam and self._hasBeam:
-                weightCol = Column(name='Weight', data=table['I-apparent'].filled().data)
+                appFluxes = self.getColValues('I', applyBeam=True)
+                weightCol = Column(name='Weight', data=appFluxes)
                 valWeightCol = Column(name='ValWeight', data=table[colName].filled().data*
-                    table['I-apparent'].filled().data)
+                    appFluxes)
             else:
                 weightCol = Column(name='Weight', data=table['I'].filled().data)
                 valWeightCol = Column(name='ValWeight', data=table[colName].filled().data*
@@ -1032,8 +1025,9 @@ class SkyModel(object):
                 table['Dec'], RAAvgFull, DecAvgFull)
             if weight:
                 if applyBeam and self._hasBeam:
-                    weightCol = Column(name='Weight', data=table['I-apparent'].filled().data)
-                    valWeightCol = Column(name='ValWeight', data=dist*table['I-apparent'].filled().data)
+                    appFluxes = self.getColValues('I', applyBeam=True)
+                    weightCol = Column(name='Weight', data=appFluxes)
+                    valWeightCol = Column(name='ValWeight', data=dist*appFluxes)
                 else:
                     weightCol = Column(name='Weight', data=table['I'].filled().data)
                     valWeightCol = Column(name='ValWeight', data=dist*table['I'].filled().data)

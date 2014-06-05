@@ -174,9 +174,12 @@ def skyModelReader(fileName):
         maskVec = []
         for l in specOld:
             try:
-                specEntry = [float(f) for f in l.split(';')][0:2]
+                if type(l) is float:
+                    specEntry = [l]
+                else:
+                    specEntry = [float(f) for f in l.split(';')][0:2]
                 specMask = [False]*len(specEntry)
-                if len(specEntry < 2):
+                if len(specEntry) < 2:
                     specEntry.append(0.0)
                     specMask.append(True)
                 specVec.append(specEntry)
