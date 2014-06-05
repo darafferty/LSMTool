@@ -59,6 +59,7 @@ def plot(LSM, fileName=None):
     """
     import matplotlib.pyplot as plt
     import numpy as np
+    from lsmtool.operations_lib import radec2xy, xy2radec
 
     fig = plt.figure(1,figsize=(7,7))
     plt.clf()
@@ -92,13 +93,11 @@ def plot(LSM, fileName=None):
     # Plot sources
     RA = LSM.getColValues('RA')
     Dec = LSM.getColValues('Dec')
-    x, y, minx, miny, scale = radec2xy(RA, Dec)
-    scaleRA = (np.max(RA) - np.min(RA))/(np.max(x) - np.min(x))
-    scaleDec = (np.max(Dec) - np.min(Dec))/(np.max(y) - np.min(y))
-    x = (x - np.min(x)) * scaleRA + np.min(RA)
-    y = (y - np.min(y)) * scaleDec + min(Dec)
-
+    maxRA = np.max(RA)
+    minDec = np.min(Dec)
+    x, y  = radec2xy(RA, Dec)
     plt.scatter(x, y, s=s, c=c)
+
     if LSM._hasPatches:
         posDict = LSM.getPatchPositions()
         RAp = []
@@ -106,12 +105,25 @@ def plot(LSM, fileName=None):
         for patchName in LSM.getColValues('Patch', aggregate=True):
             RAp.append(posDict[patchName][0])
             Decp.append(posDict[patchName][1])
-        xp, yp, minx, miny, pscale = radec2xy(RAp, Decp, minx, miny)
-        xp = (xp - np.min(xp)) * pscale / 3600.0 + min(RA)
-        yp = (yp - np.min(yp)) * pscale / 3600.0 + min(Dec)
+        xp, yp = radec2xy(RAp, Decp, maxRA, minDec)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
-    ax.set_xlim(ax.get_xlim()[::-1])
-#     plt.axis('image')
+
+    # Translate axis labels from x, y to ra, dec
+    xmin = min(ax.get_xlim())
+    ymin = min(ax.get_ylim())
+    xticks = ax.get_xticks().tolist()
+    raticks = xy2radec(xticks, [ymin]*len(xticks), maxRA, minDec)[0]
+    rastr = []
+    for rat in raticks:
+        rastr.append('{0:.2f}'.format(rat))
+    ax.set_xticklabels(rastr)
+    yticks = ax.get_yticks().tolist()
+    decticks = xy2radec([xmin]*len(yticks), yticks, maxRA, minDec)[1]
+    decstr = []
+    for dect in decticks:
+        decstr.append('{0:.2f}'.format(dect))
+    ax.set_yticklabels(decstr)
+
     plt.xlabel("RA (degrees)")
     plt.ylabel("Dec (degrees)")
 
@@ -122,34 +134,3 @@ def plot(LSM, fileName=None):
     plt.close(fig)
 
 
-def radec2xy(RA, Dec, minx=None, miny=None):
-    """Returns x, y for input ra, dec
-    """
-    from astropy.wcs import WCS
-    import numpy as np
-
-    y = []
-    x = []
-
-    # Make wcs object to handle transformation from ra and dec to pixel coords.
-    w = WCS(naxis=2)
-    w.wcs.crpix = [-234.75, 8.3393]
-    w.wcs.cdelt = np.array([0.066667, 0.066667])
-    w.wcs.crval = [0, -90]
-    w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
-    w.wcs.set_pv([(2, 1, 45.0)])
-    arcsec_per_pix = abs(w.wcs.cdelt[0]) * 3600.0 # arcsec/pixel
-
-    for ra_deg, dec_deg in zip(RA, Dec):
-        ra_dec = np.array([[ra_deg, dec_deg]])
-        x.append(w.wcs_world2pix(ra_dec, 1)[0][0])
-        y.append(w.wcs_world2pix(ra_dec, 1)[0][1])
-
-    if minx is None:
-        minx = np.min(x)
-    if miny is None:
-        miny = np.min(y)
-
-    x += abs(minx)
-    y += abs(miny)
-    return y, x, minx, miny, arcsec_per_pix

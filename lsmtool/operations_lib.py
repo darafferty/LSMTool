@@ -55,3 +55,57 @@ def applyBeam(beamMS, fluxes, RADeg, DecDeg):
         attFluxes.append(flux * beam)
 
     return np.array(attFluxes)
+
+
+def radec2xy(RA, Dec, maxRA=None, minDec=None):
+    """Returns x, y for input ra, dec
+    """
+    from astropy.wcs import WCS
+    import numpy as np
+
+    x = []
+    y = []
+    if maxRA is None:
+        maxRA = np.max(RA)
+    if minDec is None:
+        minDec = np.min(Dec)
+
+    # Make wcs object to handle transformation from ra and dec to pixel coords.
+    w = WCS(naxis=2)
+    w.wcs.crpix = [0, 0]
+    w.wcs.cdelt = np.array([-0.066667, 0.066667])
+    w.wcs.crval = [maxRA, minDec]
+    w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
+    w.wcs.set_pv([(2, 1, 45.0)])
+
+    for ra_deg, dec_deg in zip(RA, Dec):
+        ra_dec = np.array([[ra_deg, dec_deg]])
+        x.append(w.wcs_world2pix(ra_dec, 0)[0][0])
+        y.append(w.wcs_world2pix(ra_dec, 0)[0][1])
+
+    return x, y
+
+
+def xy2radec(x, y, maxRA=0.0, minDec=0.0):
+    """Returns x, y for input ra, dec
+    """
+    from astropy.wcs import WCS
+    import numpy as np
+
+    RA = []
+    Dec = []
+
+    # Make wcs object to handle transformation from ra and dec to pixel coords.
+    w = WCS(naxis=2)
+    w.wcs.crpix = [0, 0]
+    w.wcs.cdelt = np.array([-0.066667, 0.066667])
+    w.wcs.crval = [maxRA, minDec]
+    w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
+    w.wcs.set_pv([(2, 1, 45.0)])
+
+    for xp, yp in zip(x, y):
+        x_y = np.array([[xp, yp]])
+        RA.append(w.wcs_pix2world(x_y, 0)[0][0])
+        Dec.append(w.wcs_pix2world(x_y, 0)[0][1])
+
+    return RA, Dec

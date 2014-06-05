@@ -83,6 +83,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
     """
     import _tessellate
     import _cluster
+    import numpy as np
 
     if algorithm.lower() == 'single':
         LSM.ungroup()
@@ -99,6 +100,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
         LSM.setColValues('Patch', patchCol, index=2)
 
     elif algorithm.lower() == 'tessellate':
+        from lsmtool.operations_lib import radec2xy
         if targetFlux is None:
             logging.error('Please specify the targetFlux parameter.')
             return 1
@@ -112,9 +114,10 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
         LSM.ungroup()
         RA = LSM.getColValues('RA')
         Dec = LSM.getColValues('Dec')
-        x, y = _tessellate.radec2xy(RA, Dec)
+        x, y = radec2xy(RA, Dec)
         f = LSM.getColValues('I', units=units, applyBeam=applyBeam)
-        vobin = _tessellate.bin2D(x, y, f, target_flux=targetFlux)
+        vobin = _tessellate.bin2D(np.array(x), np.array(y), f,
+            target_flux=targetFlux)
         vobin.bin_voronoi()
         patchCol = _tessellate.bins2Patches(vobin)
         LSM.setColValues('Patch', patchCol, index=2)
