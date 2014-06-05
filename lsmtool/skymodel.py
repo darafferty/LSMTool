@@ -554,7 +554,7 @@ class SkyModel(object):
             RADeg = table['RA']
             DecDeg = table['Dec']
             flux = table['I']
-            vals = applyBeam(self._beamMS, flux, RADeg, DecDeg)
+            vals = attenuate(self._beamMS, flux, RADeg, DecDeg)
             return vals
         else:
             return outcol.data

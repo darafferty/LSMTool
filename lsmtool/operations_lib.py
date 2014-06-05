@@ -18,7 +18,7 @@
 
 import logging
 
-def applyBeam(beamMS, fluxes, RADeg, DecDeg):
+def attenuate(beamMS, fluxes, RADeg, DecDeg):
     """
     Returns flux attenuated by primary beam.
     """
