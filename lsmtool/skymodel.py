@@ -551,7 +551,7 @@ class SkyModel(object):
             outcol.convert_unit_to(units)
 
         if colName.lower() == 'i' and applyBeam and self._hasBeam:
-            from lsmtool.operations_lib import attenuate
+            from operations_lib import attenuate
             RADeg = table['RA']
             DecDeg = table['Dec']
             flux = table['I']
