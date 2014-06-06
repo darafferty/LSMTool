@@ -72,7 +72,10 @@ def move(LSM, name, position=None, shift=None):
         >>> s.move('1609.6+6556', shift=[0.0, 10.0/3600.0])
 
     """
-    from .. import tableio
+    try:
+        from .. import tableio
+    except:
+        from . import tableio
 
     if position is None and shift is None:
         logging.error("One of positon or shift must be specified.")
