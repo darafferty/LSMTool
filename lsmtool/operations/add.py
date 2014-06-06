@@ -24,7 +24,7 @@ logging.debug('Loading ADD module.')
 
 def run(step, parset, LSM):
 
-    from tableio import outputColumnNames
+    from ..tableio import outputColumnNames
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     colNamesVals = {}

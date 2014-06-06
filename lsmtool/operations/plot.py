@@ -60,7 +60,7 @@ def plot(LSM, fileName=None):
     import matplotlib.pyplot as plt
     from matplotlib.ticker import FuncFormatter
     import numpy as np
-    from lsmtool.operations_lib import radec2xy, xy2radec
+    from ..operations_lib import radec2xy
     global maxRA, minDec, ymin, xmin
 
     fig = plt.figure(1,figsize=(7,7))
@@ -126,8 +126,10 @@ def plot(LSM, fileName=None):
         plt.show()
     plt.close(fig)
 
+
 def RAtickformatter(x, pos):
-    from lsmtool.operations_lib import xy2radec
+    """Changes x tick labels from pixels to RA in degrees"""
+    from ..operations_lib import xy2radec
 
     global ymin, maxRA, minDec
     ratick = xy2radec([x], [ymin], maxRA, minDec)[0][0]
@@ -136,7 +138,8 @@ def RAtickformatter(x, pos):
 
 
 def Dectickformatter(y, pos):
-    from lsmtool.operations_lib import xy2radec
+    """Changes y tick labels from pixels to Dec in degrees"""
+    from ..operations_lib import xy2radec
 
     global xmin, maxRA, minDec
     dectick = xy2radec([xmin], [y], maxRA, minDec)[1][0]

@@ -20,7 +20,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-import os, sys
+import os
+import sys
 import numpy as np
 import pylab as pl
 import itertools
@@ -100,7 +101,7 @@ def compute_patch_center(LSM, applyBeam=False):
     """
     Return the patches names, central (weighted) RA and DEC and total flux
     """
-    from lsmtool.operations_lib import attenuate
+    from ..operations_lib import attenuate
     data = LSM.table
     patch_names = np.unique(data['Name'])
     patches = []

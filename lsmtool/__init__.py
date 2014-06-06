@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from _version import changelog
+from ._version import changelog
 
 
 def load(fileName, beamMS=None):
@@ -45,7 +45,7 @@ def load(fileName, beamMS=None):
         >>> s = lsmtool.load('sky.model', 'SB100.MS')
 
     """
-    from skymodel import SkyModel
+    from .skymodel import SkyModel
 
     return SkyModel(fileName, beamMS)
 

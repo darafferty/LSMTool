@@ -106,7 +106,7 @@ def remove(LSM, filterExpression, aggregate=False, weight=False,
         >>> s.remove('clean_mask.mask == True')
 
     """
-    from _filter import filter
+    from . import _filter
 
-    return filter(LSM, filterExpression, aggregate=aggregate, weight=weight,
+    return _filter.filter(LSM, filterExpression, aggregate=aggregate, weight=weight,
         applyBeam=applyBeam, useRegEx=useRegEx, exclusive=True)

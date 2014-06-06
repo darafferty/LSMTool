@@ -26,13 +26,7 @@ def get_skymodel(skymodel_fn):
     """Returns x, y, flux arrays for input skymodel
     """
     import math as m
-    try:
-        from astropy import WCS
-    except ImportError, err:
-        import warnings
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=DeprecationWarning)
-        from pywcs import WCS
+    from astropy import WCS
 
     y = []
     x = []

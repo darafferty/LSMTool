@@ -52,7 +52,7 @@ def transfer(LSM, patchFile, method='mid'):
         Method to use in setting patch positons: 'mid', 'mean', or 'wmean'
 
     """
-    from lsmtool import skymodel
+    from .. import skymodel
 
     masterLSM = skymodel.SkyModel(patchFile)
     masterNames = masterLSM.getColValues('Name')

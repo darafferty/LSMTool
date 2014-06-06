@@ -89,7 +89,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     from astropy.coordinates import ICRS
     from astropy import units as u
     import numpy as np
-    from lsmtool import skymodel
+    from .. import skymodel
 
     if type(LSM2) is str:
         LSM2 = skymodel.SkyModel(LSM2)
