@@ -92,7 +92,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     try:
         from .. import skymodel
     except:
-        from . import skymodel
+        import skymodel
 
     if type(LSM2) is str:
         LSM2 = skymodel.SkyModel(LSM2)
