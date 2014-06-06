@@ -53,11 +53,11 @@ def transfer(LSM, patchFile, method='mid'):
 
     """
     try:
-        from .. import skymodel
+        from ..skymodel import SkyModel
     except:
-        from . import skymodel
+        from .skymodel import SkyModel
 
-    masterLSM = skymodel.SkyModel(patchFile)
+    masterLSM = SkyModel(patchFile)
     masterNames = masterLSM.getColValues('Name')
     masterPatchNames = masterLSM.getColValues('Patch')
 
