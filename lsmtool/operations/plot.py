@@ -58,8 +58,10 @@ def plot(LSM, fileName=None):
 
     """
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import FuncFormatter
     import numpy as np
     from lsmtool.operations_lib import radec2xy, xy2radec
+    global maxRA, minDec, ymin, xmin
 
     fig = plt.figure(1,figsize=(7,7))
     plt.clf()
@@ -109,20 +111,25 @@ def plot(LSM, fileName=None):
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
 
     # Translate axis labels from x, y to ra, dec
+    RAformatter = FuncFormatter(RAtickformatter)
+    Decformatter = FuncFormatter(Dectickformatter)
     xmin = min(ax.get_xlim())
     ymin = min(ax.get_ylim())
-    xticks = ax.get_xticks().tolist()
-    raticks = xy2radec(xticks, [ymin]*len(xticks), maxRA, minDec)[0]
-    rastr = []
-    for rat in raticks:
-        rastr.append('{0:.2f}'.format(rat))
-    ax.set_xticklabels(rastr)
-    yticks = ax.get_yticks().tolist()
-    decticks = xy2radec([xmin]*len(yticks), yticks, maxRA, minDec)[1]
-    decstr = []
-    for dect in decticks:
-        decstr.append('{0:.2f}'.format(dect))
-    ax.set_yticklabels(decstr)
+    ax.xaxis.set_major_formatter(RAformatter)
+    ax.yaxis.set_major_formatter(Decformatter)
+
+#     xticks = ax.get_xticks().tolist()
+#     raticks = xy2radec(xticks, [ymin]*len(xticks), maxRA, minDec)[0]
+#     rastr = []
+#     for rat in raticks:
+#         rastr.append('{0:.2f}'.format(rat))
+#     ax.set_xticklabels(rastr)
+#     yticks = ax.get_yticks().tolist()
+#     decticks = xy2radec([xmin]*len(yticks), yticks, maxRA, minDec)[1]
+#     decstr = []
+#     for dect in decticks:
+#         decstr.append('{0:.2f}'.format(dect))
+#     ax.set_yticklabels(decstr)
 
     plt.xlabel("RA (degrees)")
     plt.ylabel("Dec (degrees)")
@@ -133,4 +140,20 @@ def plot(LSM, fileName=None):
         plt.show()
     plt.close(fig)
 
+def RAtickformatter(x, pos):
+    from lsmtool.operations_lib import xy2radec
+
+    global ymin, maxRA, minDec
+    ratick = xy2radec([x], [ymin], maxRA, minDec)[0][0]
+    rastr = '{0:.2f}'.format(ratick)
+    return rastr
+
+
+def Dectickformatter(y, pos):
+    from lsmtool.operations_lib import xy2radec
+
+    global xmin, maxRA, minDec
+    dectick = xy2radec([xmin], [y], maxRA, minDec)[1][0]
+    decstr = '{0:.2f}'.format(dectick)
+    return decstr
 
