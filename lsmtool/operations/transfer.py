@@ -63,7 +63,10 @@ def transfer(LSM, patchFile, method='mid'):
 
     # Group LSM by source. This ensures that any sources not in the master
     # sky model are given a patch of their own
+    logging.debug('Grouping master sky model by one patch per source.')
     LSM.group('every')
+
+    logging.debug('Transferring patches.')
     names = LSM.getColValues('Name')
     patchNames = LSM.getColValues('Patch')
 
