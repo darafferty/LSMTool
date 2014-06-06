@@ -17,9 +17,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
-import _logging
-import tableio
-import operations
+from . import _logging
+from . import tableio
+from . import operations
 
 
 class SkyModel(object):
