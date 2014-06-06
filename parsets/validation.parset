@@ -1,5 +1,5 @@
 # Validation LSMTool parset
-# Run with "lsmtool.py tests/no_patches.sky parsets/validation.parset"
+# Run with "lsmtool/lsmtool.py tests/no_patches.sky parsets/validation.parset"
 
 LSMTool.Steps = [select, transfer, remove, ungroup, group, move, merge, concatenate, add, plot]
 

@@ -110,27 +110,13 @@ def plot(LSM, fileName=None):
         xp, yp = radec2xy(RAp, Decp, maxRA, minDec)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
 
-    # Translate axis labels from x, y to ra, dec
+    # Define tick formatter to translate axis labels from x, y to ra, dec
     RAformatter = FuncFormatter(RAtickformatter)
     Decformatter = FuncFormatter(Dectickformatter)
     xmin = min(ax.get_xlim())
     ymin = min(ax.get_ylim())
     ax.xaxis.set_major_formatter(RAformatter)
     ax.yaxis.set_major_formatter(Decformatter)
-
-#     xticks = ax.get_xticks().tolist()
-#     raticks = xy2radec(xticks, [ymin]*len(xticks), maxRA, minDec)[0]
-#     rastr = []
-#     for rat in raticks:
-#         rastr.append('{0:.2f}'.format(rat))
-#     ax.set_xticklabels(rastr)
-#     yticks = ax.get_yticks().tolist()
-#     decticks = xy2radec([xmin]*len(yticks), yticks, maxRA, minDec)[1]
-#     decstr = []
-#     for dect in decticks:
-#         decstr.append('{0:.2f}'.format(dect))
-#     ax.set_yticklabels(decstr)
-
     plt.xlabel("RA (degrees)")
     plt.ylabel("Dec (degrees)")
 

@@ -71,5 +71,5 @@ def transfer(LSM, patchFile, method='mid'):
 
     LSM.setColValues('Patch', patchNames)
     LSM._updateGroups(method=method)
-    LSM.info()
+    LSM._info()
     return 0

@@ -196,6 +196,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
             logging.info('Kept {0} source{1}.'.format(nRowsNew, plustr))
 
     LSM._updateGroups()
+    LSM._info()
     return 0
 
 

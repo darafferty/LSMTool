@@ -101,7 +101,7 @@ class SkyModel(object):
             self.sortedtable = self.table
 
 
-    def info(self):
+    def _info(self, useLogInfo=False):
         """
         Prints information about the sky model.
         """
@@ -123,10 +123,21 @@ class SkyModel(object):
             plur = ''
         else:
             plur = 'es'
-        logging.info('Model contains {0} sources in {1} patch{2} of which:\n'
+        if useLogInfo:
+            logCall = logging.info
+        else:
+            logCall = logging.debug
+        logCall('Model contains {0} sources in {1} patch{2} of which:\n'
             '      {3} are type POINT\n'
             '      {4} are type GAUSSIAN'.format(len(self.table), nPatches, plur,
             nPoint, nGaus))
+
+
+    def info(self):
+        """
+        Prints information about the sky model.
+        """
+        self._info(useLogInfo=True)
 
 
     def copy(self):
@@ -429,6 +440,7 @@ class SkyModel(object):
                     self.table.meta.pop(patchName)
             self.table.remove_column('Patch')
             self._updateGroups()
+            self._info()
 
 
     def getColNames(self):

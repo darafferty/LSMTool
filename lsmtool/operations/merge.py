@@ -66,6 +66,6 @@ def merge(LSM, patches, name=None, method='mid'):
         else:
             LSM.table['Patch'][indices] = name
     LSM._updateGroups(method=method)
-    LSM.info()
+    LSM._info()
 
     return 0

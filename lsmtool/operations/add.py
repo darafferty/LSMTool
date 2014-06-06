@@ -68,4 +68,5 @@ def add(LSM, colNamesVals):
 
     """
     result = LSM.setRowValues(colNamesVals)
+    LSM._info()
     return result
