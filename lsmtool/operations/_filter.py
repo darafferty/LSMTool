@@ -205,8 +205,13 @@ def parseFilter(filterExpression):
     Takes a filter expression and returns tuple of
     (property, operation, val, units), all as strings
     """
-    from ..tableio import allowedColumnNames
-    from ..tableio import allowedColumnDefaults
+    try:
+        from ..tableio import allowedColumnNames
+        from ..tableio import allowedColumnDefaults
+    except:
+        from .tableio import allowedColumnNames
+        from .tableio import allowedColumnDefaults
+
 
     # Get operator function
     filterOper, filterOperStr = convertOperStr(filterExpression)
