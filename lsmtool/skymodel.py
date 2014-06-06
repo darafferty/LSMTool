@@ -17,9 +17,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
-from . import _logging
-from . import tableio
-from . import operations
+import _logging
+import tableio
+import operations
 
 
 class SkyModel(object):
@@ -567,7 +567,7 @@ class SkyModel(object):
             outcol.convert_unit_to(units)
 
         if colName.lower() == 'i' and applyBeam and self._hasBeam:
-            from ..operations_lib import attenuate
+            from operations_lib import attenuate
             RADeg = table['RA']
             DecDeg = table['Dec']
             flux = table['I']
