@@ -12,7 +12,7 @@ import logging
 import _version
 import _logging
 import lofar.parameterset
-from . import skymodel
+import skymodel
 
 
 if __name__=='__main__':
@@ -64,7 +64,7 @@ if __name__=='__main__':
     steps = parset.getStringVector( "LSMTool.Steps", [] )
 
     # Possible operations, linked to relevant function
-    from . import operations
+    import operations
     operations = {"REMOVE": operations.remove,
                   "SELECT": operations.select,
                   "GROUP": operations.group,
