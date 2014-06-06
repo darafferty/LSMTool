@@ -75,7 +75,7 @@ def move(LSM, name, position=None, shift=None):
     try:
         from .. import tableio
     except:
-        from . import tableio
+        import tableio
 
     if position is None and shift is None:
         logging.error("One of positon or shift must be specified.")
