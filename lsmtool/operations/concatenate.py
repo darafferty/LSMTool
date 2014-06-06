@@ -165,6 +165,6 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
         LSM1.table.remove_column('match')
 
     LSM1._updateGroups(method='mid')
-    LSM._info()
+    LSM1._info()
     return 0
 
