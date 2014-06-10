@@ -67,7 +67,7 @@ def transfer(LSM, patchFile, method='mid'):
     LSM.group('every')
 
     logging.debug('Transferring patches.')
-    names = LSM.getColValues('Name').tolist()
+    names = LSM.getColValues('Name')
     patchNames = LSM.getColValues('Patch').tolist()
 
     toIndx = [i for i in range(len(LSM)) if names[i] in masterNames]
