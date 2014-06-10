@@ -745,6 +745,7 @@ class SkyModel(object):
 
         """
         from tableio import RA2Angle, Dec2Angle
+        import numpy as np
 
         requiredValues = ['Name', 'Ra', 'Dec', 'I', 'Type']
         if self._hasPatches:
