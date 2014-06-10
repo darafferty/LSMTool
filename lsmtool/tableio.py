@@ -313,10 +313,10 @@ def skyModelWriter(table, fileName):
 
             outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRAStr,
                 gDecStr))
-            for row in table.filled(fill_value=-9999):
-                line = rowStr(row)
-                outLines.append(', '.join(line))
-                outLines.append('\n')
+        for row in table.filled(fill_value=-9999):
+            line = rowStr(row)
+            outLines.append(', '.join(line))
+            outLines.append('\n')
     else:
         for row in table.filled(fill_value=-9999):
             line = rowStr(row)
