@@ -367,23 +367,23 @@ class SkyModel(object):
                     maxRA = self._getMaxColumn('Ra')
                     minDec = self._getMinColumn('Dec')
                     maxDec = self._getMaxColumn('Dec')
-                    gRA = minRA + (maxRA - minRA) / 2.0
-                    gDec = minDec + (maxDec - minDec) / 2.0
+                    gRA = RA2Angle(minRA + (maxRA - minRA) / 2.0)
+                    gDec = Dec2Angle(minDec + (maxDec - minDec) / 2.0)
                     for i, patchName in enumerate(patchNames):
                         patchDict[patchName] = [gRA[i], gDec[i]]
                 elif method == 'mean':
-                    RA = self.getColValues('Ra', aggregate=True)
-                    Dec = self.getColValues('Dec', aggregate=True)
+                    RA = RA2Angle(self.getColValues('Ra', aggregate=True))
+                    Dec = Dec2Angle(self.getColValues('Dec', aggregate=True))
                     for n, r, d in zip(patchNames, RA, Dec):
                         patchDict[n] = [r, d]
                 elif method == 'wmean':
-                    RA = self.getColValues('Ra', aggregate=True, weight=True)
-                    Dec = self.getColValues('Dec', aggregate=True, weight=True)
+                    RA = RA2Angle(self.getColValues('Ra', aggregate=True, weight=True))
+                    Dec = Dec2Angle(self.getColValues('Dec', aggregate=True, weight=True))
                     for n, r, d in zip(patchNames, RA, Dec):
                         patchDict[n] = [r, d]
                 elif method == 'zero':
                     for n in patchNames:
-                        patchDict[n] = [0.0, 0.0]
+                        patchDict[n] = [RA2Angle(0.0), Dec2Angle(0.0)]
 
             for patch, pos in patchDict.iteritems():
                 self.table.meta[patch] = pos

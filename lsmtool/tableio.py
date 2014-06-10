@@ -133,8 +133,8 @@ def skyModelReader(fileName):
         if colLines[0].strip() == '':
             if len(colLines) > 4:
                 patchName = colLines[2].strip()
-                patchRA = convertRAdeg(colLines[3].strip())
-                patchDec = convertDecdeg(colLines[4].strip())
+                patchRA = RA2Angle(colLines[3].strip())
+                patchDec = Dec2Angle(colLines[4].strip())
                 metaDict[patchName] = [patchRA[0], patchDec[0]]
             continue
 
@@ -262,7 +262,7 @@ def skyModelIdentify(origin, *args, **kwargs):
     return False
 
 
-def skyModelWriter(table, fileName, groupByPatch=False):
+def skyModelWriter(table, fileName):
     """
     Writes table to a makesourcedb sky model file.
 
@@ -270,10 +270,6 @@ def skyModelWriter(table, fileName, groupByPatch=False):
     ----------
     fileName : str
         Output ASCII file to which the sky model is written.
-    groupByPatch: bool, optional
-        If True, group lines by patch (can be slow). This option does not
-        affect the sources or patches in the sky model, only the order in which
-        they are written.
     """
     modelFile = open(fileName, 'w')
     logging.debug('Writing model to {0}'.format(fileName))
@@ -316,15 +312,11 @@ def skyModelWriter(table, fileName, groupByPatch=False):
             else:
                 gRA = 0.0
                 gDec = 0.0
-            outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRA,
-                gDec))
-            if groupByPatch:
-                g = table.groups[i]
-                for row in g.filled(fill_value=-9999):
-                    line = rowStr(row)
-                    outLines.append(', '.join(line))
-                    outLines.append('\n')
-        if not groupByPatch:
+            gRAStr = Angle(gRA, unit='degree').to_string(unit='hourangle', sep=':')
+            gDecStr = Angle(gDec, unit='degree').to_string(unit='degree', sep='.')
+
+            outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRAStr,
+                gDecStr))
             for row in table.filled(fill_value=-9999):
                 line = rowStr(row)
                 outLines.append(', '.join(line))
