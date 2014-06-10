@@ -133,7 +133,6 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
         return 1
 
     # Get the column values to filter on
-    print('Getting values')
     if LSM._verifyColName(filterProp) in LSM.table.colnames:
         filterProp = LSM._verifyColName(filterProp)
         colVals = LSM.getColValues(filterProp, units=filterUnits,
@@ -152,7 +151,6 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
     # Do the filtering
     if colVals is None:
         return 1
-    print('Getting indices')
     filt = getFilterIndices(colVals, filterOper, filterVal, useRegEx=useRegEx)
     if exclusive:
         filt = [i for i in range(len(colVals)) if i not in filt]
@@ -164,8 +162,9 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
         return 0
 
     if LSM._hasPatches and aggregate:
-        print('Filtering')
+        print('Getting source names')
         sourcesToKeep = LSM.getColValues('Patch', aggregate=True)[filt]
+        print('Filtering')
         def filterByName(tab, key_colnames):
             if tab['Patch'][0] in sourcesToKeep:
                 return True
@@ -173,6 +172,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
                 return False
         nPatchesOrig = len(LSM.table.groups)
         LSM.table = LSM.table.groups.filter(filterByName) # filter
+        print('Updating')
         LSM._updateGroups()
 #         LSM.table = LSM.table.group_by('Patch') # regroup
         nPatchesNew = len(LSM.table.groups)
