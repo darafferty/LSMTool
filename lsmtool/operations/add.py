@@ -25,21 +25,21 @@ logging.debug('Loading ADD module.')
 def run(step, parset, LSM):
 
     try:
-        from ..tableio import outputColumnNames
+        from ..tableio import allowedColumnNames
     except:
-        from .tableio import outputColumnNames
+        from .tableio import allowedColumnNames
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     colNamesVals = {}
-    for colName in outputColumnNames:
+    for colName in allowedColumnNames:
         val = parset.getString('.'.join(["LSMTool.Steps",
-            step, outputColumnNames[colName]]), '' )
+            step, allowedColumnNames[colName]]), '' )
         if val != '':
             try:
                 val = float(val)
             except ValueError:
                 pass
-            colNamesVals[outputColumnNames[colName]] = val
+            colNamesVals[allowedColumnNames[colName]] = val
 
 
     result = add(LSM, colNamesVals)
