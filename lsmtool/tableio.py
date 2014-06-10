@@ -213,7 +213,7 @@ def RA2Angle(RA):
     """
     Returns Angle objects for input RA values.
     """
-    if not type(RA) is list:
+    if type(RA) is str or type(RA) is float:
         RA = [RA]
 
     if type(RA[0]) is str:
@@ -231,7 +231,7 @@ def Dec2Angle(Dec):
     """
     Returns Angle objects for input Dec values.
     """
-    if not type(Dec) is list:
+    if type(Dec) is str or type(Dec) is float:
         Dec = [Dec]
 
     if type(Dec[0]) is str:
