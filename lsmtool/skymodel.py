@@ -771,6 +771,9 @@ class SkyModel(object):
                 logging.error('RA and/or Dec not understood.')
                 return 1
 
+            if 'SpectralIndex' not in verifiedValues:
+                verifiedValues['SpectralIndex'] = np.array([0.0, 0.0])
+
             rowName = str(values['Name'])
             indx = self._getNameIndx(rowName)
             if indx is None:

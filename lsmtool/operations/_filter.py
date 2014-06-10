@@ -162,21 +162,19 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
         return 0
 
     if LSM._hasPatches and aggregate:
-        print('Getting source names')
         sourcesToKeep = LSM.getColValues('Patch', aggregate=True)[filt]
-        print('Filtering')
         def filterByName(tab, key_colnames):
+            print(tab['Patch'][0])
             if tab['Patch'][0] in sourcesToKeep:
                 return True
             else:
                 return False
         nPatchesOrig = len(LSM.table.groups)
-        LSM.table = LSM.table.groups.filter(filterByName) # filter
-        print('Updating')
         LSM._updateGroups()
-#         LSM.table = LSM.table.group_by('Patch') # regroup
+        LSM.table = LSM.table.groups.filter(filterByName) # filter
+        LSM._updateGroups()
         nPatchesNew = len(LSM.table.groups)
-        if nPatchesOrig-nPatchesNew == 1:
+        if nPatchesOrig - nPatchesNew == 1:
             plustr = ''
         else:
             plustr = 'es'
@@ -190,8 +188,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
         nRowsNew = len(LSM.table)
         if LSM._hasPatches:
             LSM._updateGroups()
-#             LSM.table = LSM.table.group_by('Patch') # regroup
-        if nRowsOrig-nRowsNew == 1:
+        if nRowsOrig - nRowsNew == 1:
             plustr = ''
         else:
             plustr = 's'
