@@ -110,7 +110,8 @@ def move(LSM, name, position=None, shift=None):
                 LSM.table.meta[name] = position
             if shift is not None:
                 position = LSM.table.meta[name]
-                LSM.table.meta[name] = [position[0] + shift[0], position[1] + shift[1]]
+                LSM.table.meta[name] = [position[0] + tableio.RA2Angle(shift[0]),
+                    position[1] + tableio.Dec2Angle(shift[1])]
             return 0
         else:
             logging.error("Row name '{0}' not recognized.".format(name))
