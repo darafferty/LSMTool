@@ -93,8 +93,8 @@ def move(LSM, name, position=None, shift=None):
             except:
                 loggin.error('Postion not understood.')
         if shift is not None:
-            RA = LSM.table['Ra'][indx] + shift[0]
-            Dec = LSM.table['Dec'][indx] + shift[1]
+            RA = LSM.table['Ra'][indx] + tableio.RA2Angle(shift[0])
+            Dec = LSM.table['Dec'][indx] + tableio.Dec2Angle(shift[1])
             LSM.table['Ra'][indx] = tableio.RA2Angle(RA)[0]
             LSM.table['Dec'][indx] = tableio.Dec2Angle(Dec)[0]
         return 0
