@@ -350,6 +350,8 @@ class SkyModel(object):
             >>> s.setPatchPositions({'bin0': [123.231, 23.4321]})
 
         """
+        from tableio import RA2Angle, Dec2Angle
+
         if self._hasPatches:
             if method is None:
                 return None
