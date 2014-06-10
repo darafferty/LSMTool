@@ -163,13 +163,10 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
 
     if LSM._hasPatches and aggregate:
         sourcesToKeep = LSM.getColValues('Patch', aggregate=True)[filt]
-        def filterByName(tab, key_colnames):
-            if tab['Patch'][0] in sourcesToKeep:
-                return True
-            else:
-                return False
+        allsources = LSM.getColValues('Patch')
+        indicesToKeep = [i for i in range(len(LSM)) if allsources[i] in sourcesToKeep]
         nPatchesOrig = len(LSM.table.groups)
-        LSM.table = LSM.table.groups.filter(filterByName) # filter
+        LSM.table = LSM.table[indicesToKeep]
         LSM._updateGroups()
         nPatchesNew = len(LSM.table.groups)
         if nPatchesOrig - nPatchesNew == 1:

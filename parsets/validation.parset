@@ -50,11 +50,7 @@ LSMTool.Steps.add.Patch = src1_patch
 LSMTool.Steps.add.Ra = 277.4232
 LSMTool.Steps.add.Dec = 48.3689
 LSMTool.Steps.add.I = 0.69
-
-# Recalculate patch positions to be midpoints of patches
-LSMTool.Steps.setpos.Operation = SETPOSITIONS # Set patch positions
-LSMTool.Steps.setpos.Method = mid # one of mid, mean, or wmean
-LSMTool.Steps.setpos.OutFile = tests/test_final.sky
+LSMTool.Steps.add.OutFile = tests/test_final.sky
 
 # Plot the sky model
 LSMTool.Steps.plot.Operation = PLOT

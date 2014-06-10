@@ -70,10 +70,9 @@ def transfer(LSM, patchFile, method='mid'):
     names = LSM.getColValues('Name')
     patchNames = LSM.getColValues('Patch')
 
-    for i, name in enumerate(names):
-        indx = masterLSM._getNameIndx(name)
-        if indx is not None:
-            patchNames[i] = masterPatchNames[indx[0]]
+    toIndx = [i for i in range(len(LSM)) if names[i] in masterNames]
+    masterIndx = [masterNames.tolist().index(name) for name in names[toIndx]]
+    patchNames[toIndx] = masterPatchNames[masterIndx]
 
     LSM.setColValues('Patch', patchNames)
     LSM._updateGroups(method=method)

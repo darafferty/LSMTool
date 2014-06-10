@@ -74,7 +74,6 @@ if __name__=='__main__':
                   "MERGE": operations.merge,
                   "MOVE": operations.move,
                   "PLOT": operations.plot,
-                  "SETPOSITIONS": operations.setpositions,
                   "TRANSFER": operations.transfer
                   }
 

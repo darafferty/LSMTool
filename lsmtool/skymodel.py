@@ -766,14 +766,11 @@ class SkyModel(object):
             RA = verifiedValues['Ra']
             Dec = verifiedValues['Dec']
             try:
-                verifiedValues['Ra'] = RA2Angle(RA)[0]
-                verifiedValues['Dec'] = Dec2Angle(Dec)[0]
+                verifiedValues['Ra'] = RA2Angle(RA)[0].value
+                verifiedValues['Dec'] = Dec2Angle(Dec)[0].value
             except:
                 logging.error('RA and/or Dec not understood.')
                 return 1
-
-            if 'SpectralIndex' not in verifiedValues:
-                verifiedValues['SpectralIndex'] = np.array([0.0, 0.0])
 
             rowName = str(values['Name'])
             indx = self._getNameIndx(rowName)

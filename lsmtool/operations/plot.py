@@ -108,8 +108,8 @@ def plot(LSM, fileName=None):
         RAp = []
         Decp = []
         for patchName in LSM.getColValues('Patch', aggregate=True):
-            RAp.append(posDict[patchName][0])
-            Decp.append(posDict[patchName][1])
+            RAp.append(posDict[patchName][0].value)
+            Decp.append(posDict[patchName][1].value)
         xp, yp = radec2xy(RAp, Decp, maxRA, minDec)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
 

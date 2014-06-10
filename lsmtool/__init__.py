@@ -18,7 +18,6 @@
 
 from ._version import changelog
 
-
 def load(fileName, beamMS=None):
     """
     Loads a sky model from a file and returns a SkyModel object.

@@ -190,7 +190,6 @@ def skyModelReader(fileName):
     table.remove_column('Dec')
     table.add_column(DecCol, index=DecIndx)
 
-
     # Set column units and default values
     for i, colName in enumerate(colNames):
         logging.debug("Setting units for column '{0}' to {1}".format(
@@ -203,9 +202,6 @@ def skyModelReader(fileName):
             table.columns[colName].fill_value = colDefaults[i]
     table.meta = metaDict
 
-    # Group by patch name
-    if hasPatches:
-        table = table.group_by('Patch')
     return table
 
 

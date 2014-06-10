@@ -102,13 +102,15 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     if (LSM2._hasPatches and not LSM1._hasPatches):
          LSM2.ungroup()
 
-    # Fill masked values and merge defaults
+    # Fill masked values and merge defaults and RA, Dec formaters
     table1 = LSM1.table.filled()
     table2 = LSM2.table.filled()
     for entry in table1.meta:
         if LSM1._verifyColName(entry, quiet=True) is not None:
             if entry in table2.meta.keys():
                 table1.meta[entry] = table2.meta[entry]
+    table1['Ra'].format = table2['Ra'].format
+    table1['Dec'].format = table2['Dec'].format
 
     if matchBy.lower() == 'name':
         LSM1.table = vstack([table1, table2])
