@@ -95,10 +95,8 @@ class SkyModel(object):
             else:
                 self._patchMethod = method
             self.setPatchPositions(method=method)
-            self.sortedtable = self.table
         else:
             self._hasPatches = False
-            self.sortedtable = self.table
 
 
     def _info(self, useLogInfo=False):
@@ -149,7 +147,8 @@ class SkyModel(object):
         return copy.deepcopy(self)
 
 
-    def more(self, colName=None, patchName=None, sourceName=None, more=False):
+    def more(self, colName=None, patchName=None, sourceName=None, sortBy=None,
+        lowToHigh=False):
         """
         Prints the sky model table to the screen with more-like commands
 
@@ -161,6 +160,11 @@ class SkyModel(object):
             If given, returns column values for specified patch or patches only
         sourceName : str, list of str, optional
             If given, returns column value for specified source or sources only
+        sortBy : str or list of str, optional
+            Name of columns to sort on. If None, no sorting is done. If
+            a list is given, sorting is done on the columns in the order given
+        lowToHigh : bool, optional
+            If True, sort values from low to high instead of high to low
 
         Examples
         --------
@@ -170,14 +174,14 @@ class SkyModel(object):
 
         Print only the 'Name' and 'I' columns for the 'bin0' patch::
 
-            >>> s.more(['Name', 'I'], 'bin0')
+            >>> s.more(['Name', 'I'], 'bin0', sortBy=['I'])
 
         """
         if patchName is not None and sourceName is not None:
             logging.error('patchName and sourceName cannot both be specified.')
             return
 
-        table = self.sortedtable
+        table = self.table
 
         # Get columns
         colName = self._verifyColName(colName)
@@ -198,6 +202,14 @@ class SkyModel(object):
             sindx = self._getNameIndx(sourceName)
             if sindx is not None:
                 table = table[sindx]
+
+        # Sort if desired
+        if sortBy is not None:
+            colName = self._verifyColName(sortBy)
+            indx = table.argsort(colName)
+            if not lowToHigh:
+                indx = indx[::-1]
+            table = table[indx]
 
         table.more(show_unit=True)
 
@@ -271,49 +283,6 @@ class SkyModel(object):
             colNameKey = None
 
         return colNameKey
-
-
-    def sort(self, colName=None, reverse=False):
-        """
-        Sorts the sky model table by column values (high to low).
-
-        Note that sorting destroys the grouping, so a copy is made and stored
-        as s.sortedtable
-
-        Parameters
-        ----------
-        colName : str or list of str, optional
-            Name of columns to sort on. If None, the Stokes I flux is used. If
-            a list is given, sorting is done on the columns in the order given.
-        reverse : bool, optional
-            If True, sort from low to high instead
-
-        Examples
-        --------
-        Sort on Stokes I flux, with largest values first::
-
-            >>> s.sort()
-
-        Sort on RA, with smallest values first::
-
-            >>> s.sort('RA', reverse=True)
-
-        Sort on Patch name, and sort sources in each patch by Stokes I flux,
-        with largest values first::
-
-            >>> s.sort(['Patch', 'I'])
-
-        """
-        if colName is None:
-            colName = 'I'
-            logging.info('No column name specified. Sorting on Stokes I flux.')
-
-        colName = self._verifyColName(colName)
-        indx = self.table.argsort(colName)
-        if not reverse:
-            indx = indx[::-1]
-
-        self.sortedtable = self.table[indx]
 
 
     def getPatchPositions(self, patchName=None):
@@ -394,8 +363,8 @@ class SkyModel(object):
                 patchDict = {}
                 patchNames = self.getColValues('Patch', aggregate=True)
                 if method == 'mid':
-                    minRA = self._getMinColumn('RA')
-                    maxRA = self._getMaxColumn('RA')
+                    minRA = self._getMinColumn('Ra')
+                    maxRA = self._getMaxColumn('Ra')
                     minDec = self._getMinColumn('Dec')
                     maxDec = self._getMaxColumn('Dec')
                     gRA = minRA + (maxRA - minRA) / 2.0
@@ -403,12 +372,12 @@ class SkyModel(object):
                     for i, patchName in enumerate(patchNames):
                         patchDict[patchName] = [gRA[i], gDec[i]]
                 elif method == 'mean':
-                    RA = self.getColValues('RA', aggregate=True)
+                    RA = self.getColValues('Ra', aggregate=True)
                     Dec = self.getColValues('Dec', aggregate=True)
                     for n, r, d in zip(patchNames, RA, Dec):
                         patchDict[n] = [r, d]
                 elif method == 'wmean':
-                    RA = self.getColValues('RA', aggregate=True, weight=True)
+                    RA = self.getColValues('Ra', aggregate=True, weight=True)
                     Dec = self.getColValues('Dec', aggregate=True, weight=True)
                     for n, r, d in zip(patchNames, RA, Dec):
                         patchDict[n] = [r, d]
@@ -505,7 +474,7 @@ class SkyModel(object):
 
         Get flux-weighted average RA for the patches::
 
-            >>> s.getColValues('RA', aggregate=True, weight=True)
+            >>> s.getColValues('Ra', aggregate=True, weight=True)
             array([ 242.41450289,  243.11192   ,  243.50561817, ...,  271.51929   ,
             271.63612   ,  272.05412   ])
 
@@ -565,16 +534,18 @@ class SkyModel(object):
 
         if units is not None:
             outcol.convert_unit_to(units)
+        vals = outcol.data
 
         if colName.lower() == 'i' and applyBeam and self._hasBeam:
-            from operations_lib import attenuate
-            RADeg = table['RA']
+            RADeg = table['Ra']
             DecDeg = table['Dec']
-            flux = table['I']
+            fluxCol = table['I']
+            if units is not None:
+                fluxCol.convert_unit_to(units)
+            flux = fluxCol.data
             vals = attenuate(self._beamMS, flux, RADeg, DecDeg)
-            return vals
-        else:
-            return outcol.data
+
+        return vals
 
 
     def setColValues(self, colName, values, mask=None, index=None):
@@ -589,7 +560,8 @@ class SkyModel(object):
         values : list, numpy array, or dict
             Array of values or dict of {sourceName:value} pairs. If list or
             array, the length must match the number of rows in the table. If
-            dict, missing values will be masked unless already present.
+            dict, missing values will be masked unless already present. Values
+            are assumed to be in units required by makesourcedb.
         mask : list or array of bools, optional
             If values is a list or array, a mask can be specified (True means
             the value is masked).
@@ -606,6 +578,7 @@ class SkyModel(object):
 
         """
         from astropy.table import Column
+        from tableio import RA2Angle, Dec2Angle
         import numpy as np
 
         colName = self._verifyColName(colName, onlyExisting=False)
@@ -627,6 +600,12 @@ class SkyModel(object):
                 mask = [True] * len(self.table)
             for sourceName, value in values.iteritems():
                 indx = self._getNameIndx(sourceName)
+                if colName == 'Ra':
+                    val = RA2Angle(value)[0]
+                elif colName == 'Dec':
+                    val = Dec2Angle(value)[0]
+                else:
+                    val = value
                 data[indx] = value
                 mask[indx] = False
         else:
@@ -634,6 +613,12 @@ class SkyModel(object):
                 logging.error('Length of input values must match length of table.')
                 return
             else:
+                if colName == 'Ra':
+                    vals = RA2Angle(values)
+                elif colName == 'Dec':
+                    vals = Dec2Angle(values)
+                else:
+                    vals = values
                 data = values
 
         if mask is not None:
@@ -730,7 +715,7 @@ class SkyModel(object):
 
     def setRowValues(self, values, mask=None):
         """
-        Sets row values
+        Sets values for a single row.
 
         Parameters
         ----------
@@ -747,11 +732,19 @@ class SkyModel(object):
         --------
         Set row values for the source 'src1'::
 
-            >>> s.setRowValues({'Name':'src1', 'RA':213.123, 'Dec':23.1232,
+            >>> s.setRowValues({'Name':'src1', 'Ra':213.123, 'Dec':23.1232,
                 'I':23.2, 'Type':'POINT'}
 
+        The RA and Dec values can be in degrees (as above) or in makesourcedb
+        format. E.g.::
+
+            >>> s.setRowValues({'Name':'src1', 'Ra':'12:22:21.1',
+                'Dec':'+14.46.31.5', 'I':23.2, 'Type':'POINT'}
+
         """
-        requiredValues = ['Name', 'RA', 'Dec', 'I', 'Type']
+        from tableio import RA2Angle, Dec2Angle
+
+        requiredValues = ['Name', 'Ra', 'Dec', 'I', 'Type']
         if self._hasPatches:
             requiredValues.append('Patch')
 
@@ -767,25 +760,13 @@ class SkyModel(object):
                     logging.error("A value must be specified for '{0}'.".format(valReq))
                     return 1
 
-            RA = verifiedValues['RA']
-            if type(RA) is str:
-                verifiedValues['RA-HMS'] = RA
-                verifiedValues['RA'] = tableio.convertRAdeg(RA)
-            elif type(RA) is float:
-                verifiedValues['RA'] = RA
-                verifiedValues['RA-HMS'] = tableio.convertRAHHMMSS(RA)
-            else:
-                logging.error('RA not understood.')
-                return 1
+            RA = verifiedValues['Ra']
             Dec = verifiedValues['Dec']
-            if type(Dec) is str:
-                verifiedValues['Dec-DMS'] = Dec
-                verifiedValues['Dec'] = tableio.convertDecdeg(Dec)
-            elif type(Dec) is float:
-                verifiedValues['Dec'] = Dec
-                verifiedValues['Dec-DMS'] = tableio.convertDecDDMMSS(Dec)
-            else:
-                logging.error('Dec not understood.')
+            try:
+                verifiedValues['Ra'] = RA2Angle(RA)[0]
+                verifiedValues['Dec'] = Dec2Angle(Dec)[0]
+            except:
+                logging.error('RA and/or Dec not understood.')
                 return 1
 
             rowName = str(values['Name'])
@@ -881,7 +862,8 @@ class SkyModel(object):
             If True, fluxes will be attenuated by the beam.
 
          """
-        colsToAverage = ['RA', 'Dec', 'ReferenceFrequency', 'Orientation']
+        colsToAverage = ['Ra', 'Dec', 'ReferenceFrequency', 'Orientation',
+            'SpectralIndex']
         colsToSum = ['I', 'Q', 'U', 'V']
         colName = self._verifyColName(colName)
         if colName is None:
@@ -983,21 +965,23 @@ class SkyModel(object):
         if table is None:
             table = self.table
         if weight:
-            if applyBeam and self._hasBeam:
-                appFluxes = self.getColValues('I', applyBeam=True)
-                weightCol = Column(name='Weight', data=appFluxes)
-                valWeightCol = Column(name='ValWeight', data=table[colName].filled().data*
-                    appFluxes)
+            vals = self.getColValues(colName)
+            if weight:
+                weights = self.getColValues('I', applyBeam=applyBeam)
+                weightCol = Column(name='Weight', data=weights)
+                valWeightCol = Column(name='ValWeight', data=vals*weights)
+                table.add_column(valWeightCol)
+                table.add_column(weightCol)
+                numer = table['ValWeight'].groups.aggregate(np.sum).data
+                denom = table['Weight'].groups.aggregate(np.sum).data
+                table.remove_column('ValWeight')
+                table.remove_column('Weight')
             else:
-                weightCol = Column(name='Weight', data=table['I'].filled().data)
-                valWeightCol = Column(name='ValWeight', data=table[colName].filled().data*
-                    table['I'].filled().data)
-            table.add_column(valWeightCol)
-            table.add_column(weightCol)
-            numer = table['ValWeight'].groups.aggregate(np.sum).data
-            denom = table['Weight'].groups.aggregate(np.sum).data
-            table.remove_column('ValWeight')
-            table.remove_column('Weight')
+                valCol = Column(name='Val', data=vals)
+                table.add_column(valCol)
+                numer = table['Val'].groups.aggregate(np.sum).data
+                demon = 1.0
+                table.remove_column('Val')
             return Column(name=colName, data=np.array(numer/denom),
                 units=self.table[colName].units.name)
         else:
@@ -1027,7 +1011,7 @@ class SkyModel(object):
             table = self.table
         if self._hasPatches:
             # Get weighted average RAs and Decs
-            RAAvg = self._getAveragedColumn('RA', weight=weight, table=table)
+            RAAvg = self._getAveragedColumn('Ra', weight=weight, table=table)
             DecAvg = self._getAveragedColumn('Dec', weight=weight, table=table)
 
             # Fill out the columns by repeating the average value over the
@@ -1038,7 +1022,7 @@ class SkyModel(object):
                 RAAvgFull[table.groups.indices[i]: ind] = RAAvg[i]
                 DecAvgFull[table.groups.indices[i]: ind] = DecAvg[i]
 
-            dist = self._calculateSeparation(table['RA'],
+            dist = self._calculateSeparation(table['Ra'],
                 table['Dec'], RAAvgFull, DecAvgFull)
             if weight:
                 if applyBeam and self._hasBeam:
@@ -1101,7 +1085,8 @@ class SkyModel(object):
         return coord1.separation(coord2)
 
 
-    def write(self, fileName=None, format='makesourcedb', clobber=False):
+    def write(self, fileName=None, format='makesourcedb', clobber=False, sortBy=None,
+        lowToHigh=False):
         """
         Writes the sky model to a file.
 
@@ -1120,6 +1105,11 @@ class SkyModel(object):
                 - plus all other formats supported by the astropy.table package
         clobber : bool, optional
             If True, an existing file is overwritten.
+        sortBy : str or list of str, optional
+            Name of columns to sort on. If None, no sorting is done. If
+            a list is given, sorting is done on the columns in the order given
+        lowToHigh : bool, optional
+            If True, sort values from low to high instead of high to low
 
         Examples
         --------
@@ -1149,7 +1139,17 @@ class SkyModel(object):
                     format(fileName))
                 return
 
-        self.sortedtable.write(fileName, format=format)
+        table = self.table
+
+        # Sort if desired
+        if sortBy is not None:
+            colName = self._verifyColName(sortBy)
+            indx = table.argsort(colName)
+            if not lowToHigh:
+                indx = indx[::-1]
+            table = table[indx]
+
+        table.write(fileName, format=format)
 
 
     def _clean(self):

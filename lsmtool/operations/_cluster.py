@@ -120,7 +120,7 @@ def compute_patch_center(LSM, applyBeam=False):
         fluxes = LSM.getColValues('I', applyBeam=applyBeam)
         for comp_id in comp_ids:
 
-            comp_ra   = data['RA'][comp_id]
+            comp_ra   = data['Ra'][comp_id]
             comp_dec  = data['Dec'][comp_id]
             comp_flux = fluxes[comp_id]
 

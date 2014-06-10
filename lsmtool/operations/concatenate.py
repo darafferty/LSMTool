@@ -114,9 +114,9 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
         LSM1.table = vstack([table1, table2])
     elif matchBy.lower() == 'position':
         # Create catalogs
-        catalog1 = ICRS(LSM1.getColValues('RA'), LSM1.getColValues('Dec'),
+        catalog1 = ICRS(LSM1.getColValues('Ra'), LSM1.getColValues('Dec'),
             unit=(u.degree, u.degree))
-        catalog2 = ICRS(LSM2.getColValues('RA'), LSM2.getColValues('Dec'),
+        catalog2 = ICRS(LSM2.getColValues('Ra'), LSM2.getColValues('Dec'),
             unit=(u.degree, u.degree))
         idx, d2d, d3d = catalog1.match_to_catalog_sky(catalog2)
 

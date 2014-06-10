@@ -115,7 +115,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
                 if len(parts) == 2:
                     units = parts[1].strip()
         LSM.ungroup()
-        RA = LSM.getColValues('RA')
+        RA = LSM.getColValues('Ra')
         Dec = LSM.getColValues('Dec')
         x, y = radec2xy(RA, Dec)
         f = LSM.getColValues('I', units=units, applyBeam=applyBeam)

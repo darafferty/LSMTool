@@ -20,6 +20,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 from astropy.table import Table, Column
+from astropy.coordinates import Angle
 from astropy.io import registry
 import numpy as np
 import re
@@ -27,33 +28,20 @@ import logging
 import os
 
 
-inputColumnNames = {'name':'Name', 'type':'Type', 'patch':'Patch',
-    'ra':'RA-HMS', 'dec':'Dec-DMS', 'i':'I', 'q':'Q', 'u':'U', 'v':'V',
-    'majoraxis':'MajorAxis', 'minoraxis':'MinorAxis',
-    'orientation':'Orientation', 'referencefrequency':'ReferenceFrequency',
-    'spectralindex':'SpectralIndex'}
-
-outputColumnNames = {'name':'Name', 'type':'Type', 'patch':'Patch',
-    'ra-hms':'Ra', 'dec-dms':'Dec', 'i':'I', 'q':'Q', 'u':'U', 'v':'V',
-    'majoraxis':'MajorAxis', 'minoraxis':'MinorAxis',
-    'orientation':'Orientation', 'referencefrequency':'ReferenceFrequency',
-    'spectralindex':'SpectralIndex'}
-
 allowedColumnNames = {'name':'Name', 'type':'Type', 'patch':'Patch',
-    'ra':'RA', 'dec':'Dec', 'ra-hms':'RA-HMS', 'dec-dms':'Dec-DMS', 'i':'I',
-    'i-apparent':'I-Apparent', 'q':'Q', 'u':'U', 'v':'V', 'majoraxis':'MajorAxis',
-    'minoraxis':'MinorAxis', 'orientation':'Orientation',
+    'ra':'Ra', 'dec':'Dec', 'i':'I', 'q':'Q', 'u':'U', 'v':'V',
+    'majoraxis':'MajorAxis', 'minoraxis':'MinorAxis', 'orientation':'Orientation',
     'referencefrequency':'ReferenceFrequency', 'spectralindex':'SpectralIndex'}
 
 allowedColumnUnits = {'name':None, 'type':None, 'patch':None, 'ra':'degree',
-    'dec':'degree', 'ra-hms':None, 'dec-dms':None, 'i':'Jy', 'i-apparent':'Jy',
-    'q':'Jy', 'u':'Jy', 'v':'Jy', 'majoraxis':'arcsec', 'minoraxis':'arcsec',
-    'orientation':'degree', 'referencefrequency':'Hz', 'spectralindex':None}
+    'dec':'degree', 'i':'Jy', 'i-apparent':'Jy', 'q':'Jy', 'u':'Jy', 'v':'Jy',
+    'majoraxis':'arcsec', 'minoraxis':'arcsec', 'orientation':'degree',
+    'referencefrequency':'Hz', 'spectralindex':None}
 
-allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':0.0,
-    'dec':0.0, 'ra-hms':'N/A', 'dec-dms': 'N/A', 'i':0.0, 'q':0.0, 'u':0.0,
-    'v':0.0, 'majoraxis':0.0, 'minoraxis':0.0, 'orientation':0.0,
-    'referencefrequency':0.0, 'spectralindex':0.0}
+allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':'N/A',
+    'dec': 'N/A', 'i':0.0, 'q':0.0, 'u':0.0, 'v':0.0, 'majoraxis':0.0,
+    'minoraxis':0.0, 'orientation':0.0, 'referencefrequency':0.0,
+    'spectralindex':0.0}
 
 
 def skyModelReader(fileName):
@@ -110,10 +98,10 @@ def skyModelReader(fileName):
         else:
             defaultVal = None
 
-        if colName not in inputColumnNames:
+        if colName not in allowedColumnNames:
             raise Exception('Column name "{0}" found in file {1} is not a valid column'.format(colName, fileName))
         else:
-            colNames[i] = inputColumnNames[colName]
+            colNames[i] = allowedColumnNames[colName]
             if defaultVal is not None:
                 colDefaults[i] = defaultVal
                 metaDict[colNames[i]] = defaultVal
@@ -158,15 +146,6 @@ def skyModelReader(fileName):
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
         names=colNames, comment='#', data_start=0)
 
-    # Convert RA and Dec columns to degrees
-    RADeg = convertRAdeg(table['RA-HMS'].tolist())
-    RACol = Column(name='RA', data=RADeg, unit='degree')
-    DecDeg = convertDecdeg(table['Dec-DMS'].tolist())
-    DecCol = Column(name='Dec', data=DecDeg, unit='degree')
-    RAIndx = table.index_column('RA-HMS')
-    table.add_column(RACol, index=RAIndx+2)
-    table.add_column(DecCol, index=RAIndx+3)
-
     # Convert spectral index values from strings to arrays.
     if 'SpectralIndex' in table.keys():
         specOld = table['SpectralIndex'].data.tolist()
@@ -192,10 +171,28 @@ def skyModelReader(fileName):
         table.remove_column('SpectralIndex')
         table.add_column(specCol, index=specIndx)
 
+    # Convert RA and Dec to Angle objects
+    RARaw = table['Ra'].data.tolist()
+    RACol = Column(name='Ra', data=RA2Angle(RARaw))
+    def raformat(val):
+        return Angle(val, unit='degree').to_string(unit='hourangle', sep=':')
+    RACol.format = raformat
+    RAIndx = table.keys().index('Ra')
+    table.remove_column('Ra')
+    table.add_column(RACol, index=RAIndx)
+
+    DecRaw = table['Dec'].data.tolist()
+    DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
+    def decformat(val):
+        return Angle(val, unit='degree').to_string(unit='degree', sep='.')
+    DecCol.format = decformat
+    DecIndx = table.keys().index('Dec')
+    table.remove_column('Dec')
+    table.add_column(DecCol, index=DecIndx)
+
+
     # Set column units and default values
     for i, colName in enumerate(colNames):
-        if colName == 'RA-HMS' or colName == 'Dec-DMS':
-            continue
         logging.debug("Setting units for column '{0}' to {1}".format(
             colName, allowedColumnUnits[colName.lower()]))
         table.columns[colName].unit = allowedColumnUnits[colName.lower()]
@@ -210,6 +207,42 @@ def skyModelReader(fileName):
     if hasPatches:
         table = table.group_by('Patch')
     return table
+
+
+def RA2Angle(RA):
+    """
+    Returns Angle objects for input RA values.
+    """
+    if not type(RA) is list:
+        RA = [RA]
+
+    if type(RA[0]) is str:
+        RAStr = []
+        for ras in RA:
+            RAStr.append(ras+' hours')
+        RAAngle = Angle(RAStr, unit='degree')
+    else:
+        RAAngle = Angle(RA, unit='degree')
+
+    return RAAngle
+
+
+def Dec2Angle(Dec):
+    """
+    Returns Angle objects for input Dec values.
+    """
+    if not type(Dec) is list:
+        Dec = [Dec]
+
+    if type(Dec[0]) is str:
+        DecStr = []
+        for decs in Dec:
+            DecStr.append(decs.replace('.', ':', 2))
+        DecAngle = Angle(DecStr, unit='degree')
+    else:
+        DecAngle = Angle(Dec, unit='degree')
+
+    return DecAngle
 
 
 def skyModelIdentify(origin, *args, **kwargs):
@@ -255,9 +288,9 @@ def skyModelWriter(table, fileName, groupByPatch=False):
     outLines = []
     formatString = []
     for colKey in table.keys():
-        if colKey.lower() not in outputColumnNames:
+        if colKey.lower() not in allowedColumnNames:
             continue
-        colName = outputColumnNames[colKey.lower()]
+        colName = allowedColumnNames[colKey.lower()]
 
         if colName in table.meta:
             if colName == 'SpectralIndex':
@@ -283,10 +316,8 @@ def skyModelWriter(table, fileName, groupByPatch=False):
             else:
                 gRA = 0.0
                 gDec = 0.0
-            gRAStr = convertRAHHMMSS(gRA)
-            gDecStr = convertDecDDMMSS(gDec)
-            outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRAStr,
-                gDecStr))
+            outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRA,
+                gDec))
             if groupByPatch:
                 g = table.groups[i]
                 for row in g.filled(fill_value=-9999):
@@ -319,7 +350,7 @@ def rowStr(row):
     line = []
     for colKey in row.columns:
         try:
-            colName = outputColumnNames[colKey.lower()]
+            colName = allowedColumnNames[colKey.lower()]
         except KeyError:
             continue
         d = row[colKey]
@@ -329,121 +360,17 @@ def rowStr(row):
             if type(d) is np.ndarray:
                 dstr = str(d.tolist())
             else:
-                dstr = str(d)
+                if colKey == 'Ra':
+                    dstr = Angle(d, unit='degree').to_string(unit='hourangle', sep=':')
+                elif colKey == 'Dec':
+                    dstr = Angle(d, unit='degree').to_string(unit='degree', sep='.')
+                else:
+                    dstr = str(d)
         line.append('{0}'.format(dstr))
 
     while line[-1] == ' ':
         line.pop()
     return line
-
-
-def convertRAdeg(raStr):
-    """
-    Takes makesourcedb string of RA and returns RA in degrees.
-
-    Parameters
-    ----------
-    raStr : str
-        RA string such as '12:23:31.232'
-    """
-    if type(raStr) is float:
-        return raStr
-    if type(raStr) is str:
-        raStr = [raStr]
-    has_non_str = False
-    if type(raStr) is list:
-        for ra in raStr:
-            if type(ra) is not str:
-                has_non_str = True
-    if type(raStr) is not list or has_non_str:
-        logging.error('Input must be a string or a list of strings.')
-        return
-
-    raDeg = []
-    for ra in raStr:
-        raSrc = ra.split(':')
-        raDeg.append(float(raSrc[0])*15.0 + (float(raSrc[1])/60.0)*15.0 + (float(raSrc[2])
-            /3600.0)*15.0)
-    return np.array(raDeg)
-
-
-def convertDecdeg(decStr):
-    """
-    Takes makesourcedb string of Dec and returns Dec in degrees.
-
-    Parameters
-    ----------
-    decStr : str
-        Dec string such as '12.23.31.232'
-    """
-    if type(decStr) is float:
-        return decStr
-    if type(decStr) is str:
-        decStr = [decStr]
-    has_non_str = False
-    if type(decStr) is list:
-        for dec in decStr:
-            if type(dec) is not str:
-                has_non_str = True
-    if type(decStr) is not list or has_non_str:
-        logging.error('Input must be a string or a list of strings.')
-        return
-
-    decDeg = []
-    for dec in decStr:
-        decSrc = dec.split('.')
-        if len(decSrc) == 3:
-            decDeg.append(float(decSrc[0]) + (float(decSrc[1])/60.0) + (float(decSrc[2])
-                /3600.0))
-        else:
-            decDeg.append(float(decSrc[0]) + (float(decSrc[1])/60.0) + (float(decSrc[2]
-                + '.' + decSrc[3])/3600.0))
-    return np.array(decDeg)
-
-
-def convertRAHHMMSS(deg):
-    """
-    Convert RA coordinate (in degrees) to a makesourcedb string.
-
-    Parameters
-    ----------
-    deg : float
-        RA in degrees
-    """
-    from math import modf
-
-    if type(deg) is str:
-        return deg
-
-    if deg < 0:
-        deg += 360.0
-    x, hh = modf(deg/15.)
-    x, mm = modf(x*60)
-    ss = x*60
-
-    return str(int(hh)).zfill(2)+':'+str(int(mm)).zfill(2)+':'+str("%.3f" % (ss)).zfill(6)
-
-
-def convertDecDDMMSS(deg):
-    """
-    Convert Dec coordinate (in degrees) to makesourcedb string.
-
-    Parameters
-    ----------
-    deg : float
-        Dec in degrees
-    """
-    from math import modf
-
-    if type(deg) is str:
-        return deg
-
-    sign = (-1 if deg < 0 else 1)
-    x, dd = modf(abs(deg))
-    x, ma = modf(x*60)
-    sa = x*60
-    decsign = ('-' if sign < 0 else '+')
-    return decsign+str(int(dd)).zfill(2)+'.'+str(int(ma)).zfill(2)+'.'+str("%.3f" % (sa)).zfill(6)
 
 
 def ds9RegionWriter(table, fileName):
@@ -457,6 +384,8 @@ def ds9RegionWriter(table, fileName):
     fileName : str
         Output ASCII file to which the sky model is written.
     """
+    from operations_lib import convertRAdeg, convertDecdeg
+
     regionFile = open(fileName, 'w')
     logging.debug('Writing ds9 region file to {0}'.format(fileName))
 
@@ -472,7 +401,7 @@ def ds9RegionWriter(table, fileName):
             table[colName].convert_unit_to(units)
 
     for row in table:
-        ra = row['RA']
+        ra = row['Ra']
         dec = row['Dec']
         name = row['Name']
         if row['Type'].lower() == 'gaussian':
@@ -507,6 +436,8 @@ def kvisAnnWriter(table, fileName):
     fileName : str
         Output ASCII file to which the sky model is written.
     """
+    from operations_lib import convertRAdeg, convertDecdeg
+
     kvisFile = open(fileName, 'w')
     logging.debug('Writing kvis annotation file to {0}'.format(fileName))
 
@@ -518,7 +449,7 @@ def kvisAnnWriter(table, fileName):
 
     outLines = []
     for row in table:
-        ra = row['RA']
+        ra = row['Ra']
         dec = row['Dec']
         name = row['Name']
 

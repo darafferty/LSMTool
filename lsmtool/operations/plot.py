@@ -96,7 +96,7 @@ def plot(LSM, fileName=None):
         c = [sm.to_rgba(0)] * nsrc
 
     # Plot sources
-    RA = LSM.getColValues('RA')
+    RA = LSM.getColValues('Ra')
     Dec = LSM.getColValues('Dec')
     maxRA = np.max(RA)
     minDec = np.min(Dec)

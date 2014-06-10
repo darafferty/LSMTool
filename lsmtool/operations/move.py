@@ -76,6 +76,7 @@ def move(LSM, name, position=None, shift=None):
         from .. import tableio
     except:
         import tableio
+    from tableio import RA2Angle, Dec2Angle
 
     if position is None and shift is None:
         logging.error("One of positon or shift must be specified.")
@@ -86,38 +87,26 @@ def move(LSM, name, position=None, shift=None):
     if name in sourceNames:
         indx = LSM._getNameIndx(name)
         if position is not None:
-            if type(position[0]) is str:
-                LSM.table['RA-HMS'][indx] = position[0]
-                LSM.table['RA'][indx] = tableio.convertRAdeg(position[0])
-            elif type(position[0]) is float:
-                LSM.table['RA'][indx] = position[0]
-                LSM.table['RA-HMS'][indx] = tableio.convertRAHHMMSS(position[0])
-            else:
-                loggin.error('Postion not understood.')
-            if type(position[1]) is str:
-                LSM.table['Dec-DMS'][indx] = position[1]
-                LSM.table['Dec'][indx] = tableio.convertDecdeg(position[1])
-            elif type(position[1]) is float:
-                LSM.table['Dec'][indx] = position[1]
-                LSM.table['Dec-DMS'][indx] = tableio.convertDecDDMMSS(position[1])
-            else:
+            try:
+                LSM.table['Ra'][indx] = tableio.RA2Angle(position[0])[0]
+                LSM.table['Dec'][indx] = tableio.Dec2Angle(position[1])[0]
+            except:
                 loggin.error('Postion not understood.')
         if shift is not None:
-            RA = LSM.table['RA'][indx] + shift[0]
+            RA = LSM.table['Ra'][indx] + shift[0]
             Dec = LSM.table['Dec'][indx] + shift[1]
-            LSM.table['RA'][indx] = RA
-            LSM.table['Dec'][indx] = Dec
-            LSM.table['RA-HMS'][indx] = tableio.convertRAHHMMSS(RA)
-            LSM.table['Dec-DMS'][indx] = tableio.convertDecDDMMSS(Dec)
+            LSM.table['Ra'][indx] = tableio.RA2Angle(RA)[0]
+            LSM.table['Dec'][indx] = tableio.Dec2Angle(Dec)[0]
         return 0
     elif LSM._hasPatches:
         patchNames = LSM.getColValues('Patch', aggregate=True)
         if name in patchNames:
             if position is not None:
-                if type(position[0]) is str:
-                    position[0] = tableio.convertRAdeg(position[0])
-                if type(position[1]) is str:
-                    position[1] = tableio.convertDecdeg(position[1])
+                try:
+                    position[0] = tableio.RA2Angle(position[0])[0]
+                    position[1] = tableio.Dec2Angle(position[1])[0]
+                except:
+                    loggin.error('Postion not understood.')
                 LSM.table.meta[name] = position
             if shift is not None:
                 position = LSM.table.meta[name]

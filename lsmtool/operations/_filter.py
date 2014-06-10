@@ -140,7 +140,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
     else:
         # Assume filterProp is a mask filename and try to load mask
         if os.path.exists(fileName):
-            RARad = LSM.getColValues('RA', units='radian')
+            RARad = LSM.getColValues('Ra', units='radian')
             DecRad = LSM.getColValues('Dec', units='radian')
             colVals = getMaskValues(mask, RARad, DecRad)
             if colVals is None:
