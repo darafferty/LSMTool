@@ -58,8 +58,8 @@ def transfer(LSM, patchFile, method='mid'):
         from .skymodel import SkyModel
 
     masterLSM = SkyModel(patchFile)
-    masterNames = masterLSM.getColValues('Name')
-    masterPatchNames = masterLSM.getColValues('Patch')
+    masterNames = masterLSM.getColValues('Name').tolist()
+    masterPatchNames = masterLSM.getColValues('Patch').tolist()
 
     # Group LSM by source. This ensures that any sources not in the master
     # sky model are given a patch of their own
@@ -67,11 +67,11 @@ def transfer(LSM, patchFile, method='mid'):
     LSM.group('every')
 
     logging.debug('Transferring patches.')
-    names = LSM.getColValues('Name')
-    patchNames = LSM.getColValues('Patch')
+    names = LSM.getColValues('Name').tolist()
+    patchNames = LSM.getColValues('Patch').tolist()
 
     toIndx = [i for i in range(len(LSM)) if names[i] in masterNames]
-    masterIndx = [masterNames.tolist().index(name) for name in names[toIndx]]
+    masterIndx = [masterNames.index(name) for name in names[toIndx]]
     patchNames[toIndx] = masterPatchNames[masterIndx]
 
     LSM.setColValues('Patch', patchNames)
