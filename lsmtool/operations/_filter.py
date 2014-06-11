@@ -159,13 +159,19 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
     if len(filt) == 0:
         if force:
             LSM.table = []
-            logging.info('Filtered out 0 sources.')
+            if exclusive:
+                logging.info('Removed all sources.')
+            else:
+                logging.info('Kept zero sources.')
             return 0
         else:
             logging.error('Filter would result in an empty sky model.')
             return 1
     if len(filt) == len(colVals):
-        logging.info('Filtered out 0 sources.')
+        if exclusive:
+            logging.info('Removed zero sources.')
+        else:
+            logging.info('Kept all sources.')
         return 0
 
     if LSM._hasPatches and aggregate:
