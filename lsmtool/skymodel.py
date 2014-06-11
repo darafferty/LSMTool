@@ -520,8 +520,7 @@ class SkyModel(object):
             col = self._getAggregatedColumn(colName, weight=weight,
                 table=table, applyBeam=applyBeam)
         else:
-            col = table[colName]
-
+            col = self._getColumn(colName, table=table, applyBeam=applyBeam)
         if col is None:
             return None
 
@@ -532,19 +531,8 @@ class SkyModel(object):
 
         if units is not None:
             outcol.convert_unit_to(units)
-        vals = outcol.data
 
-        if colName.lower() == 'i' and applyBeam and self._hasBeam:
-            from operations_lib import attenuate
-            RADeg = table['Ra']
-            DecDeg = table['Dec']
-            fluxCol = outcol
-            if units is not None:
-                fluxCol.convert_unit_to(units)
-            flux = fluxCol.data
-            vals = attenuate(self._beamMS, flux, RADeg, DecDeg)
-
-        return vals
+        return outcol.data
 
 
     def setColValues(self, colName, values, mask=None, index=None):
@@ -843,10 +831,42 @@ class SkyModel(object):
             return None
 
 
+    def _getColumn(self, colName, table=None, applyBeam=False):
+        """
+        Returns the appropriate column (nonaggregated).
+
+        Parameters
+        ----------
+        colName : str
+            Name of column. If not already present in the table, a new column
+            will be created.
+        table : astropy Table, optional
+            If given, use this table; otherwise use self.table
+        applyBeam : bool, optional
+            If True, fluxes will be attenuated by the beam.
+
+         """
+        colName = self._verifyColName(colName)
+        if colName is None:
+            return None
+
+        col = table[colName]
+
+        if applyBeam and colName in ['I', 'Q', 'U', 'V']:
+            from operations_lib import attenuate
+            RADeg = table['Ra']
+            DecDeg = table['Dec']
+            flux = col.data
+            vals = attenuate(self._beamMS, flux, RADeg, DecDeg)
+            col[:] = vals
+
+        return col
+
+
     def _getAggregatedColumn(self, colName, weight=False, table=None,
         applyBeam=False):
         """
-        Returns the appropriate colum values aggregated by group.
+        Returns the appropriate colum aggregated by group.
 
         Parameters
         ----------
