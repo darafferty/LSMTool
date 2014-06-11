@@ -64,11 +64,7 @@ class SkyModel(object):
 
         self._clean()
         self._patchMethod = None
-        if 'Patch' in self.table.keys():
-            self._hasPatches = True
-        else:
-            self._hasPatches = False
-#         self._updateGroups()
+        self._updateGroups()
 
         logging.debug("Successfully read file '{0}'".format(fileName))
 
@@ -968,6 +964,7 @@ class SkyModel(object):
 
         if table is None:
             table = self.table
+
         if weight:
             vals = self.getColValues(colName)
             if weight:
