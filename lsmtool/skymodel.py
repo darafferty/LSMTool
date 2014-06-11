@@ -125,7 +125,7 @@ class SkyModel(object):
 
         logCall('Model contains {0} sources in {1} patch{2} of which:\n'
             '      {3} are type POINT\n'
-            '      {4} are type GAUSSIAN\n
+            '      {4} are type GAUSSIAN\n'
             'Associated beam MS: {5}'.format(len(self.table), nPatches, plur,
             nPoint, nGaus, self._beamMS))
 
