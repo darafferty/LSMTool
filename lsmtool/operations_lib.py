@@ -45,7 +45,8 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg):
     t.close()
 
     attFluxes = []
-    sr = lsr.stationresponse(beamMS, False, True)
+    sr = lsr.stationresponse(beamMS, inverse=False, useElementResponse=False,
+        useArrayFactor=True, useChanFreq=False)
     if type(fluxes) is not list:
         fluxes = list(fluxes)
     if type(RADeg) is not list:
@@ -59,7 +60,6 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg):
         beam = sr.evaluateStation(time, 0)
         r = abs(beam[int(len(beam)/2.)])
         beam = ( r[0][0] + r[1][1] ) / 2.
-        print(RA, Dec, beam)
         attFluxes.append(flux * beam)
 
     return np.array(attFluxes)
