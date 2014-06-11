@@ -1031,8 +1031,8 @@ class SkyModel(object):
                     weightCol = Column(name='Weight', data=appFluxes)
                     valWeightCol = Column(name='ValWeight', data=dist*appFluxes)
                 else:
-                    weightCol = Column(name='Weight', data=table['I'].filled().data)
-                    valWeightCol = Column(name='ValWeight', data=dist*table['I'].filled().data)
+                    weightCol = Column(name='Weight', data=table['I'].data)
+                    valWeightCol = Column(name='ValWeight', data=dist*table['I'].data)
                 table.add_column(valWeightCol)
                 table.add_column(weightCol)
                 numer = table['ValWeight'].groups.aggregate(np.sum).data * 2.0
@@ -1057,6 +1057,7 @@ class SkyModel(object):
             outcol = col.filled(fill_value=0.0)
         else:
             outcol = col
+        outcol.convert_unit_to('arcsec')
 
         return outcol
 

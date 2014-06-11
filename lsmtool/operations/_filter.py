@@ -190,13 +190,17 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
         nRowsNew = len(LSM.table)
         if LSM._hasPatches:
             LSM._updateGroups()
-        if nRowsOrig - nRowsNew == 1:
-            plustr = ''
-        else:
-            plustr = 's'
         if exclusive:
+            if nRowsOrig - nRowsNew == 1:
+                plustr = ''
+            else:
+                plustr = 's'
             logging.info('Removed {0} source{1}.'.format(nRowsOrig-nRowsNew, plustr))
         else:
+            if nRowsNew == 1:
+                plustr = ''
+            else:
+                plustr = 's'
             logging.info('Kept {0} source{1}.'.format(nRowsNew, plustr))
 
     LSM._info()

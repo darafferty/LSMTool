@@ -80,8 +80,9 @@ def plot(LSM, fileName=None):
     # Set symbol sizes by flux, making sure no symbol is smaller than 50 or
     # larger than 1000
     s = []
+    minflux = np.min(LSM.getColValues('I'))
     for flux in LSM.getColValues('I'):
-        s.append(min(1000.0, max(flux*10.0, 50.0)))
+        s.append(min(1000.0, np.log10(flux/minflux)*50.0))
 
     # Plot sources, colored by patch if possible
     c = []
