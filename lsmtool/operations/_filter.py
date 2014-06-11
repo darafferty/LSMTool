@@ -19,7 +19,7 @@ import logging
 
 
 def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False,
-    applyBeam=False, useRegEx=False):
+    applyBeam=False, useRegEx=False, force=False):
     """
     Filters the sky model, keeping all sources that meet the given expression.
 
@@ -63,6 +63,8 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
     useRegEx : bool, optional
         If True, string matching will use regular expression matching. If
         False, string matching uses Unix filename matching.
+    force : bool, optional
+        If True, force filtering even if the result is an empty table.
 
     Examples
     --------
@@ -155,8 +157,13 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
     if exclusive:
         filt = [i for i in range(len(colVals)) if i not in filt]
     if len(filt) == 0:
-        logging.error('Filter would result in an empty sky model.')
-        return 1
+        if force:
+            LSM.table = []
+            logging.info('Filtered out 0 sources.')
+            return 0
+        else:
+            logging.error('Filter would result in an empty sky model.')
+            return 1
     if len(filt) == len(colVals):
         logging.info('Filtered out 0 sources.')
         return 0
