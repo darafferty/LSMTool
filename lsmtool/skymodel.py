@@ -64,7 +64,11 @@ class SkyModel(object):
 
         self._clean()
         self._patchMethod = None
-        self._updateGroups()
+        if 'Patch' in self.table.keys():
+            self._hasPatches = True
+        else:
+            self._hasPatches = False
+#         self._updateGroups()
 
         logging.debug("Successfully read file '{0}'".format(fileName))
 
@@ -103,19 +107,15 @@ class SkyModel(object):
         """
         Prints information about the sky model.
         """
+        import numpy as np
+
         if self._hasPatches:
-            nPatches = len(self.table.groups)
+            nPatches = len(set(self.getColValues('Patch')))
         else:
             nPatches = 0
 
-        g = self.table.group_by('Type')
-        nPoint = 0
-        nGaus = 0
-        for grp in g.groups:
-            if grp['Type'][0].lower() == 'point':
-                nPoint = len(grp)
-            if grp['Type'][0].lower() == 'gaussian':
-                nGaus = len(grp)
+        nPoint = len(np.where(self.getColValues('Type') == 'POINT')[0])
+        nGaus = len(np.where(self.getColValues('Type') == 'GAUSSIAN')[0])
 
         if nPatches == 1:
             plur = ''
@@ -539,6 +539,7 @@ class SkyModel(object):
         vals = outcol.data
 
         if colName.lower() == 'i' and applyBeam and self._hasBeam:
+            from operations_lib import attenuate
             RADeg = table['Ra']
             DecDeg = table['Dec']
             fluxCol = table['I']
