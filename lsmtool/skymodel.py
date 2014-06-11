@@ -538,7 +538,7 @@ class SkyModel(object):
             from operations_lib import attenuate
             RADeg = table['Ra']
             DecDeg = table['Dec']
-            fluxCol = table['I']
+            fluxCol = outcol
             if units is not None:
                 fluxCol.convert_unit_to(units)
             flux = fluxCol.data
