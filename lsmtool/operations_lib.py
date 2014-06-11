@@ -59,6 +59,7 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg):
         beam = sr.evaluateStation(time, 0)
         r = abs(beam[int(len(beam)/2.)])
         beam = ( r[0][0] + r[1][1] ) / 2.
+        print(RA, Dec, beam)
         attFluxes.append(flux * beam)
 
     return np.array(attFluxes)
