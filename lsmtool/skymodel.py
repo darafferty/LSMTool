@@ -312,7 +312,7 @@ class SkyModel(object):
             return {}
 
 
-    def setPatchPositions(self, patchDict=None, method='mid'):
+    def setPatchPositions(self, patchDict=None, method='mid', applyBeam=False):
         """
         Sets the patch positions from the input dict of patch positions.
 
@@ -330,6 +330,8 @@ class SkyModel(object):
                Dec of the patch
             - 'zero' => set all positions to [0.0, 0.0]
             - None => no changes are made
+        applyBeam : bool, optional
+            If True, fluxes used as weights will be attenuated by the beam.
 
         Examples
         --------
@@ -375,8 +377,10 @@ class SkyModel(object):
                     for n, r, d in zip(patchNames, RA, Dec):
                         patchDict[n] = [r, d]
                 elif method == 'wmean':
-                    RA = RA2Angle(self.getColValues('Ra', aggregate=True, weight=True))
-                    Dec = Dec2Angle(self.getColValues('Dec', aggregate=True, weight=True))
+                    RA = RA2Angle(self.getColValues('Ra', aggregate=True,
+                        weight=True, applyBeam=applyBeam))
+                    Dec = Dec2Angle(self.getColValues('Dec', aggregate=True,
+                        weight=True, applyBeam=applyBeam))
                     for n, r, d in zip(patchNames, RA, Dec):
                         patchDict[n] = [r, d]
                 elif method == 'zero':
@@ -424,8 +428,8 @@ class SkyModel(object):
         return self.table.keys()
 
 
-    def getColValues(self, colName, units=None, rowName=None,
-        aggregate=False, weight=False, applyBeam=False):
+    def getColValues(self, colName, units=None, aggregate=False, weight=False,
+        applyBeam=False):
         """
         Returns a numpy array of column values.
 
@@ -435,9 +439,6 @@ class SkyModel(object):
             Name of column
         units : str, optional
             Output units (the values are converted as needed)
-        rowName : str, optional
-            Source or patch name. If given, returns column values for specified
-            source or patch only.
         aggregate : bool, optional
             If True, the column returned will be of values aggregated
             over the patch members as follows:
@@ -487,40 +488,12 @@ class SkyModel(object):
             else:
                 colName = colName[0]
 
-        if rowName is not None:
-            if rowName in self.table['Name'].data.tolist():
-                sourceName = rowName
-                patchName = None
-            elif rowName in self.table['Patch'].data.tolist():
-                sourceName = None
-                patchName = rowName
-            else:
-                logging.error("Input row name '{0}' not found in sources or "
-                    "patches.".format(rowName))
-                return None
-        else:
-            sourceName = None
-            patchName = None
-
-        if patchName is None:
-            table = self.table
-        else:
-            pindx = self._getNameIndx(patchName, patch=True)
-            if pindx is not None:
-                table = self.table.groups[pindx]
-                table = table.group_by('Patch') # ensure that grouping is preseved
-            else:
-                return None
-
-        if sourceName is not None:
-            sindx = self._getNameIndx(sourceName)
-            table = self.table[sindx]
-
         if aggregate and self._hasPatches:
             col = self._getAggregatedColumn(colName, weight=weight,
-                table=table, applyBeam=applyBeam)
+                applyBeam=applyBeam)
         else:
-            col = self._getColumn(colName, table=table, applyBeam=applyBeam)
+            col = self._getColumn(colName, applyBeam=applyBeam)
+
         if col is None:
             return None
 
@@ -831,7 +804,7 @@ class SkyModel(object):
             return None
 
 
-    def _getColumn(self, colName, table=None, applyBeam=False):
+    def _getColumn(self, colName, applyBeam=False):
         """
         Returns the appropriate column (nonaggregated).
 
@@ -840,8 +813,6 @@ class SkyModel(object):
         colName : str
             Name of column. If not already present in the table, a new column
             will be created.
-        table : astropy Table, optional
-            If given, use this table; otherwise use self.table
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
@@ -850,12 +821,12 @@ class SkyModel(object):
         if colName is None:
             return None
 
-        col = table[colName]
+        col = self.table[colName]
 
         if applyBeam and colName in ['I', 'Q', 'U', 'V']:
             from operations_lib import attenuate
-            RADeg = table['Ra']
-            DecDeg = table['Dec']
+            RADeg = self.getColValues('Ra')
+            DecDeg = self.getColValues('Dec')
             flux = col.data
             vals = attenuate(self._beamMS, flux, RADeg, DecDeg)
             col[:] = vals
@@ -863,8 +834,7 @@ class SkyModel(object):
         return col
 
 
-    def _getAggregatedColumn(self, colName, weight=False, table=None,
-        applyBeam=False):
+    def _getAggregatedColumn(self, colName, weight=False, applyBeam=False):
         """
         Returns the appropriate colum aggregated by group.
 
@@ -876,8 +846,6 @@ class SkyModel(object):
         weight : bool, optional
             If True, aggregated values will be weighted when appropriate by the
             Stokes I flux
-        table : astropy Table, optional
-            If given, use this table; otherwise use self.table
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
@@ -891,12 +859,12 @@ class SkyModel(object):
 
         if colName in colsToAverage:
             col = self._getAveragedColumn(colName, weight=weight,
-                table=table, applyBeam=applyBeam)
-        elif colName in colsToSum:
-            col = self._getSummedColumn(colName, table=table)
-        elif colName == 'MajorAxis' or colName == 'MinorAxis':
-            col = self._getSizeColumn(weight=weight, table=table,
                 applyBeam=applyBeam)
+        elif colName in colsToSum:
+            col = self._getSummedColumn(colName, weight=weight,
+                applyBeam=applyBeam)
+        elif colName == 'MajorAxis' or colName == 'MinorAxis':
+            col = self._getSizeColumn(weight=weight, applyBeam=applyBeam)
         elif colName == 'Patch':
             col = self.table.groups.keys['Patch']
         else:
@@ -905,7 +873,7 @@ class SkyModel(object):
         return col
 
 
-    def _getSummedColumn(self, colName, table=None):
+    def _getSummedColumn(self, colName, weight=False, applyBeam=False):
         """
         Returns column summed by group.
 
@@ -913,18 +881,28 @@ class SkyModel(object):
         ----------
         colName : str
             Column name
-        table : astropy Table, optional
-            If given, use this table; otherwise use self.table
+        applyBeam : bool, optional
+            If True, fluxes will be attenuated by the beam.
 
         """
         import numpy as np
 
-        if table is None:
-            table = self.table
-        return table[colName].groups.aggregate(np.sum)
+        col = self.table[colName].groups.aggregate(np.sum)
+
+        if applyBeam and colName in ['I', 'Q', 'U', 'V']:
+            from operations_lib import attenuate
+            RADeg = self.getColValues('Ra', applyBeam=True, aggregate=True,
+                weight=weight)
+            DecDeg = self.getColValues('Dec', applyBeam=True, aggregate=True,
+                weight=weight)
+            flux = col.data
+            vals = attenuate(self._beamMS, flux, RADeg, DecDeg)
+            col[:] = vals
+
+        return col
 
 
-    def _getMinColumn(self, colName, table=None):
+    def _getMinColumn(self, colName):
         """
         Returns column minimum value by group.
 
@@ -938,12 +916,10 @@ class SkyModel(object):
         """
         import numpy as np
 
-        if table is None:
-            table = self.table
-        return table[colName].groups.aggregate(np.min)
+        return self.table[colName].groups.aggregate(np.min)
 
 
-    def _getMaxColumn(self, colName, table=None):
+    def _getMaxColumn(self, colName):
         """
         Returns column maximum value by group.
 
@@ -957,13 +933,10 @@ class SkyModel(object):
         """
         import numpy as np
 
-        if table is None:
-            table = self.table
-        return table[colName].groups.aggregate(np.max)
+        return self.table[colName].groups.aggregate(np.max)
 
 
-    def _getAveragedColumn(self, colName, weight=True, table=None,
-        applyBeam=False):
+    def _getAveragedColumn(self, colName, weight=True, applyBeam=False):
         """
         Returns column averaged by group.
 
@@ -973,17 +946,12 @@ class SkyModel(object):
             Column name
         weight : bool, optional
             If True, return average weighted by flux
-        table : astropy Table, optional
-            If given, use this table; otherwise use self.table
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
         """
         from astropy.table import Column
         import numpy as np
-
-        if table is None:
-            table = self.table
 
         if weight:
             vals = self.getColValues(colName)
@@ -991,27 +959,27 @@ class SkyModel(object):
                 weights = self.getColValues('I', applyBeam=applyBeam)
                 weightCol = Column(name='Weight', data=weights)
                 valWeightCol = Column(name='ValWeight', data=vals*weights)
-                table.add_column(valWeightCol)
-                table.add_column(weightCol)
-                numer = table['ValWeight'].groups.aggregate(np.sum).data
-                denom = table['Weight'].groups.aggregate(np.sum).data
-                table.remove_column('ValWeight')
-                table.remove_column('Weight')
+                self.table.add_column(valWeightCol)
+                self.table.add_column(weightCol)
+                numer = self.table['ValWeight'].groups.aggregate(np.sum).data
+                denom = self.table['Weight'].groups.aggregate(np.sum).data
+                self.table.remove_column('ValWeight')
+                self.table.remove_column('Weight')
             else:
                 valCol = Column(name='Val', data=vals)
-                table.add_column(valCol)
-                numer = table['Val'].groups.aggregate(np.sum).data
+                self.table.add_column(valCol)
+                numer = self.table['Val'].groups.aggregate(np.sum).data
                 demon = 1.0
-                table.remove_column('Val')
+                self.table.remove_column('Val')
             return Column(name=colName, data=np.array(numer/denom),
                 units=self.table[colName].units.name)
         else:
             def avg(c):
                 return np.average(c, axis=0)
-            return table[colName].groups.aggregate(avg)
+            return self.table[colName].groups.aggregate(avg)
 
 
-    def _getSizeColumn(self, weight=True, table=None, applyBeam=False):
+    def _getSizeColumn(self, weight=True, applyBeam=False):
         """
         Returns column of source largest angular sizes.
 
@@ -1019,8 +987,6 @@ class SkyModel(object):
         ----------
         weight : bool, optional
             If True, return size weighted by flux
-        table : astropy Table, optional
-            If given, use this table; otherwise use self.table
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
@@ -1028,50 +994,48 @@ class SkyModel(object):
         from astropy.table import Column
         import numpy as np
 
-        if table is None:
-            table = self.table
         if self._hasPatches:
             # Get weighted average RAs and Decs
-            RAAvg = self._getAveragedColumn('Ra', weight=weight, table=table)
-            DecAvg = self._getAveragedColumn('Dec', weight=weight, table=table)
+            RAAvg = self._getAveragedColumn('Ra', weight=weight)
+            DecAvg = self._getAveragedColumn('Dec', weight=weight)
 
             # Fill out the columns by repeating the average value over the
             # entire group
-            RAAvgFull = np.zeros(len(table), dtype=np.float)
-            DecAvgFull = np.zeros(len(table), dtype=np.float)
-            for i, ind in enumerate(table.groups.indices[1:]):
-                RAAvgFull[table.groups.indices[i]: ind] = RAAvg[i]
-                DecAvgFull[table.groups.indices[i]: ind] = DecAvg[i]
+            RAAvgFull = np.zeros(len(self.table), dtype=np.float)
+            DecAvgFull = np.zeros(len(self.table), dtype=np.float)
+            for i, ind in enumerate(self.table.groups.indices[1:]):
+                RAAvgFull[self.table.groups.indices[i]: ind] = RAAvg[i]
+                DecAvgFull[self.table.groups.indices[i]: ind] = DecAvg[i]
 
-            dist = self._calculateSeparation(table['Ra'],
-                table['Dec'], RAAvgFull, DecAvgFull)
+            dist = self._calculateSeparation(self.table['Ra'],
+                self.table['Dec'], RAAvgFull, DecAvgFull)
             if weight:
                 if applyBeam and self._hasBeam:
                     appFluxes = self.getColValues('I', applyBeam=True)
                     weightCol = Column(name='Weight', data=appFluxes)
                     valWeightCol = Column(name='ValWeight', data=dist*appFluxes)
                 else:
-                    weightCol = Column(name='Weight', data=table['I'].data)
-                    valWeightCol = Column(name='ValWeight', data=dist*table['I'].data)
-                table.add_column(valWeightCol)
-                table.add_column(weightCol)
-                numer = table['ValWeight'].groups.aggregate(np.sum).data * 2.0
-                denom = table['Weight'].groups.aggregate(np.sum).data
-                table.remove_column('ValWeight')
-                table.remove_column('Weight')
+                    weightCol = Column(name='Weight', data=self.table['I'].data)
+                    valWeightCol = Column(name='ValWeight', data=dist*self.table['I'].data)
+                self.table.add_column(valWeightCol)
+                self.table.add_column(weightCol)
+                numer = self.table['ValWeight'].groups.aggregate(np.sum).data * 2.0
+                denom = self.table['Weight'].groups.aggregate(np.sum).data
+                self.table.remove_column('ValWeight')
+                self.table.remove_column('Weight')
                 col = Column(name='Size', data=numer/denom,
                     units='degree')
             else:
                 valCol = Column(name='Val', data=dist)
-                table.add_column(valCol)
-                size = table['Val'].groups.aggregate(np.max).data * 2.0
-                table.remove_column('Val')
+                self.table.add_column(valCol)
+                size = self.table['Val'].groups.aggregate(np.max).data * 2.0
+                self.table.remove_column('Val')
                 col = Column(name='Size', data=size, units='degree')
         else:
-            if 'majoraxis' in table.colnames:
+            if 'majoraxis' in self.table.colnames:
                 col = table['MajorAxis']
             else:
-                col = Column(name='Size', data=np.zeros(len(table)), units='degree')
+                col = Column(name='Size', data=np.zeros(len(self.table)), units='degree')
 
         if hasattr(col, 'filled'):
             outcol = col.filled(fill_value=0.0)
@@ -1107,8 +1071,8 @@ class SkyModel(object):
         return coord1.separation(coord2)
 
 
-    def write(self, fileName=None, format='makesourcedb', clobber=False, sortBy=None,
-        lowToHigh=False):
+    def write(self, fileName=None, format='makesourcedb', clobber=False,
+        sortBy=None, lowToHigh=False):
         """
         Writes the sky model to a file.
 
