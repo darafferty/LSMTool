@@ -60,6 +60,7 @@ class SkyModel(object):
             self._beamMS = beamMS
             self._hasBeam = True
         else:
+            self._beamMS = None
             self._hasBeam = False
 
         self._clean()
@@ -121,10 +122,12 @@ class SkyModel(object):
             logCall = logging.info
         else:
             logCall = logging.debug
+
         logCall('Model contains {0} sources in {1} patch{2} of which:\n'
             '      {3} are type POINT\n'
-            '      {4} are type GAUSSIAN'.format(len(self.table), nPatches, plur,
-            nPoint, nGaus))
+            '      {4} are type GAUSSIAN\n
+            'Associated beam MS: {5}'.format(len(self.table), nPatches, plur,
+            nPoint, nGaus, self._beamMS))
 
 
     def info(self):
@@ -821,7 +824,7 @@ class SkyModel(object):
         if colName is None:
             return None
 
-        col = self.table[colName]
+        col = self.table[colName].copy()
 
         if applyBeam and colName in ['I', 'Q', 'U', 'V']:
             from operations_lib import attenuate
