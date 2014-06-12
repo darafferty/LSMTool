@@ -175,8 +175,13 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
             return 1
         filt = getFilterIndices(colVals, filterOper, filterVal, useRegEx=useRegEx)
 
+
+    if LSM.hasPatches and aggregate is not None:
+        nrows = len(LSM.getPatchNames())
+    else:
+        nrows = len(LSM)
     if exclusive:
-        filt = [i for i in range(len(colVals)) if i not in filt]
+        filt = [i for i in range(nrows) if i not in filt]
     if len(filt) == 0:
         if force:
             LSM.table = Table()
@@ -212,9 +217,9 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
         else:
             logging.info('Kept {0} patch{1}.'.format(nPatchesNew, plustr))
     else:
-        nRowsOrig = len(LSM.table)
+        nRowsOrig = len(LSM)
         LSM.table = LSM.table[filt]
-        nRowsNew = len(LSM.table)
+        nRowsNew = len(LSM)
         if LSM.hasPatches:
             LSM._updateGroups()
         if exclusive:
