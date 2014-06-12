@@ -75,6 +75,7 @@ def skyModelReader(fileName):
     if formatString is None:
         raise Exception("File '{0}' does not appear to be a valid makesourcedb "
             'sky model (no valid format line found).'.format(fileName))
+    formatString = formatString.strip()
     formatString = formatString.strip('# ')
     if formatString.lower().endswith('format'):
         parts = formatString.split('=')[:-1]
