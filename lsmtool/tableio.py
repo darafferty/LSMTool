@@ -68,7 +68,7 @@ def skyModelReader(fileName):
     # Read format line
     formatString = None
     for l, line in enumerate(modelFile):
-        if 'format' in line.lower()
+        if 'format' in line.lower():
             formatString = line
             break
     modelFile.close()
