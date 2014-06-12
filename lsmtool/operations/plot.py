@@ -69,8 +69,8 @@ def plot(LSM, fileName=None):
     fig = plt.figure(1,figsize=(7,7))
     plt.clf()
     ax = plt.gca()
-    if LSM._hasPatches:
-        nsrc = len(LSM.getColValues('Patch', aggregate=True))
+    if LSM.hasPatches:
+        nsrc = len(LSM.getPatchNames())
     else:
         nsrc = len(LSM)
     sm = plt.cm.ScalarMappable(cmap=plt.cm.Set3, norm=plt.Normalize(vmin=0,
@@ -82,17 +82,17 @@ def plot(LSM, fileName=None):
     s = []
     minflux = np.min(LSM.getColValues('I'))
     for flux in LSM.getColValues('I'):
-        s.append(min(1000.0, np.log10(flux/minflux)*50.0))
+        s.append(min(1000.0, (1.0+np.log10(flux/minflux))*50.0))
 
-    # Plot sources, colored by patch if possible
-    c = []
+    # Plot sources, colored by patch if grouped
+    c = [0]*len(LSM)
     cp = []
-    if LSM._hasPatches:
-        for p, patchName in enumerate(LSM.getColValues('Patch', aggregate=True)):
+    if LSM.hasPatches:
+        for p, patchName in enumerate(LSM.getPatchNames()):
             indices = LSM.getRowIndex(patchName)
             cp.append(sm.to_rgba(p))
             for ind in indices:
-                c.append(sm.to_rgba(p))
+                c[ind] = sm.to_rgba(p)
     else:
         c = [sm.to_rgba(0)] * nsrc
 
@@ -104,13 +104,8 @@ def plot(LSM, fileName=None):
     x, y  = radec2xy(RA, Dec)
     plt.scatter(x, y, s=s, c=c)
 
-    if LSM._hasPatches:
-        posDict = LSM.getPatchPositions()
-        RAp = []
-        Decp = []
-        for patchName in LSM.getColValues('Patch', aggregate=True):
-            RAp.append(posDict[patchName][0].value)
-            Decp.append(posDict[patchName][1].value)
+    if LSM.hasPatches:
+        RAp, Decp = LSM.getPatchPositions(asArray=True)
         xp, yp = radec2xy(RAp, Decp, maxRA, minDec)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
 

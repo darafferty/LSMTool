@@ -90,14 +90,10 @@ class SkyModel(object):
         """
         if 'Patch' in self.table.keys():
             self.table = self.table.group_by('Patch')
-            self._hasPatches = True
-            if method is None:
-                method = self._patchMethod
-            else:
-                self._patchMethod = method
+            self.hasPatches = True
             self.setPatchPositions(method=method)
         else:
-            self._hasPatches = False
+            self.hasPatches = False
 
 
     def _info(self, useLogInfo=False):
@@ -106,8 +102,8 @@ class SkyModel(object):
         """
         import numpy as np
 
-        if self._hasPatches:
-            nPatches = len(set(self.getColValues('Patch')))
+        if self.hasPatches:
+            nPatches = len(set(self.getPatchNames()))
         else:
             nPatches = 0
 
@@ -126,7 +122,7 @@ class SkyModel(object):
         logCall('Model contains {0} sources in {1} patch{2} of which:\n'
             '      {3} are type POINT\n'
             '      {4} are type GAUSSIAN\n'
-            'Associated beam MS: {5}'.format(len(self.table), nPatches, plur,
+            '      Associated beam MS: {5}'.format(len(self.table), nPatches, plur,
             nPoint, nGaus, self._beamMS))
 
 
@@ -284,7 +280,7 @@ class SkyModel(object):
         return colNameKey
 
 
-    def getPatchPositions(self, patchName=None):
+    def getPatchPositions(self, patchName=None, asArray=False):
         """
         Returns a dict of patch positions as {'patchName':(RA, Dec)}.
 
@@ -292,38 +288,57 @@ class SkyModel(object):
         ----------
         patchName : str or list, optional
             List of patch names for which the positions are desired
+        asArray : bool, optional
+            If True, returns arrays of RA, Dec instead of a dict
 
         Examples
         --------
         Get all patch positions::
 
             >>> s.getPatchPositions()
-            {'bin0': [0.0, 0.0], 'bin1': [0.0, 0.0], 'bin2': [0.0, 0.0],
-            'bin3': [0.0, 0.0]}
+            {'bin0': [<Angle 91.77565208333331 deg>, <Angle 41.57834805555555 deg>],
+             'bin1': [<Angle 91.59991874999997 deg>, <Angle 41.90387583333333 deg>],
+             'bin2': [<Angle 90.83773333333332 deg>, <Angle 42.189861944444445 deg>],
+
+        Get them as RA and Dec arrays in degrees::
+
+            >>> s.getPatchPositions(asArray=True)
+            (array([ 91.77565208,  91.59991875,  90.83773333]),
+             array([ 41.57834806,  41.90387583,  42.18986194]))
 
         """
-        if self._hasPatches:
+        import numpy as np
+
+        if self.hasPatches:
             if patchName is None:
-                patchName = self.getColValues('Patch', aggregate=True)
+                patchName = self.getPatchNames()
             if type(patchName) is str:
                 patchName = [patchName]
-            positionDict = {}
-            for patch in patchName:
-                positionDict[patch] = self.table.meta[patch]
-            return positionDict
+            if asArray:
+                RA = []
+                Dec = []
+                for patch in patchName:
+                    RA.append(self.table.meta[patch][0].value)
+                    Dec.append(self.table.meta[patch][1].value)
+                return np.array(RA), np.array(Dec)
+            else:
+                positionDict = {}
+                for patch in patchName:
+                    positionDict[patch] = self.table.meta[patch]
+                return positionDict
         else:
-            return {}
+            return None
 
 
     def setPatchPositions(self, patchDict=None, method='mid', applyBeam=False):
         """
-        Sets the patch positions from the input dict of patch positions.
+        Sets the patch positions.
 
         Parameters
         ----------
         patchDict : dict
             Dict specifying patch names and positions as {'patchName':[RA, Dec]}
-            where both RA and Dec are degrees J2000.
+            where both RA and Dec are degrees J2000 or in makesourcedb format.
         method : None or str, optional
             If no patchDict is given, this parameter specifies the method used
             to set the patch positions:
@@ -353,37 +368,35 @@ class SkyModel(object):
         """
         from tableio import RA2Angle, Dec2Angle
 
-        if self._hasPatches:
+        if self.hasPatches:
             if method is None:
-                return None
-
-            # Delete any previous patch positions
-            for patchName in self.getColValues('Patch', aggregate=True):
-                if patchName in self.table.meta:
-                    self.table.meta.pop(patchName)
+                method = self._patchMethod
+            else:
+                self._patchMethod = method
+            if method is None:
+                return
 
             if patchDict is None:
+                # Delete any previous patch positions
+                patchNames = self.getPatchNames()
+                for patchName in patchNames:
+                    if patchName in self.table.meta:
+                        self.table.meta.pop(patchName)
                 patchDict = {}
-                patchNames = self.getColValues('Patch', aggregate=True)
                 if method == 'mid':
-                    minRA = self._getMinColumn('Ra')
-                    maxRA = self._getMaxColumn('Ra')
-                    minDec = self._getMinColumn('Dec')
-                    maxDec = self._getMaxColumn('Dec')
+                    minRA = self.getColValues('Ra', aggregate='min')
+                    maxRA = self.getColValues('Ra', aggregate='max')
+                    minDec = self.getColValues('Dec', aggregate='min')
+                    maxDec = self.getColValues('Dec', aggregate='max')
                     gRA = RA2Angle(minRA + (maxRA - minRA) / 2.0)
                     gDec = Dec2Angle(minDec + (maxDec - minDec) / 2.0)
                     for i, patchName in enumerate(patchNames):
                         patchDict[patchName] = [gRA[i], gDec[i]]
-                elif method == 'mean':
-                    RA = RA2Angle(self.getColValues('Ra', aggregate=True))
-                    Dec = Dec2Angle(self.getColValues('Dec', aggregate=True))
-                    for n, r, d in zip(patchNames, RA, Dec):
-                        patchDict[n] = [r, d]
-                elif method == 'wmean':
-                    RA = RA2Angle(self.getColValues('Ra', aggregate=True,
-                        weight=True, applyBeam=applyBeam))
-                    Dec = Dec2Angle(self.getColValues('Dec', aggregate=True,
-                        weight=True, applyBeam=applyBeam))
+                elif method == 'mean' or method == 'wmean':
+                    RA = RA2Angle(self.getColValues('Ra', aggregate=method,
+                        applyBeam=applyBeam))
+                    Dec = Dec2Angle(self.getColValues('Dec', aggregate=method,
+                        applyBeam=applyBeam))
                     for n, r, d in zip(patchNames, RA, Dec):
                         patchDict[n] = [r, d]
                 elif method == 'zero':
@@ -391,10 +404,14 @@ class SkyModel(object):
                         patchDict[n] = [RA2Angle(0.0), Dec2Angle(0.0)]
 
             for patch, pos in patchDict.iteritems():
+                if type(pos[0]) is str or type(pos[0]) is float:
+                    pos[0] = RA2Angle(pos[0])
+                if type(pos[1]) is str or type(pos[1]) is float:
+                    pos[1] = Dec2Angle(pos[1])
                 self.table.meta[patch] = pos
         else:
             logging.error('Sky model does not have patches.')
-            return None
+            return
 
 
     def ungroup(self):
@@ -408,8 +425,8 @@ class SkyModel(object):
             >>> s.ungroup()
 
         """
-        if self._hasPatches:
-            for patchName in self.getColValues('Patch', aggregate=True):
+        if self.hasPatches:
+            for patchName in self.getPatchNames():
                 if patchName in self.table.meta:
                     self.table.meta.pop(patchName)
             self.table.remove_column('Patch')
@@ -431,7 +448,7 @@ class SkyModel(object):
         return self.table.keys()
 
 
-    def getColValues(self, colName, units=None, aggregate=False, weight=False,
+    def getColValues(self, colName, units=None, aggregate=None, weight=False,
         applyBeam=False):
         """
         Returns a numpy array of column values.
@@ -441,21 +458,21 @@ class SkyModel(object):
         colName : str
             Name of column
         units : str, optional
-            Output units (the values are converted as needed)
-        aggregate : bool, optional
-            If True, the column returned will be of values aggregated
-            over the patch members as follows:
-                - RA, Dec, referenceFrequency, spectralIndex, orientation =>
-                  average with optional weighting by Stokes I flux
-                - I, Q, U, V => sum
-                - majoraxis, minoraxis => patch size with optional weighting by
-                  Stokes I flux
-                - other columns not supported
-        weight : bool, optional
-            If True, aggregated values will be weighted when appropriate by the
-            Stokes I flux
+            Output units (the values are converted as needed). By default, the
+            units are those used by makesourcedb, with the exception of Ra and
+            Dec which have default units of degrees.
+        aggregate : str, optional
+            If set, the array returned will be of values aggregated
+            over the patch members. The following aggregation functions are
+            available:
+                - 'sum': sum of patch values
+                - 'mean': mean of patch values
+                - 'wmean': Stokes I weighted mean of patch values
+                - 'min': minimum of patch values
+                - 'max': maximum of patch values
         applyBeam : bool, optional
-            If True, fluxes will be attenuated by the beam.
+            If True, fluxes will be attenuated by the beam. This attenuation
+            also applies to fluxes used in aggregation functions.
 
         Examples
         --------
@@ -471,12 +488,12 @@ class SkyModel(object):
 
         Get total Stokes I flux for the patches::
 
-            >>> s.getColValues('I', aggregate=True)
+            >>> s.getColValues('I', aggregate='sum')
             array([ 61.7305,   1.216 ,   3.9793, ...,   1.12  ,   1.25  ,   1.16  ])
 
         Get flux-weighted average RA for the patches::
 
-            >>> s.getColValues('Ra', aggregate=True, weight=True)
+            >>> s.getColValues('Ra', aggregate='wmean')
             array([ 242.41450289,  243.11192   ,  243.50561817, ...,  271.51929   ,
             271.63612   ,  272.05412   ])
 
@@ -491,9 +508,9 @@ class SkyModel(object):
             else:
                 colName = colName[0]
 
-        if aggregate and self._hasPatches:
-            col = self._getAggregatedColumn(colName, weight=weight,
-                applyBeam=applyBeam)
+        allowedFcns = ['sum', 'mean', 'wmean', 'min', 'max']
+        if aggregate in allowedFcns and self.hasPatches:
+            col = self._getAggregatedColumn(colName, aggregate, applyBeam=applyBeam)
         else:
             col = self._getColumn(colName, applyBeam=applyBeam)
 
@@ -616,6 +633,7 @@ class SkyModel(object):
         Sum over the fluxes of sources in the 'bin1' patch::
 
             >>> rows = s.getRowValues('bin1')
+            >>> tot = 0.0
             >>> for r in rows: tot += r['I']
 
         """
@@ -623,7 +641,7 @@ class SkyModel(object):
             colName = self._verifyColName(colName)
 
         sourceNames = self.getColValues('Name')
-        patchNames = self.getColValues('Patch', aggregate=True)
+        patchNames = self.getPatchNames()
         if rowName in sourceNames:
             indx = self._getNameIndx(rowName)
             if colName is not None:
@@ -659,7 +677,7 @@ class SkyModel(object):
         Get row indices for the patch 'bin1' and verify the patch name::
 
             >>> ind = s.getRowIndex('bin1')
-            >>> print(s.getColValues('Patch')[ind])
+            >>> print(s.getPatchNames()[ind])
             ['bin1' 'bin1']
 
         """
@@ -709,33 +727,34 @@ class SkyModel(object):
         import numpy as np
 
         requiredValues = ['Name', 'Ra', 'Dec', 'I', 'Type']
-        if self._hasPatches:
+        if self.hasPatches:
             requiredValues.append('Patch')
 
+        rowName = str(values['Name'])
+        indx = self._getNameIndx(rowName)
+
         if isinstance(values, dict):
-            verifiedValues = {}
-            for valReq in requiredValues:
-                found = False
-                for val in values:
-                    if self._verifyColName(valReq) == self._verifyColName(val):
-                        found = True
-                        verifiedValues[self._verifyColName(val)] = values[val]
-                if not found:
-                    logging.error("A value must be specified for '{0}'.".format(valReq))
+            if indx is None:
+                verifiedValues = {}
+                for valReq in requiredValues:
+                    found = False
+                    for val in values:
+                        if self._verifyColName(valReq) == self._verifyColName(val):
+                            found = True
+                            verifiedValues[self._verifyColName(val)] = values[val]
+                    if not found:
+                        logging.error("A value must be specified for '{0}'.".format(valReq))
+                        return 1
+
+                RA = verifiedValues['Ra']
+                Dec = verifiedValues['Dec']
+                try:
+                    verifiedValues['Ra'] = RA2Angle(RA)[0].value
+                    verifiedValues['Dec'] = Dec2Angle(Dec)[0].value
+                except:
+                    logging.error('RA and/or Dec not understood.')
                     return 1
 
-            RA = verifiedValues['Ra']
-            Dec = verifiedValues['Dec']
-            try:
-                verifiedValues['Ra'] = RA2Angle(RA)[0].value
-                verifiedValues['Dec'] = Dec2Angle(Dec)[0].value
-            except:
-                logging.error('RA and/or Dec not understood.')
-                return 1
-
-            rowName = str(values['Name'])
-            indx = self._getNameIndx(rowName)
-            if indx is None:
                 self.table.add_row(verifiedValues)
             else:
                 for colName, value in verifiedValues.iteritems():
@@ -746,14 +765,38 @@ class SkyModel(object):
                 logging.error('Length of input values must match number of tables.')
                 return 1
             else:
+                if indx is not None:
+                    self.table.remove_row(indx)
                 self.table.add_row(values, mask=mask)
         else:
             logging.error('Input row values not understood.')
             return 1
 
-        if self._hasPatches:
-            self._updateGroups(method='mid')
+        self._updateGroups()
         return 0
+
+
+    def getPatchSizes(self, units=None, weight=False, applyBeam=False):
+        """
+        Returns array of patch sizes.
+        """
+        if self.hasPatches:
+            col = self._getSizeColumn(weight=weight, applyBeam=applyBeam)
+            if units is not None:
+                col.convert_unit_to(units)
+            return col.data
+        else:
+            return None
+
+
+    def getPatchNames(self):
+        """
+        Returns array of patch names.
+        """
+        if self.hasPatches:
+            return self.table.groups.keys['Patch'].data
+        else:
+            return None
 
 
     def _getNameIndx(self, name, patch=False):
@@ -772,8 +815,8 @@ class SkyModel(object):
         import numpy as np
 
         if patch:
-            if self._hasPatches:
-                names = self.getColValues('Patch', aggregate=True).tolist()
+            if self.hasPatches:
+                names = self.getPatchNames().tolist()
             else:
                 return None
         else:
@@ -827,17 +870,12 @@ class SkyModel(object):
         col = self.table[colName].copy()
 
         if applyBeam and colName in ['I', 'Q', 'U', 'V']:
-            from operations_lib import attenuate
-            RADeg = self.getColValues('Ra')
-            DecDeg = self.getColValues('Dec')
-            flux = col.data
-            vals = attenuate(self._beamMS, flux, RADeg, DecDeg)
-            col[:] = vals
+            col = self._applyBeamToCol(col)
 
         return col
 
 
-    def _getAggregatedColumn(self, colName, weight=False, applyBeam=False):
+    def _getAggregatedColumn(self, colName, aggregate='sum', applyBeam=False):
         """
         Returns the appropriate colum aggregated by group.
 
@@ -846,33 +884,62 @@ class SkyModel(object):
         colName : str
             Name of column. If not already present in the table, a new column
             will be created.
-        weight : bool, optional
-            If True, aggregated values will be weighted when appropriate by the
-            Stokes I flux
+        aggregate : str, optional
+            If set, the array returned will be of values aggregated
+            over the patch members. The following aggregation functions are
+            available:
+                - 'sum': sum of patch values
+                - 'mean': mean of patch values
+                - 'wmean': Stokes I weighted mean of patch values
+                - 'min': minimum of patch values
+                - 'max': maximum of patch values
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
          """
-        colsToAverage = ['Ra', 'Dec', 'ReferenceFrequency', 'Orientation',
-            'SpectralIndex']
-        colsToSum = ['I', 'Q', 'U', 'V']
         colName = self._verifyColName(colName)
         if colName is None:
             return None
 
-        if colName in colsToAverage:
-            col = self._getAveragedColumn(colName, weight=weight,
+        if aggregate == 'mean':
+            col = self._getAveragedColumn(colName, weight=False,
                 applyBeam=applyBeam)
-        elif colName in colsToSum:
-            col = self._getSummedColumn(colName, weight=weight,
+        elif aggregate == 'wmean':
+            col = self._getAveragedColumn(colName, weight=True,
                 applyBeam=applyBeam)
-        elif colName == 'MajorAxis' or colName == 'MinorAxis':
-            col = self._getSizeColumn(weight=weight, applyBeam=applyBeam)
-        elif colName == 'Patch':
-            col = self.table.groups.keys['Patch']
+        elif aggregate == 'sum':
+            col = self._getSummedColumn(colName, applyBeam=applyBeam)
+        elif aggregate == 'min':
+            col = self._getMinColumn(colName, applyBeam=applyBeam)
+        elif aggregate == 'max':
+            col = self._getMaxColumn(colName, applyBeam=applyBeam)
         else:
-            logging.error('Column {0} cannot be aggregated.'.format(colName))
+            logging.error('Aggregation function not understood.'.format(colName))
             col = None
+        return col
+
+
+    def _applyBeamToCol(self, col, patch=False):
+        """
+        Applies beam attenuation to the column values
+        """
+        from operations_lib import attenuate
+
+        if patch:
+            if self._patchMethod is not None:
+                # Try to get patch positions from the meta data
+                RADeg, DecDeg = self.getPatchPositions(asArray=True)
+            else:
+                # If patch positions are not set, use weighted mean positions
+                RADeg = self.getColValues('Ra', applyBeam=True, aggregate='wmean')
+                DecDeg = self.getColValues('Dec', applyBeam=True, aggregate='wmean')
+        else:
+            RADeg = self.getColValues('Ra')
+            DecDeg = self.getColValues('Dec')
+
+        flux = col.data
+        vals = attenuate(self._beamMS, flux, RADeg, DecDeg)
+        col[:] = vals
         return col
 
 
@@ -890,22 +957,17 @@ class SkyModel(object):
         """
         import numpy as np
 
-        col = self.table[colName].groups.aggregate(np.sum)
+        def npsum(array):
+            return np.sum(array, axis=0)
 
+        col = self.table[colName].groups.aggregate(npsum)
         if applyBeam and colName in ['I', 'Q', 'U', 'V']:
-            from operations_lib import attenuate
-            RADeg = self.getColValues('Ra', applyBeam=True, aggregate=True,
-                weight=weight)
-            DecDeg = self.getColValues('Dec', applyBeam=True, aggregate=True,
-                weight=weight)
-            flux = col.data
-            vals = attenuate(self._beamMS, flux, RADeg, DecDeg)
-            col[:] = vals
+            col = self._applyBeamToCol(col, patch=True)
 
         return col
 
 
-    def _getMinColumn(self, colName):
+    def _getMinColumn(self, colName, applyBeam=False):
         """
         Returns column minimum value by group.
 
@@ -919,10 +981,17 @@ class SkyModel(object):
         """
         import numpy as np
 
-        return self.table[colName].groups.aggregate(np.min)
+        def npmin(array):
+            return np.min(array, axis=0)
+
+        col = self.table[colName].groups.aggregate(npmin)
+        if applyBeam and colName in ['I', 'Q', 'U', 'V']:
+            col = self._applyBeamToCol(col, patch=True)
+
+        return col
 
 
-    def _getMaxColumn(self, colName):
+    def _getMaxColumn(self, colName, applyBeam=False):
         """
         Returns column maximum value by group.
 
@@ -936,7 +1005,14 @@ class SkyModel(object):
         """
         import numpy as np
 
-        return self.table[colName].groups.aggregate(np.max)
+        def npmax(array):
+            return np.max(array, axis=0)
+
+        col = self.table[colName].groups.aggregate(npmax)
+        if applyBeam and colName in ['I', 'Q', 'U', 'V']:
+            col = self._applyBeamToCol(col, patch=True)
+
+        return col
 
 
     def _getAveragedColumn(self, colName, weight=True, applyBeam=False):
@@ -957,29 +1033,36 @@ class SkyModel(object):
         import numpy as np
 
         if weight:
+            def npsum(array):
+                return np.sum(array, axis=0)
+
             vals = self.getColValues(colName)
             if weight:
                 weights = self.getColValues('I', applyBeam=applyBeam)
+                if weights.shape != vals.shape:
+                    weights = np.resize(weights, vals.shape)
                 weightCol = Column(name='Weight', data=weights)
                 valWeightCol = Column(name='ValWeight', data=vals*weights)
                 self.table.add_column(valWeightCol)
                 self.table.add_column(weightCol)
-                numer = self.table['ValWeight'].groups.aggregate(np.sum).data
-                denom = self.table['Weight'].groups.aggregate(np.sum).data
+                numer = self.table['ValWeight'].groups.aggregate(npsum).data
+                denom = self.table['Weight'].groups.aggregate(npsum).data
                 self.table.remove_column('ValWeight')
                 self.table.remove_column('Weight')
             else:
                 valCol = Column(name='Val', data=vals)
                 self.table.add_column(valCol)
-                numer = self.table['Val'].groups.aggregate(np.sum).data
+                numer = self.table['Val'].groups.aggregate(npsum).data
                 demon = 1.0
                 self.table.remove_column('Val')
+
             return Column(name=colName, data=np.array(numer/denom),
-                units=self.table[colName].units.name)
+                units=self.table[colName].units)
         else:
-            def avg(c):
+            def npavg(c):
                 return np.average(c, axis=0)
-            return self.table[colName].groups.aggregate(avg)
+
+            return self.table[colName].groups.aggregate(npavg)
 
 
     def _getSizeColumn(self, weight=True, applyBeam=False):
@@ -997,7 +1080,7 @@ class SkyModel(object):
         from astropy.table import Column
         import numpy as np
 
-        if self._hasPatches:
+        if self.hasPatches:
             # Get weighted average RAs and Decs
             RAAvg = self._getAveragedColumn('Ra', weight=weight)
             DecAvg = self._getAveragedColumn('Dec', weight=weight)

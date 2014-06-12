@@ -101,10 +101,6 @@ def compute_patch_center(LSM, applyBeam=False):
     """
     Return the patches names, central (weighted) RA and DEC and total flux
     """
-    try:
-        from ..operations_lib import attenuate
-    except:
-        from .operations_lib import attenuate
     data = LSM.table
     patch_names = np.unique(data['Name'])
     patches = []

@@ -18,7 +18,7 @@
 import logging
 
 
-def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False,
+def filter(LSM, filterExpression, exclusive=False, aggregate=None,
     applyBeam=False, useRegEx=False, force=False):
     """
     Filters the sky model, keeping all sources that meet the given expression.
@@ -35,11 +35,15 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
         dictionary in the form:
             {'filterProp':property, 'filterOper':operator,
                 'filterVal':value, 'filterUnits':units}
-        or as a list:
+        or as a list of:
             [property, operator, value] or
             [property, operator, value, units]
-        The property to filter on must be a valid column name or the filename
-        of a mask image.
+        or as a numpy array of row or patch indices such as:
+            array([ 0,  2, 19, 20, 31, 37])
+
+        The property to filter on must be one of the following:
+            - a valid column name
+            - the filename of a mask image
 
         Supported operators are:
             - !=
@@ -52,12 +56,14 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
     exclusive : bool, optional
         If False, sources that meet the filter expression are kept. If True,
         sources that do not meet the filter expression are kept.
-    aggregate : bool, optional
-        If True, values are aggregated by patch before filtering. There,
-        filtering will be done by patch.
-    weight : bool, optional
-        If True, aggregated values will be calculated when appropriate using
-        the Stokes I fluxes of sources in each patch as weights.
+    aggregate : str, optional
+        If set, the values are aggregated over the patch members. The following
+        aggregation functions are available:
+            - 'sum': sum of patch values
+            - 'mean': mean of patch values
+            - 'wmean': Stokes I weighted mean of patch values
+            - 'min': minimum of patch values
+            - 'max': maximum of patch values
     applyBeam : bool, optional
         If True, apparent fluxes will be used.
     useRegEx : bool, optional
@@ -88,15 +94,23 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
 
         >>> s.filter('clean_mask.mask == True')
 
+    Filter on patch size::
+
+        >>> sizes = s.getPatchSizes(units='arcsec', weight=True)
+        >>> indices = numpy.where(sizes <= maj_cut_arcsec)[0]
+        >>> s.select(indices)
+
     """
     import numpy as np
     import math as m
     import os
+    from astropy.table import Table
 
     if filterExpression is None:
         logging.error('Please specify a filter expression.')
         return 1
 
+    filt = None
     if type(filterExpression) is list:
         if len(filterExpression) == 3:
             filterProp, filterOperStr, filterVal = filterExpression
@@ -131,34 +145,41 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
     elif type(filterExpression) is str:
         # Parse the filter expression
         filterProp, filterOper, filterVal, filterUnits = parseFilter(filterExpression)
+
+    elif type(filterExpression) is np.ndarray:
+        # Array of indices
+        filt = filterExpression.tolist()
+
     else:
         return 1
 
-    # Get the column values to filter on
-    if LSM._verifyColName(filterProp) in LSM.table.colnames:
-        filterProp = LSM._verifyColName(filterProp)
-        colVals = LSM.getColValues(filterProp, units=filterUnits,
-            aggregate=aggregate, weight=weight, applyBeam=applyBeam)
-    else:
-        # Assume filterProp is a mask filename and try to load mask
-        if os.path.exists(fileName):
-            RARad = LSM.getColValues('Ra', units='radian')
-            DecRad = LSM.getColValues('Dec', units='radian')
-            colVals = getMaskValues(mask, RARad, DecRad)
-            if colVals is None:
-                return 1
+    if filt is None:
+        # Get the column values to filter on
+        if LSM._verifyColName(filterProp) in LSM.table.colnames:
+            filterProp = LSM._verifyColName(filterProp)
+            colVals = LSM.getColValues(filterProp, units=filterUnits,
+                aggregate=aggregate, applyBeam=applyBeam)
         else:
-            return 1
+            # Assume filterProp is a mask filename and try to load mask
+            if os.path.exists(fileName):
+                RARad = LSM.getColValues('Ra', units='radian')
+                DecRad = LSM.getColValues('Dec', units='radian')
+                colVals = getMaskValues(mask, RARad, DecRad)
+                if colVals is None:
+                    return 1
+            else:
+                return 1
 
-    # Do the filtering
-    if colVals is None:
-        return 1
-    filt = getFilterIndices(colVals, filterOper, filterVal, useRegEx=useRegEx)
+        # Do the filtering
+        if colVals is None:
+            return 1
+        filt = getFilterIndices(colVals, filterOper, filterVal, useRegEx=useRegEx)
+
     if exclusive:
         filt = [i for i in range(len(colVals)) if i not in filt]
     if len(filt) == 0:
         if force:
-            LSM.table = []
+            LSM.table = Table()
             if exclusive:
                 logging.info('Removed all sources.')
             else:
@@ -167,15 +188,15 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
         else:
             logging.error('Filter would result in an empty sky model.')
             return 1
-    if len(filt) == len(colVals):
+    if len(filt) == len(LSM):
         if exclusive:
             logging.info('Removed zero sources.')
         else:
             logging.info('Kept all sources.')
         return 0
 
-    if LSM._hasPatches and aggregate:
-        sourcesToKeep = LSM.getColValues('Patch', aggregate=True)[filt]
+    if LSM.hasPatches and aggregate is not None:
+        sourcesToKeep = LSM.getPatchNames()[filt]
         allsources = LSM.getColValues('Patch')
         indicesToKeep = [i for i in range(len(LSM)) if allsources[i] in sourcesToKeep]
         nPatchesOrig = len(LSM.table.groups)
@@ -194,7 +215,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=False, weight=False
         nRowsOrig = len(LSM.table)
         LSM.table = LSM.table[filt]
         nRowsNew = len(LSM.table)
-        if LSM._hasPatches:
+        if LSM.hasPatches:
             LSM._updateGroups()
         if exclusive:
             if nRowsOrig - nRowsNew == 1:

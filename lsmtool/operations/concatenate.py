@@ -97,9 +97,9 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     if type(LSM2) is str:
         LSM2 = skymodel.SkyModel(LSM2)
 
-    if (LSM1._hasPatches and not LSM2._hasPatches):
+    if (LSM1.hasPatches and not LSM2.hasPatches):
          LSM2.group('every')
-    if (LSM2._hasPatches and not LSM1._hasPatches):
+    if (LSM2.hasPatches and not LSM1.hasPatches):
          LSM2.ungroup()
 
     # Fill masked values and merge defaults and RA, Dec formaters

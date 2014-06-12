@@ -97,8 +97,8 @@ def move(LSM, name, position=None, shift=None):
             LSM.table['Ra'][indx] = tableio.RA2Angle(RA)[0]
             LSM.table['Dec'][indx] = tableio.Dec2Angle(Dec)[0]
         return 0
-    elif LSM._hasPatches:
-        patchNames = LSM.getColValues('Patch', aggregate=True)
+    elif LSM.hasPatches:
+        patchNames = LSM.getPatchNames()
         if name in patchNames:
             if position is not None:
                 try:

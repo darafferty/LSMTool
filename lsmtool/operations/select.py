@@ -42,8 +42,8 @@ def run(step, parset, LSM):
     return result
 
 
-def select(LSM, filterExpression, aggregate=False, weight=False,
-    applyBeam=False, useRegEx=False, force=False):
+def select(LSM, filterExpression, aggregate=None, applyBeam=False,
+    useRegEx=False, force=False):
     """
     Filters the sky model, keeping all sources that meet the given expression.
 
@@ -72,12 +72,15 @@ def select(LSM, filterExpression, aggregate=False, weight=False,
             - <
             - = (or '==')
         Units are optional and must be specified as required by astropy.units.
-    aggregate : bool, optional
-        If True, values are aggregated by patch before filtering. There,
-        filtering will be done by patch.
-    weight : bool, optional
-        If True, aggregated values will be calculated when appropriate using
-        the Stokes I fluxes of sources in each patch as weights
+    aggregate : str, optional
+        If set, the array returned will be of values aggregated
+        over the patch members. The following aggregation functions are
+        available:
+            - 'sum': sum of patch values
+            - 'mean': mean of patch values
+            - 'wmean': Stokes I weighted mean of patch values
+            - 'min': minimum of patch values
+            - 'max': maximum of patch values
     applyBeam : bool, optional
         If True, apparent fluxes will be used.
     useRegEx : bool, optional
@@ -108,5 +111,5 @@ def select(LSM, filterExpression, aggregate=False, weight=False,
     """
     from . import _filter
 
-    return _filter.filter(LSM, filterExpression, aggregate=aggregate, weight=weight,
+    return _filter.filter(LSM, filterExpression, aggregate=aggregate,
         applyBeam=applyBeam, useRegEx=useRegEx, exclusive=False, force=force)

@@ -57,6 +57,9 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
             specified number of clusters (specified by the numClusters parameter).
         - 'tessellate' => group into tiles whose total flux approximates
             the target flux (specified by the targetFlux parameter).
+        - the filename of a mask image => group by masked regions (where mask =
+            True). Source outside of masked regions are given patches of their
+            own.
     targetFlux : str or float, optional
         Target flux for tessellation (the total flux of each tile will be close
         to this value). The target flux can be specified as either a float in Jy
@@ -125,6 +128,13 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
         patchCol = _tessellate.bins2Patches(vobin)
         LSM.setColValues('Patch', patchCol, index=2)
 
+    elif os.path.exists(algorithm):
+        # Mask image
+        RARad = LSM.getColValues('Ra', units='radian')
+        DecRad = LSM.getColValues('Dec', units='radian')
+        patchCol = getPatchNamesFromMask(mask, RARad, DecRad)
+        LSM.setColValues('Patch', patchCol, index=2)
+
     else:
         logging.error('Grouping alogrithm not understood.')
         return 1
@@ -148,4 +158,52 @@ def addEvery(LSM):
     import numpy as np
 
     names = LSM.getColValues('Name').copy()
+    for i, name in enumerate(names):
+        names[i] = name + '_patch'
     LSM.setColValues('Patch', names, index=2)
+
+
+def getPatchNamesFromMask(mask, RARad, DecRad):
+    """
+    Returns an array of patch names for each (RA, Dec) pair in radians
+    """
+    import math
+    import pyrap
+    import scipy.ndimage as nd
+
+    try:
+        maskdata = pyrap.images.image(mask)
+        maskval = maskdata.getdata()[0][0]
+    except:
+        loggin.error("Error opening mask file '{0}'".format(mask))
+        return None
+
+    act_pixels = maskval
+    rank = len(act_pixels.shape)
+    connectivity = nd.generate_binary_structure(rank, rank)
+    mask_labels, count = nd.label(act_pixels, connectivity)
+
+    patchNums = []
+    patchNames = []
+    for raRad, decRad in zip(RARad, DecRad):
+        (a, b, _, _) = maskdata.toworld([0, 0, 0, 0])
+        (_, _, pixY, pixX) = maskdata.topixel([a, b, decRad, raRad])
+        try:
+            # != is a XOR for booleans
+            patchNums.append(mask_labels[pixY, pixX])
+        except:
+            vals.append(0)
+
+    # Check if there is a patch with id = 0. If so, this means there were
+    # some Gaussians that fell outside of the regions in the patch
+    # mask file.
+    n = 0
+    for p in patchNums:
+        if p != 0:
+            in_patch = N.where(patchnums == p)
+            patchNames.append('mask_patch_'+str(p))
+        else:
+            patchNames.append('patch_'+str(n))
+            n += 1
+
+    return np.array(patchNames)
