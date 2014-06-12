@@ -14,7 +14,7 @@ LSMTool.Steps.transfer.PatchFile = tests/patches.sky
 # Remove patches with total fluxes below 2 Jy
 LSMTool.Steps.remove.Operation = REMOVE
 LSMTool.Steps.remove.FilterExpression = I < 2.0 Jy
-LSMTool.Steps.remove.Aggregate = True
+LSMTool.Steps.remove.Aggregate = sum
 
 # Remove all patches
 LSMTool.Steps.ungroup.Operation = UNGROUP

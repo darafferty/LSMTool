@@ -68,12 +68,22 @@ def skyModelReader(fileName):
     # Read format line
     formatString = None
     for l, line in enumerate(modelFile):
-        if line.startswith("FORMAT") or line.startswith("format"):
+        if 'format' in line.lower()
             formatString = line
+            break
     modelFile.close()
     if formatString is None:
         raise Exception("File '{0}' does not appear to be a valid makesourcedb "
             'sky model (no valid format line found).'.format(fileName))
+    formatString = formatString.strip('# ')
+    if formatString.lower().endswith('format'):
+        parts = formatString.split('=')[:-1]
+        formatString = 'FORMAT = ' + '='.join(parts).strip('# ()')
+    elif formatString.lower().startswith('format'):
+        parts = formatString.split('=')[1:]
+        formatString = 'FORMAT = ' + '='.join(parts).strip('# ()')
+    else:
+        raise Exception("Format line in file '{0}' not understood.".format(fileName))
 
     # Check whether sky model has patches
     if 'Patch' in formatString:
