@@ -229,10 +229,12 @@ def RA2Angle(RA):
         RA = [RA]
 
     if type(RA[0]) is str:
-        RAStr = []
-        for ras in RA:
-            RAStr.append(ras+' hours')
-        RAAngle = Angle(RAStr, unit='degree')
+        RADeg = [(float(rasex.split(':')[0]) + float(rasex.split(':')[1])/60.0 + float(rasex.split(':')[2])/3600.0) * 15.0 for rasex in RA]
+#         RAStr = []
+#         for ras in RA:
+#             RAStr.append(ras+' hours')
+#         RAAngle = Angle(RAStr, unit='degree')
+        RAAngle = Angle(RADeg, unit='degree')
     else:
         RAAngle = Angle(RA, unit='degree')
 
