@@ -186,16 +186,19 @@ def skyModelReader(fileName):
         table.add_column(specCol, index=specIndx)
 
     # Convert RA and Dec to Angle objects
-    logging.debug('Converting RA and Dec...')
+    logging.debug('Converting RA...')
     RARaw = table['Ra'].data.tolist()
-    RACol = Column(name='Ra', data=RA2Angle(RARaw))
+#     RACol = Column(name='Ra', data=RA2Angle(RARaw))
     def raformat(val):
         return Angle(val, unit='degree').to_string(unit='hourangle', sep=':')
-    RACol.format = raformat
-    RAIndx = table.keys().index('Ra')
-    table.remove_column('Ra')
-    table.add_column(RACol, index=RAIndx)
+#     RACol.format = raformat
+#     RAIndx = table.keys().index('Ra')
+#     table.remove_column('Ra')
+#     table.add_column(RACol, index=RAIndx)
+    table['Ra'] = RA2Angle(RARaw)
+    table['Ra'].format = raformat
 
+    logging.debug('Converting Dec...')
     DecRaw = table['Dec'].data.tolist()
     DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
     def decformat(val):
