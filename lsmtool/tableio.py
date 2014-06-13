@@ -123,6 +123,7 @@ def skyModelReader(fileName):
     modelFile = open(fileName)
     lines = modelFile.readlines()
     outlines = []
+    logging.debug('Reading file...')
     for line in lines:
         if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
             continue
@@ -154,11 +155,13 @@ def skyModelReader(fileName):
         outlines.append(','.join(colLines))
     modelFile.close()
 
+    logging.debug('Creating table...')
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
         names=colNames, comment='#', data_start=0)
 
     # Convert spectral index values from strings to arrays.
     if 'SpectralIndex' in table.keys():
+        logging.debug('Converting spectral indices...')
         specOld = table['SpectralIndex'].data.tolist()
         specVec = []
         maskVec = []
@@ -183,6 +186,7 @@ def skyModelReader(fileName):
         table.add_column(specCol, index=specIndx)
 
     # Convert RA and Dec to Angle objects
+    logging.debug('Converting RA and Dec...')
     RARaw = table['Ra'].data.tolist()
     RACol = Column(name='Ra', data=RA2Angle(RARaw))
     def raformat(val):
