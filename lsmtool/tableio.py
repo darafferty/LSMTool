@@ -229,6 +229,7 @@ def RA2Angle(RA):
     """
     Returns Angle objects for input RA values.
     """
+    import astropy.units as u
     if type(RA) is str or type(RA) is float:
         RA = [RA]
 
@@ -237,7 +238,7 @@ def RA2Angle(RA):
         for ras in RA:
             RAStr.append(ras+' hours')
         print('String to Angle...')
-        RAAngle = Angle(RAStr, unit='degree')
+        RAAngle = Angle(RAStr, unit=u.deg)
         print('...done')
     else:
         RAAngle = Angle(RA, unit='degree')
