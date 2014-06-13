@@ -40,9 +40,14 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg):
     except:
         raise Exception('Could not open {0}'.format(beamMS))
 
-    tt = t.query('ANTENNA1==0 AND ANTENNA2==1', columns='TIME')
-    time = tt.getcol("TIME")
-    time = min(time) + ( max(time) - min(time) ) / 2.
+    time = None
+    ant1 = -1
+    ant2 = 1
+    while time is None:
+        ant1 += 1
+        ant2 += 1
+        tt = t.query('ANTENNA1=={0} AND ANTENNA2=={1}'.format(ant1, ant2), columns='TIME')
+        time = tt.getcol("TIME")
     t.close()
 
     attFluxes = []
