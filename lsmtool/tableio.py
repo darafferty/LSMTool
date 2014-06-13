@@ -248,11 +248,11 @@ def Dec2Angle(Dec):
         Dec = [Dec]
 
     if type(Dec[0]) is str:
-        DecDeg = [float(decsex.split('.')[0])
-             + float(decsex.split('.')[1]) / 60.0
-             + (float(decsex.split('.')[2])
-             + float('0.' + decsex.split('.')[3])) / 3600.0
-             for decsex in Dec]
+        DecSex = [decstr.replace('.', ':', 2) for decstr in Dec]
+        DecDeg = [float(decsex.split(':')[0])
+             + float(decsex.split(':')[1]) / 60.0
+             + float(decsex.split(':')[2]) / 3600.0
+             for decsex in DecSex]
         DecAngle = Angle(DecDeg, unit='degree')
     else:
         DecAngle = Angle(Dec, unit='degree')
