@@ -188,27 +188,23 @@ def skyModelReader(fileName):
     # Convert RA and Dec to Angle objects
     logging.debug('Converting RA...')
     RARaw = table['Ra'].data.tolist()
-#     RACol = Column(name='Ra', data=RA2Angle(RARaw))
+    RACol = Column(name='Ra', data=RA2Angle(RARaw))
     def raformat(val):
         return Angle(val, unit='degree').to_string(unit='hourangle', sep=':')
-#     RACol.format = raformat
-#     RAIndx = table.keys().index('Ra')
-#     table.remove_column('Ra')
-#     table.add_column(RACol, index=RAIndx)
-    table['Ra'] = RA2Angle(RARaw)
-    table['Ra'].format = raformat
+    RACol.format = raformat
+    RAIndx = table.keys().index('Ra')
+    table.remove_column('Ra')
+    table.add_column(RACol, index=RAIndx)
 
     logging.debug('Converting Dec...')
     DecRaw = table['Dec'].data.tolist()
-#     DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
+    DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
     def decformat(val):
         return Angle(val, unit='degree').to_string(unit='degree', sep='.')
-#     DecCol.format = decformat
-#     DecIndx = table.keys().index('Dec')
-#     table.remove_column('Dec')
-#     table.add_column(DecCol, index=DecIndx)
-    table['Dec'] = Dec2Angle(DecRaw)
-    table['Dec'].format = decformat
+    DecCol.format = decformat
+    DecIndx = table.keys().index('Dec')
+    table.remove_column('Dec')
+    table.add_column(DecCol, index=DecIndx)
 
     # Set column units and default values
     for i, colName in enumerate(colNames):
@@ -229,7 +225,6 @@ def RA2Angle(RA):
     """
     Returns Angle objects for input RA values.
     """
-    import astropy.units as u
     if type(RA) is str or type(RA) is float:
         RA = [RA]
 
@@ -237,9 +232,7 @@ def RA2Angle(RA):
         RAStr = []
         for ras in RA:
             RAStr.append(ras+' hours')
-        print('String to Angle...')
-        RAAngle = Angle(RAStr, unit=u.deg)
-        print('...done')
+        RAAngle = Angle(RAStr, unit='degree')
     else:
         RAAngle = Angle(RA, unit='degree')
 
