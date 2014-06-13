@@ -49,6 +49,7 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg):
         tt = t.query('ANTENNA1=={0} AND ANTENNA2=={1}'.format(ant1, ant2), columns='TIME')
         time = tt.getcol("TIME")
     t.close()
+    time = min(time) + ( max(time) - min(time) ) / 2.
 
     attFluxes = []
     sr = lsr.stationresponse(beamMS, inverse=False, useElementResponse=False,
@@ -61,10 +62,10 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg):
         DecDeg = list(DecDeg)
 
     for flux, RA, Dec in zip(fluxes, RADeg, DecDeg):
-        # Use station ant1 to compute the beam and get mid channel
+        # Use ant1, mid time, and channel 0 to compute the beam
         sr.setDirection(RA*np.pi/180., Dec*np.pi/180.)
         beam = sr.evaluateStation(time, ant1)
-        r = abs(beam[int(len(beam)/2.)])
+        r = abs(beam)
         beam = ( r[0][0] + r[1][1] ) / 2.
         attFluxes.append(flux * beam)
 
