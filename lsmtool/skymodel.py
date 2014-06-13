@@ -63,9 +63,11 @@ class SkyModel(object):
             self._beamMS = None
             self._hasBeam = False
 
+        logging.debug('Checking for duplicate lines...')
         self._clean()
         self._patchMethod = None
-        #self._updateGroups()
+        logging.debug('Grouping by patch...')
+        self._updateGroups()
 
         logging.debug("Successfully read file '{0}'".format(fileName))
 
@@ -1228,6 +1230,11 @@ class SkyModel(object):
         """
         Removes duplicate entries.
         """
+        names = self.getColValues('Name')
+        nameSet = set(names)
+        if len(names) == len(nameSet):
+            return
+
         filt = []
         for i, name in enumerate(self.getColValues('Name')):
             if name not in filt:
