@@ -65,7 +65,7 @@ class SkyModel(object):
 
         self._clean()
         self._patchMethod = None
-        self._updateGroups()
+        #self._updateGroups()
 
         logging.debug("Successfully read file '{0}'".format(fileName))
 
