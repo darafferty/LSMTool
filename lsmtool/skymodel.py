@@ -1059,7 +1059,7 @@ class SkyModel(object):
                 self.table.remove_column('Val')
 
             return Column(name=colName, data=np.array(numer/denom),
-                units=self.table[colName].unit)
+                unit=self.table[colName].unit)
         else:
             def npavg(c):
                 return np.average(c, axis=0)
@@ -1112,18 +1112,18 @@ class SkyModel(object):
                 self.table.remove_column('ValWeight')
                 self.table.remove_column('Weight')
                 col = Column(name='Size', data=numer/denom,
-                    units='degree')
+                    unit='degree')
             else:
                 valCol = Column(name='Val', data=dist)
                 self.table.add_column(valCol)
                 size = self.table['Val'].groups.aggregate(np.max).data * 2.0
                 self.table.remove_column('Val')
-                col = Column(name='Size', data=size, units='degree')
+                col = Column(name='Size', data=size, unit='degree')
         else:
             if 'majoraxis' in self.table.colnames:
                 col = table['MajorAxis']
             else:
-                col = Column(name='Size', data=np.zeros(len(self.table)), units='degree')
+                col = Column(name='Size', data=np.zeros(len(self.table)), unit='degree')
 
         if hasattr(col, 'filled'):
             outcol = col.filled(fill_value=0.0)
