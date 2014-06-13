@@ -91,7 +91,7 @@ def radec2xy(RA, Dec, maxRA=None, minDec=None):
     w.wcs.cdelt = np.array([-0.066667, 0.066667])
     w.wcs.crval = [maxRA, minDec]
     w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
-    w.wcs.set_pv([(2, 1, 45.0)])
+#     w.wcs.set_pv([(2, 1, 45.0)])
 
     for ra_deg, dec_deg in zip(RA, Dec):
         ra_dec = np.array([[ra_deg, dec_deg]])
@@ -116,7 +116,7 @@ def xy2radec(x, y, maxRA=0.0, minDec=0.0):
     w.wcs.cdelt = np.array([-0.066667, 0.066667])
     w.wcs.crval = [maxRA, minDec]
     w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
-    w.wcs.set_pv([(2, 1, 45.0)])
+#     w.wcs.set_pv([(2, 1, 45.0)])
 
     for xp, yp in zip(x, y):
         x_y = np.array([[xp, yp]])
