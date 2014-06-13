@@ -200,13 +200,15 @@ def skyModelReader(fileName):
 
     logging.debug('Converting Dec...')
     DecRaw = table['Dec'].data.tolist()
-    DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
+#     DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
     def decformat(val):
         return Angle(val, unit='degree').to_string(unit='degree', sep='.')
-    DecCol.format = decformat
-    DecIndx = table.keys().index('Dec')
-    table.remove_column('Dec')
-    table.add_column(DecCol, index=DecIndx)
+#     DecCol.format = decformat
+#     DecIndx = table.keys().index('Dec')
+#     table.remove_column('Dec')
+#     table.add_column(DecCol, index=DecIndx)
+    table['Dec'] = Dec2Angle(DecRaw)
+    table['Dec'].format = decformat
 
     # Set column units and default values
     for i, colName in enumerate(colNames):
@@ -234,7 +236,9 @@ def RA2Angle(RA):
         RAStr = []
         for ras in RA:
             RAStr.append(ras+' hours')
+        print('String to Angle...')
         RAAngle = Angle(RAStr, unit='degree')
+        print('...done')
     else:
         RAAngle = Angle(RA, unit='degree')
 
