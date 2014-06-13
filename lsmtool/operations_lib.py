@@ -62,10 +62,10 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg):
         DecDeg = list(DecDeg)
 
     for flux, RA, Dec in zip(fluxes, RADeg, DecDeg):
-        # Use ant1, mid time, and channel 0 to compute the beam
+        # Use ant1, mid time, and mid channel to compute the beam
         sr.setDirection(RA*np.pi/180., Dec*np.pi/180.)
         beam = sr.evaluateStation(time, ant1)
-        r = abs(beam)
+        r = abs(beam[int(len(beam)/2.)])
         beam = ( r[0][0] + r[1][1] ) / 2.
         attFluxes.append(flux * beam)
 
