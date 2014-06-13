@@ -229,11 +229,10 @@ def RA2Angle(RA):
         RA = [RA]
 
     if type(RA[0]) is str:
-        RADeg = [(float(rasex.split(':')[0]) + float(rasex.split(':')[1])/60.0 + float(rasex.split(':')[2])/3600.0) * 15.0 for rasex in RA]
-#         RAStr = []
-#         for ras in RA:
-#             RAStr.append(ras+' hours')
-#         RAAngle = Angle(RAStr, unit='degree')
+        RADeg = [(float(rasex.split(':')[0])
+            + float(rasex.split(':')[1]) / 60.0
+            + float(rasex.split(':')[2]) / 3600.0) * 15.0
+            for rasex in RA]
         RAAngle = Angle(RADeg, unit='degree')
     else:
         RAAngle = Angle(RA, unit='degree')
@@ -249,10 +248,12 @@ def Dec2Angle(Dec):
         Dec = [Dec]
 
     if type(Dec[0]) is str:
-        DecStr = []
-        for decs in Dec:
-            DecStr.append(decs.replace('.', ':', 2))
-        DecAngle = Angle(DecStr, unit='degree')
+        DecDeg = [float(decsex.split('.')[0])
+             + float(decsex.split('.')[1]) / 60.0
+             + (float(decsex.split('.')[2])
+             + float('0.' + decsex.split('.')[3])) / 3600.0
+             for decsex in Dec]
+        DecAngle = Angle(DecDeg, unit='degree')
     else:
         DecAngle = Angle(Dec, unit='degree')
 

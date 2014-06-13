@@ -1059,7 +1059,7 @@ class SkyModel(object):
                 self.table.remove_column('Val')
 
             return Column(name=colName, data=np.array(numer/denom),
-                units=self.table[colName].units)
+                units=self.table[colName].unit)
         else:
             def npavg(c):
                 return np.average(c, axis=0)
