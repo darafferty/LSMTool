@@ -118,9 +118,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
                 if len(parts) == 2:
                     units = parts[1].strip()
         LSM.ungroup()
-        RA = LSM.getColValues('Ra')
-        Dec = LSM.getColValues('Dec')
-        x, y = radec2xy(RA, Dec)
+        x, y, midRA, midDec  = LSM._getXY()
         f = LSM.getColValues('I', units=units, applyBeam=applyBeam)
         vobin = _tessellate.bin2D(np.array(x), np.array(y), f,
             target_flux=targetFlux)

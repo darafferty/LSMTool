@@ -61,10 +61,10 @@ def plot(LSM, fileName=None):
     from matplotlib.ticker import FuncFormatter
     import numpy as np
     try:
-        from ..operations_lib import radec2xy
+        from ..operations_lib import radec2xy, xy2radec
     except:
-        from .operations_lib import radec2xy
-    global maxRA, minDec, ymin, xmin
+        from .operations_lib import radec2xy, xy2radec
+    global midRA, midDec, ymin, xmin
 
     fig = plt.figure(1,figsize=(7,7))
     plt.clf()
@@ -82,7 +82,7 @@ def plot(LSM, fileName=None):
     s = []
     minflux = np.min(LSM.getColValues('I'))
     for flux in LSM.getColValues('I'):
-        s.append(min(1000.0, (1.0+np.log10(flux/minflux))*50.0))
+        s.append(min(1000.0, (1.0+2.0*np.log10(flux/minflux))*50.0))
 
     # Plot sources, colored by patch if grouped
     c = [0]*len(LSM)
@@ -97,33 +97,35 @@ def plot(LSM, fileName=None):
         c = [sm.to_rgba(0)] * nsrc
 
     # Plot sources
-    RA = LSM.getColValues('Ra')
-    Dec = LSM.getColValues('Dec')
-    maxRA = np.max(RA)
-    minDec = np.min(Dec)
-    x, y  = radec2xy(RA, Dec)
+    x, y, midRA, midDec  = LSM._getXY()
     plt.scatter(x, y, s=s, c=c)
 
     if LSM.hasPatches:
         RAp, Decp = LSM.getPatchPositions(asArray=True)
-        xp, yp = radec2xy(RAp, Decp, maxRA, minDec)
+        xp, yp = radec2xy(RAp, Decp, midRA, midDec)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
 
-    # Define tick formatter to translate axis labels from x, y to ra, dec
+    # Define coodinate formater to show RA and Dec under mouse pointer
     RAformatter = FuncFormatter(RAtickformatter)
-    Decformatter = FuncFormatter(Dectickformatter)
-    xmin = min(ax.get_xlim())
-    ymin = min(ax.get_ylim())
-    ax.xaxis.set_major_formatter(RAformatter)
-    ax.yaxis.set_major_formatter(Decformatter)
-    plt.xlabel("RA (degrees)")
-    plt.ylabel("Dec (degrees)")
+    ax.format_coord = formatCoord
+    plt.xlabel("RA (arb. units)")
+    plt.ylabel("Dec (arb. units)")
 
     if fileName is not None:
         plt.savefig(fileName)
     else:
         plt.show()
     plt.close(fig)
+
+def formatCoord(x, y):
+    """Custom coordinate format"""
+    try:
+        from ..operations_lib import xy2radec
+    except:
+        from .operations_lib import xy2radec
+    global midRA, midDec
+    RA, Dec = xy2radec([x], [y], midRA, midDec)
+    return '{0:.2f} {1:.2f}'.format(RA[0], Dec[0])
 
 
 def RAtickformatter(x, pos):
@@ -132,8 +134,8 @@ def RAtickformatter(x, pos):
         from ..operations_lib import xy2radec
     except:
         from .operations_lib import xy2radec
-    global ymin, maxRA, minDec
-    ratick = xy2radec([x], [ymin], maxRA, minDec)[0][0]
+    global ymin, midRA, midDec
+    ratick = xy2radec([x], [ymin], midRA, midDec)[0][0]
     rastr = '{0:.2f}'.format(ratick)
     return rastr
 
@@ -145,8 +147,8 @@ def Dectickformatter(y, pos):
     except:
         from .operations_lib import xy2radec
 
-    global xmin, maxRA, minDec
-    dectick = xy2radec([xmin], [y], maxRA, minDec)[1][0]
+    global xmin, midRA, midDec
+    dectick = xy2radec([xmin], [y], midRA, midDec)[1][0]
     decstr = '{0:.2f}'.format(dectick)
     return decstr
 

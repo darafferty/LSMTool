@@ -458,35 +458,6 @@ class bin2D:
         return xout, yout, dataout, flux_out
 
 
-def radec2xy(RA, Dec):
-    """Returns x, y for input ra, dec
-    """
-    from astropy.wcs import WCS
-
-    y = []
-    x = []
-
-    # Make wcs object to handle transformation from ra and dec to pixel coords.
-    w = WCS(naxis=2)
-    w.wcs.crpix = [-234.75, 8.3393]
-    w.wcs.cdelt = np.array([-0.066667, 0.066667])
-    w.wcs.crval = [0, -90]
-    w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
-    w.wcs.set_pv([(2, 1, 45.0)])
-    arcsec_per_pix = abs(w.wcs.cdelt[0]) * 3600.0 # arcsec/pixel
-
-    for ra_deg, dec_deg in zip(RA, Dec):
-        ra_dec = np.array([[ra_deg, dec_deg]])
-        x.append(w.wcs_world2pix(ra_dec, 1)[0][0])
-        y.append(w.wcs_world2pix(ra_dec, 1)[0][1])
-
-    minx = np.min(x)
-    miny = np.min(y)
-    x += abs(minx)
-    y += abs(miny)
-    return x, y
-
-
 def derive_pixelsize(x, y, verbose=0) :
     """ Find the pixelsize by looking at the minimum distance between
         pairs of x,y

@@ -65,8 +65,9 @@ class SkyModel(object):
 
         logging.debug('Checking for duplicate lines...')
         self._clean()
+
+        logging.debug('Grouping table by patch...')
         self._patchMethod = None
-        logging.debug('Grouping by patch...')
         self._updateGroups()
 
         logging.debug("Successfully read file '{0}'".format(fileName))
@@ -350,16 +351,19 @@ class SkyModel(object):
                Dec of the patch
             - 'zero' => set all positions to [0.0, 0.0]
             - None => no changes are made
+            Note that the mid, mean, and wmean positions are calculated from TAN-
+            projected values.
         applyBeam : bool, optional
             If True, fluxes used as weights will be attenuated by the beam.
 
         Examples
         --------
-        Set all patch positions to their midpoints::
+        Set all patch positions to their (projected) midpoints::
 
             >>> s.setPatchPositions()
 
-        Set all patch positions to their flux-weighted mean postions::
+        Set all patch positions to their (projected) flux-weighted mean
+        positions::
 
              >>> s.setPatchPositions(method='wmean')
 
@@ -369,6 +373,8 @@ class SkyModel(object):
 
         """
         from tableio import RA2Angle, Dec2Angle
+        from operations_lib import radec2xy, xy2radec
+        from astropy.table import Column
 
         if self.hasPatches:
             if method is None:
@@ -385,25 +391,43 @@ class SkyModel(object):
                     if patchName in self.table.meta:
                         self.table.meta.pop(patchName)
                 patchDict = {}
+
+                # Add projected x and y columns
+                x, y, midRA, midDec = self._getXY()
+                xCol = Column(name='X', data=x)
+                yCol = Column(name='Y', data=y)
+                self.table.add_column(xCol)
+                self.table.add_column(yCol)
+
                 if method == 'mid':
-                    minRA = self.getColValues('Ra', aggregate='min')
-                    maxRA = self.getColValues('Ra', aggregate='max')
-                    minDec = self.getColValues('Dec', aggregate='min')
-                    maxDec = self.getColValues('Dec', aggregate='max')
-                    gRA = RA2Angle(minRA + (maxRA - minRA) / 2.0)
-                    gDec = Dec2Angle(minDec + (maxDec - minDec) / 2.0)
+                    minX = self._getMinColumn('X')
+                    maxX = self._getMaxColumn('X')
+                    minY = self._getMinColumn('Y')
+                    maxY = self._getMaxColumn('Y')
+                    midX = minX + (maxX - minX) / 2.0
+                    midY = minY + (maxY - minY) / 2.0
+                    gRA = RA2Angle(xy2radec(midX, midY, midRA, midDec)[0])
+                    gDec = Dec2Angle(xy2radec(midX, midY, midRA, midDec)[1])
                     for i, patchName in enumerate(patchNames):
                         patchDict[patchName] = [gRA[i], gDec[i]]
                 elif method == 'mean' or method == 'wmean':
-                    RA = RA2Angle(self.getColValues('Ra', aggregate=method,
-                        applyBeam=applyBeam))
-                    Dec = Dec2Angle(self.getColValues('Dec', aggregate=method,
-                        applyBeam=applyBeam))
+                    if method == 'mean':
+                        weight = False
+                    else:
+                        weight = True
+                    meanX = self._getAveragedColumn('X', applyBeam=applyBeam,
+                        weight=weight)
+                    meanY = self._getAveragedColumn('Y', applyBeam=applyBeam,
+                        weight=weight)
+                    RA = RA2Angle(xy2radec(meanX, meanY, midRA, midDec)[0])
+                    Dec = RA2Angle(xy2radec(meanX, meanY, midRA, midDec)[1])
                     for n, r, d in zip(patchNames, RA, Dec):
                         patchDict[n] = [r, d]
                 elif method == 'zero':
                     for n in patchNames:
                         patchDict[n] = [RA2Angle(0.0), Dec2Angle(0.0)]
+                self.table.remove_column('X')
+                self.table.remove_column('Y')
 
             for patch, pos in patchDict.iteritems():
                 if type(pos[0]) is str or type(pos[0]) is float:
@@ -414,6 +438,62 @@ class SkyModel(object):
         else:
             logging.error('Sky model does not have patches.')
             return
+
+
+    def _getXY(self):
+        """
+        Returns lists of projected x and y values for all sources
+        """
+        from operations_lib import radec2xy, xy2radec
+        import numpy as np
+
+        RA = self.getColValues('Ra')
+        Dec = self.getColValues('Dec')
+        x, y  = radec2xy(RA, Dec)
+        xmid = min(x) + (max(x) - min(x)) / 2.0
+        ymid = min(y) + (max(y) - min(y)) / 2.0
+        xind = np.argsort(x)
+        yind = np.argsort(y)
+        midxind = np.where(np.array(x)[xind] > xmid)[0][0]
+        midyind = np.where(np.array(y)[yind] > ymid)[0][0]
+        midRA = RA[xind[midxind]]
+        midDec = Dec[yind[midyind]]
+        x, y  = radec2xy(RA, Dec, midRA, midDec)
+        return x, y, midRA, midDec
+
+
+    def getDefaltValues(self):
+        """
+        Returns dict of {colName:default} values for all columns with defaults
+        """
+        colNames = self.getColNames()
+        defaultDict = {}
+        for colName in colNames:
+            if colName in self.table.meta:
+                defaultDict[colName] = self.table.meta[colName]
+        return defaultDict
+
+
+    def setDefaltValues(self, colDict):
+        """
+        Sets default column values
+
+        Parameters
+        ----------
+        colDict : dict
+            Dict specifying column names and default values as
+            {'colName':value} where the value is in the units accepted by
+            makesourcedb (e.g., Hz for ReferenceFrequency).
+
+        Examples
+        --------
+        Set new default value for ReferenceFrequency::
+
+            >>> s.setDefaultValues({'ReferenceFrequency': 140e6})
+
+        """
+        for colName, default in colDict.iteritems():
+            self.table.meta[colName] = default
 
 
     def ungroup(self):
@@ -438,7 +518,7 @@ class SkyModel(object):
 
     def getColNames(self):
         """
-        Returns a list of column names.
+        Returns a list of all available column names.
 
         Examples
         --------
@@ -472,6 +552,14 @@ class SkyModel(object):
                 - 'wmean': Stokes I weighted mean of patch values
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
+            Note that, in certain cases, the aggregation function will not
+            produce meaningful results. For example, asking for the sum of
+            the MajorAxis values per patch will not give a good indication of
+            the size of the patch. To get the sizes, use the getPatchSizes()
+            method. Additionally, applying the 'mean' or 'wmean' functions to
+            the RA or Dec columns may give strange results near the poles or
+            near RA = 0h. For aggregated RA and Dec values, use the
+            setPatchPositions() and getPatchPositions() methods.
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam. This attenuation
             also applies to fluxes used in aggregation functions.
@@ -493,11 +581,13 @@ class SkyModel(object):
             >>> s.getColValues('I', aggregate='sum')
             array([ 61.7305,   1.216 ,   3.9793, ...,   1.12  ,   1.25  ,   1.16  ])
 
-        Get flux-weighted average RA for the patches::
+        Get flux-weighted average RA for the patches. As noted above, the
+        getColValues() method is not appropriate for use with RA or Dec, so
+        we must first set the patch positions to their (projected) weighted-
+        mean values and then retrieve them::
 
-            >>> s.getColValues('Ra', aggregate='wmean')
-            array([ 242.41450289,  243.11192   ,  243.50561817, ...,  271.51929   ,
-            271.63612   ,  272.05412   ])
+            >>> s.setPatchPositions(method='wmean')
+            >>> RA = s.getPatchPositions(asArray=True)[0]
 
         """
         colName = self._verifyColName(colName)
@@ -1038,7 +1128,7 @@ class SkyModel(object):
             def npsum(array):
                 return np.sum(array, axis=0)
 
-            vals = self.getColValues(colName)
+            vals = self.table[colName].data
             if weight:
                 weights = self.getColValues('I', applyBeam=applyBeam)
                 if weights.shape != vals.shape:
