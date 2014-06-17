@@ -26,11 +26,11 @@ def run(step, parset, LSM):
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), False )
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
 
-#     try:
-    LSM.setPatchPostions(method=method, applyBeam=applyBeam)
-    result = 0
-#     except:
-#         result = 1
+    try:
+        LSM.setPatchPositions(method=method, applyBeam=applyBeam)
+        result = 0
+    except:
+        result = 1
 
     # Write to outFile
     if outFile != '' and result == 0:
