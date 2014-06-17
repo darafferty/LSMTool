@@ -30,7 +30,7 @@ def run(step, parset, LSM):
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 10 )
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "applyBeam"]), False )
 
-    result = group(LSM, algorithm, targetFlux, numClusters, applyBeam, method)
+    result = group(LSM, algorithm, targetFlux, numClusters, applyBeam)
 
     # Write to outFile
     if outFile != '' and result == 0:
