@@ -37,7 +37,7 @@ def run(step, parset, LSM):
     return result
 
 
-def merge(LSM, patches, name=None, method='mid'):
+def merge(LSM, patches, name=None):
     """
     Merge two or more patches together
 
@@ -65,7 +65,7 @@ def merge(LSM, patches, name=None, method='mid'):
             return 1
         else:
             LSM.table['Patch'][indices] = name
-    LSM._updateGroups(method=method)
+    LSM._updateGroups()
     LSM._info()
 
     return 0

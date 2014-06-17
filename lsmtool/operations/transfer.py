@@ -36,7 +36,7 @@ def run(step, parset, LSM):
     return result
 
 
-def transfer(LSM, patchFile, method='mid'):
+def transfer(LSM, patchFile):
     """
     Transfer patches from the input sky model.
 
@@ -76,6 +76,6 @@ def transfer(LSM, patchFile, method='mid'):
         patchNames[indx] = masterPatchNames[masterIndx[i]]
 
     LSM.setColValues('Patch', patchNames)
-    LSM._updateGroups(method=method)
+    LSM._updateGroups()
     LSM._info()
     return 0

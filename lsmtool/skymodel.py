@@ -87,14 +87,13 @@ class SkyModel(object):
         return self.table.__str__()
 
 
-    def _updateGroups(self, method=None):
+    def _updateGroups(self):
         """
         Updates the grouping of the table by patch name.
         """
         if 'Patch' in self.table.keys():
             self.table = self.table.group_by('Patch')
             self.hasPatches = True
-            self.setPatchPositions(method=method)
         else:
             self.hasPatches = False
 
@@ -283,9 +282,10 @@ class SkyModel(object):
         return colNameKey
 
 
-    def getPatchPositions(self, patchName=None, asArray=False):
+    def getPatchPositions(self, patchName=None, asArray=False, method=None,
+        applyBeam=False):
         """
-        Returns a dict of patch positions as {'patchName':(RA, Dec)}.
+        Returns arrays or a dict of patch positions (as {'patchName':(RA, Dec)}).
 
         Parameters
         ----------
@@ -293,10 +293,22 @@ class SkyModel(object):
             List of patch names for which the positions are desired
         asArray : bool, optional
             If True, returns arrays of RA, Dec instead of a dict
+        method : None or str, optional
+            This parameter specifies the method used to calculate the patch
+            positions. If None, the current patch positions stored in the sky
+            model, if any, will be returned.
+            - 'mid' => calculate the midpoint of the patch
+            - 'mean' => calculate the mean RA and Dec of the patch
+            - 'wmean' => calculate the flux-weighted mean RA and Dec of the patch
+            - None => current patch positions are returned
+            Note that the mid, mean, and wmean positions are calculated from TAN-
+            projected values.
+        applyBeam : bool, optional
+            If True, fluxes used as weights will be attenuated by the beam.
 
         Examples
         --------
-        Get all patch positions::
+        Get the current patch positions::
 
             >>> s.getPatchPositions()
             {'bin0': [<Angle 91.77565208333331 deg>, <Angle 41.57834805555555 deg>],
@@ -309,26 +321,75 @@ class SkyModel(object):
             (array([ 91.77565208,  91.59991875,  90.83773333]),
              array([ 41.57834806,  41.90387583,  42.18986194]))
 
+        Calculate the flux-weighted mean positions of each patch::
+
+            >>> s.getPatchPositions(method='wmean', asArray=True)
+
         """
         import numpy as np
+        from operations_lib import radec2xy, xy2radec
+        from astropy.table import Column
+        from tableio import RA2Angle, Dec2Angle
 
         if self.hasPatches:
             if patchName is None:
                 patchName = self.getPatchNames()
             if type(patchName) is str:
                 patchName = [patchName]
+            if method is None:
+                patchDict = {}
+                for patch in patchName:
+                    if patch in self.table.meta:
+                        patchDict[patch] = self.table.meta[patch]
+                    else:
+                        patchDict[patch] = [RA2Angle(0.0)[0], Dec2Angle(0.0)[0]]
+            else:
+                patchDict = {}
+
+                # Add projected x and y columns
+                x, y, midRA, midDec = self._getXY()
+                xCol = Column(name='X', data=x)
+                yCol = Column(name='Y', data=y)
+                self.table.add_column(xCol)
+                self.table.add_column(yCol)
+
+                if method == 'mid':
+                    minX = self._getMinColumn('X')
+                    maxX = self._getMaxColumn('X')
+                    minY = self._getMinColumn('Y')
+                    maxY = self._getMaxColumn('Y')
+                    midX = minX + (maxX - minX) / 2.0
+                    midY = minY + (maxY - minY) / 2.0
+                    gRA = RA2Angle(xy2radec(midX, midY, midRA, midDec)[0])
+                    gDec = Dec2Angle(xy2radec(midX, midY, midRA, midDec)[1])
+                    for i, name in enumerate(patchName):
+                        patchDict[name] = [gRA[i], gDec[i]]
+                elif method == 'mean' or method == 'wmean':
+                    if method == 'mean':
+                        weight = False
+                    else:
+                        weight = True
+                    meanX = self._getAveragedColumn('X', applyBeam=applyBeam,
+                        weight=weight)
+                    meanY = self._getAveragedColumn('Y', applyBeam=applyBeam,
+                        weight=weight)
+                    RA = RA2Angle(xy2radec(meanX, meanY, midRA, midDec)[0])
+                    Dec = Dec2Angle(xy2radec(meanX, meanY, midRA, midDec)[1])
+                    for n, r, d in zip(patchName, RA, Dec):
+                        patchDict[n] = [r, d]
+                self.table.remove_column('X')
+                self.table.remove_column('Y')
+
             if asArray:
                 RA = []
                 Dec = []
                 for patch in patchName:
-                    RA.append(self.table.meta[patch][0].value)
-                    Dec.append(self.table.meta[patch][1].value)
+                    RA.append(patchDict[patch][0].value)
+                    Dec.append(patchDict[patch][1].value)
                 return np.array(RA), np.array(Dec)
             else:
-                positionDict = {}
-                for patch in patchName:
-                    positionDict[patch] = self.table.meta[patch]
-                return positionDict
+                return patchDict
+
         else:
             return None
 
@@ -346,11 +407,10 @@ class SkyModel(object):
             If no patchDict is given, this parameter specifies the method used
             to set the patch positions:
             - 'mid' => the position is set to the midpoint of the patch
-            - 'mean' => the positions is set to the mean RA and Ded of the patch
+            - 'mean' => the positions is set to the mean RA and Dec of the patch
             - 'wmean' => the position is set to the flux-weighted mean RA and
                Dec of the patch
             - 'zero' => set all positions to [0.0, 0.0]
-            - None => no changes are made
             Note that the mid, mean, and wmean positions are calculated from TAN-
             projected values.
         applyBeam : bool, optional
@@ -373,14 +433,8 @@ class SkyModel(object):
 
         """
         from tableio import RA2Angle, Dec2Angle
-        from operations_lib import radec2xy, xy2radec
-        from astropy.table import Column
 
         if self.hasPatches:
-            if method is None:
-                method = self._patchMethod
-            else:
-                self._patchMethod = method
             if method is None:
                 return
 
@@ -390,44 +444,13 @@ class SkyModel(object):
                 for patchName in patchNames:
                     if patchName in self.table.meta:
                         self.table.meta.pop(patchName)
-                patchDict = {}
-
-                # Add projected x and y columns
-                x, y, midRA, midDec = self._getXY()
-                xCol = Column(name='X', data=x)
-                yCol = Column(name='Y', data=y)
-                self.table.add_column(xCol)
-                self.table.add_column(yCol)
-
-                if method == 'mid':
-                    minX = self._getMinColumn('X')
-                    maxX = self._getMaxColumn('X')
-                    minY = self._getMinColumn('Y')
-                    maxY = self._getMaxColumn('Y')
-                    midX = minX + (maxX - minX) / 2.0
-                    midY = minY + (maxY - minY) / 2.0
-                    gRA = RA2Angle(xy2radec(midX, midY, midRA, midDec)[0])
-                    gDec = Dec2Angle(xy2radec(midX, midY, midRA, midDec)[1])
-                    for i, patchName in enumerate(patchNames):
-                        patchDict[patchName] = [gRA[i], gDec[i]]
-                elif method == 'mean' or method == 'wmean':
-                    if method == 'mean':
-                        weight = False
-                    else:
-                        weight = True
-                    meanX = self._getAveragedColumn('X', applyBeam=applyBeam,
-                        weight=weight)
-                    meanY = self._getAveragedColumn('Y', applyBeam=applyBeam,
-                        weight=weight)
-                    RA = RA2Angle(xy2radec(meanX, meanY, midRA, midDec)[0])
-                    Dec = RA2Angle(xy2radec(meanX, meanY, midRA, midDec)[1])
-                    for n, r, d in zip(patchNames, RA, Dec):
-                        patchDict[n] = [r, d]
-                elif method == 'zero':
+                if method == 'zero':
+                    patchDict = {}
                     for n in patchNames:
                         patchDict[n] = [RA2Angle(0.0), Dec2Angle(0.0)]
-                self.table.remove_column('X')
-                self.table.remove_column('Y')
+                else:
+                    patchDict = self.getPatchPositions(method=method, applyBeam=
+                        applyBeam)
 
             for patch, pos in patchDict.iteritems():
                 if type(pos[0]) is str or type(pos[0]) is float:
@@ -552,14 +575,15 @@ class SkyModel(object):
                 - 'wmean': Stokes I weighted mean of patch values
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
-            Note that, in certain cases, the aggregation function will not
+            Note that, in certain cases, certain aggregation functions will not
             produce meaningful results. For example, asking for the sum of
             the MajorAxis values per patch will not give a good indication of
-            the size of the patch. To get the sizes, use the getPatchSizes()
-            method. Additionally, applying the 'mean' or 'wmean' functions to
+            the size of the patch (to get the sizes, use the getPatchSizes()
+            method). Additionally, applying the 'mean' or 'wmean' functions to
             the RA or Dec columns may give strange results near the poles or
             near RA = 0h. For aggregated RA and Dec values, use the
-            setPatchPositions() and getPatchPositions() methods.
+            getPatchPositions() method instead which projects the sources onto
+            the image plane before aggregation.
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam. This attenuation
             also applies to fluxes used in aggregation functions.
@@ -581,13 +605,11 @@ class SkyModel(object):
             >>> s.getColValues('I', aggregate='sum')
             array([ 61.7305,   1.216 ,   3.9793, ...,   1.12  ,   1.25  ,   1.16  ])
 
-        Get flux-weighted average RA for the patches. As noted above, the
+        Get flux-weighted average RA and Dec for the patches. As noted above, the
         getColValues() method is not appropriate for use with RA or Dec, so
-        we must first set the patch positions to their (projected) weighted-
-        mean values and then retrieve them::
+        we must use getPatchPositions() instead::
 
-            >>> s.setPatchPositions(method='wmean')
-            >>> RA = s.getPatchPositions(asArray=True)[0]
+            >>> RA, Dec = s.getPatchPositions(method='wmean', asArray=True)
 
         """
         colName = self._verifyColName(colName)
@@ -691,7 +713,7 @@ class SkyModel(object):
                     vals = Dec2Angle(values)
                 else:
                     vals = values
-                data = values
+                data = vals
 
         if mask is not None:
             data = np.ma.masked_array(data, mask)
@@ -1354,8 +1376,7 @@ class SkyModel(object):
         operations.remove.remove(self, *args, **kwargs)
 
 
-    def group(self, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
-        method='mid'):
+    def group(self, algorithm, targetFlux=None, numClusters=100, applyBeam=False):
         """
         Groups sources into patches
 
@@ -1372,17 +1393,13 @@ class SkyModel(object):
         targetFlux : str or float, optional
             Target flux for tessellation (the total flux of each tile will be close
             to this value). The target flux can be specified as either a float in Jy
-            or as a string with units (e.g., '25.0 mJy').
+            or as a string with units (e.g., '25.0 mJy'). Valid for algorithm =
+            'tessellate' only.
         numClusters : int, optional
             Number of clusters for clustering. Sources are grouped around the
-            numClusters brightest sources.
+            numClusters brightest sources. Valid for algorithm = 'cluster' only.
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
-        method : str, optional
-            Method by which patch positions will be calculated:
-            - 'mid' => use the midpoint of the patch
-            - 'mean' => use the mean position
-            - 'wmean' => use the flux-weighted mean position
 
         Examples
         --------
@@ -1392,8 +1409,7 @@ class SkyModel(object):
             >>> s.group('tessellate', targetFlux=30.0)
 
         """
-        operations.group.group(self, algorithm, targetFlux, numClusters, applyBeam,
-        method)
+        operations.group.group(self, algorithm, targetFlux, numClusters, applyBeam)
 
 
     def transfer(self, *args, **kwargs):

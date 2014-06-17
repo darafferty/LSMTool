@@ -1,13 +1,13 @@
 # Validation LSMTool parset
 # Run with "lsmtool/lsmtool.py tests/no_patches.sky parsets/validation.parset"
 
-LSMTool.Steps = [select, transfer, remove, ungroup, group, move, merge, concatenate, add, plot]
+LSMTool.Steps = [select, transfer, remove, ungroup, concatenate, add, group, move, merge, setpos, plot]
 
 # Select individual sources with Stokes I fluxes above 1 Jy
 LSMTool.Steps.select.Operation = SELECT
 LSMTool.Steps.select.FilterExpression = I > 1.0 Jy
 
-# Transfer patches from test2.sky
+# Transfer patches from patches.sky
 LSMTool.Steps.transfer.Operation = TRANSFER
 LSMTool.Steps.transfer.PatchFile = tests/patches.sky
 
@@ -19,39 +19,41 @@ LSMTool.Steps.remove.Aggregate = sum
 # Remove all patches
 LSMTool.Steps.ungroup.Operation = UNGROUP
 
+# Concatenate with concat.sky
+LSMTool.Steps.concatenate.Operation = CONCATENATE
+LSMTool.Steps.concatenate.Skymodel2 = tests/concat.sky
+LSMTool.Steps.concatenate.MatchBy = position
+LSMTool.Steps.concatenate.Radius = 30 arcsec
+LSMTool.Steps.concatenate.Keep = from2
+
+# Add a source
+LSMTool.Steps.add.Operation = ADD
+LSMTool.Steps.add.Name = src1
+LSMTool.Steps.add.Type = POINT
+LSMTool.Steps.add.Ra = 277.4232
+LSMTool.Steps.add.Dec = 48.3689
+LSMTool.Steps.add.I = 0.69
+
 # Group using tessellation to a target flux of 50 Jy
 LSMTool.Steps.group.Operation = GROUP
 LSMTool.Steps.group.Algorithm = tessellate
 LSMTool.Steps.group.TargetFlux = 50.0 Jy
-LSMTool.Steps.group.Method = mid
 
-# Move patch 'bin1' by 0.001 degrees in RA
+# Move patch 'bin1' to 16:04:16.2288, 58.03.06.912
 LSMTool.Steps.move.Operation = MOVE
 LSMTool.Steps.move.Name = bin1
-LSMTool.Steps.move.Shift = [0.001, 0.0]
+LSMTool.Steps.move.Position = ['16:04:16.2288', '58.03.06.912']
 
 # Merge patches 'bin0' and 'bin2'
 LSMTool.Steps.merge.Operation = MERGE
 LSMTool.Steps.merge.Patches = [bin0, bin2]
 LSMTool.Steps.merge.Name = merged_patch
 
-# Concatenate with concat_sky_model.sky
-LSMTool.Steps.concatenate.Operation = CONCATENATE
-LSMTool.Steps.concatenate.Skymodel2 = tests/patches.sky
-LSMTool.Steps.concatenate.MatchBy = position
-LSMTool.Steps.concatenate.Radius = 30 arcsec
-LSMTool.Steps.concatenate.Keep = from2
-
-# Add a source and write final sky model
-LSMTool.Steps.add.Operation = ADD
-LSMTool.Steps.add.Name = src1
-LSMTool.Steps.add.Type = POINT
-LSMTool.Steps.add.Patch = src1_patch
-LSMTool.Steps.add.Ra = 277.4232
-LSMTool.Steps.add.Dec = 48.3689
-LSMTool.Steps.add.I = 0.69
-LSMTool.Steps.add.OutFile = tests/test_final.sky
+# Set patch positions to midpoint of patch and write final model to file
+LSMTool.Steps.setpos.Operation = SETPATCHPOSITIONS
+LSMTool.Steps.setpos.Method = mid
+LSMTool.Steps.setpos.OutFile = tests/final.sky
 
 # Plot the sky model
 LSMTool.Steps.plot.Operation = PLOT
-LSMTool.Steps.plot.OutFile = tests/test_plot.pdf
+LSMTool.Steps.plot.OutFile = tests/plot.pdf

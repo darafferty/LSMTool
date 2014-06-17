@@ -24,13 +24,8 @@ import os
 import sys
 import numpy as np
 import pylab as pl
+import logging
 import itertools
-try:
-    import pyrap.tables as pt
-    import lofar.stationresponse as lsr
-except ImportError:
-    pass
-
 
 class Patch():
     def __init__(self, name, ra, dec, flux):
@@ -103,6 +98,7 @@ def compute_patch_center(LSM, applyBeam=False):
     """
     data = LSM.table
     patch_names = np.unique(data['Name'])
+    fluxes = LSM.getColValues('I', applyBeam=applyBeam)
     patches = []
 
     for patch_name in patch_names:
@@ -113,7 +109,6 @@ def compute_patch_center(LSM, applyBeam=False):
         weights_ra  = 0.
         weights_dec = 0.
         patch_flux  = 0.
-        fluxes = LSM.getColValues('I', applyBeam=applyBeam)
         for comp_id in comp_ids:
 
             comp_ra   = data['Ra'][comp_id]
@@ -143,10 +138,13 @@ def angsep2(ra1, dec1, ra2, dec2):
     return coord1.separation(coord2)
 
 
-def create_clusters(patches_orig, Q):
+def create_clusters(LSM, patches_orig, Q, applyBeam=False):
     """
     Clusterize all the patches of the skymodel iteratively around the brightest patches
     """
+    from astropy.coordinates import ICRS
+    from astropy import units as u
+
     # sort the patches by brightest first
     idx = np.argsort([patch.flux for patch in patches_orig])[::-1] # -1 to reverse sort
     patches = list(np.array(patches_orig)[idx])
@@ -159,25 +157,44 @@ def create_clusters(patches_orig, Q):
     # Iterate until no changes in which patch belongs to which cluster
     count = 1
     patches_seq_old = []
+    patchRAs = []
+    patchDecs = []
+    for patch in patches:
+        patchRAs.append(patch.ra)
+        patchDecs.append(patch.dec)
+
     while True:
         print 'Iteration', count
 
+        clusterRAs = []
+        clusterDecs = []
+        if LSM.hasPatches:
+            clusterRA, clusterDec = LSM.getPatchPositions(method='mid',
+                asArray=True, applyBeam=applyBeam)
+            clusterNames = LSM.getPatchNames()
+            patches_orig = LSM.getColValues('Name')
+        else:
+            clusterRA = [cluster.centroid_ra for cluster in clusters]
+            clusterDec = [cluster.centroid_dec for cluster in clusters]
+            clusterNames = [cluster.name for cluster in clusters]
         for cluster in clusters:
-            cluster.update_cluster_coords()
             # reset patches
+            if type(clusterNames) is not list:
+                clusterNames = clusterNames.tolist()
+            cindx = clusterNames.index(cluster.name)
             cluster.patches = []
+            clusterRAs.append(clusterRA[cindx])
+            clusterDecs.append(clusterDec[cindx])
 
-        # select patches after the first Q
-        for patch in patches[Q:]:
-            # finding closest cluster for each patch
-            angulardistance = np.inf
-            for cluster in clusters:
-                adis = abs(angsep2(cluster.centroid_ra, cluster.centroid_dec, patch.ra, patch.dec))
-                if adis < angulardistance:
-                    angulardistance = adis
-                    closest_cluster = cluster
-            # add this patch to the closest cluster
-            closest_cluster.add_patch(patch)
+        catalog1 = ICRS(clusterRAs, clusterDecs,
+            unit=(u.degree, u.degree))
+        catalog2 = ICRS(patchRAs, patchDecs,
+            unit=(u.degree, u.degree))
+        matchIdx, d2d, d3d = catalog2.match_to_catalog_sky(catalog1)
+
+        for i, patch in zip(matchIdx, patches):
+            cluster = clusters[i]
+            cluster.add_patch(patch)
 
         patches_seq = []
         for cluster in clusters:
@@ -187,12 +204,14 @@ def create_clusters(patches_orig, Q):
         if patches_seq == patches_seq_old: break
         patches_seq_old = patches_seq
 
-    # Make output patch column
-    patchNames = [''] * len(patches)
-    patchNames_orig = [p.name for p in patches_orig]
-    for c in clusters:
-        for p in c.patches:
-            patchNames[patchNames_orig.index(p.name)] = c.name
+        # Make output patch column
+        patchNames = [''] * len(patches)
+        patchNames_orig = LSM.getColValues('Name').tolist()
+        for c in clusters:
+            for p in c.patches:
+                patchNames[patchNames_orig.index(p.name)] = c.name
 
+        LSM.setColValues('Patch', patchNames, index=2)
+        LSM._updateGroups()
     return np.array(patchNames)
 

@@ -166,7 +166,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     if matchBy.lower() == 'position':
         LSM1.table.remove_column('match')
 
-    LSM1._updateGroups(method='mid')
+    LSM1._updateGroups()
     LSM1._info()
     return 0
 

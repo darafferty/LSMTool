@@ -29,7 +29,6 @@ def run(step, parset, LSM):
     targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "TargetFlux"]), '1.0 Jy' )
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 10 )
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "applyBeam"]), False )
-    method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), 'mid' )
 
     result = group(LSM, algorithm, targetFlux, numClusters, applyBeam, method)
 
@@ -40,8 +39,7 @@ def run(step, parset, LSM):
     return result
 
 
-def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
-    method='mid'):
+def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False):
     """
     Groups sources into patches
 
@@ -69,11 +67,6 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
         numClusters brightest sources.
     applyBeam : bool, optional
         If True, fluxes will be attenuated by the beam.
-    method : str, optional
-        Method by which patch positions will be calculated:
-        - 'mid' => use the midpoint of the patch
-        - 'mean' => use the mean position
-        - 'wmean' => use the flux-weighted mean position
 
     Examples
     --------
@@ -98,8 +91,9 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
 
     elif algorithm.lower() == 'cluster':
         LSM.ungroup()
-        patches = _cluster.compute_patch_center(LSM.table, applyBeam=applyBeam)
-        patchCol = _cluster.create_clusters(patches, numClusters)
+        patches = _cluster.compute_patch_center(LSM, applyBeam=applyBeam)
+        patchCol = _cluster.create_clusters(LSM, patches, numClusters,
+            applyBeam=applyBeam)
         LSM.setColValues('Patch', patchCol, index=2)
 
     elif algorithm.lower() == 'tessellate':
@@ -137,8 +131,8 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
         logging.error('Grouping alogrithm not understood.')
         return 1
 
-    # Calculate/update patch positions
-    LSM._updateGroups(method=method)
+    # Update table grouping
+    LSM._updateGroups()
     LSM._info()
     return 0
 

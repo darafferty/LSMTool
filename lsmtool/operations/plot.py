@@ -102,7 +102,8 @@ def plot(LSM, fileName=None):
 
     if LSM.hasPatches:
         RAp, Decp = LSM.getPatchPositions(asArray=True)
-        xp, yp = radec2xy(RAp, Decp, midRA, midDec)
+        goodInd = np.where( (RAp != 0.0) & (Decp != 0.0) )
+        xp, yp = radec2xy(RAp[goodInd], Decp[goodInd], midRA, midDec)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
 
     # Define coodinate formater to show RA and Dec under mouse pointer
