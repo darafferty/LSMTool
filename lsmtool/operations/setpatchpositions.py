@@ -29,8 +29,8 @@ def run(step, parset, LSM):
     try:
         LSM.setPatchPostions(method=method, applyBeam=applyBeam)
         result = 0
-    except:
-        result = 1
+#     except:
+#         result = 1
 
     # Write to outFile
     if outFile != '' and result == 0:
