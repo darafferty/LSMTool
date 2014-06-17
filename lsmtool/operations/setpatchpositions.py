@@ -26,9 +26,9 @@ def run(step, parset, LSM):
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), False )
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
 
-    try:
-        LSM.setPatchPostions(method=method, applyBeam=applyBeam)
-        result = 0
+#     try:
+    LSM.setPatchPostions(method=method, applyBeam=applyBeam)
+    result = 0
 #     except:
 #         result = 1
 
