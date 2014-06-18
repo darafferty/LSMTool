@@ -191,7 +191,7 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False):
         catalog2 = ICRS(patchRAs, patchDecs,
             unit=(u.degree, u.degree))
         matchIdx, d2d, d3d = catalog2.match_to_catalog_sky(catalog1)
-
+        0/0
         for i, patch in zip(matchIdx, patches):
             cluster = clusters[i]
             cluster.add_patch(patch)
