@@ -144,6 +144,14 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False):
     """
     from astropy.coordinates import ICRS
     from astropy import units as u
+    from distutils.version import StrictVersion
+    import scipy
+    if StrictVersion(scipy.__version__) < StrictVersion('0.15.0'):
+        logging.warning('The installed SciPy contains a bug in catalog matching. '
+            'Falling back on (much slower) matching script.')
+        from ._matching_pre04 import match_coordinates_sky
+    else:
+        from astropy.coordinates.matching import match_coordinates_sky
 
     # sort the patches by brightest first
     idx = np.argsort([patch.flux for patch in patches_orig])[::-1] # -1 to reverse sort
@@ -190,8 +198,8 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False):
             unit=(u.degree, u.degree))
         catalog2 = ICRS(patchRAs, patchDecs,
             unit=(u.degree, u.degree))
-        matchIdx, d2d, d3d = catalog2.match_to_catalog_sky(catalog1)
-        0/0
+        matchIdx, d2d, d3d = match_coordinates_sky(catalog2, catalog1)
+
         for i, patch in zip(matchIdx, patches):
             cluster = clusters[i]
             cluster.add_patch(patch)
