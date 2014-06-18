@@ -93,6 +93,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
         from .. import skymodel
     except:
         import skymodel
+    from distutils.version import StrictVersion
     import scipy
     if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
         logging.debug('The installed version of SciPy contains a bug that affects catalog matching. '
