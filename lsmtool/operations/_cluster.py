@@ -146,9 +146,9 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False):
     from astropy import units as u
     from distutils.version import StrictVersion
     import scipy
-    if StrictVersion(scipy.__version__) < StrictVersion('0.15.0'):
-        logging.warning('The installed SciPy contains a bug in catalog matching. '
-            'Falling back on (much slower) matching script.')
+    if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
+        logging.debug('The installed version of SciPy contains a bug that affects catalog matching. '
+            'Falling back on (slower) matching script.')
         from ._matching_pre04 import match_coordinates_sky
     else:
         from astropy.coordinates.matching import match_coordinates_sky
