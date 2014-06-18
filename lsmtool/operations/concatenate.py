@@ -93,6 +93,13 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
         from .. import skymodel
     except:
         import skymodel
+    import scipy
+    if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
+        logging.debug('The installed version of SciPy contains a bug that affects catalog matching. '
+            'Falling back on (slower) matching script.')
+        from ._matching_pre04 import match_coordinates_sky
+    else:
+        from astropy.coordinates.matching import match_coordinates_sky
 
     if type(LSM2) is str:
         LSM2 = skymodel.SkyModel(LSM2)
@@ -120,7 +127,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
             unit=(u.degree, u.degree))
         catalog2 = ICRS(LSM2.getColValues('Ra'), LSM2.getColValues('Dec'),
             unit=(u.degree, u.degree))
-        idx, d2d, d3d = catalog1.match_to_catalog_sky(catalog2)
+        idx, d2d, d3d = match_coordinates_sky(catalog1, catalog2)
 
         matches = np.where(d2d.value <= radius)
 
