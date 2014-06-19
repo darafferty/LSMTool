@@ -287,7 +287,7 @@ class SkyModel(object):
 
 
     def getPatchPositions(self, patchName=None, asArray=False, method=None,
-        applyBeam=False):
+        applyBeam=False, perPatchProjection=True):
         """
         Returns arrays or a dict of patch positions (as {'patchName':(RA, Dec)}).
 
@@ -309,6 +309,9 @@ class SkyModel(object):
             projected values.
         applyBeam : bool, optional
             If True, fluxes used as weights will be attenuated by the beam.
+        perPatchProjection : bool, optional
+            If True, a different projection center is used per patch. If False,
+            a single projection center is used for all patches.
 
         Examples
         --------
@@ -350,10 +353,29 @@ class SkyModel(object):
             else:
                 patchDict = {}
 
-                # Add projected x and y columns
-                x, y, midRA, midDec = self._getXY()
-                xCol = Column(name='X', data=x)
-                yCol = Column(name='Y', data=y)
+                # Add projected x and y columns.
+                if perPatchProjection:
+                    # Each patch has a different projection center
+                    xAll = [] # has length = num of sources
+                    yAll = []
+                    midRAAll = [] # has length = num of patches
+                    midDecAll = []
+                    for name in patchName:
+                        x, y, midRA, midDec = self._getXY(patchName=name)
+                        xAll.extend(x)
+                        yAll.extend(y)
+                        midRAAll.append(midRA)
+                        midDecAll.append(midDec)
+                else:
+                    xAll, yAll, midRA, midDec = self._getXY()
+                    midRAAll = [] # has length = num of patches
+                    midDecAll = []
+                    for name in patchName:
+                        midRAAll.append(midRA)
+                        midDecAll.append(midDec)
+
+                xCol = Column(name='X', data=xAll)
+                yCol = Column(name='Y', data=yAll)
                 self.table.add_column(xCol)
                 self.table.add_column(yCol)
 
@@ -364,10 +386,12 @@ class SkyModel(object):
                     maxY = self._getMaxColumn('Y')
                     midX = minX + (maxX - minX) / 2.0
                     midY = minY + (maxY - minY) / 2.0
-                    gRA = RA2Angle(xy2radec(midX, midY, midRA, midDec)[0])
-                    gDec = Dec2Angle(xy2radec(midX, midY, midRA, midDec)[1])
                     for i, name in enumerate(patchName):
-                        patchDict[name] = [gRA[i], gDec[i]]
+                        gRA = RA2Angle(xy2radec([midX[i]], [midY[i]], midRAAll[i],
+                            midDecAll[i])[0])
+                        gDec = Dec2Angle(xy2radec([midX[i]], [midY[i]], midRAAll[i],
+                            midDecAll[i])[1])
+                        patchDict[name] = [gRA, gDec]
                 elif method == 'mean' or method == 'wmean':
                     if method == 'mean':
                         weight = False
@@ -377,10 +401,12 @@ class SkyModel(object):
                         weight=weight)
                     meanY = self._getAveragedColumn('Y', applyBeam=applyBeam,
                         weight=weight)
-                    RA = RA2Angle(xy2radec(meanX, meanY, midRA, midDec)[0])
-                    Dec = Dec2Angle(xy2radec(meanX, meanY, midRA, midDec)[1])
-                    for n, r, d in zip(patchName, RA, Dec):
-                        patchDict[n] = [r, d]
+                    for i, name in enumerate(patchName):
+                        gRA = RA2Angle(xy2radec([meanX[i]], [meanY[i]], midRAAll[i],
+                            midDecAll[i])[0])
+                        gDec = Dec2Angle(xy2radec([meanX[i]], [meanY[i]], midRAAll[i],
+                            midDecAll[i])[1])
+                        patchDict[name] = [gRA, gDec]
                 self.table.remove_column('X')
                 self.table.remove_column('Y')
 
@@ -398,7 +424,8 @@ class SkyModel(object):
             return None
 
 
-    def setPatchPositions(self, patchDict=None, method='mid', applyBeam=False):
+    def setPatchPositions(self, patchDict=None, method='mid', applyBeam=False,
+         perPatchProjection=True):
         """
         Sets the patch positions.
 
@@ -419,6 +446,9 @@ class SkyModel(object):
             projected values.
         applyBeam : bool, optional
             If True, fluxes used as weights will be attenuated by the beam.
+        perPatchProjection : bool, optional
+            If True, a different projection center is used per patch. If False,
+            a single projection center is used for all patches.
 
         Examples
         --------
@@ -454,7 +484,7 @@ class SkyModel(object):
                         patchDict[n] = [RA2Angle(0.0), Dec2Angle(0.0)]
                 else:
                     patchDict = self.getPatchPositions(method=method, applyBeam=
-                        applyBeam)
+                        applyBeam, perPatchProjection=perPatchProjection)
 
             for patch, pos in patchDict.iteritems():
                 if type(pos[0]) is str or type(pos[0]) is float:
@@ -467,25 +497,42 @@ class SkyModel(object):
             return
 
 
-    def _getXY(self):
+    def _getXY(self, patchName=None):
         """
         Returns lists of projected x and y values for all sources
+
+        Parameters
+        ----------
+        patchName : str, optional
+            If given, return x and y for specified patch only
+
         """
         from operations_lib import radec2xy, xy2radec
         import numpy as np
 
         RA = self.getColValues('Ra')
         Dec = self.getColValues('Dec')
+        if patchName is not None:
+            ind = self.getRowIndex(patchName)
+            RA = RA[ind]
+            Dec = Dec[ind]
         x, y  = radec2xy(RA, Dec)
-        xmid = min(x) + (max(x) - min(x)) / 2.0
-        ymid = min(y) + (max(y) - min(y)) / 2.0
-        xind = np.argsort(x)
-        yind = np.argsort(y)
-        midxind = np.where(np.array(x)[xind] > xmid)[0][0]
-        midyind = np.where(np.array(y)[yind] > ymid)[0][0]
-        midRA = RA[xind[midxind]]
-        midDec = Dec[yind[midyind]]
-        x, y  = radec2xy(RA, Dec, midRA, midDec)
+
+        # Refine x and y using midpoint
+        if len(x) > 1:
+            xmid = min(x) + (max(x) - min(x)) / 2.0
+            ymid = min(y) + (max(y) - min(y)) / 2.0
+            xind = np.argsort(x)
+            yind = np.argsort(y)
+            midxind = np.where(np.array(x)[xind] > xmid)[0][0]
+            midyind = np.where(np.array(y)[yind] > ymid)[0][0]
+            midRA = RA[xind[midxind]]
+            midDec = Dec[yind[midyind]]
+            x, y  = radec2xy(RA, Dec, midRA, midDec)
+        else:
+            midRA = RA[0]
+            midDec = Dec[0]
+
         return x, y, midRA, midDec
 
 

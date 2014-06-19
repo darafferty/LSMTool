@@ -172,13 +172,11 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False):
         patchDecs.append(patch.dec)
 
     while True:
-        print 'Iteration', count
-
         clusterRAs = []
         clusterDecs = []
         if LSM.hasPatches:
-            clusterRA, clusterDec = LSM.getPatchPositions(method='mid',
-                asArray=True, applyBeam=applyBeam)
+            clusterRA, clusterDec = LSM.getPatchPositions(method='wmean',
+                asArray=True, applyBeam=applyBeam, perPatchProjection=False)
             clusterNames = LSM.getPatchNames()
             patches_orig = LSM.getColValues('Name')
         else:
@@ -209,7 +207,8 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False):
             patches_seq.extend(cluster.patches)
 
         count += 1
-        if patches_seq == patches_seq_old: break
+        if patches_seq == patches_seq_old:
+            break
         patches_seq_old = patches_seq
 
         # Make output patch column
