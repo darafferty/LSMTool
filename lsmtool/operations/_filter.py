@@ -40,6 +40,8 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
             [property, operator, value, units]
         or as a numpy array of row or patch indices such as:
             array([ 0,  2, 19, 20, 31, 37])
+        If a numpy array is given and the indices correspond to patches, then
+        set aggregate=True
 
         The property to filter on must be one of the following:
             - a valid column name
@@ -56,7 +58,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
     exclusive : bool, optional
         If False, sources that meet the filter expression are kept. If True,
         sources that do not meet the filter expression are kept.
-    aggregate : str, optional
+    aggregate : str or bool, optional
         If set, the values are aggregated over the patch members. The following
         aggregation functions are available:
             - 'sum': sum of patch values
@@ -64,6 +66,9 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
             - 'wmean': Stokes I weighted mean of patch values
             - 'min': minimum of patch values
             - 'max': maximum of patch values
+            - True: only valid when the filter indices are specify directly as
+                a numpy array. If True, filtering is done on patches instead of
+                sources.
     applyBeam : bool, optional
         If True, apparent fluxes will be used.
     useRegEx : bool, optional

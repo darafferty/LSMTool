@@ -28,6 +28,7 @@ import logging
 import os
 
 
+
 allowedColumnNames = {'name':'Name', 'type':'Type', 'patch':'Patch',
     'ra':'Ra', 'dec':'Dec', 'i':'I', 'q':'Q', 'u':'U', 'v':'V',
     'majoraxis':'MajorAxis', 'minoraxis':'MinorAxis', 'orientation':'Orientation',
@@ -58,6 +59,8 @@ def skyModelReader(fileName):
     -------
     table : astropy.table.Table object
     """
+    from operations_lib import StatusBar
+
     # Open the input file
     try:
         modelFile = open(fileName)
@@ -124,6 +127,9 @@ def skyModelReader(fileName):
     lines = modelFile.readlines()
     outlines = []
     logging.debug('Reading file...')
+    if  logging.root.level > 20:
+        bar = StatusBar('Reading file..................', 0, len(lines))
+        bar.start()
     for line in lines:
         if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
             continue
@@ -153,7 +159,11 @@ def skyModelReader(fileName):
         while len(colLines) < len(colNames):
             colLines.append(' ')
         outlines.append(','.join(colLines))
+        if  logging.root.level > 20:
+            bar.increment()
     modelFile.close()
+    if  logging.root.level > 20:
+        bar.stop()
 
     logging.debug('Creating table...')
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
@@ -162,6 +172,9 @@ def skyModelReader(fileName):
     # Convert spectral index values from strings to arrays.
     if 'SpectralIndex' in table.keys():
         logging.debug('Converting spectral indices...')
+        if  logging.root.level > 20:
+            bar = StatusBar('Converting spectral indices...', 0, len(lines))
+            bar.start()
         specOld = table['SpectralIndex'].data.tolist()
         specVec = []
         maskVec = []
@@ -180,10 +193,14 @@ def skyModelReader(fileName):
             except:
                 specVec.append([0.0, 0.0])
                 maskVec.append([True, True])
+            if  logging.root.level > 20:
+                bar.increment()
         specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec, dtype=np.float))
         specIndx = table.keys().index('SpectralIndex')
         table.remove_column('SpectralIndex')
         table.add_column(specCol, index=specIndx)
+        if  logging.root.level > 20:
+            bar.stop()
 
     # Convert RA and Dec to Angle objects
     logging.debug('Converting RA...')
