@@ -65,11 +65,12 @@ def move(LSM, name, position=None, shift=None):
     --------
     Move source '1609.6+6556' to a new position::
 
-        >>> s.move('1609.6+6556', position=['16:10:00', '+65.57.00'])
+        >>> LSM = lsmtool.load('sky.model')
+        >>> move(LSM, '1609.6+6556', position=['16:10:00', '+65.57.00'])
 
     Shift the source by 10 arcsec in Dec::
 
-        >>> s.move('1609.6+6556', shift=[0.0, 10.0/3600.0])
+        >>> move(LSM, '1609.6+6556', shift=[0.0, 10.0/3600.0])
 
     """
     try:

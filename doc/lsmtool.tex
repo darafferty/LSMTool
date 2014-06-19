@@ -75,7 +75,7 @@ These are the operations that LSMTool can perform:
 
 This is an example parset that filters on the flux, adds a source, and then groups the sources into patches:
 \begin{verbatim}
-LSMTool.Steps = [selectbright, addsrc, grp]
+LSMTool.Steps = [selectbright, addsrc, grp, setpos]
 
 # Select only sources above 1 mJy
 LSMTool.Steps.selectbright.Operation = SELECT
@@ -89,16 +89,18 @@ LSMTool.Steps.addsrc.Dec = 48.3689
 LSMTool.Steps.addsrc.I = 0.69
 
 # Group using tessellation to a target flux of 50 Jy
-# and write final skymodel
 LSMTool.Steps.grp.Operation = GROUP
 LSMTool.Steps.grp.Algorithm = tessellate
 LSMTool.Steps.grp.TargetFlux = 50.0 Jy
 LSMTool.Steps.grp.Method = mid
-LSMTool.Steps.grp.Outfile = 'grouped.sky'
+
+# Set the patch positions to their midpoint and write final skymodel
+LSMTool.Steps.setpos.Method = mid
+LSMTool.Steps.setpos.Outfile = grouped.sky
 \end{verbatim}
 
 In the first line of this parset the step names are defined. In the next sections, the
-step parameters for every step are defined. A list of step-specific parameters is given in Table~\ref{lsmtool:tab:local_val}.
+step parameters for every step are defined. Steps are applied sequentially, in the same order defined in the list of steps. A list of step-specific parameters is given in Table~\ref{lsmtool:tab:local_val}.
 
 \begin{table}[!ht]
 \centering
@@ -135,8 +137,8 @@ Shift & list of floats & [0.001, 0.0] & RA and Dec in degrees to shift by\\
 Patches & list of strings & [bin1, bin2, bin3] & Patch names to merge\\
 Name & string & merged\_patch & Name of new merged patch\\
 \hline
-\multicolumn{4}{l}{\textbf{SETPOSITIONS}}\\
-Method & string & mid & Set patch positions by mid, mean, or wmean\\
+\multicolumn{4}{l}{\textbf{SETPATCHPOSITIONS}}\\
+Method & string & mid & Set patch positions to mid, mean, or wmean positions\\
 \hline
 \multicolumn{4}{l}{\textbf{CONCATENATE}}\\
 Skymodel2 & string & in\_sky\_model2.sky & Name of second sky model to concatenate\\
@@ -175,11 +177,12 @@ All of the operations described in Section~\ref{lsmtool:operations} are availabl
 \begin{verbatim}
 >>> LSM.select('I > 1.0 mJy')
 >>> LSM.add({'Name':'new_source', 'Type':'POINT', 'Ra':277.4232, 'Dec':48.3689, 'I':0.69})
->>> LSM.group(algorithm='tesselate', targetFlux='10.0 Jy', method='mid')
+>>> LSM.group(algorithm='tesselate', targetFlux='10.0 Jy')
+>>> LSM.setPatchPositions(method='mid')
 \end{verbatim}
 In many cases, the methods accept parameters with the same names as those used in a parset (see the full documentation for details). The sky model can then written to a new file with:
 \begin{verbatim}
->>> LSM.write('outskymodel.sky')
+>>> LSM.write('grouped.sky')
 \end{verbatim}
 Additionally, sky models can be written out as ds9 region files and kvis annotation files (as well as all the formats supported by the astropy.table package, such at VOTable, HDF5, and FITS):
 \begin{verbatim}
@@ -190,8 +193,7 @@ Additionally, sky models can be written out as ds9 region files and kvis annotat
 >>> LSM.write('outskymodel.vo', format='votable')
 \end{verbatim}
 
-
-In addition, a number of other methods are available:
+In addition to the operations described above, a number of other methods are available:
 \begin{description}
  \item[LSM.copy()]: Return a copy of the sky model object
  \item[LSM.info()]: Print information about the sky model
@@ -203,7 +205,6 @@ In addition, a number of other methods are available:
  \item[LSM.getPatchPositions()]: Returns patch RA and Dec values
  \item[LSM.getDefaltValues()]: Returns column default values
  \item[LSM.getPatchSizes()]: Returns an array of patch sizes
- \item[LSM.setPatchPositions()]: Set patch positions
  \item[LSM.setColValues()]: Sets column values
  \item[LSM.setRowValues()]: Sets row values
  \item[LSM.setDefaultValues()]: Sets default column values

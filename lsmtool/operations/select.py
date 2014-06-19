@@ -81,6 +81,9 @@ def select(LSM, filterExpression, aggregate=None, applyBeam=False,
             - 'wmean': Stokes I weighted mean of patch values
             - 'min': minimum of patch values
             - 'max': maximum of patch values
+            - True: only valid when the filter indices are specified directly as
+                a numpy array. If True, filtering is done on patches instead of
+                sources.
     applyBeam : bool, optional
         If True, apparent fluxes will be used.
     useRegEx : bool, optional
@@ -92,21 +95,23 @@ def select(LSM, filterExpression, aggregate=None, applyBeam=False,
     Filter on column 'I' (Stokes I flux). This filter will select all sources
     with Stokes I flux greater than 1.5 Jy::
 
-        >>> s.select('I > 1.5 Jy')
-        INFO: Filtered out 1102 sources.
+        >>> LSM = lsmtool.load('sky.model')
+        >>> select(LSM, 'I > 1.5 Jy')
+        INFO: Kept 1102 sources.
 
     If the sky model has patches and the filter is desired per patch, use
-    ``aggregate = True``::
+    ``aggregate = function``. For example, to select on the sum of the patch
+    fluxes::
 
-        >>> s.select('I > 1.5 Jy', aggregate=True)
+        >>> select(LSM, 'I > 1.5 Jy', aggregate='sum')
 
     Filter on source names, keeping those that match "src*_1?"::
 
-        >>> s.select('Name == src*_1?')
+        >>> select(LSM, 'Name == src*_1?')
 
     Use a CASA clean mask image to keep sources that lie in masked regions::
 
-        >>> s.filter('clean_mask.mask == True')
+        >>> filter(LSM, 'clean_mask.mask == True')
 
     """
     from . import _filter

@@ -49,9 +49,9 @@ class SkyModel(object):
             >>> s = SkyModel('sky.model')
 
         Create a SkyModel object with a beam MS so that apparent fluxes will
-        be available as well as intrinsic fluxes:::
+        be available::
 
-            >>> s = SkyModel('sky.model', 'SB100.MS')
+            >>> s = SkyModel('sky.model', beamMS='SB100.MS')
 
         """
         from astropy.table import Table, Column
@@ -1409,22 +1409,154 @@ class SkyModel(object):
             logging.info('Removed {0} duplicate sources.'.format(nRowsOrig-nRowsNew))
 
 
-    def select(self, *args, **kwargs):
+    def select(self, filterExpression, aggregate=None, applyBeam=False,
+        useRegEx=False, force=False):
         """
-        Selects table rows on column values with the given expression.
+        Filters the sky model, keeping all sources that meet the given expression.
 
-        See operations.select.select() for details.
+        After filtering, the sky model contains only those sources for which the
+        given filter expression is true.
+
+        Parameters
+        ----------
+        filterExpression : str or dict
+            A string specifying the filter expression in the form:
+                '<property> <operator> <value> [<units>]'
+            (e.g., 'I <= 10.5 Jy'). These elements can also be given as a
+            dictionary in the form:
+                {'filterProp':property, 'filterOper':operator,
+                    'filterVal':value, 'filterUnits':units}
+            or as a list:
+                [property, operator, value, value]
+            The property to filter on must be a valid column name or the filename
+            of a mask image.
+
+            Supported operators are:
+                - !=
+                - <=
+                - >=
+                - >
+                - <
+                - = (or '==')
+            Units are optional and must be specified as required by astropy.units.
+        aggregate : str, optional
+            If set, the array returned will be of values aggregated
+            over the patch members. The following aggregation functions are
+            available:
+                - 'sum': sum of patch values
+                - 'mean': mean of patch values
+                - 'wmean': Stokes I weighted mean of patch values
+                - 'min': minimum of patch values
+                - 'max': maximum of patch values
+                - True: only valid when the filter indices are specify directly as
+                    a numpy array. If True, filtering is done on patches instead of
+                    sources.
+        applyBeam : bool, optional
+            If True, apparent fluxes will be used.
+        useRegEx : bool, optional
+            If True, string matching will use regular expression matching. If
+            False, string matching uses Unix filename matching.
+
+        Examples
+        --------
+        Filter on column 'I' (Stokes I flux). This filter will select all sources
+        with Stokes I flux greater than 1.5 Jy::
+
+            >>> s.select('I > 1.5 Jy')
+            INFO: Kept 1102 sources.
+
+        If the sky model has patches and the filter is desired per patch, use
+        ``aggregate = function``. For example, to select on the sum of the patch
+        fluxes::
+
+            >>> s.select('I > 1.5 Jy', aggregate='sum')
+
+        Filter on source names, keeping those that match "src*_1?"::
+
+            >>> s.select('Name == src*_1?')
+
+        Use a CASA clean mask image to keep sources that lie in masked regions::
+
+            >>> s.filter('clean_mask.mask == True')
+
         """
-        operations.select.select(self, *args, **kwargs)
+        operations.select.select(self, filterExpression, aggregate=aggregate,
+            applyBeam=applyBeam, useRegEx=useRegEx, force=force)
 
 
-    def remove(self, *args, **kwargs):
+    def remove(self, filterExpression, aggregate=None, applyBeam=None,
+        useRegEx=False, force=False):
         """
-        Removes table rows on column values with the given expression.
+        Filters the sky model, removing all sources that meet the given expression.
 
-        See operations.remove.remove() for details.
+        After filtering, the sky model contains only those sources for which the
+        given filter expression is false.
+
+        Parameters
+        ----------
+        filterExpression : str or dict
+            A string specifying the filter expression in the form:
+                '<property> <operator> <value> [<units>]'
+            (e.g., 'I <= 10.5 Jy'). These elements can also be given as a
+            dictionary in the form:
+                {'filterProp':property, 'filterOper':operator,
+                    'filterVal':value, 'filterUnits':units}
+            or as a list:
+                [property, operator, value, value]
+            The property to filter on must be a valid column name or the filename
+            of a mask image.
+
+            Supported operators are:
+                - !=
+                - <=
+                - >=
+                - >
+                - <
+                - = (or '==')
+            Units are optional and must be specified as required by astropy.units.
+        aggregate : str, optional
+            If set, the array returned will be of values aggregated
+            over the patch members. The following aggregation functions are
+            available:
+                - 'sum': sum of patch values
+                - 'mean': mean of patch values
+                - 'wmean': Stokes I weighted mean of patch values
+                - 'min': minimum of patch values
+                - 'max': maximum of patch values
+                - True: only valid when the filter indices are specified directly as
+                    a numpy array. If True, filtering is done on patches instead of
+                    sources.
+        applyBeam : bool, optional
+            If True, apparent fluxes will be used.
+        useRegEx : bool, optional
+            If True, string matching will use regular expression matching. If
+            False, string matching uses Unix filename matching.
+
+        Examples
+        --------
+        Filter on column 'I' (Stokes I flux). This filter will remove all sources
+        with Stokes I flux greater than 1.5 Jy::
+
+            >>> s.remove('I > 1.5 Jy')
+            INFO: Removed 1102 sources.
+
+        If the sky model has patches and the filter is desired per patch, use
+        ``aggregate = function``. For example, to select on the sum of the patch
+        fluxes::
+
+            >>> s.remove('I > 1.5 Jy', aggregate='sum')
+
+        Filter on source names, removing those that match "src*_1?"::
+
+            >>> s.remove('Name == src*_1?')
+
+        Use a CASA clean mask image to remove sources that lie in masked regions::
+
+            >>> s.remove('clean_mask.mask == True')
+
         """
-        operations.remove.remove(self, *args, **kwargs)
+        operations.remove.remove(self, filterExpression, aggregate=aggregate,
+            applyBeam=applyBeam, useRegEx=useRegEx, force=force)
 
 
     def group(self, algorithm, targetFlux=None, numClusters=100, applyBeam=False):
@@ -1433,6 +1565,8 @@ class SkyModel(object):
 
         Parameters
         ----------
+        LSM : SkyModel object
+            Input sky model.
         algorithm : str
             Algorithm to use for grouping:
             - 'single' => all sources are grouped into a single patch
@@ -1441,14 +1575,16 @@ class SkyModel(object):
                 specified number of clusters (specified by the numClusters parameter).
             - 'tessellate' => group into tiles whose total flux approximates
                 the target flux (specified by the targetFlux parameter).
+            - the filename of a mask image => group by masked regions (where mask =
+                True). Source outside of masked regions are given patches of their
+                own.
         targetFlux : str or float, optional
             Target flux for tessellation (the total flux of each tile will be close
             to this value). The target flux can be specified as either a float in Jy
-            or as a string with units (e.g., '25.0 mJy'). Valid for algorithm =
-            'tessellate' only.
+            or as a string with units (e.g., '25.0 mJy').
         numClusters : int, optional
             Number of clusters for clustering. Sources are grouped around the
-            numClusters brightest sources. Valid for algorithm = 'cluster' only.
+            numClusters brightest sources.
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
@@ -1460,25 +1596,66 @@ class SkyModel(object):
             >>> s.group('tessellate', targetFlux=30.0)
 
         """
-        operations.group.group(self, algorithm, targetFlux, numClusters, applyBeam)
+        operations.group.group(self, algorithm, targetFlux=targetFlux,
+            numClusters=numClusters, applyBeam=applyBeam)
 
 
-    def transfer(self, *args, **kwargs):
+    def transfer(self, patchFile):
         """
-        Transfers the patch scheme from the input sky model.
+        Transfer patches from the input sky model.
 
-        See operations.transfer.transfer() for details.
+        Sources with the same name as those in patchFile will be grouped into
+        the patches defined in patchFile. Sources that do not appear in patchFile
+        will be placed into separate patches (one per source). Patch positions are
+        not transferred.
+
+        Parameters
+        ----------
+        patchFile : str
+            Input sky model from which to transfer patches.
+
+        Examples
+        --------
+        Transfer patches from one sky model to another and set their positions::
+
+            >>> s.transfer('master_sky.model')
+            >>> s.setPatchPositions(method='mid')
+
         """
-        operations.transfer.transfer(self, *args, **kwargs)
+        operations.transfer.transfer(self, patchFile)
 
 
-    def move(self, *args, **kwargs):
+    def move(self, name, position=None, shift=None):
         """
-        Moves a source or patch.
+        Move or shift a source.
 
-        See operations.move.move() for details.
+        If both a position and a shift are specified, the source is moved to the
+        new position and then shifted.
+
+        Parameters
+        ----------
+        name : str
+            Source name.
+        position : list, optional
+            A list specifying a new position as [RA, Dec] in either makesourcedb
+            format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
+            [123.2312, 23.3422]).
+        shift : list, optional
+            A list specifying the shift as [RAShift, DecShift] in
+            in degrees (e.g., [0.02312, 0.00342]).
+
+        Examples
+        --------
+        Move source '1609.6+6556' to a new position::
+
+            >>> s.move('1609.6+6556', position=['16:10:00', '+65.57.00'])
+
+        Shift the source by 10 arcsec in Dec::
+
+            >>> s.move('1609.6+6556', shift=[0.0, 10.0/3600.0])
+
         """
-        operations.move.move(self, *args, **kwargs)
+        operations.move.move(self, name, position=postition, shift=shift)
 
 
     def add(self, colNamesVals):
@@ -1502,13 +1679,25 @@ class SkyModel(object):
         operations.add.add(self, colNamesVals)
 
 
-    def merge(self, *args, **kwargs):
+    def merge(self, patches, name=None):
         """
-        Merges two or more patches.
+        Merge two or more patches together
 
-        See operations.merge.merge() for details.
-        """
-        operations.merge.merge(self, *args, **kwargs)
+        Parameters
+        ----------
+        patches : list of str
+            List of patches to merge
+        name : str, optional
+            Name of resulting merged patch
+
+        Examples
+        --------
+        Merge three patches into one::
+
+            >>> s.merge(['bin0', 'bin1', 'bin2'], 'binmerged')
+
+         """
+        operations.merge.merge(self, patches, name=name)
 
 
     def concatenate(self, LSM2, matchBy='name', radius=0.1, keep='all'):
@@ -1554,24 +1743,32 @@ class SkyModel(object):
                 keep='from2')
 
         """
-        operations.concatenate.concatenate(self, LSM2, matchBy, radius, keep)
+        operations.concatenate.concatenate(self, LSM2, matchBy=matchBy,
+            radius=radius, keep=keep)
 
 
-    def plot(self, *args, **kwargs):
+    def plot(self, fileName=None):
         """
-        Plot the sky model.
+        Shows a simple plot of the sky model.
 
-        See operations.plot.plot() for details.
+        The circles in the plot are scaled with flux. If the sky model is grouped
+        into patches, sources are colored by patch and the patch positions are
+        indicated with stars.
+
+        Parameters
+        ----------
+        fileName : str, optional
+            If given, the plot is saved to a file instead of displayed.
+
+        Examples:
+        ---------
+        Plot and display to the screen::
+
+            >>> s.plot()
+
+        Plot and save to a PDF file::
+
+            >>> s.plot('sky_plot.pdf')
+
         """
-        operations.plot.plot(self, *args, **kwargs)
-
-
-# Forward the operation doc strings to the appropriate methods of the SkyModel
-# object.
-SkyModel.remove.__func__.__doc__ = operations.remove.remove.__doc__
-SkyModel.select.__func__.__doc__ = operations.select.select.__doc__
-SkyModel.transfer.__func__.__doc__ = operations.transfer.transfer.__doc__
-SkyModel.move.__func__.__doc__ = operations.move.move.__doc__
-SkyModel.plot.__func__.__doc__ = operations.plot.plot.__doc__
-SkyModel.merge.__func__.__doc__ = operations.merge.merge.__doc__
-
+        operations.plot.plot(self, fileName=fileName)

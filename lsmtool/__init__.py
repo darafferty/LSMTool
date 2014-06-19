@@ -16,7 +16,15 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+"""LSMTool: the LOFAR Local Sky Model Tool
+
+.. moduleauthor:: David Rafferty <drafferty@hs.uni-hamburg.de>
+
+"""
+
 from ._version import changelog
+from .skymodel import SkyModel
+
 
 def load(fileName, beamMS=None):
     """
@@ -44,7 +52,5 @@ def load(fileName, beamMS=None):
         >>> s = lsmtool.load('sky.model', 'SB100.MS')
 
     """
-    from .skymodel import SkyModel
-
     return SkyModel(fileName, beamMS)
 

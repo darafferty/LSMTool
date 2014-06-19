@@ -66,7 +66,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
             - 'wmean': Stokes I weighted mean of patch values
             - 'min': minimum of patch values
             - 'max': maximum of patch values
-            - True: only valid when the filter indices are specify directly as
+            - True: only valid when the filter indices are specified directly as
                 a numpy array. If True, filtering is done on patches instead of
                 sources.
     applyBeam : bool, optional
@@ -82,28 +82,28 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
     Filter on column 'I' (Stokes I flux). This filter will select all sources
     with Stokes I flux greater than 1.5 Jy::
 
-        >>> s = SkyModel('sky.model')
-        >>> s.filter('I > 1.5 Jy')
+        >>> LSM = lsmtool.load('sky.model')
+        >>> filter(LSM, 'I > 1.5 Jy')
         INFO: Filtered out 1102 sources.
 
     If the sky model has patches and the filter is desired per patch, use
     ``aggregate = True``::
 
-        >>> s.filter('I > 1.5 Jy', aggregate=True)
+        >>> filter(LSM, 'I > 1.5 Jy', aggregate=True)
 
     Filter on source names, keeping those that match "src*_1?"::
 
-        >>> s.filter('Name == src*_1?')
+        >>> filter(LSM, 'Name == src*_1?')
 
     Use a CASA clean mask image to keep sources that lie in masked regions::
 
-        >>> s.filter('clean_mask.mask == True')
+        >>> filter(LSM, 'clean_mask.mask == True')
 
     Filter on patch size::
 
-        >>> sizes = s.getPatchSizes(units='arcsec', weight=True)
-        >>> indices = numpy.where(sizes <= maj_cut_arcsec)[0]
-        >>> s.select(indices)
+        >>> sizes = LSM.getPatchSizes(units='arcsec', weight=True)
+        >>> indices = numpy.where(sizes <= maj_cut_arcsec)
+        >>> filter(LSM, indices, aggregate=True)
 
     """
     import numpy as np

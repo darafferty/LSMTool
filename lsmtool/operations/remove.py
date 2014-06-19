@@ -81,6 +81,9 @@ def remove(LSM, filterExpression, aggregate=None, applyBeam=None,
             - 'wmean': Stokes I weighted mean of patch values
             - 'min': minimum of patch values
             - 'max': maximum of patch values
+            - True: only valid when the filter indices are specified directly as
+                a numpy array. If True, filtering is done on patches instead of
+                sources.
     applyBeam : bool, optional
         If True, apparent fluxes will be used.
     useRegEx : bool, optional
@@ -92,21 +95,23 @@ def remove(LSM, filterExpression, aggregate=None, applyBeam=None,
     Filter on column 'I' (Stokes I flux). This filter will remove all sources
     with Stokes I flux greater than 1.5 Jy::
 
-        >>> s.remove('I > 1.5 Jy')
-        INFO: Filtered out 1102 sources.
+        >>> LSM = lsmtool.load('sky.model')
+        >>> remove(LSM, 'I > 1.5 Jy')
+        INFO: Removed 1102 sources.
 
     If the sky model has patches and the filter is desired per patch, use
-    ``aggregate = True``::
+    ``aggregate = function``. For example, to select on the sum of the patch
+    fluxes::
 
-        >>> s.remove('I > 1.5 Jy', aggregate=True)
+        >>> remove(LSM, 'I > 1.5 Jy', aggregate='sum')
 
     Filter on source names, removing those that match "src*_1?"::
 
-        >>> s.remove('Name == src*_1?')
+        >>> remove(LSM, 'Name == src*_1?')
 
     Use a CASA clean mask image to remove sources that lie in masked regions::
 
-        >>> s.remove('clean_mask.mask == True')
+        >>> remove(LSM, 'clean_mask.mask == True')
 
     """
     from . import _filter

@@ -42,14 +42,21 @@ def transfer(LSM, patchFile):
 
     Sources with the same name as those in patchFile will be grouped into
     the patches defined in patchFile. Sources that do not appear in patchFile
-    will be placed into separate patches (one per source).
+    will be placed into separate patches (one per source). Patch positions are
+    not transferred.
 
     Parameters
     ----------
     patchFile : str
         Input sky model from which to transfer patches.
-    method : str, optional
-        Method to use in setting patch positons: 'mid', 'mean', or 'wmean'
+
+    Examples
+    --------
+    Transfer patches from one sky model to another and set their positions::
+
+        >>> LSM = lsmtool.load('sky.model')
+        >>> transfer(LSM, 'master_sky.model')
+        >>> setPatchPositions(LSM, method='mid')
 
     """
     try:

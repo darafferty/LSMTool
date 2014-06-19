@@ -47,14 +47,13 @@ def merge(LSM, patches, name=None):
         List of patches to merge
     name : str, optional
         Name of resulting merged patch
-    method : str, optional
-        Method to use in setting patch positons: 'mid', 'mean', or 'wmean'
 
     Examples
     --------
-    Merge three patches into one:
+    Merge three patches into one::
 
-        >>> s.merge(['bin0', 'bin1', 'bin2'], 'binmerged')
+        >>> LSM = lsmtool.load('sky.model')
+        >>> merge(LSM, ['bin0', 'bin1', 'bin2'], 'binmerged')
     """
     if name is None:
         name = patches[0]

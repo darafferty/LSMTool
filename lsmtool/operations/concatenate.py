@@ -68,10 +68,10 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     Concatenate two sky models, identifying duplicates by matching to the source
     names. When duplicates are found, keep the source from the parent sky model
     and discard the duplicate from second sky model (this might be useful when
-    merging two gsm.py sky models that have some overlap)::
+    merging two sky models that have some overlap)::
 
-        >>> LSM1 = lsmtool.load('gsm_sky1.model')
-        >>> LSM2 = lsmtool.load('gsm_sky2.model')
+        >>> LSM1 = lsmtool.load('sky1.model')
+        >>> LSM2 = lsmtool.load('sky2.model')
         >>> concatenate(LSM1, LSM2, matchBy='name', keep='from1')
 
     Concatenate two sky models, identifying duplicates by matching to the source

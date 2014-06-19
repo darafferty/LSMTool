@@ -50,11 +50,12 @@ def plot(LSM, fileName=None):
     ---------
     Plot and display to the screen::
 
-        >>> s.plot()
+        >>> LSM = lsmtool.load('sky.model')
+        >>> plot(LSM)
 
     Plot and save to a PDF file::
 
-        >>>s.plot('sky_plot.pdf')
+        >>> plot(LSM, 'sky_plot.pdf')
 
     """
     import matplotlib.pyplot as plt
