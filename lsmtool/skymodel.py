@@ -26,7 +26,7 @@ class SkyModel(object):
     """
     Object that stores the sky model and provides methods for accessing it.
     """
-    def __init__(self, fileName, beamMS=None):
+    def __init__(self, fileName, beamMS=None, checkDup=False):
         """
         Initializes SkyModel object.
 
@@ -37,7 +37,10 @@ class SkyModel(object):
             respect the makesourcedb format
         beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
-            column of attenuated Stokes I fluxes will be added to the table.
+            column of attenuated Stokes I fluxes will be added to the table
+        checkDup: bool, optional
+            If True, the sky model is checked for duplicate sources (with the
+            same name)
 
         Examples
         --------
@@ -63,8 +66,9 @@ class SkyModel(object):
             self._beamMS = None
             self._hasBeam = False
 
-        logging.debug('Checking for duplicate lines...')
-        self._clean()
+        if checkDup:
+            logging.debug('Checking for duplicate lines...')
+            self._clean()
 
         logging.debug('Grouping table by patch...')
         self._patchMethod = None
