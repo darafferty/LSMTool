@@ -125,8 +125,6 @@ def skyModelReader(fileName):
     lines = modelFile.readlines()
     outlines = []
     logging.debug('Reading file...')
-    bar = StatusBar('Reading file...', 0, len(lines))
-    bar.start()
     for line in lines:
         if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
             continue
@@ -156,9 +154,7 @@ def skyModelReader(fileName):
         while len(colLines) < len(colNames):
             colLines.append(' ')
         outlines.append(','.join(colLines))
-        bar.increment()
     modelFile.close()
-    bar.stop()
 
     logging.debug('Creating table...')
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
