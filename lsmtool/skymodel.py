@@ -1655,7 +1655,7 @@ class SkyModel(object):
             >>> s.move('1609.6+6556', shift=[0.0, 10.0/3600.0])
 
         """
-        operations.move.move(self, name, position=postition, shift=shift)
+        operations.move.move(self, name, position=position, shift=shift)
 
 
     def add(self, colNamesVals):
