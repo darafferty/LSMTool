@@ -388,9 +388,9 @@ class SkyModel(object):
                     midY = minY + (maxY - minY) / 2.0
                     for i, name in enumerate(patchName):
                         gRA = RA2Angle(xy2radec([midX[i]], [midY[i]], midRAAll[i],
-                            midDecAll[i])[0])
+                            midDecAll[i])[0])[0]
                         gDec = Dec2Angle(xy2radec([midX[i]], [midY[i]], midRAAll[i],
-                            midDecAll[i])[1])
+                            midDecAll[i])[1])[0]
                         patchDict[name] = [gRA, gDec]
                 elif method == 'mean' or method == 'wmean':
                     if method == 'mean':
@@ -403,9 +403,9 @@ class SkyModel(object):
                         weight=weight)
                     for i, name in enumerate(patchName):
                         gRA = RA2Angle(xy2radec([meanX[i]], [meanY[i]], midRAAll[i],
-                            midDecAll[i])[0])
+                            midDecAll[i])[0])[0]
                         gDec = Dec2Angle(xy2radec([meanX[i]], [meanY[i]], midRAAll[i],
-                            midDecAll[i])[1])
+                            midDecAll[i])[1])[0]
                         patchDict[name] = [gRA, gDec]
                 self.table.remove_column('X')
                 self.table.remove_column('Y')
