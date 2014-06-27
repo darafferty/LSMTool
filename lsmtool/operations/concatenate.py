@@ -60,7 +60,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
         Determines how duplicates are treated:
         - 'all' => all duplicates are kept; those with identical names are re-
             named
-        - 'from1' => duplicates kept are those from sky model 1 (the parent)
+        - 'from1' => duplicates kept are those from sky model 1 (LSM1)
         - 'from2' => duplicates kept are those from sky model 2 (LSM2)
 
     Examples

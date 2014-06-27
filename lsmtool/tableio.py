@@ -47,7 +47,7 @@ allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':'N/A',
 
 def skyModelReader(fileName):
     """
-    Reads a makesourcedb sky model file into an astropy table
+    Reads a makesourcedb sky model file into an astropy table.
 
     Parameters
     ----------
@@ -58,6 +58,7 @@ def skyModelReader(fileName):
     Returns
     -------
     table : astropy.table.Table object
+
     """
     # Open the input file
     try:
@@ -225,6 +226,17 @@ def skyModelReader(fileName):
 def RA2Angle(RA):
     """
     Returns Angle objects for input RA values.
+
+    Parameters
+    ----------
+    RA : str, float or list of str, float
+        Values of RA to convert. Can be strings in makesourcedb format or floats
+        in degrees.
+
+    Returns
+    -------
+    RAAngle : astropy.coordinates.Angle object
+
     """
     if type(RA) is str or type(RA) is float:
         RA = [RA]
@@ -244,6 +256,17 @@ def RA2Angle(RA):
 def Dec2Angle(Dec):
     """
     Returns Angle objects for input Dec values.
+
+    Parameters
+    ----------
+    Dec : str, float or list of str, float
+        Values of Dec to convert. Can be strings in makesourcedb format or floats
+        in degrees.
+
+    Returns
+    -------
+    DecAngle : astropy.coordinates.Angle object
+
     """
     if type(Dec) is str or type(Dec) is float:
         Dec = [Dec]
@@ -349,11 +372,16 @@ def skyModelWriter(table, fileName):
 
 def rowStr(row):
     """
-    Returns makesourcedb representation of a row
+    Returns makesourcedb representation of a row.
 
     Parameters
     ----------
     row : astropy.table.Row object
+
+    Returns
+    -------
+    line : str
+        Sting representing a row in a makesourcedb sky model file
     """
     line = []
     for colKey in row.columns:

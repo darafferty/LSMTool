@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>LSMTool: the LOFAR Local Sky Model Tool &mdash; LSMTool 1.0.0 documentation</title>
+    <title>&lt;no title&gt; &mdash; LSMTool 1.0.0 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -45,9 +45,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="module-lsmtool">
-<span id="lsmtool-the-lofar-local-sky-model-tool"></span><h1>LSMTool: the LOFAR Local Sky Model Tool<a class="headerlink" href="#module-lsmtool" title="Permalink to this headline">¶</a></h1>
-<p>LSMTool: the LOFAR Local Sky Model Tool</p>
+  <span class="target" id="module-lsmtool"></span><p>The load() convenience function is used to load a sky model file into a
+SkyModel object.</p>
 <dl class="function">
 <dt id="lsmtool.load">
 <tt class="descclassname">lsmtool.</tt><tt class="descname">load</tt><big>(</big><em>fileName</em>, <em>beamMS=None</em><big>)</big><a class="headerlink" href="#lsmtool.load" title="Permalink to this definition">¶</a></dt>
@@ -157,7 +156,7 @@ sky model with a high-resolution one):</p>
 
 <dl class="method">
 <dt id="lsmtool.SkyModel.getColValues">
-<tt class="descname">getColValues</tt><big>(</big><em>colName</em>, <em>units=None</em>, <em>aggregate=None</em>, <em>weight=False</em>, <em>applyBeam=False</em><big>)</big><a class="headerlink" href="#lsmtool.SkyModel.getColValues" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">getColValues</tt><big>(</big><em>colName</em>, <em>units=None</em>, <em>aggregate=None</em>, <em>applyBeam=False</em><big>)</big><a class="headerlink" href="#lsmtool.SkyModel.getColValues" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a numpy array of column values.</p>
 <dl class="docutils">
 <dt>colName <span class="classifier-delimiter">:</span> <span class="classifier">str</span></dt>
@@ -492,46 +491,27 @@ dictionary in the form:</p>
 </dl>
 <p>The property to filter on must be a valid column name or the filename
 of a mask image.</p>
-<dl class="docutils">
-<dt>Supported operators are:</dt>
-<dd><ul class="first last simple">
-<li>!=</li>
-<li>&lt;=</li>
-<li>&gt;=</li>
-<li>&gt;</li>
-<li>&lt;</li>
-<li>= (or &#8216;==&#8217;)</li>
-</ul>
-</dd>
-</dl>
+<p>Supported operators are:
+- !=
+- &lt;=
+- &gt;=
+- &gt;
+- &lt;
+- = (or &#8216;==&#8217;)</p>
 <p class="last">Units are optional and must be specified as required by astropy.units.</p>
 </dd>
 <dt>aggregate <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first">If set, the array returned will be of values aggregated
+<dd>If set, the array returned will be of values aggregated
 over the patch members. The following aggregation functions are
-available:</p>
-<blockquote class="last">
-<div><ul>
-<li><p class="first">&#8216;sum&#8217;: sum of patch values</p>
-</li>
-<li><p class="first">&#8216;mean&#8217;: mean of patch values</p>
-</li>
-<li><p class="first">&#8216;wmean&#8217;: Stokes I weighted mean of patch values</p>
-</li>
-<li><p class="first">&#8216;min&#8217;: minimum of patch values</p>
-</li>
-<li><p class="first">&#8216;max&#8217;: maximum of patch values</p>
-</li>
-<li><dl class="first docutils">
-<dt>True: only valid when the filter indices are specified directly as</dt>
-<dd><p class="first last">a numpy array. If True, filtering is done on patches instead of
-sources.</p>
-</dd>
-</dl>
-</li>
-</ul>
-</div></blockquote>
-</dd>
+available:
+- &#8216;sum&#8217;: sum of patch values
+- &#8216;mean&#8217;: mean of patch values
+- &#8216;wmean&#8217;: Stokes I weighted mean of patch values
+- &#8216;min&#8217;: minimum of patch values
+- &#8216;max&#8217;: maximum of patch values
+- True: only valid when the filter indices are specified directly as
+a numpy array. If True, filtering is done on patches instead of
+sources.</dd>
 <dt>applyBeam <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
 <dd>If True, apparent fluxes will be used.</dd>
 <dt>useRegEx <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
@@ -569,20 +549,12 @@ given filter expression is true.</p>
 <dl class="docutils">
 <dt>filterExpression <span class="classifier-delimiter">:</span> <span class="classifier">str or dict</span></dt>
 <dd><dl class="first docutils">
-<dt>A string specifying the filter expression in the form:</dt>
-<dd>&#8216;&lt;property&gt; &lt;operator&gt; &lt;value&gt; [&lt;units&gt;]&#8217;</dd>
-</dl>
-<p>(e.g., &#8216;I &lt;= 10.5 Jy&#8217;). These elements can also be given as a
-dictionary in the form:</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>{&#8216;filterProp&#8217;:property, &#8216;filterOper&#8217;:operator,</dt>
-<dd>&#8216;filterVal&#8217;:value, &#8216;filterUnits&#8217;:units}</dd>
-</dl>
-</div></blockquote>
-<dl class="docutils">
-<dt>or as a list:</dt>
-<dd>[property, operator, value, value]</dd>
+<dt>The filter expression specified as:</dt>
+<dd><ul class="first last simple">
+<li>a string of <tt class="docutils literal"><span class="pre">'&lt;property&gt;</span> <span class="pre">&lt;operator&gt;</span> <span class="pre">&lt;value&gt;</span> <span class="pre">[&lt;units&gt;]'</span></tt></li>
+<li>a list of <tt class="docutils literal"><span class="pre">[property,</span> <span class="pre">operator,</span> <span class="pre">value,</span> <span class="pre">value]</span></tt></li>
+</ul>
+</dd>
 </dl>
 <p>The property to filter on must be a valid column name or the filename
 of a mask image.</p>
@@ -601,31 +573,17 @@ of a mask image.</p>
 <p class="last">Units are optional and must be specified as required by astropy.units.</p>
 </dd>
 <dt>aggregate <span class="classifier-delimiter">:</span> <span class="classifier">str, optional</span></dt>
-<dd><p class="first">If set, the array returned will be of values aggregated
+<dd>If set, the array returned will be of values aggregated
 over the patch members. The following aggregation functions are
-available:</p>
-<blockquote class="last">
-<div><ul>
-<li><p class="first">&#8216;sum&#8217;: sum of patch values</p>
-</li>
-<li><p class="first">&#8216;mean&#8217;: mean of patch values</p>
-</li>
-<li><p class="first">&#8216;wmean&#8217;: Stokes I weighted mean of patch values</p>
-</li>
-<li><p class="first">&#8216;min&#8217;: minimum of patch values</p>
-</li>
-<li><p class="first">&#8216;max&#8217;: maximum of patch values</p>
-</li>
-<li><dl class="first docutils">
-<dt>True: only valid when the filter indices are specify directly as</dt>
-<dd><p class="first last">a numpy array. If True, filtering is done on patches instead of
-sources.</p>
-</dd>
-</dl>
-</li>
-</ul>
-</div></blockquote>
-</dd>
+available:
+- &#8216;sum&#8217;: sum of patch values
+- &#8216;mean&#8217;: mean of patch values
+- &#8216;wmean&#8217;: Stokes I weighted mean of patch values
+- &#8216;min&#8217;: minimum of patch values
+- &#8216;max&#8217;: maximum of patch values
+- True: only valid when the filter indices are specify directly as
+a numpy array. If True, filtering is done on patches instead of
+sources.</dd>
 <dt>applyBeam <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
 <dd>If True, apparent fluxes will be used.</dd>
 <dt>useRegEx <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
@@ -710,12 +668,9 @@ where both RA and Dec are degrees J2000 or in makesourcedb format.</dd>
 to set the patch positions:
 - &#8216;mid&#8217; =&gt; the position is set to the midpoint of the patch
 - &#8216;mean&#8217; =&gt; the positions is set to the mean RA and Dec of the patch
-- &#8216;wmean&#8217; =&gt; the position is set to the flux-weighted mean RA and</p>
-<blockquote>
-<div>Dec of the patch</div></blockquote>
-<ul class="simple">
-<li>&#8216;zero&#8217; =&gt; set all positions to [0.0, 0.0]</li>
-</ul>
+- &#8216;wmean&#8217; =&gt; the position is set to the flux-weighted mean RA and
+Dec of the patch
+- &#8216;zero&#8217; =&gt; set all positions to [0.0, 0.0]</p>
 <p class="last">Note that the mid, mean, and wmean positions are calculated from TAN-
 projected values.</p>
 </dd>
@@ -843,7 +798,6 @@ BBS:</p>
 
 </dd></dl>
 
-</div>
 
 
           </div>
@@ -887,7 +841,7 @@ BBS:</p>
     </div>
     <div class="footer">
         &copy; Copyright 2014, David Rafferty.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

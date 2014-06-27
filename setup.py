@@ -45,7 +45,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         ],
     tests_require=['pytest'],
-    install_requires=['numpy','cython','astropy'],
+    install_requires=['numpy','astropy'],
     #scripts = ['say_hello.py'],
     packages=['lsmtool','lsmtool.operations'],
     test_suite='test',

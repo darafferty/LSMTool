@@ -16,7 +16,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-"""LSMTool: the LOFAR Local Sky Model Tool
+"""The load() convenience function is used to load a sky model file into a
+SkyModel object.
 
 .. moduleauthor:: David Rafferty <drafferty@hs.uni-hamburg.de>
 
@@ -39,6 +40,12 @@ def load(fileName, beamMS=None):
         Measurement set from which the primary beam will be estimated. A
         column of attenuated Stokes I fluxes will be added to the table.
 
+    Returns
+    -------
+    SkyModel object
+        A SkyModel object that stores the sky model and provides methods for
+        accessing it.
+
     Examples
     --------
     Load a sky model into a SkyModel object::
@@ -47,7 +54,7 @@ def load(fileName, beamMS=None):
         >>> s = lsmtool.load('sky.model')
 
     Load a sky model with a beam MS so that apparent fluxes will
-    be available (in addition to intrinsic fluxes):::
+    be available (in addition to intrinsic fluxes)::
 
         >>> s = lsmtool.load('sky.model', 'SB100.MS')
 

@@ -246,8 +246,8 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
 
 def parseFilter(filterExpression):
     """
-    Takes a filter expression and returns tuple of
-    (property, operation, val, units), all as strings
+    Takes a filter expression and returns tuple of (property, operation, val,
+    units), all as strings.
     """
     try:
         from ..tableio import allowedColumnNames
@@ -352,7 +352,7 @@ def convertOperStr(operStr):
 
 def getFilterIndices(colVals, filterOper, filterVal, useRegEx=False):
     """
-    Returns the indices that correspond to the input filter expression
+    Returns the indices that correspond to the input filter expression.
     """
     import operator as op
     import fnmatch
@@ -388,7 +388,7 @@ def getFilterIndices(colVals, filterOper, filterVal, useRegEx=False):
 
 def getMaskValues(mask, RARad, DecRad):
     """
-    Returns an array of mask values for each (RA, Dec) pair in radians
+    Returns an array of mask values for each (RA, Dec) pair in radians.
     """
     import math
     import pyrap

@@ -141,7 +141,7 @@ class SkyModel(object):
 
     def copy(self):
         """
-        Returns a copy of the sky model
+        Returns a copy of the sky model.
         """
         import copy
 
@@ -151,7 +151,7 @@ class SkyModel(object):
     def more(self, colName=None, patchName=None, sourceName=None, sortBy=None,
         lowToHigh=False):
         """
-        Prints the sky model table to the screen with more-like commands
+        Prints the sky model table to the screen with more-like commands.
 
         Parameters
         ----------
@@ -190,7 +190,6 @@ class SkyModel(object):
             if type(colName) is str:
                 colName = [colName] # needed in order to get a table instead of a column
             table = table[colName]
-
 
         # Get patches
         if patchName is not None:
@@ -425,7 +424,7 @@ class SkyModel(object):
 
 
     def setPatchPositions(self, patchDict=None, method='mid', applyBeam=False,
-         perPatchProjection=True):
+        perPatchProjection=True):
         """
         Sets the patch positions.
 
@@ -440,8 +439,9 @@ class SkyModel(object):
             - 'mid' => the position is set to the midpoint of the patch
             - 'mean' => the positions is set to the mean RA and Dec of the patch
             - 'wmean' => the position is set to the flux-weighted mean RA and
-               Dec of the patch
+            Dec of the patch
             - 'zero' => set all positions to [0.0, 0.0]
+
             Note that the mid, mean, and wmean positions are calculated from TAN-
             projected values.
         applyBeam : bool, optional
@@ -499,7 +499,7 @@ class SkyModel(object):
 
     def _getXY(self, patchName=None):
         """
-        Returns lists of projected x and y values for all sources
+        Returns lists of projected x and y values for all sources.
 
         Parameters
         ----------
@@ -538,7 +538,7 @@ class SkyModel(object):
 
     def getDefaltValues(self):
         """
-        Returns dict of {colName:default} values for all columns with defaults
+        Returns dict of {colName:default} values for all columns with defaults.
         """
         colNames = self.getColNames()
         defaultDict = {}
@@ -550,7 +550,7 @@ class SkyModel(object):
 
     def setDefaltValues(self, colDict):
         """
-        Sets default column values
+        Sets default column values.
 
         Parameters
         ----------
@@ -604,7 +604,7 @@ class SkyModel(object):
         return self.table.keys()
 
 
-    def getColValues(self, colName, units=None, aggregate=None, weight=False,
+    def getColValues(self, colName, units=None, aggregate=None,
         applyBeam=False):
         """
         Returns a numpy array of column values.
@@ -617,7 +617,7 @@ class SkyModel(object):
             Output units (the values are converted as needed). By default, the
             units are those used by makesourcedb, with the exception of Ra and
             Dec which have default units of degrees.
-        aggregate : str, optional
+        aggregate : {'sum', 'mean', 'wmean', 'min', max'}, optional
             If set, the array returned will be of values aggregated
             over the patch members. The following aggregation functions are
             available:
@@ -944,6 +944,17 @@ class SkyModel(object):
     def getPatchSizes(self, units=None, weight=False, applyBeam=False):
         """
         Returns array of patch sizes.
+
+        Parameters
+        ----------
+        units : str, optional
+            Units for returned sizes (e.g., 'arcsec', 'degree')
+        weight : bool, optional
+            If True, weight the source positions inside the patch by flux
+        applyBeam : bool, optional
+            If True and weight is True, attenuate the fluxes used for weighting
+            by the beam
+
         """
         if self.hasPatches:
             col = self._getSizeColumn(weight=weight, applyBeam=applyBeam)
@@ -956,7 +967,7 @@ class SkyModel(object):
 
     def getPatchNames(self):
         """
-        Returns array of patch names.
+        Returns array of all patch names in the sky model.
         """
         if self.hasPatches:
             return self.table.groups.keys['Patch'].data
@@ -1086,7 +1097,7 @@ class SkyModel(object):
 
     def _applyBeamToCol(self, col, patch=False):
         """
-        Applies beam attenuation to the column values
+        Applies beam attenuation to the column values.
         """
         from operations_lib import attenuate
 
@@ -1420,14 +1431,10 @@ class SkyModel(object):
         Parameters
         ----------
         filterExpression : str or dict
-            A string specifying the filter expression in the form:
-                '<property> <operator> <value> [<units>]'
-            (e.g., 'I <= 10.5 Jy'). These elements can also be given as a
-            dictionary in the form:
-                {'filterProp':property, 'filterOper':operator,
-                    'filterVal':value, 'filterUnits':units}
-            or as a list:
-                [property, operator, value, value]
+            The filter expression specified as:
+                - a string of ``'<property> <operator> <value> [<units>]'``
+                - a list of ``[property, operator, value, unit]``
+
             The property to filter on must be a valid column name or the filename
             of a mask image.
 
@@ -1438,6 +1445,7 @@ class SkyModel(object):
                 - >
                 - <
                 - = (or '==')
+
             Units are optional and must be specified as required by astropy.units.
         aggregate : str, optional
             If set, the array returned will be of values aggregated
@@ -1448,9 +1456,7 @@ class SkyModel(object):
                 - 'wmean': Stokes I weighted mean of patch values
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
-                - True: only valid when the filter indices are specify directly as
-                    a numpy array. If True, filtering is done on patches instead of
-                    sources.
+                - True: only valid when the filter indices are specify directly as a numpy array. If True, filtering is done on patches instead of sources.
         applyBeam : bool, optional
             If True, apparent fluxes will be used.
         useRegEx : bool, optional
@@ -1497,35 +1503,39 @@ class SkyModel(object):
         filterExpression : str or dict
             A string specifying the filter expression in the form:
                 '<property> <operator> <value> [<units>]'
+
             (e.g., 'I <= 10.5 Jy'). These elements can also be given as a
             dictionary in the form:
                 {'filterProp':property, 'filterOper':operator,
                     'filterVal':value, 'filterUnits':units}
+
             or as a list:
                 [property, operator, value, value]
+
             The property to filter on must be a valid column name or the filename
             of a mask image.
 
             Supported operators are:
-                - !=
-                - <=
-                - >=
-                - >
-                - <
-                - = (or '==')
+            - !=
+            - <=
+            - >=
+            - >
+            - <
+            - = (or '==')
+
             Units are optional and must be specified as required by astropy.units.
         aggregate : str, optional
             If set, the array returned will be of values aggregated
             over the patch members. The following aggregation functions are
             available:
-                - 'sum': sum of patch values
-                - 'mean': mean of patch values
-                - 'wmean': Stokes I weighted mean of patch values
-                - 'min': minimum of patch values
-                - 'max': maximum of patch values
-                - True: only valid when the filter indices are specified directly as
-                    a numpy array. If True, filtering is done on patches instead of
-                    sources.
+            - 'sum': sum of patch values
+            - 'mean': mean of patch values
+            - 'wmean': Stokes I weighted mean of patch values
+            - 'min': minimum of patch values
+            - 'max': maximum of patch values
+            - True: only valid when the filter indices are specified directly as
+            a numpy array. If True, filtering is done on patches instead of
+            sources.
         applyBeam : bool, optional
             If True, apparent fluxes will be used.
         useRegEx : bool, optional
@@ -1561,7 +1571,7 @@ class SkyModel(object):
 
     def group(self, algorithm, targetFlux=None, numClusters=100, applyBeam=False):
         """
-        Groups sources into patches
+        Groups sources into patches.
 
         Parameters
         ----------
@@ -1681,7 +1691,7 @@ class SkyModel(object):
 
     def merge(self, patches, name=None):
         """
-        Merge two or more patches together
+        Merge two or more patches together.
 
         Parameters
         ----------
@@ -1702,7 +1712,7 @@ class SkyModel(object):
 
     def concatenate(self, LSM2, matchBy='name', radius=0.1, keep='all'):
         """
-        Concatenate two sky models
+        Concatenate two sky models.
 
         Parameters
         ----------

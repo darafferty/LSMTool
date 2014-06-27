@@ -29,7 +29,7 @@
 \section[LSMTool: the LOFAR Local Sky Model Tool]{LSMTool: the LOFAR Local Sky Model Tool\footnote{This section is maintained by David Rafferty ({\tt drafferty@hs.uni-hamburg.de}).}}
 \label{lsmtool}
 
-LSMTool is a Python package which allow the manipulation of sky models in the \texttt{makesourcedb} format understood by BBS. Note that LSMTool is still in beta. Please report bugs to drafferty@hs.uni-hamburg.de. To initialize your environment for LSMTool, users on CEP1 and CEP2 should run the following commands:
+LSMTool is a Python package which allows for the manipulation of sky models in the \texttt{makesourcedb} format (understood by BBS and NDPPP). Note that LSMTool is still in beta. Please report bugs to drafferty@hs.uni-hamburg.de. To initialize your environment for LSMTool, users on CEP1 and CEP2 should run the following commands:
 \begin{verbatim}
 use LofIm
 source ~rafferty/init_lsmtool
@@ -40,7 +40,7 @@ Note that the Pythonlibs LOFAR package includes an older version of astropy that
 \subsection{Usage}
 \label{lsmtool:usage}
 
-LSMTool can be run as follows:
+The command-line version of LSMTool can be run as follows:
 \begin{verbatim}
 Usage: lsmtool.py <skymodel> <parset> [<beam MS>]
 Options:
@@ -66,6 +66,7 @@ These are the operations that LSMTool can perform:
  \item[MERGE]: Merge two or more patches into one
  \item[CONCATENATE]: Concatenate two sky models
  \item[ADD]: Add a source
+ \item[SETPATCHPOSITIONS]: Calculate and set patch positions
  \item[PLOT]: Plot a simple representation of the sky model
 \end{description}
 
@@ -122,9 +123,9 @@ PatchFile & string & sky\_model\_with\_patches.sky & File with patches that will
 \hline
 \multicolumn{4}{l}{\textbf{GROUP}}\\
 Algorithm & string & tessellate & One of tessellate, cluster, single, every\\
-TargetFlux & string & 10.0 Jy & target total flux of patches (tessellate only)\\
+TargetFlux & string & 10.0 Jy & Target total flux of patches (tessellate only)\\
+NumClusters & int & 100 & Number of clusters (cluster only)\\
 ApplyBeam & bool & True & If true, apparent fluxes will be used \\
-Method & string & mid & Set patch positions by mid, mean, or wmean\\
 \hline
 \multicolumn{4}{l}{\textbf{UNGROUP}}\\
 \hline

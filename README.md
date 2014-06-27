@@ -28,6 +28,7 @@ The following operations are available:
 * MERGE: Merge two or more patches into one
 * CONCATENATE: Concatenate two sky models
 * ADD: Add a source
+* SETPATCHPOSITIONS: Calculate and set patch positions
 * PLOT: Plot the sky model
 
 For details, please see the full documentation (doc/lsmtool.tex).
