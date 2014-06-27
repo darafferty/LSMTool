@@ -58,7 +58,11 @@ def plot(LSM, fileName=None):
         >>> plot(LSM, 'sky_plot.pdf')
 
     """
-    import matplotlib.pyplot as plt
+    try:
+        import matplotlib.pyplot as plt
+    except:
+        print('PyPlot could not be imported. Plotting is not available.')
+        return
     from matplotlib.ticker import FuncFormatter
     import numpy as np
     try:

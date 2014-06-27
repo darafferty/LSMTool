@@ -23,7 +23,6 @@
 import os
 import sys
 import numpy as np
-import pylab as pl
 import logging
 import itertools
 
