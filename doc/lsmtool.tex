@@ -100,8 +100,7 @@ LSMTool.Steps.setpos.Method = mid
 LSMTool.Steps.setpos.Outfile = grouped.sky
 \end{verbatim}
 
-In the first line of this parset the step names are defined. In the next sections, the
-step parameters for every step are defined. Steps are applied sequentially, in the same order defined in the list of steps. A list of step-specific parameters is given in Table~\ref{lsmtool:tab:local_val}.
+In the first line of this parset the step names are defined. Steps are applied sequentially, in the same order defined in the list of steps. A list of step-specific parameters is given in Table~\ref{lsmtool:tab:local_val}.
 
 \begin{table}[!ht]
 \centering
@@ -119,7 +118,7 @@ Aggregate & bool & False & Filter by aggregated patch property\\
 ApplyBeam & bool & True & If true, apparent fluxes will be used \\
 \hline
 \multicolumn{4}{l}{\textbf{TRANSFER}}\\
-PatchFile & string & sky\_model\_with\_patches.sky & File with patches that will be transfered\\
+PatchFile & string & sky\_model\_with\_patches.sky & File with patches that will be transferred\\
 \hline
 \multicolumn{4}{l}{\textbf{GROUP}}\\
 Algorithm & string & tessellate & One of tessellate, cluster, single, every\\

@@ -3,8 +3,9 @@ LSMTool: the LOFAR Local Sky Model Tool
 
 LSMTool allows the manipulation of LOFAR sky models (in the makesourcedb format).
 
-Authors:
+Author:
 * David Rafferty
+
 Based on contributed scripts from:
 * Björn Adebahr
 * Francesco de Gasperin
@@ -31,7 +32,7 @@ The following operations are available:
 * SETPATCHPOSITIONS: Calculate and set patch positions
 * PLOT: Plot the sky model
 
-For details, please see the full documentation (doc/lsmtool.tex).
+For details, please see the full documentation (doc/build/html/index.html).
 
 Usage
 -----
@@ -54,4 +55,4 @@ LSMTool can also be used in Python scripts by importing the lsmtool module. E.g.
     >>> skymod.select('I > 1.0 Jy')
     >>> skymod.write('out_model.sky')
 
-For further details, please see the documentation.
+For further details, please see the full documentation (doc/build/html/index.html).
