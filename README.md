@@ -32,7 +32,7 @@ The following operations are available:
 * SETPATCHPOSITIONS: Calculate and set patch positions
 * PLOT: Plot the sky model
 
-For details, please see the full documentation (doc/build/html/index.html).
+For details, please see the [full documentation](doc/build/html/index.html).
 
 Usage
 -----
