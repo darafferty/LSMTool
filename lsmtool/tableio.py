@@ -28,26 +28,44 @@ import logging
 import os
 
 
-
+# Define the valid columns here as dictionaries. The entry key is the lower-case
+# name of the column, the entry value is the key used in the astropy table of the
+# SkyModel object. For details, see:
+# http://www.lofar.org/operations/doku.php?id=engineering:software:tools:makesourcedb#format_string
 allowedColumnNames = {'name':'Name', 'type':'Type', 'patch':'Patch',
     'ra':'Ra', 'dec':'Dec', 'i':'I', 'q':'Q', 'u':'U', 'v':'V',
     'majoraxis':'MajorAxis', 'minoraxis':'MinorAxis', 'orientation':'Orientation',
+    'ishapelet':'IShapelet', 'qshapelet':'QShapelet', 'ushapelet':'UShapelet',
+    'vshapelet':'VShapelet', 'category':'Category',
+    'rotationmeasure':'RotationMeasure', 'polarizationangle':'PolarizationAngle',
+    'polarizedfraction':'PolarizedFraction', 'referencewavelength':'ReferenceWavelength',
     'referencefrequency':'ReferenceFrequency', 'spectralindex':'SpectralIndex'}
 
 allowedColumnUnits = {'name':None, 'type':None, 'patch':None, 'ra':'degree',
     'dec':'degree', 'i':'Jy', 'i-apparent':'Jy', 'q':'Jy', 'u':'Jy', 'v':'Jy',
     'majoraxis':'arcsec', 'minoraxis':'arcsec', 'orientation':'degree',
+    'ishapelet':None, 'qshapelet':None, 'ushapelet':None,
+    'vshapelet':None, 'category':None,
+    'rotationmeasure':'rad/m^2', 'polarizationangle':'rad',
+    'polarizedfraction':'PolarizedFraction', 'referencewavelength':'ReferenceWavelength',
     'referencefrequency':'Hz', 'spectralindex':None}
 
 allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':'N/A',
     'dec': 'N/A', 'i':0.0, 'q':0.0, 'u':0.0, 'v':0.0, 'majoraxis':0.0,
-    'minoraxis':0.0, 'orientation':0.0, 'referencefrequency':0.0,
-    'spectralindex':0.0}
+    'minoraxis':0.0, 'orientation':0.0,
+    'ishapelet':'N/A', 'qshapelet':'N/A', 'ushapelet':'N/A',
+    'vshapelet':'N/A', 'category':2,
+    'rotationmeasure':0.0, 'polarizationangle':0.0,
+    'polarizedfraction':0.0, 'referencewavelength':'N/A',
+    'referencefrequency':0.0, 'spectralindex':0.0}
 
 
 def skyModelReader(fileName):
     """
     Reads a makesourcedb sky model file into an astropy table.
+
+    See http://www.lofar.org/operations/doku.php?id=engineering:software:tools:makesourcedb#format_string
+    for details.
 
     Parameters
     ----------
@@ -75,8 +93,7 @@ def skyModelReader(fileName):
             break
     modelFile.close()
     if formatString is None:
-        raise Exception("File '{0}' does not appear to be a valid makesourcedb "
-            'sky model (no valid format line found).'.format(fileName))
+        raise Exception("No valid format line found in file '{0}'.".format(fileName))
     formatString = formatString.strip()
     formatString = formatString.strip('# ')
     if formatString.lower().endswith('format'):
@@ -96,6 +113,8 @@ def skyModelReader(fileName):
 
     # Get column names and default values. Non-string columns have default
     # values of 0.0 unless a different value is given in the header.
+    if ',' not in formatString:
+        raise Exception("Sky model must use ',' as a field separator.")
     colNames = formatString.split(',')
     colDefaults = [None] * len(colNames)
     metaDict = {}
@@ -111,8 +130,11 @@ def skyModelReader(fileName):
         else:
             defaultVal = None
 
+        if colName == '':
+            raise Exception('Skipping of columns is not yet supported.')
         if colName not in allowedColumnNames:
-            raise Exception('Column name "{0}" found in file {1} is not a valid column'.format(colName, fileName))
+            raise Exception("Column '{0}' is not currently allowed".format(colName,
+                fileName))
         else:
             colNames[i] = allowedColumnNames[colName]
             if defaultVal is not None:
@@ -166,23 +188,30 @@ def skyModelReader(fileName):
         logging.debug('Converting spectral indices...')
         specOld = table['SpectralIndex'].data.tolist()
         specVec = []
-        maskVec = []
+        maxLen = 0
+        for l in specOld:
+            try:
+                if type(l) is float:
+                    maxLen = 1
+                else:
+                    specEntry = [float(f) for f in l.split(';')]
+                    if len(specEntry) > maxLen:
+                        maxLen = len(specEntry)
+            except:
+                pass
+        logging.debug('Maximum number of spectral index terms in model: {0}'.format(maxLen))
         for l in specOld:
             try:
                 if type(l) is float:
                     specEntry = [l]
                 else:
-                    specEntry = [float(f) for f in l.split(';')][0:2]
-                specMask = [False]*len(specEntry)
-                if len(specEntry) < 2:
+                    specEntry = [float(f) for f in l.split(';')]
+                while len(specEntry) < maxLen:
                     specEntry.append(0.0)
-                    specMask.append(True)
                 specVec.append(specEntry)
-                maskVec.append(specMask)
             except:
-                specVec.append([0.0, 0.0])
-                maskVec.append([True, True])
-        specCol = Column(name='SpectralIndex', data=np.ma.array(specVec, mask=maskVec, dtype=np.float))
+                specVec.append([0.0]*maxLen)
+        specCol = Column(name='SpectralIndex', data=np.array(specVec, dtype=np.float))
         specIndx = table.keys().index('SpectralIndex')
         table.remove_column('SpectralIndex')
         table.add_column(specCol, index=specIndx)
@@ -242,11 +271,14 @@ def RA2Angle(RA):
         RA = [RA]
 
     if type(RA[0]) is str:
-        RADeg = [(float(rasex.split(':')[0])
-            + float(rasex.split(':')[1]) / 60.0
-            + float(rasex.split(':')[2]) / 3600.0) * 15.0
-            for rasex in RA]
-        RAAngle = Angle(RADeg, unit='degree')
+        try:
+            RADeg = [(float(rasex.split(':')[0])
+                + float(rasex.split(':')[1]) / 60.0
+                + float(rasex.split(':')[2]) / 3600.0) * 15.0
+                for rasex in RA]
+            RAAngle = Angle(RADeg, unit='degree')
+        except:
+            raise Exception('RA values not understood.')
     else:
         RAAngle = Angle(RA, unit='degree')
 
@@ -272,12 +304,15 @@ def Dec2Angle(Dec):
         Dec = [Dec]
 
     if type(Dec[0]) is str:
-        DecSex = [decstr.replace('.', ':', 2) for decstr in Dec]
-        DecDeg = [float(decsex.split(':')[0])
-             + float(decsex.split(':')[1]) / 60.0
-             + float(decsex.split(':')[2]) / 3600.0
-             for decsex in DecSex]
-        DecAngle = Angle(DecDeg, unit='degree')
+        try:
+            DecSex = [decstr.replace('.', ':', 2) for decstr in Dec]
+            DecDeg = [float(decsex.split(':')[0])
+                 + float(decsex.split(':')[1]) / 60.0
+                 + float(decsex.split(':')[2]) / 3600.0
+                 for decsex in DecSex]
+            DecAngle = Angle(DecDeg, unit='degree')
+        except:
+            raise Exception('Dec values not understood.')
     else:
         DecAngle = Angle(Dec, unit='degree')
 
@@ -394,7 +429,10 @@ def rowStr(row):
             dstr = ' '
         else:
             if type(d) is np.ndarray:
-                dstr = str(d.tolist())
+                dlist = d.tolist()
+                while dlist[-1] == 0.0:
+                    dlist = dlist[:-1]
+                dstr = str(dlist)
             else:
                 if colKey == 'Ra':
                     dstr = Angle(d, unit='degree').to_string(unit='hourangle', sep=':')

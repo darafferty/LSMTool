@@ -120,6 +120,36 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     table1['Ra'].format = table2['Ra'].format
     table1['Dec'].format = table2['Dec'].format
 
+    # Make sure spectral index entries are of same length
+    if 'SpectralIndex' in LSM1.getColNames() and 'SpectralIndex' in LSM2.getColNames():
+        len1 = len(LSM1.getColValues('SpectralIndex')[0])
+        len2 = len(LSM1.getColValues('SpectralIndex')[0])
+        if len1 < len2:
+            oldspec = LSM1.getColValues('SpectralIndex')
+            newspec = []
+            for specind in oldspec:
+                speclist = specind.tolist()
+                while len(speclist) < len2:
+                    speclist.append([0.0])
+                newspec.append(speclist)
+            specCol = Column(name='SpectralIndex', data=np.array(newspec, dtype=np.float))
+            specIndx = LSM1.table.keys().index('SpectralIndex')
+            LSM1.table.remove_column('SpectralIndex')
+            LSM1.table.add_column(specCol, index=specIndx)
+
+        elif len1 > len2:
+            oldspec = LSM2.getColValues('SpectralIndex')
+            newspec = []
+            for specind in oldspec:
+                speclist = specind.tolist()
+                while len(speclist) < len1:
+                    speclist.append([0.0])
+                newspec.append(speclist)
+            specCol = Column(name='SpectralIndex', data=np.array(newspec, dtype=np.float))
+            specIndx = LSM2.table.keys().index('SpectralIndex')
+            LSM2.table.remove_column('SpectralIndex')
+            LSM2.table.add_column(specCol, index=specIndx)
+
     if matchBy.lower() == 'name':
         LSM1.table = vstack([table1, table2])
     elif matchBy.lower() == 'position':
