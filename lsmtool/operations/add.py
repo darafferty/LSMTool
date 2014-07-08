@@ -59,7 +59,7 @@ def add(LSM, colNamesVals):
     LSM : SkyModel object
         Input sky model.
     colNamesVals : dict
-        A dictionary that specifies the row values for the source to be added.
+        A dictionary that specifies the column values for the source to be added.
 
     Examples:
     ---------
@@ -70,6 +70,11 @@ def add(LSM, colNamesVals):
         >>> add(LSM, source)
 
     """
+    sourceNames = LSM.getColValues('Name').tolist()
+    if colNamesVals['Name'] in sourceNames:
+        logging.error('A source with the same name already exists.')
+        return 1
+
     result = LSM.setRowValues(colNamesVals)
     LSM._info()
     return result
