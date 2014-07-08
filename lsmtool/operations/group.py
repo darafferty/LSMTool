@@ -86,6 +86,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
     from . import _tessellate
     from . import _cluster
     import numpy as np
+    import os
 
     if algorithm.lower() == 'single':
         LSM.ungroup()
