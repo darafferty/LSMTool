@@ -781,7 +781,7 @@ class SkyModel(object):
             self.table.add_column(newCol, index=index)
 
 
-    def getRowValues(self, rowName, colName=None):
+    def getRowValues(self, rowName):
         """
         Returns an astropy table or table row for specified source or patch.
 
@@ -789,9 +789,6 @@ class SkyModel(object):
         ----------
         rowName : str
             Name of the source or patch
-        colName : str, optional
-            Column name. If given, returns row values for specified
-            column only.
 
         Examples
         --------
@@ -801,9 +798,8 @@ class SkyModel(object):
 
         Sum over the fluxes of sources in the 'bin1' patch::
 
-            >>> rows = s.getRowValues('bin1')
             >>> tot = 0.0
-            >>> for r in rows: tot += r['I']
+            >>> for r in s.getRowValues('bin1'): tot += r['I']
 
         """
         if colName is not None:
