@@ -536,7 +536,7 @@ class SkyModel(object):
         return x, y, midRA, midDec
 
 
-    def getDefaltValues(self):
+    def getDefaultValues(self):
         """
         Returns dict of {colName:default} values for all columns with defaults.
         """
@@ -548,7 +548,7 @@ class SkyModel(object):
         return defaultDict
 
 
-    def setDefaltValues(self, colDict):
+    def setDefaultValues(self, colDict):
         """
         Sets default column values.
 
