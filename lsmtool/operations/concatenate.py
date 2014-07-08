@@ -43,6 +43,11 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
     """
     Concatenate two sky models
 
+    Note that the mergesourcedb tool performs a similar function (but on
+    SourceDB data sets, not on sky model files; see
+    http://www.lofar.org/operations/doku.php?id=engineering:software:tools:makesourcedb#format_string
+    for details).
+
     Parameters
     ----------
     LSM1 : SkyModel object

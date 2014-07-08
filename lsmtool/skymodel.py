@@ -1569,7 +1569,8 @@ class SkyModel(object):
             applyBeam=applyBeam, useRegEx=useRegEx, force=force)
 
 
-    def group(self, algorithm, targetFlux=None, numClusters=100, applyBeam=False):
+    def group(self, algorithm, targetFlux=None, numClusters=100, applyBeam=False.
+        root='Patch'):
         """
         Groups sources into patches.
 
@@ -1597,6 +1598,10 @@ class SkyModel(object):
             numClusters brightest sources.
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
+        root : str, optional
+            Root string from which patch names are constructed (when algorithm =
+            'single', 'cluster', or 'tesselate'). Patch names will be 'root_INDX',
+            where INDX is an integer ranging from (0:nPatches).
 
         Examples
         --------
@@ -1607,7 +1612,7 @@ class SkyModel(object):
 
         """
         operations.group.group(self, algorithm, targetFlux=targetFlux,
-            numClusters=numClusters, applyBeam=applyBeam)
+            numClusters=numClusters, applyBeam=applyBeam, root=root)
 
 
     def transfer(self, patchFile):

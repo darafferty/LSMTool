@@ -23,6 +23,7 @@ LSMTool.Steps.transfer.OutFile = out_sky_model.sky
 LSMTool.Steps.group.Operation = GROUP # Group sources into patches
 LSMTool.Steps.group.Algorithm = tessellate # one of tessellate, cluster, single, every
 LSMTool.Steps.group.TargetFlux = 10.0 Jy # target total flux of patches (tessellate only)
+LSMTool.Steps.group.Root = Patch # root to use for patch names
 LSMTool.Steps.group.applyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
 LSMTool.Steps.group.OutFile = out_sky_model.sky
 

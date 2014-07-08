@@ -26,6 +26,7 @@ def run(step, parset, LSM):
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     algorithm = parset.getString('.'.join(["LSMTool.Steps", step, "Algorithm"]), 'single' )
+    root = parset.getString('.'.join(["LSMTool.Steps", step, "Root"]), 'Patch' )
     targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "TargetFlux"]), '1.0 Jy' )
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 10 )
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "applyBeam"]), False )
@@ -39,7 +40,8 @@ def run(step, parset, LSM):
     return result
 
 
-def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False):
+def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
+    root='Patch'):
     """
     Groups sources into patches
 
@@ -50,7 +52,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False):
     algorithm : str
         Algorithm to use for grouping:
         - 'single' => all sources are grouped into a single patch
-        - 'every' => every source gets a separate patch
+        - 'every' => every source gets a separate patch named 'source_patch'
         - 'cluster' => SAGECAL clustering algorithm that groups sources into
             specified number of clusters (specified by the numClusters parameter).
         - 'tessellate' => group into tiles whose total flux approximates
@@ -67,6 +69,10 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False):
         numClusters brightest sources.
     applyBeam : bool, optional
         If True, fluxes will be attenuated by the beam.
+    root : str, optional
+        Root string from which patch names are constructed (when algorithm =
+        'single', 'cluster', or 'tesselate'). Patch names will be 'root_INDX',
+        where INDX is an integer ranging from (0:nPatches).
 
     Examples
     --------
@@ -83,7 +89,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False):
 
     if algorithm.lower() == 'single':
         LSM.ungroup()
-        addSingle(LSM, 'Patch_0')
+        addSingle(LSM, root+'_0')
 
     elif algorithm.lower() == 'every':
         LSM.ungroup()
@@ -93,7 +99,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False):
         LSM.ungroup()
         patches = _cluster.compute_patch_center(LSM, applyBeam=applyBeam)
         patchCol = _cluster.create_clusters(LSM, patches, numClusters,
-            applyBeam=applyBeam)
+            applyBeam=applyBeam, root=root)
         LSM.setColValues('Patch', patchCol, index=2)
 
     elif algorithm.lower() == 'tessellate':
@@ -117,7 +123,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False):
         vobin = _tessellate.bin2D(np.array(x), np.array(y), f,
             target_flux=targetFlux)
         vobin.bin_voronoi()
-        patchCol = _tessellate.bins2Patches(vobin)
+        patchCol = _tessellate.bins2Patches(vobin, root=root)
         LSM.setColValues('Patch', patchCol, index=2)
 
     elif os.path.exists(algorithm):

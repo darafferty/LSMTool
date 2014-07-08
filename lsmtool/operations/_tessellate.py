@@ -473,13 +473,13 @@ def derive_pixelsize(x, y, verbose=0) :
     return pixelsize
 
 
-def bins2Patches(bin_obj):
+def bins2Patches(bin_obj, root='Patch'):
     """Returns a patch column based on binning"""
     patchNames = []
     for src_idx in range(len(bin_obj.data)):
         for i in range(bin_obj.xnode.size):
             listbins = bin_obj.listbins[i]
             if src_idx in listbins:
-                patchNames.append('bin{0}'.format(i))
+                patchNames.append('{0}_{1}'.format(root, i))
     return np.array(patchNames)
 
