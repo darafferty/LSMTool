@@ -773,7 +773,11 @@ class SkyModel(object):
         if colName in self.table.keys():
             self.table[colName] = data
         else:
-            newCol = Column(name=colName, data=data)
+            if colName == 'Patch':
+                # Specify length of 50 characters
+                newCol = Column(name=colName, data=data, dtype='S50')
+            else:
+                newCol = Column(name=colName, data=data)
             self.table.add_column(newCol, index=index)
 
 
@@ -1569,7 +1573,7 @@ class SkyModel(object):
             applyBeam=applyBeam, useRegEx=useRegEx, force=force)
 
 
-    def group(self, algorithm, targetFlux=None, numClusters=100, applyBeam=False.
+    def group(self, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
         root='Patch'):
         """
         Groups sources into patches.

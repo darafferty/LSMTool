@@ -26,11 +26,11 @@ s.add({'Name': 'src1', 'Type': 'POINT', 'Ra': 277.4232, 'Dec': 48.3689, 'I': 0.6
 print('Group using tessellation to a target flux of 50 Jy')
 s.group('tessellate', targetFlux = '50.0 Jy')
 
-print('Move patch bin1 to 16:04:16.2288, 58.03.06.912')
-s.move('bin1', position =  ['16:04:16.2288', '58.03.06.912'])
+print('Move patch Patch_1 to 16:04:16.2288, 58.03.06.912')
+s.move('Patch_1', position =  ['16:04:16.2288', '58.03.06.912'])
 
-print('Merge patches bin0 and bin2')
-s.merge(['bin0', 'bin2'], name = 'merged_patch')
+print('Merge patches Patch_0 and Patch_2')
+s.merge(['Patch_0', 'Patch_2'], name = 'merged_patch')
 
 print('Set patch positions to midpoint of patch and write final model to file')
 s.setPatchPositions(method='mid')

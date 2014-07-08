@@ -39,14 +39,14 @@ LSMTool.Steps.group.Operation = GROUP
 LSMTool.Steps.group.Algorithm = tessellate
 LSMTool.Steps.group.TargetFlux = 50.0 Jy
 
-# Move patch 'bin1' to 16:04:16.2288, 58.03.06.912
+# Move patch 'Patch_1' to 16:04:16.2288, 58.03.06.912
 LSMTool.Steps.move.Operation = MOVE
-LSMTool.Steps.move.Name = bin1
+LSMTool.Steps.move.Name = Patch_1
 LSMTool.Steps.move.Position = ['16:04:16.2288', '58.03.06.912']
 
-# Merge patches 'bin0' and 'bin2'
+# Merge patches 'Patch_0' and 'Patch_2'
 LSMTool.Steps.merge.Operation = MERGE
-LSMTool.Steps.merge.Patches = [bin0, bin2]
+LSMTool.Steps.merge.Patches = [Patch_0, Patch_2]
 LSMTool.Steps.merge.Name = merged_patch
 
 # Set patch positions to midpoint of patch and write final model to file

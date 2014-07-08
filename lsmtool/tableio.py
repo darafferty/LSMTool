@@ -22,6 +22,7 @@
 from astropy.table import Table, Column
 from astropy.coordinates import Angle
 from astropy.io import registry
+import astropy.io.ascii as ascii
 import numpy as np
 import re
 import logging
@@ -65,7 +66,8 @@ def skyModelReader(fileName):
     Reads a makesourcedb sky model file into an astropy table.
 
     See http://www.lofar.org/operations/doku.php?id=engineering:software:tools:makesourcedb#format_string
-    for details.
+    for details. Note that source names, types, and patch names are limited to
+    a length of 50 characters.
 
     Parameters
     ----------
@@ -126,6 +128,8 @@ def skyModelReader(fileName):
             try:
                 defaultVal = float(parts[1].strip("'[]"))
             except ValueError:
+                logging.warning('Default value for column {0} not understood. '
+                    'For SpectralIndex, only a single term is allowed.'.format(colName))
                 defaultVal = None
         else:
             defaultVal = None
@@ -179,9 +183,20 @@ def skyModelReader(fileName):
         outlines.append(','.join(colLines))
     modelFile.close()
 
+    # Before loading table into an astropy Table object, set lengths of Name,
+    # Patch, and Type columns to 50 characters
+    converters = {}
+    nameCol = 'col{0}'.format(colNames.index('Name')+1)
+    converters[nameCol] = [ascii.convert_numpy('S50')]
+    typeCol = 'col{0}'.format(colNames.index('Type')+1)
+    converters[typeCol] = [ascii.convert_numpy('S50')]
+    if 'Patch' in colNames:
+        patchCol = 'col{0}'.format(colNames.index('Patch')+1)
+        converters[patchCol] = [ascii.convert_numpy('S50')]
+
     logging.debug('Creating table...')
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
-        names=colNames, comment='#', data_start=0)
+        names=colNames, comment='#', data_start=0, converters=converters)
 
     # Convert spectral index values from strings to arrays.
     if 'SpectralIndex' in table.keys():
@@ -392,12 +407,12 @@ def skyModelWriter(table, fileName):
             outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRAStr,
                 gDecStr))
         for row in table.filled(fill_value=-9999):
-            line = rowStr(row)
+            line = rowStr(row, table.meta)
             outLines.append(', '.join(line))
             outLines.append('\n')
     else:
         for row in table.filled(fill_value=-9999):
-            line = rowStr(row)
+            line = rowStr(row, table.meta)
             outLines.append(', '.join(line))
             outLines.append('\n')
 
@@ -405,13 +420,16 @@ def skyModelWriter(table, fileName):
     modelFile.close()
 
 
-def rowStr(row):
+def rowStr(row, metaDict):
     """
     Returns makesourcedb representation of a row.
 
     Parameters
     ----------
     row : astropy.table.Row object
+        Row to process
+    metaDict : dict
+        Table meta dictionary
 
     Returns
     -------
@@ -428,10 +446,32 @@ def rowStr(row):
         if np.any(d == -9999):
             dstr = ' '
         else:
+            defaultVal = allowedColumnDefaults[colName.lower()]
+            if colName in metaDict:
+                fillVal = metaDict[colName]
+                hasfillVal = True
+            else:
+                fillVal = defaultVal
+                hasfillVal = False
             if type(d) is np.ndarray:
                 dlist = d.tolist()
-                while dlist[-1] == 0.0:
+                while dlist[-1] == defaultVal or dlist[-1] == fillVal:
                     dlist = dlist[:-1]
+                    if len(dlist) == 1:
+                        if not hasfillVal:
+                            # If no fillVal is specified, break so that the first
+                            # value is always kept
+                            break
+                        else:
+                            # Check if first value is not fillVal. If it's not,
+                            # break. If it is, allow loop to continue. This check is
+                            # to exclude cases where first value is equal to the
+                            # defaultVal but not to the fillVal (add hence should
+                            # not be removed).
+                            if dlist[0] != fillVal:
+                                break
+                    if len(dlist) == 0:
+                        break
                 dstr = str(dlist)
             else:
                 if colKey == 'Ra':
