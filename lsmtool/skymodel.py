@@ -1392,7 +1392,7 @@ class SkyModel(object):
                     format(fileName))
                 return
 
-        table = self.table
+        table = self.table.copy()
 
         # Sort if desired
         if sortBy is not None:
@@ -1402,6 +1402,8 @@ class SkyModel(object):
                 indx = indx[::-1]
             table = table[indx]
 
+        if format != 'makesourcedb':
+            table.meta = {}
         table.write(fileName, format=format)
 
 
