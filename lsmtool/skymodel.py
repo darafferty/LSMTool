@@ -974,7 +974,12 @@ class SkyModel(object):
         Returns array of all patch names in the sky model.
         """
         if self.hasPatches:
-            return self.table.groups.keys['Patch'].data
+            col = self.table.groups.keys['Patch']
+            if hasattr(col, 'filled'):
+                outcol = col.filled().copy()
+            else:
+                outcol = col.copy()
+            return outcol.data
         else:
             return None
 
