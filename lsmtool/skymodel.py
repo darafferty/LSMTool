@@ -615,18 +615,18 @@ class SkyModel(object):
             Name of column
         units : str, optional
             Output units (the values are converted as needed). By default, the
-            units are those used by makesourcedb, with the exception of Ra and
-            Dec which have default units of degrees.
+            units are those used by makesourcedb, with the exception of RA and
+            Dec which have default output units of degrees.
         aggregate : {'sum', 'mean', 'wmean', 'min', max'}, optional
             If set, the array returned will be of values aggregated
             over the patch members. The following aggregation functions are
             available:
                 - 'sum': sum of patch values
                 - 'mean': mean of patch values
-                - 'wmean': Stokes I weighted mean of patch values
+                - 'wmean': Stokes-I-weighted mean of patch values
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
-            Note that, in certain cases, certain aggregation functions will not
+            Note that, in some cases, certain aggregation functions will not
             produce meaningful results. For example, asking for the sum of
             the MajorAxis values per patch will not give a good indication of
             the size of the patch (to get the sizes, use the getPatchSizes()
@@ -1685,7 +1685,7 @@ class SkyModel(object):
         Parameters
         ----------
         colNamesVals : dict
-            A dictionary that specifies the row values for the source to be added.
+            A dictionary that specifies the column values for the source to be added.
 
         Examples:
         ---------
