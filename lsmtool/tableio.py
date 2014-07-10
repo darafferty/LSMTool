@@ -58,7 +58,7 @@ allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':'N/A',
     'vshapelet':'N/A', 'category':2,
     'rotationmeasure':0.0, 'polarizationangle':0.0,
     'polarizedfraction':0.0, 'referencewavelength':'N/A',
-    'referencefrequency':0.0, 'spectralindex':0.0}
+    'referencefrequency':0.0, 'spectralindex':[0.0]}
 
 
 def skyModelReader(fileName):
@@ -118,6 +118,37 @@ def skyModelReader(fileName):
     if ',' not in formatString:
         raise Exception("Sky model must use ',' as a field separator.")
     colNames = formatString.split(',')
+
+    # Check if a default value in the format string is a list. If it is, make
+    # sure the list is complete
+    cnStart = None
+    cnEnd = None
+    for cn in colNames:
+        if '[' in cn and ']' not in cn:
+            cnStart = cn
+        if ']' in cn and '[' not in cn:
+            cnEnd = cn
+    if cnStart is not None:
+        indx1 = colNames.index(cnStart)
+        indx2 = colNames.index(cnEnd)
+        colNamesFixed = []
+        toJoin = []
+        for i, cn in enumerate(colNames):
+            if i < indx1:
+                colNamesFixed.append(cn)
+            elif i >= indx1 and i <= indx2:
+                toJoin.append(cn)
+                if i == len(colNames)-1:
+                    colNamesFixed.append(','.join(toJoin))
+            elif i > indx2:
+                if i == indx2 + 1:
+                    colNamesFixed.append(','.join(toJoin))
+                    colNamesFixed.append(cn)
+                else:
+                    colNamesFixed.append(cn)
+        colNames = colNamesFixed
+
+    # Now get the defaults
     colDefaults = [None] * len(colNames)
     metaDict = {}
     colNames[0] = colNames[0].split('=')[1]
@@ -126,14 +157,14 @@ def skyModelReader(fileName):
         colName = parts[0].strip().lower()
         if len(parts) == 2:
             try:
-
-                defParts = parts[1].strip("'[]").split(',')
-                if len(defParts) == 1:
-                    defaultVal = float(defParts[0].strip())
-                else:
+                if '[' in parts[1]:
+                    # Default is a list
+                    defParts = parts[1].strip("'[]").split(',')
                     defaultVal = []
                     for p in defParts:
                         defaultVal.append(float(p.strip()))
+                else:
+                    defaultVal = float(parts[1].strip("'"))
             except ValueError:
                 defaultVal = None
         else:
@@ -265,6 +296,9 @@ def skyModelReader(fileName):
         table.columns[colName].unit = allowedColumnUnits[colName.lower()]
 
         if hasattr(table.columns[colName], 'filled') and colDefaults[i] is not None:
+            if colName == 'SpectralIndex':
+                while len(colDefaults[i]) < maxLen:
+                    colDefaults[i].append(0.0)
             logging.debug("Setting default value for column '{0}' to {1}".
                 format(colName, colDefaults[i]))
             table.columns[colName].fill_value = colDefaults[i]
@@ -384,10 +418,10 @@ def skyModelWriter(table, fileName):
         colName = allowedColumnNames[colKey.lower()]
 
         if colName in table.meta:
-            if colName == 'SpectralIndex':
-                colHeader = "{0}='[{1}]'".format(colName, table.meta[colName])
-            else:
-                colHeader = "{0}='{1}'".format(colName, table.meta[colName])
+#             if colName == 'SpectralIndex':
+#                 colHeader = "{0}='[{1}]'".format(colName, table.meta[colName])
+#             else:
+            colHeader = "{0}='{1}'".format(colName, table.meta[colName])
         elif colName == 'SpectralIndex':
             colHeader = "{0}='[]'".format(colName)
         else:
@@ -461,23 +495,9 @@ def rowStr(row, metaDict):
                 hasfillVal = False
             if type(d) is np.ndarray:
                 dlist = d.tolist()
-                while dlist[-1] == defaultVal or dlist[-1] == fillVal:
-                    dlist = dlist[:-1]
-                    if len(dlist) == 1:
-                        if not hasfillVal:
-                            # If no fillVal is specified, break so that the first
-                            # value is always kept
-                            break
-                        else:
-                            # Check if first value is not fillVal. If it's not,
-                            # break. If it is, allow loop to continue. This check is
-                            # to exclude cases where first value is equal to the
-                            # defaultVal but not to the fillVal (add hence should
-                            # not be removed).
-                            if dlist[0] != fillVal:
-                                break
-                    if len(dlist) == 0:
-                        break
+                # Blank the value if it's equal to fill or default values
+                if (hasfillVal and dlist == fillVal) or (not hasfillVal and dlist == defaultVal):
+                    dlist = []
                 dstr = str(dlist)
             else:
                 if colKey == 'Ra':
