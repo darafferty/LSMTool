@@ -296,12 +296,13 @@ def skyModelReader(fileName):
         table.columns[colName].unit = allowedColumnUnits[colName.lower()]
 
         if hasattr(table.columns[colName], 'filled') and colDefaults[i] is not None:
+            fillVal = colDefaults[i]
             if colName == 'SpectralIndex':
-                while len(colDefaults[i]) < maxLen:
-                    colDefaults[i].append(0.0)
+                while fillVal < maxLen:
+                    fillVal.append(0.0)
             logging.debug("Setting default value for column '{0}' to {1}".
-                format(colName, colDefaults[i]))
-            table.columns[colName].fill_value = colDefaults[i]
+                format(colName, fillVal))
+            table.columns[colName].fill_value = fillVal
     table.meta = metaDict
 
     return table
@@ -418,9 +419,6 @@ def skyModelWriter(table, fileName):
         colName = allowedColumnNames[colKey.lower()]
 
         if colName in table.meta:
-#             if colName == 'SpectralIndex':
-#                 colHeader = "{0}='[{1}]'".format(colName, table.meta[colName])
-#             else:
             colHeader = "{0}='{1}'".format(colName, table.meta[colName])
         elif colName == 'SpectralIndex':
             colHeader = "{0}='[]'".format(colName)
