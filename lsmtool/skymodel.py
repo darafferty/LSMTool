@@ -802,17 +802,11 @@ class SkyModel(object):
             >>> for r in s.getRowValues('bin1'): tot += r['I']
 
         """
-        if colName is not None:
-            colName = self._verifyColName(colName)
-
         sourceNames = self.getColValues('Name')
         patchNames = self.getPatchNames()
         if rowName in sourceNames:
             indx = self._getNameIndx(rowName)
-            if colName is not None:
-                return self.table[colName].filled()[indx]
-            else:
-                return self.table.filled()[indx]
+            return self.table.filled()[indx]
         elif rowName in patchNames:
             pindx = self._getNameIndx(rowName, patch=True)
             table = self.table.groups[pindx]
