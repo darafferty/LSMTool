@@ -240,6 +240,7 @@ def skyModelReader(fileName):
         logging.debug('Converting spectral indices...')
         specOld = table['SpectralIndex'].data.tolist()
         specVec = []
+        maskVec = []
         maxLen = 0
         for l in specOld:
             try:
@@ -256,14 +257,20 @@ def skyModelReader(fileName):
             try:
                 if type(l) is float:
                     specEntry = [l]
+                    specMask = [False]
                 else:
                     specEntry = [float(f) for f in l.split(';')]
+                    specMask = [False] * len(specEntry)
                 while len(specEntry) < maxLen:
                     specEntry.append(0.0)
+                    specMask.append(True)
                 specVec.append(specEntry)
+                maskVec.append(specMask)
             except:
                 specVec.append([0.0]*maxLen)
+                maskVec.append([True]*maxLen)
         specCol = Column(name='SpectralIndex', data=np.array(specVec, dtype=np.float))
+        specCol.mask = maskVec
         specIndx = table.keys().index('SpectralIndex')
         table.remove_column('SpectralIndex')
         table.add_column(specCol, index=specIndx)
@@ -481,7 +488,7 @@ def rowStr(row, metaDict):
         except KeyError:
             continue
         d = row[colKey]
-        if np.any(d == -9999):
+        if np.all(d == -9999):
             dstr = ' '
         else:
             defaultVal = allowedColumnDefaults[colName.lower()]
@@ -496,6 +503,9 @@ def rowStr(row, metaDict):
                 # Blank the value if it's equal to fill or default values
                 if (hasfillVal and dlist == fillVal) or (not hasfillVal and dlist == defaultVal):
                     dlist = []
+                # Remove blanked values
+                while dlist[-1] == -9999:
+                    dlist.pop()
                 dstr = str(dlist)
             else:
                 if colKey == 'Ra':
