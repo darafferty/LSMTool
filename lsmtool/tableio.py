@@ -126,10 +126,15 @@ def skyModelReader(fileName):
         colName = parts[0].strip().lower()
         if len(parts) == 2:
             try:
-                defaultVal = float(parts[1].strip("'[]"))
+
+                defParts = parts[1].strip("'[]").split(',')
+                if len(defParts) == 1:
+                    defaultVal = float(defParts[0].strip())
+                else:
+                    defaultVal = []
+                    for p in defParts:
+                        defaultVal.append(float(p.strip()))
             except ValueError:
-                logging.warning('Default value for column {0} not understood. '
-                    'For SpectralIndex, only a single term is allowed.'.format(colName))
                 defaultVal = None
         else:
             defaultVal = None
@@ -182,6 +187,7 @@ def skyModelReader(fileName):
             colLines.append(' ')
         outlines.append(','.join(colLines))
     modelFile.close()
+    outlines.append('\n') # needed in case of single-line sky models
 
     # Before loading table into an astropy Table object, set lengths of Name,
     # Patch, and Type columns to 50 characters
