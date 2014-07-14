@@ -430,9 +430,11 @@ class SkyModel(object):
 
         Parameters
         ----------
-        patchDict : dict
+        patchDict : dict, optional
             Dict specifying patch names and positions as {'patchName':[RA, Dec]}
             where both RA and Dec are degrees J2000 or in makesourcedb format.
+            If None, positions are set for all patches using the method given
+            by the 'method' parameter.
         method : None or str, optional
             If no patchDict is given, this parameter specifies the method used
             to set the patch positions:
@@ -1463,6 +1465,9 @@ class SkyModel(object):
         useRegEx : bool, optional
             If True, string matching will use regular expression matching. If
             False, string matching uses Unix filename matching.
+        force : bool, optional
+            If True, selections that result in empty sky models are allowed. If
+            False, such selections are not applied and the sky model is unaffected.
 
         Examples
         --------
@@ -1542,6 +1547,9 @@ class SkyModel(object):
         useRegEx : bool, optional
             If True, string matching will use regular expression matching. If
             False, string matching uses Unix filename matching.
+        force : bool, optional
+            If True, filters that result in empty sky models are allowed. If
+            False, such filters are not applied and the sky model is unaffected.
 
         Examples
         --------
@@ -1557,7 +1565,8 @@ class SkyModel(object):
 
             >>> s.remove('I > 1.5 Jy', aggregate='sum')
 
-        Filter on source names, removing those that match "src*_1?"::
+        Filter on source names, removing those that match "src*_1?" (e.g.,
+        'src2345_15', 'srcB2_1a', etc.)::
 
             >>> s.remove('Name == src*_1?')
 

@@ -75,7 +75,8 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
         If True, string matching will use regular expression matching. If
         False, string matching uses Unix filename matching.
     force : bool, optional
-        If True, force filtering even if the result is an empty table.
+        If True, filters that result in empty sky models are allowed. If
+        False, such filters are not applied and the sky model is unaffected.
 
     Examples
     --------
