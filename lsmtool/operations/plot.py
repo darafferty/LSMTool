@@ -60,20 +60,31 @@ def plot(LSM, fileName=None):
     """
     try:
         import matplotlib.pyplot as plt
+        from matplotlib.ticker import FuncFormatter
     except:
         print('PyPlot could not be imported. Plotting is not available.')
         return
-    from matplotlib.ticker import FuncFormatter
+    try:
+        from wcsaxes import WCSAxes
+        hasWCSaxes = True
+    except:
+        hasWCSaxes = False
     import numpy as np
     try:
-        from ..operations_lib import radec2xy, xy2radec
+        from ..operations_lib import radec2xy, xy2radec, makeWCS
     except:
-        from .operations_lib import radec2xy, xy2radec
+        from .operations_lib import radec2xy, xy2radec, makeWCS
     global midRA, midDec, ymin, xmin
 
     fig = plt.figure(1,figsize=(7,7))
     plt.clf()
-    ax = plt.gca()
+    if hasWCSaxes:
+        x, y, midRA, midDec  = LSM._getXY()
+        wcs = makeWCS(midRA, midDec)
+        ax = WCSAxes(fig, [0.12, 0.12, 0.8, 0.8], wcs=wcs)
+        fig.add_axes(ax)
+    else:
+        ax = plt.gca()
     if LSM.hasPatches:
         nsrc = len(LSM.getPatchNames())
     else:
@@ -102,26 +113,46 @@ def plot(LSM, fileName=None):
         c = [sm.to_rgba(0)] * nsrc
 
     # Plot sources
-    x, y, midRA, midDec  = LSM._getXY()
-    plt.scatter(x, y, s=s, c=c)
+    if hasWCSaxes:
+        RA = LSM.getColValues('Ra')
+        Dec = LSM.getColValues('Dec')
+        ax.scatter(RA, Dec, transform=ax.get_transform('fk5'), s=s, c=c)
+    else:
+        x, y, midRA, midDec  = LSM._getXY()
+        plt.scatter(x, y, s=s, c=c)
 
     if LSM.hasPatches:
         RAp, Decp = LSM.getPatchPositions(asArray=True)
         goodInd = np.where( (RAp != 0.0) & (Decp != 0.0) )
-        xp, yp = radec2xy(RAp[goodInd], Decp[goodInd], midRA, midDec)
-        plt.scatter(xp, yp, s=100, c=cp, marker='*')
+
+        if hasWCSaxes:
+            ax.scatter(RAp, Decp, transform=ax.get_transform('fk5'), s=100,
+                c=cp, marker='*')
+        else:
+            xp, yp = radec2xy(RAp[goodInd], Decp[goodInd], midRA, midDec)
+            plt.scatter(xp, yp, s=100, c=cp, marker='*')
+
+    # Set axis labels, etc.
+    if hasWCSaxes:
+        RAAxis = ax.coords['ra']
+        DecAxis = ax.coords['dec']
+        RAAxis.set_axislabel('RA')
+        DecAxis.set_axislabel('Dec')
+        ax.coords.grid(color='black', alpha=0.5, linestyle='solid')
+    else:
+        plt.xlabel("RA (arb. units)")
+        plt.ylabel("Dec (arb. units)")
 
     # Define coodinate formater to show RA and Dec under mouse pointer
     RAformatter = FuncFormatter(RAtickformatter)
     ax.format_coord = formatCoord
-    plt.xlabel("RA (arb. units)")
-    plt.ylabel("Dec (arb. units)")
 
     if fileName is not None:
         plt.savefig(fileName)
     else:
         plt.show()
     plt.close(fig)
+
 
 def formatCoord(x, y):
     """Custom coordinate format"""
@@ -131,7 +162,7 @@ def formatCoord(x, y):
         from .operations_lib import xy2radec
     global midRA, midDec
     RA, Dec = xy2radec([x], [y], midRA, midDec)
-    return '{0:.2f} {1:.2f}'.format(RA[0], Dec[0])
+    return 'RA = {0:.2f} Dec = {1:.2f}'.format(RA[0], Dec[0])
 
 
 def RAtickformatter(x, pos):

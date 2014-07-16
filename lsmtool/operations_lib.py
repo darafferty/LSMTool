@@ -115,7 +115,6 @@ def radec2xy(RA, Dec, refRA=None, refDec=None):
         values
 
     """
-    from astropy.wcs import WCS
     import numpy as np
 
     x = []
@@ -126,12 +125,7 @@ def radec2xy(RA, Dec, refRA=None, refDec=None):
         refDec = Dec[0]
 
     # Make wcs object to handle transformation from ra and dec to pixel coords.
-    w = WCS(naxis=2)
-    w.wcs.crpix = [1000, 1000]
-    w.wcs.cdelt = np.array([-0.066667, 0.066667])
-    w.wcs.crval = [refRA, refDec]
-    w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
-    w.wcs.set_pv([(2, 1, 45.0)])
+    w = makeWCS(refRA, refDec)
 
     for ra_deg, dec_deg in zip(RA, Dec):
         ra_dec = np.array([[ra_deg, dec_deg]])
@@ -165,20 +159,14 @@ def xy2radec(x, y, refRA=0.0, refDec=0.0):
         Lists of RA and Dec values corresponding to the input x and y pixel
         values
 
-     """
-    from astropy.wcs import WCS
+    """
     import numpy as np
 
     RA = []
     Dec = []
 
     # Make wcs object to handle transformation from ra and dec to pixel coords.
-    w = WCS(naxis=2)
-    w.wcs.crpix = [1000, 1000]
-    w.wcs.cdelt = np.array([-0.066667, 0.066667])
-    w.wcs.crval = [refRA, refDec]
-    w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
-    w.wcs.set_pv([(2, 1, 45.0)])
+    w = makeWCS(refRA, refDec)
 
     for xp, yp in zip(x, y):
         x_y = np.array([[xp, yp]])
@@ -186,3 +174,19 @@ def xy2radec(x, y, refRA=0.0, refDec=0.0):
         Dec.append(w.wcs_pix2world(x_y, 0)[0][1])
 
     return RA, Dec
+
+
+def makeWCS(refRA, refDec):
+    """Makes simple WCS object"""
+    from astropy.wcs import WCS
+    import numpy as np
+
+    w = WCS(naxis=2)
+    w.wcs.crpix = [1000, 1000]
+    w.wcs.cdelt = np.array([-0.066667, 0.066667])
+    w.wcs.crval = [refRA, refDec]
+    w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
+    w.wcs.set_pv([(2, 1, 45.0)])
+
+    return w
+
