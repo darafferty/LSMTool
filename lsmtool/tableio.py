@@ -504,8 +504,11 @@ def rowStr(row, metaDict):
                 if (hasfillVal and dlist == fillVal) or (not hasfillVal and dlist == defaultVal):
                     dlist = []
                 # Remove blanked values
-                while dlist[-1] == -9999:
-                    dlist.pop()
+                if len(dlist) > 0:
+                    while dlist[-1] == -9999:
+                        dlist.pop()
+                        if len(dlist) == 0:
+                            break
                 dstr = str(dlist)
             else:
                 if colKey == 'Ra':
