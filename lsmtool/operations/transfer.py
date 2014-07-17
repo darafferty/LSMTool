@@ -64,7 +64,7 @@ def transfer(LSM, patchSkyModel):
     except:
         from .skymodel import SkyModel
 
-    if type(patchFile) is str:
+    if type(patchSkyModel) is str:
         masterLSM = SkyModel(patchSkyModel)
     else:
         masterLSM = patchSkyModel

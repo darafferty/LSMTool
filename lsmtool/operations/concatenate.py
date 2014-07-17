@@ -29,8 +29,9 @@ def run(step, parset, LSM):
     matchBy = parset.getString('.'.join(["LSMTool.Steps", step, "MatchBy"]), '' )
     radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '' )
     keep = parset.getString('.'.join(["LSMTool.Steps", step, "KeepMatches"]), '' )
+    inheritPatches = parset.getBool('.'.join(["LSMTool.Steps", step, "InheritPatches"]), False )
 
-    result = concatenate(LSM, skyModel2, matchBy, radius, keep)
+    result = concatenate(LSM, skyModel2, matchBy, radius, keep, inheritPatches)
 
     # Write to outFile
     if outFile != '' and result == 0:

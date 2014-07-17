@@ -7,13 +7,13 @@ LSMTool.Steps = [select, remove, transfer, group, ungroup, merge, move, concaten
 LSMTool.Steps.select.Operation = SELECT # Select sources by source or patch properties
 LSMTool.Steps.select.FilterExpression = I > 10.0 Jy # any valid column name can be used
 LSMTool.Steps.select.Aggregate = False # Filter by aggregated patch property instead of by source property
-LSMTool.Steps.select.applyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
+LSMTool.Steps.select.ApplyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
 LSMTool.Steps.select.OutFile = out_sky_model.sky
 
 LSMTool.Steps.remove.Operation = REMOVE # Remove sources by source or patch properties
 LSMTool.Steps.remove.FilterExpression = I > 10.0 Jy # any valid column name can be used
 LSMTool.Steps.remove.Aggregate = False # Filter by aggregated patch property instead of by source property
-LSMTool.Steps.remove.applyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
+LSMTool.Steps.remove.ApplyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
 LSMTool.Steps.remove.OutFile = out_sky_model.sky
 
 LSMTool.Steps.transfer.Operation = TRANSFER # Transfer a patch scheme from one sky model to another
@@ -24,7 +24,7 @@ LSMTool.Steps.group.Operation = GROUP # Group sources into patches
 LSMTool.Steps.group.Algorithm = tessellate # one of tessellate, cluster, single, every
 LSMTool.Steps.group.TargetFlux = 10.0 Jy # target total flux of patches (tessellate only)
 LSMTool.Steps.group.Root = Patch # root to use for patch names
-LSMTool.Steps.group.applyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
+LSMTool.Steps.group.ApplyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
 LSMTool.Steps.group.OutFile = out_sky_model.sky
 
 LSMTool.Steps.ungroup.Operation = UNGROUP # Remove patches
@@ -46,6 +46,7 @@ LSMTool.Steps.concatenate.Skymodel2 = in_sky_model2.sky
 LSMTool.Steps.concatenate.MatchBy = position # one of position or name: identify duplicates by matching on radius or source name
 LSMTool.Steps.concatenate.Radius = 30 arcsec # radius within which matches are identified (radius only)
 LSMTool.Steps.concatenate.Keep = all # if two sources match then keep all, from1, or from2
+LSMTool.Steps.concatenate.InheritPatches = True # matches inherit patches from parent sky model
 LSMTool.Steps.concatenate.OutFile = out_sky_model.sky
 
 LSMTool.Steps.add.Operation = ADD # Add a source
@@ -60,7 +61,7 @@ LSMTool.Steps.add.OutFile = out_sky_model.sky
 
 LSMTool.Steps.setpos.Operation = SETPATCHPOSITIONS # Set patch positions
 LSMTool.Steps.setpos.Method = mid # one of mid, mean, or wmean
-LSMTool.Steps.setpos.applyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
+LSMTool.Steps.setpos.ApplyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
 LSMTool.Steps.setpos.OutFile = out_sky_model.sky
 
 LSMTool.Steps.plot.Operation = PLOT # Plot sky model
