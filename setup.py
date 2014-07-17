@@ -11,21 +11,6 @@ if os.path.exists('README.md'):
     with open('README.md') as f:
         long_description=f.read()
 
-
-class PyTest(Command):
-    user_options = []
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        import sys,subprocess
-        errno = subprocess.call([sys.executable, 'runtests.py'])
-        raise SystemExit(errno)
-
-
 setup(
     name='lsmtool',
     version=lsmtool._version.__version__,
@@ -44,10 +29,7 @@ setup(
         'Topic :: Scientific/Engineering :: Astronomy',
         'Topic :: Software Development :: Libraries :: Python Modules',
         ],
-    tests_require=['pytest'],
     install_requires=['numpy','astropy'],
-    #scripts = ['say_hello.py'],
+    scripts = ['lsmtool/lsmtool.py'],
     packages=['lsmtool','lsmtool.operations'],
-    test_suite='test',
-    cmdclass = {'test': PyTest},
     )
