@@ -78,8 +78,8 @@ def plot(LSM, fileName=None):
 
     fig = plt.figure(1,figsize=(7,7))
     plt.clf()
+    x, y, midRA, midDec  = LSM._getXY()
     if hasWCSaxes:
-        x, y, midRA, midDec  = LSM._getXY()
         wcs = makeWCS(midRA, midDec)
         ax = WCSAxes(fig, [0.12, 0.12, 0.8, 0.8], wcs=wcs)
         fig.add_axes(ax)
@@ -100,7 +100,7 @@ def plot(LSM, fileName=None):
     for flux in LSM.getColValues('I'):
         s.append(min(1000.0, (1.0+2.0*np.log10(flux/minflux))*50.0))
 
-    # Plot sources, colored by patch if grouped
+    # Color sources by patch if grouped
     c = [0]*len(LSM)
     cp = []
     if LSM.hasPatches:
@@ -116,21 +116,22 @@ def plot(LSM, fileName=None):
     if hasWCSaxes:
         RA = LSM.getColValues('Ra')
         Dec = LSM.getColValues('Dec')
-        ax.scatter(RA, Dec, transform=ax.get_transform('fk5'), s=s, c=c)
-    else:
-        x, y, midRA, midDec  = LSM._getXY()
-        plt.scatter(x, y, s=s, c=c)
+        ax.set_xlim(np.min(x)-20, np.max(x)+20)
+        ax.set_ylim(np.min(y)-20, np.max(y)+20)
+#         ax.scatter(RA, Dec, transform=ax.get_transform('fk5'), s=s, c=c)
+#     else:
+    plt.scatter(x, y, s=s, c=c)
 
     if LSM.hasPatches:
         RAp, Decp = LSM.getPatchPositions(asArray=True)
         goodInd = np.where( (RAp != 0.0) & (Decp != 0.0) )
 
-        if hasWCSaxes:
-            ax.scatter(RAp, Decp, transform=ax.get_transform('fk5'), s=100,
-                c=cp, marker='*')
-        else:
-            xp, yp = radec2xy(RAp[goodInd], Decp[goodInd], midRA, midDec)
-            plt.scatter(xp, yp, s=100, c=cp, marker='*')
+#         if hasWCSaxes:
+#             ax.scatter(RAp, Decp, transform=ax.get_transform('fk5'), s=100,
+#                 c=cp, marker='*')
+#         else:
+        xp, yp = radec2xy(RAp[goodInd], Decp[goodInd], midRA, midDec)
+        plt.scatter(xp, yp, s=100, c=cp, marker='*')
 
     # Set axis labels, etc.
     if hasWCSaxes:
