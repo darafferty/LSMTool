@@ -60,10 +60,10 @@ class SkyModel(object):
         self._fileName = fileName
 
         if beamMS is not None:
-            self._beamMS = beamMS
+            self.beamMS = beamMS
             self._hasBeam = True
         else:
-            self._beamMS = None
+            self.beamMS = None
             self._hasBeam = False
 
         if checkDup:
@@ -129,7 +129,7 @@ class SkyModel(object):
             '      {3} are type POINT\n'
             '      {4} are type GAUSSIAN\n'
             '      Associated beam MS: {5}'.format(len(self.table), nPatches, plur,
-            nPoint, nGaus, self._beamMS))
+            nPoint, nGaus, self.beamMS))
 
 
     def info(self):
@@ -1115,7 +1115,7 @@ class SkyModel(object):
             DecDeg = self.getColValues('Dec')
 
         flux = col.data
-        vals = attenuate(self._beamMS, flux, RADeg, DecDeg)
+        vals = attenuate(self.beamMS, flux, RADeg, DecDeg)
         col[:] = vals
         return col
 
@@ -1625,18 +1625,18 @@ class SkyModel(object):
             numClusters=numClusters, applyBeam=applyBeam, root=root)
 
 
-    def transfer(self, patchFile):
+    def transfer(self, patchSkyModel):
         """
         Transfer patches from the input sky model.
 
-        Sources with the same name as those in patchFile will be grouped into
-        the patches defined in patchFile. Sources that do not appear in patchFile
+        Sources with the same name as those in patchSkyModel will be grouped into
+        the patches defined in patchSkyModel. Sources that do not appear in patchSkyModel
         will be placed into separate patches (one per source). Patch positions are
         not transferred.
 
         Parameters
         ----------
-        patchFile : str
+        patchSkyModel : str or SkyModel object
             Input sky model from which to transfer patches.
 
         Examples
@@ -1647,7 +1647,7 @@ class SkyModel(object):
             >>> s.setPatchPositions(method='mid')
 
         """
-        operations.transfer.transfer(self, patchFile)
+        operations.transfer.transfer(self, patchSkyModel)
 
 
     def move(self, name, position=None, shift=None):
@@ -1725,13 +1725,14 @@ class SkyModel(object):
         operations.merge.merge(self, patches, name=name)
 
 
-    def concatenate(self, LSM2, matchBy='name', radius=0.1, keep='all'):
+    def concatenate(self, LSM2, matchBy='name', radius=0.1, keep='all',
+        inheritPatches=False):
         """
         Concatenate two sky models.
 
         Parameters
         ----------
-        LSM2 : SkyModel object
+        LSM2 : str or SkyModel object
             Sky model to concatenate with the parent sky model
         matchBy : str, optional
             Determines how duplicate sources are determined:
@@ -1768,8 +1769,10 @@ class SkyModel(object):
                 keep='from2')
 
         """
+        if type(LSM2) is str:
+            LSM2 = SkyModel(LSM2)
         operations.concatenate.concatenate(self, LSM2, matchBy=matchBy,
-            radius=radius, keep=keep)
+            radius=radius, keep=keep, inheritPatches=inheritPatches)
 
 
     def plot(self, fileName=None):

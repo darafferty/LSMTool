@@ -36,18 +36,18 @@ def run(step, parset, LSM):
     return result
 
 
-def transfer(LSM, patchFile):
+def transfer(LSM, patchSkyModel):
     """
     Transfer patches from the input sky model.
 
-    Sources with the same name as those in patchFile will be grouped into
-    the patches defined in patchFile. Sources that do not appear in patchFile
+    Sources with the same name as those in patchSkyModel will be grouped into
+    the patches defined in patchSkyModel. Sources that do not appear in patchSkyModel
     will be placed into separate patches (one per source). Patch positions are
     not transferred.
 
     Parameters
     ----------
-    patchFile : str
+    patchSkyModel : str or SkyModel object
         Input sky model from which to transfer patches.
 
     Examples
@@ -64,7 +64,10 @@ def transfer(LSM, patchFile):
     except:
         from .skymodel import SkyModel
 
-    masterLSM = SkyModel(patchFile)
+    if type(patchFile) is str:
+        masterLSM = SkyModel(patchSkyModel)
+    else:
+        masterLSM = patchSkyModel
     masterNames = masterLSM.getColValues('Name').tolist()
     masterPatchNames = masterLSM.getColValues('Patch').tolist()
 
