@@ -39,7 +39,8 @@ def run(step, parset, LSM):
     return result
 
 
-def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
+def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
+    inheritPatches=False):
     """
     Concatenate two sky models
 
@@ -67,6 +68,9 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
             named
         - 'from1' => duplicates kept are those from sky model 1 (LSM1)
         - 'from2' => duplicates kept are those from sky model 2 (LSM2)
+    inheritPatches : bool, optional
+        If True, duplicates inherit the patch name from the parent sky model. If
+        False, duplicates keep their own patch names.
 
     Examples
     --------
@@ -196,6 +200,8 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all'):
                     toRemove.append(indx[1:])
                 else:
                     toRemove.append(indx[0])
+                    if inheritPatches and LSM1.hasPatches:
+                        LSM1.table['Patch'][indx[1:]] = LSM1.table['Patch'][indx[0]]
                 LSM1.table.remove_rows(toRemove)
 
     # Rename any duplicates
