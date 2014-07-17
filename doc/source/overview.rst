@@ -16,6 +16,9 @@ Note that the Pythonlibs LOFAR package includes an older version of
 astropy that conflicts with LSMTool and cannot be used in conjunction
 with it.
 
+To install LSMTool elsewhere (e.g., on your laptop), please see the README at
+https://github.com/darafferty/LSMTool for instructions.
+
 Usage
 -----
 

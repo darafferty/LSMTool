@@ -34,8 +34,47 @@ The following operations are available:
 
 For details, please see the [full documentation](doc/build/html/index.html).
 
+Installation
+------------
+
+LSMTool is already installed on the LOFAR CEP1 and CEP2 clusters. Users on CEP1
+and CEP2 should run the following commands before using LSMTool:
+
+    use LofIm
+    source ~rafferty/init_lsmtool
+
+If you want to install LSMTool yourself, follow the instructions below.
+
+### Requirements
+
+* [Numpy][http://www.numpy.org/]
+* [Matplotlib][http://www.matplotlib.org/]
+* [Astropy][http://www.astropy.org/] 0.3.2 or later
+* [WCSAxes][http://wcsaxes.readthedocs.org] 0.2 or later (optional, for improved plotting)
+
+### Downloading and Installing
+
+Get the latest developer version by cloning the git repository:
+
+    git clone https://github.com/darafferty/LSMTool.git
+
+Then install with:
+
+    cd LSMTool
+    python setup.py install
+
+### Testing
+
+You can test that the installation worked with the runtests.py script:
+
+    python runtests.py
+
+If all works, LSMTool is installed correctly.
+
+
 Usage
 -----
+
 LSMTool can be used from the command line with a parset that defines the steps
 to be done. E.g.:
 
