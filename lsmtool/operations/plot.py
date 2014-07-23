@@ -96,9 +96,13 @@ def plot(LSM, fileName=None):
     # Set symbol sizes by flux, making sure no symbol is smaller than 50 or
     # larger than 1000
     s = []
-    minflux = np.min(LSM.getColValues('I'))
+    fluxes = LSM.getColValues('I')
+    minflux = np.min(fluxes[fluxes > 0.0])
     for flux in LSM.getColValues('I'):
-        s.append(min(1000.0, (1.0+2.0*np.log10(flux/minflux))*50.0))
+        if flux > 0.0:
+            s.append(min(1000.0, (1.0+2.0*np.log10(flux/minflux))*50.0))
+        else:
+            s.append(50.0)
 
     # Color sources by patch if grouped
     c = [0]*len(LSM)
@@ -118,18 +122,11 @@ def plot(LSM, fileName=None):
         Dec = LSM.getColValues('Dec')
         ax.set_xlim(np.min(x)-20, np.max(x)+20)
         ax.set_ylim(np.min(y)-20, np.max(y)+20)
-#         ax.scatter(RA, Dec, transform=ax.get_transform('fk5'), s=s, c=c)
-#     else:
     plt.scatter(x, y, s=s, c=c)
 
     if LSM.hasPatches:
         RAp, Decp = LSM.getPatchPositions(asArray=True)
         goodInd = np.where( (RAp != 0.0) & (Decp != 0.0) )
-
-#         if hasWCSaxes:
-#             ax.scatter(RAp, Decp, transform=ax.get_transform('fk5'), s=100,
-#                 c=cp, marker='*')
-#         else:
         xp, yp = radec2xy(RAp[goodInd], Decp[goodInd], midRA, midDec)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
 
