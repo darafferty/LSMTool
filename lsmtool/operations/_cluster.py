@@ -149,6 +149,7 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False, root='Patch'):
         logging.debug('The installed version of SciPy contains a bug that affects catalog matching. '
             'Falling back on (slower) matching script.')
         from ._matching_pre04 import match_coordinates_sky
+        from astropy.coordinates import FK5
     else:
         from astropy.coordinates.matching import match_coordinates_sky
 
@@ -191,10 +192,16 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False, root='Patch'):
             clusterRAs.append(clusterRA[cindx])
             clusterDecs.append(clusterDec[cindx])
 
-        catalog1 = SkyCoord(clusterRAs, clusterDecs,
-            unit=(u.degree, u.degree), frame='icrs')
-        catalog2 = SkyCoord(patchRAs, patchDecs,
-            unit=(u.degree, u.degree), frame='icrs')
+        if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
+            catalog1 = FK5(clusterRAs, clusterDecs,
+                unit=(u.degree, u.degree))
+            catalog2 = FK5(patchRAs, patchDecs,
+                unit=(u.degree, u.degree))
+        else:
+            catalog1 = SkyCoord(clusterRAs, clusterDecs,
+                unit=(u.degree, u.degree), frame='fk5')
+            catalog2 = SkyCoord(patchRAs, patchDecs,
+                unit=(u.degree, u.degree), frame='fk5')
         matchIdx, d2d, d3d = match_coordinates_sky(catalog2, catalog1)
 
         for i, patch in zip(matchIdx, patches):
