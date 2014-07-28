@@ -63,8 +63,7 @@ def match_coordinates_3d(matchcoord, catalogcoord, nthneighbor=1, storekdtree='_
     from warnings import warn
 
     #without scipy this will immediately fail
-    from . import _kdtree as KDTree
-#    KDTree = spatial.KDTree
+    from ._kdtree import KDTree
 
     if storekdtree is True:  # backwards compatibility for pre v0.4
         storekdtree = '_kdtree'
