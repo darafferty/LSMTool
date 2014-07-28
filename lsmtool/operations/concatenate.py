@@ -108,7 +108,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
     if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
         logging.debug('The installed version of SciPy contains a bug that affects catalog matching. '
             'Falling back on (slower) matching script.')
-        from ._matching_pre04 import match_coordinates_sky
+        from ._matching import match_coordinates_sky
     else:
         from astropy.coordinates.matching import match_coordinates_sky
 
