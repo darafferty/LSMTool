@@ -96,7 +96,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
 
     """
     from astropy.table import vstack, Column
-    from astropy.coordinates import ICRS
+    from astropy.coordinates import SkyCoord
     from astropy import units as u
     import numpy as np
     try:
@@ -164,10 +164,10 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
         LSM1.table = vstack([table1, table2])
     elif matchBy.lower() == 'position':
         # Create catalogs
-        catalog1 = ICRS(LSM1.getColValues('Ra'), LSM1.getColValues('Dec'),
-            unit=(u.degree, u.degree))
-        catalog2 = ICRS(LSM2.getColValues('Ra'), LSM2.getColValues('Dec'),
-            unit=(u.degree, u.degree))
+        catalog1 = SkyCoord(LSM1.getColValues('Ra'), LSM1.getColValues('Dec'),
+            unit=(u.degree, u.degree), frame='icrs')
+        catalog2 = SkyCoord(LSM2.getColValues('Ra'), LSM2.getColValues('Dec'),
+            unit=(u.degree, u.degree), frame='icrs')
         idx, d2d, d3d = match_coordinates_sky(catalog1, catalog2)
 
         matches = np.where(d2d.value <= radius)

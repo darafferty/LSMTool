@@ -141,7 +141,7 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False, root='Patch'):
     """
     Clusterize all the patches of the skymodel iteratively around the brightest patches
     """
-    from astropy.coordinates import ICRS
+    from astropy.coordinates import SkyCoord
     from astropy import units as u
     from distutils.version import StrictVersion
     import scipy
@@ -191,10 +191,10 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False, root='Patch'):
             clusterRAs.append(clusterRA[cindx])
             clusterDecs.append(clusterDec[cindx])
 
-        catalog1 = ICRS(clusterRAs, clusterDecs,
-            unit=(u.degree, u.degree))
-        catalog2 = ICRS(patchRAs, patchDecs,
-            unit=(u.degree, u.degree))
+        catalog1 = SkyCoord(clusterRAs, clusterDecs,
+            unit=(u.degree, u.degree), frame='icrs')
+        catalog2 = SkyCoord(patchRAs, patchDecs,
+            unit=(u.degree, u.degree), frame='icrs')
         matchIdx, d2d, d3d = match_coordinates_sky(catalog2, catalog1)
 
         for i, patch in zip(matchIdx, patches):
