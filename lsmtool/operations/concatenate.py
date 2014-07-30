@@ -30,6 +30,7 @@ def run(step, parset, LSM):
     radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '' )
     keep = parset.getString('.'.join(["LSMTool.Steps", step, "KeepMatches"]), '' )
     inheritPatches = parset.getBool('.'.join(["LSMTool.Steps", step, "InheritPatches"]), False )
+    print(skyModel2, matchBy, radius, keep, inheritPatches)
 
     result = concatenate(LSM, skyModel2, matchBy, radius, keep, inheritPatches)
 
