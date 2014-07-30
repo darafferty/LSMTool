@@ -27,7 +27,8 @@ def run(step, parset, LSM):
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     patches = parset.getStringVector('.'.join(["LSMTool.Steps", step, "Patches"]), [] )
     name = parset.getString('.'.join(["LSMTool.Steps", step, "Name"]), '' )
-
+    if name == '':
+        name = None
     result = merge(LSM, patches, name)
 
     # Write to outFile

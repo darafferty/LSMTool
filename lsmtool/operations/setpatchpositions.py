@@ -22,7 +22,7 @@ logging.debug('Loading SETPATCHPOSITIONS module.')
 
 def run(step, parset, LSM):
 
-    method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), '' )
+    method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), 'mid' )
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), False )
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
 

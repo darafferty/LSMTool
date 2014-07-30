@@ -28,7 +28,7 @@ def run(step, parset, LSM):
     algorithm = parset.getString('.'.join(["LSMTool.Steps", step, "Algorithm"]), 'single' )
     root = parset.getString('.'.join(["LSMTool.Steps", step, "Root"]), 'Patch' )
     targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "TargetFlux"]), '1.0 Jy' )
-    numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 10 )
+    numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 100 )
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), False )
 
     result = group(LSM, algorithm, targetFlux, numClusters, applyBeam, root)
