@@ -26,9 +26,9 @@ def run(step, parset, LSM):
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     skyModel2 = parset.getString('.'.join(["LSMTool.Steps", step, "Skymodel2"]), '' )
-    matchBy = parset.getString('.'.join(["LSMTool.Steps", step, "MatchBy"]), '' )
-    radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '' )
-    keep = parset.getString('.'.join(["LSMTool.Steps", step, "KeepMatches"]), '' )
+    matchBy = parset.getString('.'.join(["LSMTool.Steps", step, "MatchBy"]), 'name' )
+    radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '0.1' )
+    keep = parset.getString('.'.join(["LSMTool.Steps", step, "KeepMatches"]), 'all' )
     inheritPatches = parset.getBool('.'.join(["LSMTool.Steps", step, "InheritPatches"]), False )
     print(skyModel2, matchBy, radius, keep, inheritPatches)
 
