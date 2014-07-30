@@ -61,8 +61,9 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
         - 'name' => duplicates are identified by name
         - 'position' => duplicates are identified by radius. Sources within the
             radius specified by the radius parameter are considered duplicates
-    radius : float, optional
-        Radius in degrees for matching when matchBy='position'
+    radius : float or str, optional
+        Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
+        for matching when matchBy='position'
     keep : str, optional
         Determines how duplicates are treated:
         - 'all' => all duplicates are kept; those with identical names are re-
@@ -96,7 +97,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
 
     """
     from astropy.table import vstack, Column
-    from astropy.coordinates import SkyCoord
+    from astropy.coordinates import SkyCoord, Angle
     from astropy import units as u
     import numpy as np
     try:
@@ -170,6 +171,13 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
             unit=(u.degree, u.degree), frame='fk5')
         idx, d2d, d3d = match_coordinates_sky(catalog1, catalog2)
 
+        try:
+            radius = float(radius)
+        except ValueError:
+            pass
+        if type(radius) is float:
+            radius = '{0} degree'.format(radius)
+        rad_deg = Angle(radius).degree
         matches = np.where(d2d.value <= radius)
 
         matchCol1 = np.array(range(len(LSM1)))

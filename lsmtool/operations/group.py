@@ -30,7 +30,6 @@ def run(step, parset, LSM):
     targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "TargetFlux"]), '1.0 Jy' )
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 10 )
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), False )
-    print(algorithm, targetFlux, numClusters, applyBeam, root)
 
     result = group(LSM, algorithm, targetFlux, numClusters, applyBeam, root)
 

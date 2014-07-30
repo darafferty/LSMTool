@@ -1739,8 +1739,9 @@ class SkyModel(object):
             - 'name' => duplicates are identified by name
             - 'position' => duplicates are identified by radius. Sources within the
                 radius specified by the radius parameter are considered duplicates
-        radius : float, optional
-            Radius in degrees for matching when matchBy='position'
+        radius : float or str, optional
+            Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
+            for matching when matchBy='position'
         keep : str, optional
             Determines how duplicates are treated:
             - 'all' => all duplicates are kept; those with identical names are re-
