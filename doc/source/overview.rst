@@ -88,7 +88,7 @@ then groups the sources into patches:
 
     # Select only sources above 1 mJy
     LSMTool.Steps.selectbright.Operation = SELECT
-    LSMTool.Steps.selectbright.FilterExpression = I > 1.0 mJy
+    LSMTool.Steps.selectbright.FilterExpression = "I > 1.0 mJy"
 
     # Add a source
     LSMTool.Steps.addsrc.Name = new_source
@@ -103,9 +103,13 @@ then groups the sources into patches:
     LSMTool.Steps.grp.TargetFlux = 50.0 Jy
     LSMTool.Steps.grp.Method = mid
 
+    # Select only sources in 'Patch_1'
+    LSMTool.Steps.selectbright.Operation = SELECT
+    LSMTool.Steps.selectbright.FilterExpression = "Patch = 'Patch_1'"
+
     # Set the patch positions to their midpoint and write final skymodel
     LSMTool.Steps.setpos.Method = mid
-    LSMTool.Steps.setpos.Outfile = grouped.sky
+    LSMTool.Steps.setpos.OutFile = grouped.sky
 
 In the first line of this parset the step names are defined. In the next
 sections, the step parameters for every step are defined. Steps are
@@ -221,6 +225,7 @@ Section [lsmtool:parset]:
     >>> LSM.select('I > 1.0 mJy')
     >>> LSM.add({'Name':'new_source', 'Type':'POINT', 'Ra':277.4232, 'Dec':48.3689, 'I':0.69})
     >>> LSM.group(algorithm='tesselate', targetFlux='10.0 Jy')
+    >>> LSM.select("Patch = 'Patch_1'")
     >>> LSM.setPatchPositions(method='mid')
 
 In many cases, the methods accept parameters with the same names as
