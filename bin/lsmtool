@@ -27,7 +27,6 @@ import os
 import time
 import logging
 import lsmtool
-# from lsmtool import _version, _logging, skymodel
 import lofar.parameterset
 
 
@@ -35,15 +34,15 @@ if __name__=='__main__':
     # Options
     import optparse
     opt = optparse.OptionParser(usage='%prog <skymodel> <parset> [<beam MS>] \n'
-            +_author, version='%prog '+_version.__version__)
+            +_author, version='%prog '+lsmtool._version.__version__)
     opt.add_option('-q', help='Quiet', action='store_true', default=False)
     opt.add_option('-v', help='Verbose', action='store_true', default=False)
     (options, args) = opt.parse_args()
 
     if options.q:
-        _logging.setLevel('warning')
+        lsmtool._logging.setLevel('warning')
     if options.v:
-        _logging.setLevel('debug')
+        lsmtool._logging.setLevel('debug')
 
     # Check options
     if len(args) not in [2, 3]:
@@ -73,25 +72,24 @@ if __name__=='__main__':
         sys.exit(1)
 
     # Load the skymodel
-    LSM = skymodel.SkyModel(skyModelFile, beamMS=beamMS)
+    LSM = lsmtool.skymodel.SkyModel(skyModelFile, beamMS=beamMS)
 
     # from ~vdtol/Expion-2011-05-03/src
     parset = lofar.parameterset.parameterset( parsetFile )
     steps = parset.getStringVector( "LSMTool.Steps", [] )
 
     # Possible operations, linked to relevant function
-    import operations
-    operations = {"REMOVE": operations.remove,
-                  "SELECT": operations.select,
-                  "GROUP": operations.group,
-                  "UNGROUP": operations.ungroup,
-                  "CONCATENATE": operations.concatenate,
-                  "ADD": operations.add,
-                  "MERGE": operations.merge,
-                  "MOVE": operations.move,
-                  "PLOT": operations.plot,
-                  "SETPATCHPOSITIONS": operations.setpatchpositions,
-                  "TRANSFER": operations.transfer
+    operations = {"REMOVE": lsmtool.operations.remove,
+                  "SELECT": lsmtool.operations.select,
+                  "GROUP": lsmtool.operations.group,
+                  "UNGROUP": lsmtool.operations.ungroup,
+                  "CONCATENATE": lsmtool.operations.concatenate,
+                  "ADD": lsmtool.operations.add,
+                  "MERGE": lsmtool.operations.merge,
+                  "MOVE": lsmtool.operations.move,
+                  "PLOT": lsmtool.operations.plot,
+                  "SETPATCHPOSITIONS": lsmtool.operations.setpatchpositions,
+                  "TRANSFER": lsmtool.operations.transfer
                   }
 
     for step in steps:
