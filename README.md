@@ -33,7 +33,7 @@ The following operations are available:
 * SETPATCHPOSITIONS: Calculate and set patch positions
 * PLOT: Plot the sky model
 
-For details, please see the [full documentation](doc/build/html/index.html).
+For details, please see the [full documentation](docs/build/html/index.html).
 
 Installation
 ------------
@@ -95,4 +95,4 @@ LSMTool can also be used in Python scripts by importing the lsmtool module. E.g.
     >>> skymod.select('I > 1.0 Jy')
     >>> skymod.write('out_model.sky')
 
-For further details, please see the [full documentation](doc/build/html/index.html).
+For further details, please see the [full documentation](docs/build/html/index.html).
