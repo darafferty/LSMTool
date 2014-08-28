@@ -26,7 +26,7 @@ The command-line version of LSMTool can be run as follows:
 
 ::
 
-    Usage: lsmtool.py <skymodel> <parset> [<beam MS>]
+    Usage: lsmtool <skymodel> <parset> [<beam MS>]
     Options:
       --version   show program's version number and exit
       -h, --help  show this help message and exit
