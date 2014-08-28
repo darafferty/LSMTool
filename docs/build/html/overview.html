@@ -1,0 +1,459 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>LSMTool: the LOFAR Local Sky Model Tool &mdash; LSMTool 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="LSMTool 1.0.0 documentation" href="index.html" />
+    <link rel="next" title="LSMTool Module Documentation" href="lsmtool.html" />
+    <link rel="prev" title="Welcome to LSMTool’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="lsmtool.html" title="LSMTool Module Documentation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to LSMTool’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">LSMTool 1.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="lsmtool-the-lofar-local-sky-model-tool">
+<h1>LSMTool: the LOFAR Local Sky Model Tool<a class="headerlink" href="#lsmtool-the-lofar-local-sky-model-tool" title="Permalink to this headline">¶</a></h1>
+<p>LSMTool is a Python package which allows for the manipulation of sky
+models in the <tt class="docutils literal"><span class="pre">makesourcedb</span></tt> format (understood by BBS and NDPPP).
+Note that LSMTool is still in beta. Please report bugs to
+<a class="reference external" href="mailto:drafferty&#37;&#52;&#48;hs&#46;uni-hamburg&#46;de">drafferty<span>&#64;</span>hs<span>&#46;</span>uni-hamburg<span>&#46;</span>de</a>. To initialize your environment for LSMTool,
+users on CEP1 and CEP2 should run the following commands:</p>
+<div class="highlight-python"><div class="highlight"><pre>use LofIm
+source ~rafferty/init_lsmtool
+</pre></div>
+</div>
+<p>Note that the Pythonlibs LOFAR package includes an older version of
+astropy that conflicts with LSMTool and cannot be used in conjunction
+with it.</p>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>The command-line version of LSMTool can be run as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre>Usage: lsmtool.py &lt;skymodel&gt; &lt;parset&gt; [&lt;beam MS&gt;]
+Options:
+  --version   show program&#39;s version number and exit
+  -h, --help  show this help message and exit
+  -q          Quiet
+  -v          Verbose
+</pre></div>
+</div>
+<p>The parset specifies the operations to perform and their parameters.
+These are described in the next sections.</p>
+</div>
+<div class="section" id="operations">
+<span id="operations-defined"></span><h2>Operations<a class="headerlink" href="#operations" title="Permalink to this headline">¶</a></h2>
+<p>These are the operations that LSMTool can perform:</p>
+<dl class="docutils">
+<dt>SELECT</dt>
+<dd>: Select sources by source or patch properties</dd>
+<dt>REMOVE</dt>
+<dd>: Remove sources by source or patch properties</dd>
+<dt>TRANSFER</dt>
+<dd>: Transfer a patch scheme from one sky model to another</dd>
+<dt>GROUP</dt>
+<dd>: Group sources into patches</dd>
+<dt>UNGROUP</dt>
+<dd>: Remove patches</dd>
+<dt>MOVE</dt>
+<dd>: Move a source or patch position</dd>
+<dt>MERGE</dt>
+<dd>: Merge two or more patches into one</dd>
+<dt>CONCATENATE</dt>
+<dd>: Concatenate two sky models</dd>
+<dt>ADD</dt>
+<dd>: Add a source</dd>
+<dt>SETPATCHPOSITIONS</dt>
+<dd>: Calculate and set patch positions</dd>
+<dt>PLOT</dt>
+<dd>: Plot a simple representation of the sky model</dd>
+</dl>
+</div>
+<div class="section" id="example-parset">
+<h2>Example parset<a class="headerlink" href="#example-parset" title="Permalink to this headline">¶</a></h2>
+<p>This is an example parset that filters on the flux, adds a source, and
+then groups the sources into patches:</p>
+<div class="highlight-python"><div class="highlight"><pre>LSMTool.Steps = [selectbright, addsrc, grp, setpos]
+
+# Select only sources above 1 mJy
+LSMTool.Steps.selectbright.Operation = SELECT
+LSMTool.Steps.selectbright.FilterExpression = I &gt; 1.0 mJy
+
+# Add a source
+LSMTool.Steps.addsrc.Name = new_source
+LSMTool.Steps.addsrc.Type = POINT
+LSMTool.Steps.addsrc.Ra = 277.4232
+LSMTool.Steps.addsrc.Dec = 48.3689
+LSMTool.Steps.addsrc.I = 0.69
+
+# Group using tessellation to a target flux of 50 Jy
+LSMTool.Steps.grp.Operation = GROUP
+LSMTool.Steps.grp.Algorithm = tessellate
+LSMTool.Steps.grp.TargetFlux = 50.0 Jy
+LSMTool.Steps.grp.Method = mid
+
+# Set the patch positions to their midpoint and write final skymodel
+LSMTool.Steps.setpos.Method = mid
+LSMTool.Steps.setpos.Outfile = grouped.sky
+</pre></div>
+</div>
+<p>In the first line of this parset the step names are defined. In the next
+sections, the step parameters for every step are defined. Steps are
+applied sequentially, in the same order defined in the list of steps. A
+list of step-specific parameters is given in
+Table&nbsp;[lsmtool:tab:local<sub>v</sub>al].</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="15%" />
+<col width="14%" />
+<col width="54%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Var Name</th>
+<th class="head">Format</th>
+<th class="head">Example</th>
+<th class="head">Comment</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Operation</td>
+<td>string</td>
+<td>SELECT</td>
+<td>An operation name (see <a class="reference internal" href="#operations-defined"><em>Operations</em></a>)</td>
+</tr>
+<tr class="row-odd"><td>OutFile</td>
+<td>string</td>
+<td>out.sky</td>
+<td>Name of output file</td>
+</tr>
+<tr class="row-even"><td colspan="4"><strong>SELECT and REMOVE</strong></td>
+</tr>
+<tr class="row-odd"><td>FilterExpression</td>
+<td>string</td>
+<td>I &gt; 10.0 Jy</td>
+<td>Filter for selection</td>
+</tr>
+<tr class="row-even"><td>Aggregate</td>
+<td>bool</td>
+<td>False</td>
+<td>Filter by aggregated patch property</td>
+</tr>
+<tr class="row-odd"><td>ApplyBeam</td>
+<td>bool</td>
+<td>True</td>
+<td>If true, apparent fluxes will be used</td>
+</tr>
+<tr class="row-even"><td colspan="4"><strong>TRANSFER</strong></td>
+</tr>
+<tr class="row-odd"><td>PatchFile</td>
+<td>string</td>
+<td>patches.sky</td>
+<td>File with patches that will be transferred</td>
+</tr>
+<tr class="row-even"><td colspan="4"><strong>GROUP</strong></td>
+</tr>
+<tr class="row-odd"><td>Algorithm</td>
+<td>string</td>
+<td>tessellate</td>
+<td>One of tessellate, cluster, single, every</td>
+</tr>
+<tr class="row-even"><td>TargetFlux</td>
+<td>string</td>
+<td>10.0 Jy</td>
+<td>Target total flux of patches (tessellate only)</td>
+</tr>
+<tr class="row-odd"><td>NumClusters</td>
+<td>int</td>
+<td>100</td>
+<td>Number of clusters (cluster only)</td>
+</tr>
+<tr class="row-even"><td>ApplyBeam</td>
+<td>bool</td>
+<td>True</td>
+<td>If true, apparent fluxes will be used</td>
+</tr>
+<tr class="row-odd"><td colspan="4"><strong>UNGROUP</strong></td>
+</tr>
+<tr class="row-even"><td colspan="4"><strong>MOVE</strong></td>
+</tr>
+<tr class="row-odd"><td>Name</td>
+<td>string</td>
+<td>src1</td>
+<td>Name of source or patch to move</td>
+</tr>
+<tr class="row-even"><td>Position</td>
+<td>list of floats</td>
+<td>[12.3, 23.4]</td>
+<td>RA and Dec in degrees to move to</td>
+</tr>
+<tr class="row-odd"><td>Shift</td>
+<td>list of floats</td>
+<td>[0.001, 0.0]</td>
+<td>RA and Dec in degrees to shift by</td>
+</tr>
+<tr class="row-even"><td colspan="4"><strong>MERGE</strong></td>
+</tr>
+<tr class="row-odd"><td>Patches</td>
+<td>list of strings</td>
+<td>[bin1, bin2]</td>
+<td>Patch names to merge</td>
+</tr>
+<tr class="row-even"><td>Name</td>
+<td>string</td>
+<td>merged_patch</td>
+<td>Name of new merged patch</td>
+</tr>
+<tr class="row-odd"><td colspan="4"><strong>SETPATCHPOSITIONS</strong></td>
+</tr>
+<tr class="row-even"><td>Method</td>
+<td>string</td>
+<td>mid</td>
+<td>Set patch positions to mid, mean, or wmean positions</td>
+</tr>
+<tr class="row-odd"><td colspan="4"><strong>CONCATENATE</strong></td>
+</tr>
+<tr class="row-even"><td>Skymodel2</td>
+<td>string</td>
+<td>in2.sky</td>
+<td>Name of sky model to concatenate</td>
+</tr>
+<tr class="row-odd"><td>MatchBy</td>
+<td>string</td>
+<td>position</td>
+<td>Identify duplicates by position or name</td>
+</tr>
+<tr class="row-even"><td>Radius</td>
+<td>string</td>
+<td>30 arcsec</td>
+<td>Radius within which matches are identified</td>
+</tr>
+<tr class="row-odd"><td>Keep</td>
+<td>string</td>
+<td>all</td>
+<td>If two sources match, keep: all, from1, or from2</td>
+</tr>
+<tr class="row-even"><td colspan="4"><strong>ADD</strong></td>
+</tr>
+<tr class="row-odd"><td>Name</td>
+<td>string</td>
+<td>src1</td>
+<td>Name of source; required</td>
+</tr>
+<tr class="row-even"><td>Type</td>
+<td>string</td>
+<td>POINT</td>
+<td>Type; required</td>
+</tr>
+<tr class="row-odd"><td>Patch</td>
+<td>string</td>
+<td>new_patch</td>
+<td>Patch name; required if sky model has patches</td>
+</tr>
+<tr class="row-even"><td>RA</td>
+<td>float or string</td>
+<td>12:45:30.4</td>
+<td>RA; required</td>
+</tr>
+<tr class="row-odd"><td>Dec</td>
+<td>float or string</td>
+<td>+76.45.02.48</td>
+<td>Dec; required</td>
+</tr>
+<tr class="row-even"><td>I</td>
+<td>float</td>
+<td>0.69</td>
+<td>Flux in Jy; required</td>
+</tr>
+<tr class="row-odd"><td>AnyValidColumnName</td>
+<td>&nbsp;</td>
+<td>value</td>
+<td>Any valid column name can be specified</td>
+</tr>
+<tr class="row-even"><td colspan="4"><strong>PLOT</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="interactive-use-and-scripting">
+<h2>Interactive use and scripting<a class="headerlink" href="#interactive-use-and-scripting" title="Permalink to this headline">¶</a></h2>
+<p>LSMTool can also be used interactively (in IPython, for example) or in
+Python scripts without the need for a parset. To use LSMTool in a Python
+script or interpreter, import it as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lsmtool</span>
+</pre></div>
+</div>
+<p>A sky model can then be loaded with, e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span> <span class="o">=</span> <span class="n">lsmtool</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&#39;skymodel.sky&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>All of the operations described in Section&nbsp;[lsmtool:operations] are
+available as methods of the resulting sky model object (with the same
+name as the corresponding operation). For example, the following
+commands with duplicate the steps done in the example parset given in
+Section&nbsp;[lsmtool:parset]:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s">&#39;I &gt; 1.0 mJy&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">add</span><span class="p">({</span><span class="s">&#39;Name&#39;</span><span class="p">:</span><span class="s">&#39;new_source&#39;</span><span class="p">,</span> <span class="s">&#39;Type&#39;</span><span class="p">:</span><span class="s">&#39;POINT&#39;</span><span class="p">,</span> <span class="s">&#39;Ra&#39;</span><span class="p">:</span><span class="mf">277.4232</span><span class="p">,</span> <span class="s">&#39;Dec&#39;</span><span class="p">:</span><span class="mf">48.3689</span><span class="p">,</span> <span class="s">&#39;I&#39;</span><span class="p">:</span><span class="mf">0.69</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">algorithm</span><span class="o">=</span><span class="s">&#39;tesselate&#39;</span><span class="p">,</span> <span class="n">targetFlux</span><span class="o">=</span><span class="s">&#39;10.0 Jy&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">setPatchPositions</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s">&#39;mid&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In many cases, the methods accept parameters with the same names as
+those used in a parset (see the full documentation for details). The sky
+model can then written to a new file with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;grouped.sky&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Additionally, sky models can be written out as ds9 region files and kvis
+annotation files (as well as all the formats supported by the
+astropy.table package, such at VOTable, HDF5, and FITS):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;outskymodel.reg&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;ds9&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;outskymodel.ann&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;kvis&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;outskymodel.fits&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;fits&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;outskymodel.hdf5&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;hdf5&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;outskymodel.vo&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;votable&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In addition to the operations described above, a number of other methods
+are available:</p>
+<dl class="docutils">
+<dt>LSM.copy()</dt>
+<dd>: Return a copy of the sky model object</dd>
+<dt>LSM.info()</dt>
+<dd>: Print information about the sky model</dd>
+<dt>LSM.more()</dt>
+<dd>: Print the sky model to the screen, using more-like controls</dd>
+<dt>LSM.getColNames()</dt>
+<dd>: Returns a list of the column names in the sky model</dd>
+<dt>LSM.getColValues()</dt>
+<dd>: Returns a numpy array of column values</dd>
+<dt>LSM.getRowIndex()</dt>
+<dd>: Returns the row index or indices for a source or patch</dd>
+<dt>LSM.getRowValues()</dt>
+<dd>: Returns a table or row for a source or patch</dd>
+<dt>LSM.getPatchPositions()</dt>
+<dd>: Returns patch RA and Dec values</dd>
+<dt>LSM.getDefaltValues()</dt>
+<dd>: Returns column default values</dd>
+<dt>LSM.getPatchSizes()</dt>
+<dd>: Returns an array of patch sizes</dd>
+<dt>LSM.setColValues()</dt>
+<dd>: Sets column values</dd>
+<dt>LSM.setRowValues()</dt>
+<dd>: Sets row values</dd>
+<dt>LSM.setDefaultValues()</dt>
+<dd>: Sets default column values</dd>
+</dl>
+<p>For details on these methods, please see the full module documentation.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">LSMTool: the LOFAR Local Sky Model Tool</a><ul>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#operations">Operations</a></li>
+<li><a class="reference internal" href="#example-parset">Example parset</a></li>
+<li><a class="reference internal" href="#interactive-use-and-scripting">Interactive use and scripting</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to LSMTool&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="lsmtool.html"
+                        title="next chapter">LSMTool Module Documentation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/overview.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="lsmtool.html" title="LSMTool Module Documentation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to LSMTool’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">LSMTool 1.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, David Rafferty.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

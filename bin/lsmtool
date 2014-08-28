@@ -26,10 +26,9 @@ import sys
 import os
 import time
 import logging
-import _version
-import _logging
+import lsmtool
+# from lsmtool import _version, _logging, skymodel
 import lofar.parameterset
-import skymodel
 
 
 if __name__=='__main__':

@@ -845,7 +845,11 @@ class SkyModel(object):
         import numpy as np
 
         sourceNames = self.getColValues('Name')
-        patchNames = self.getColValues('Patch')
+        if self.hasPatches:
+            patchNames = self.getColValues('Patch')
+        else:
+            patchNames = []
+
         if rowName in sourceNames:
             return self._getNameIndx(rowName)
         elif rowName in patchNames:
