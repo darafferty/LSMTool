@@ -12,8 +12,9 @@ Based on contributed scripts from:
 * Reinout van Weeren
 
 Contents:
-* __doc/__: documentation
+* __docs/__: documentation
 * __tests/__: contains test sky models and scripts useful for validation
+* __bin/__: contains lsmtool executable
 * __lsmtool/__: contains the main LSMTool scripts
 * __lsmtool/operations/__: contains the modules for operations
 * __parsets/__: some example parsets
@@ -49,7 +50,7 @@ If you want to install LSMTool yourself, follow the instructions below.
 
 * [Numpy][http://www.numpy.org/]
 * [Matplotlib][http://www.matplotlib.org/]
-* [Astropy][http://www.astropy.org/] 0.3.2 or later
+* [Astropy][http://www.astropy.org/] 0.4 or later
 * [WCSAxes][http://wcsaxes.readthedocs.org] 0.2 or later (optional, for improved plotting)
 
 ### Downloading and Installing
@@ -65,20 +66,20 @@ Then install with:
 
 ### Testing
 
-You can test that the installation worked with the runtests.py script:
+You can test that the installation worked with:
 
-    python runtests.py
+    python setup.py test
 
-If all works, LSMTool is installed correctly.
+If no errors occur, LSMTool is installed correctly.
 
 
 Usage
 -----
 
-LSMTool can be used from the command line with a parset that defines the steps
+The LSMTool executable can be used from the command line with a parset that defines the steps
 to be done. E.g.:
 
-    $ lsmtool.py model.sky lsmtool.parset
+    $ lsmtool model.sky lsmtool.parset
 
 The parset follows the usual NDPPP/BBS format. E.g.:
 
