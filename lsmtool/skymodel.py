@@ -1038,8 +1038,7 @@ class SkyModel(object):
         Parameters
         ----------
         colName : str
-            Name of column. If not already present in the table, a new column
-            will be created.
+            Name of column to get. If not found, None is returned.
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
@@ -1058,13 +1057,12 @@ class SkyModel(object):
 
     def _getAggregatedColumn(self, colName, aggregate='sum', applyBeam=False):
         """
-        Returns the appropriate colum aggregated by group.
+        Returns the appropriate column aggregated by group.
 
         Parameters
         ----------
         colName : str
-            Name of column. If not already present in the table, a new column
-            will be created.
+            Name of column to get. If not found, None is returned.
         aggregate : str, optional
             If set, the array returned will be of values aggregated
             over the patch members. The following aggregation functions are
@@ -1103,6 +1101,14 @@ class SkyModel(object):
     def _applyBeamToCol(self, col, patch=False):
         """
         Applies beam attenuation to the column values.
+
+        Parameters
+        ----------
+        col : astropy Column
+            Column of flux values to attenuate
+        patch : bool, optional
+            If True, col is assumed to be aggregated over patches
+
         """
         from operations_lib import attenuate
 
@@ -1124,7 +1130,7 @@ class SkyModel(object):
         return col
 
 
-    def _getSummedColumn(self, colName, weight=False, applyBeam=False):
+    def _getSummedColumn(self, colName, applyBeam=False):
         """
         Returns column summed by group.
 
@@ -1156,8 +1162,8 @@ class SkyModel(object):
         ----------
         colName : str
             Column name
-        table : astropy Table, optional
-            If given, use this table; otherwise use self.table
+        applyBeam : bool, optional
+            If True, fluxes will be attenuated by the beam.
 
         """
         import numpy as np
@@ -1180,8 +1186,8 @@ class SkyModel(object):
         ----------
         colName : str
             Column name
-        table : astropy Table, optional
-            If given, use this table; otherwise use self.table
+        applyBeam : bool, optional
+            If True, fluxes will be attenuated by the beam.
 
         """
         import numpy as np
