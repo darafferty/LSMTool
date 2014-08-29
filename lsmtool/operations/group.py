@@ -87,6 +87,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
     from . import _cluster
     import numpy as np
     import os
+    from itertools import groupby
 
     if algorithm.lower() == 'single':
         LSM.ungroup()
@@ -114,10 +115,11 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
         else:
             units = 'Jy'
             if type(targetFlux) is str:
-                parts = targetFlux.split(' ')
+                parts = [''.join(g).strip() for _, g in groupby(targetFlux,
+                    str.isalpha)]
                 targetFlux = float(parts[0])
                 if len(parts) == 2:
-                    units = parts[1].strip()
+                    units = parts[1]
         LSM.ungroup()
         x, y, midRA, midDec  = LSM._getXY()
         f = LSM.getColValues('I', units=units, applyBeam=applyBeam)
