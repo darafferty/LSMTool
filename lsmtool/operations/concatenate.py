@@ -121,27 +121,18 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
     if (LSM2.hasPatches and not LSM1.hasPatches):
          LSM2.ungroup()
 
-    # Fill masked values and merge defaults and RA, Dec formaters
-    table1 = LSM1.table.filled()
-    table2 = LSM2.table.filled()
-    for entry in table1.meta:
-        if LSM1._verifyColName(entry, quiet=True) is not None:
-            if entry in table2.meta.keys():
-                table1.meta[entry] = table2.meta[entry]
-    table1['Ra'].format = table2['Ra'].format
-    table1['Dec'].format = table2['Dec'].format
-
     # Make sure spectral index entries are of same length
     if 'SpectralIndex' in LSM1.getColNames() and 'SpectralIndex' in LSM2.getColNames():
         len1 = len(LSM1.getColValues('SpectralIndex')[0])
-        len2 = len(LSM1.getColValues('SpectralIndex')[0])
+        len2 = len(LSM2.getColValues('SpectralIndex')[0])
+
         if len1 < len2:
             oldspec = LSM1.getColValues('SpectralIndex')
             newspec = []
             for specind in oldspec:
                 speclist = specind.tolist()
                 while len(speclist) < len2:
-                    speclist.append([0.0])
+                    speclist.append(0.0)
                 newspec.append(speclist)
             specCol = Column(name='SpectralIndex', data=np.array(newspec, dtype=np.float))
             specIndx = LSM1.table.keys().index('SpectralIndex')
@@ -154,13 +145,24 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
             for specind in oldspec:
                 speclist = specind.tolist()
                 while len(speclist) < len1:
-                    speclist.append([0.0])
+                    speclist.append(0.0)
                 newspec.append(speclist)
             specCol = Column(name='SpectralIndex', data=np.array(newspec, dtype=np.float))
             specIndx = LSM2.table.keys().index('SpectralIndex')
             LSM2.table.remove_column('SpectralIndex')
             LSM2.table.add_column(specCol, index=specIndx)
 
+    # Fill masked values and merge defaults and RA, Dec formaters
+    table1 = LSM1.table.filled()
+    table2 = LSM2.table.filled()
+    for entry in table1.meta:
+        if LSM1._verifyColName(entry, quiet=True) is not None:
+            if entry in table2.meta.keys():
+                table1.meta[entry] = table2.meta[entry]
+    table1['Ra'].format = table2['Ra'].format
+    table1['Dec'].format = table2['Dec'].format
+
+    # Now concatenate the tables
     if matchBy.lower() == 'name':
         LSM1.table = vstack([table1, table2])
     elif matchBy.lower() == 'position':
@@ -177,7 +179,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
             pass
         if type(radius) is float:
             radius = '{0} degree'.format(radius)
-        rad_deg = Angle(radius).degree
+        radius = Angle(radius).degree
         matches = np.where(d2d.value <= radius)
 
         matchCol1 = np.array(range(len(LSM1)))
