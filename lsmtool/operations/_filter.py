@@ -256,7 +256,7 @@ def parseFilter(filterExpression):
     except:
         from .tableio import allowedColumnNames
         from .tableio import allowedColumnDefaults
-
+    from itertools import groupby
 
     # Get operator function
     filterOper, filterOperStr = convertOperStr(filterExpression)
@@ -301,17 +301,20 @@ def parseFilter(filterExpression):
     else:
         # The column to filter is type float
         try:
-            filterVal = float(filterValAndUnits.split(' ')[0].strip())
+            parts = [''.join(g).strip() for _, g in groupby(filterValAndUnits,
+                str.isalpha)]
+            filterVal = float(parts[0])
         except ValueError:
-            logging.error('Filter value not understood. Make sure the value is '
-                'separated from the units (if any)')
+            logging.error('Filter value not understood.')
             return (None, None, None, None)
 
     # Try and get the units
     try:
         filterUnits = filterValAndUnits.split(']')
         if len(filterUnits) == 1:
-            filterUnits = filterUnits[0].split(' ')[1].strip()
+            parts = [''.join(g).strip() for _, g in groupby(filterUnits[0],
+                str.isalpha)]
+            filterUnits = parts[1]
         else:
             filterUnits = filterUnits[1].strip()
     except IndexError:
