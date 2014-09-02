@@ -678,8 +678,11 @@ class SkyModel(object):
         allowedFcns = ['sum', 'mean', 'wmean', 'min', 'max']
         if aggregate in allowedFcns and self.hasPatches:
             col = self._getAggregatedColumn(colName, aggregate, applyBeam=applyBeam)
-        else:
+        elif aggregate is None:
             col = self._getColumn(colName, applyBeam=applyBeam)
+        else:
+            logging.error("Value of parameter 'aggregate' not understood.")
+            return None
 
         if col is None:
             return None
