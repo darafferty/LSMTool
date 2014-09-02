@@ -59,6 +59,10 @@ def plot(LSM, fileName=None):
 
     """
     try:
+        import os
+        if 'DISPLAY' not in os.environ:
+            import matplotlib
+            matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FuncFormatter
     except:
