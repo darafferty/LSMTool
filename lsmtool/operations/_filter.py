@@ -28,20 +28,31 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
 
     Parameters
     ----------
-    filterExpression : str or dict
-        A string specifying the filter expression in the form:
+    filterExpression : str, dict, list, or numpy array
+        - If string:
+            A string specifying the filter expression in the form:
             '<property> <operator> <value> [<units>]'
-        (e.g., 'I <= 10.5 Jy'). These elements can also be given as a
-        dictionary in the form:
+            (e.g., 'I <= 10.5 Jy').
+
+        - If dict:
+            The filter can also be given as a dictionary in the form:
             {'filterProp':property, 'filterOper':operator,
                 'filterVal':value, 'filterUnits':units}
-        or as a list of:
+
+        - If list:
+            The filter can also be given as a list of:
             [property, operator, value] or
             [property, operator, value, units]
-        or as a numpy array of row or patch indices such as:
+
+        - If numpy array:
+            The indices to filter on can be specified directly as a numpy array
+            of row or patch indices such as:
             array([ 0,  2, 19, 20, 31, 37])
-        If a numpy array is given and the indices correspond to patches, then
-        set aggregate=True
+
+            or as a numpy array of bools with the same length as the sky model.
+
+            If a numpy array is given and the indices correspond to patches, then
+            set aggregate=True.
 
         The property to filter on must be one of the following:
             - a valid column name
@@ -106,6 +117,11 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
         >>> indices = numpy.where(sizes <= maj_cut_arcsec)
         >>> filter(LSM, indices, aggregate=True)
 
+    or more simply::
+
+        >>> sizes = LSM.getPatchSizes(units='arcsec', weight=True)
+        >>> filter(LSM, sizes < maj_cut_arcsec, aggregate=True)
+
     """
     import numpy as np
     import math as m
@@ -115,6 +131,11 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
     if filterExpression is None:
         logging.error('Please specify a filter expression.')
         return 1
+
+    if LSM.hasPatches and aggregate is not None:
+        nrows = len(LSM.getPatchNames())
+    else:
+        nrows = len(LSM)
 
     filt = None
     if type(filterExpression) is list:
@@ -153,8 +174,17 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
         filterProp, filterOper, filterVal, filterUnits = parseFilter(filterExpression)
 
     elif type(filterExpression) is np.ndarray:
-        # Array of indices
-        filt = filterExpression.tolist()
+        # Array of indices / bools
+        if np.result_type(filterExpression) == 'bool':
+            if len(filterExpression) == nrows:
+                filt = [i for i in range(len(filterExpression)) if
+                    filterExpression[i]]
+            else:
+                logging.error("Boolean filter arrays be of same length as "
+                    "the sky model.")
+                return 1
+        else:
+            filt = filterExpression.tolist()
 
     else:
         return 1
@@ -181,11 +211,6 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
             return 1
         filt = getFilterIndices(colVals, filterOper, filterVal, useRegEx=useRegEx)
 
-
-    if LSM.hasPatches and aggregate is not None:
-        nrows = len(LSM.getPatchNames())
-    else:
-        nrows = len(LSM)
     if exclusive:
         filt = [i for i in range(nrows) if i not in filt]
     if len(filt) == 0:

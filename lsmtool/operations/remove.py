@@ -52,17 +52,35 @@ def remove(LSM, filterExpression, aggregate=None, applyBeam=None,
 
     Parameters
     ----------
-    filterExpression : str or dict
-        A string specifying the filter expression in the form:
+    filterExpression : str, dict, list, or numpy array
+        - If string:
+            A string specifying the filter expression in the form:
             '<property> <operator> <value> [<units>]'
-        (e.g., 'I <= 10.5 Jy'). These elements can also be given as a
-        dictionary in the form:
+            (e.g., 'I <= 10.5 Jy').
+
+        - If dict:
+            The filter can also be given as a dictionary in the form:
             {'filterProp':property, 'filterOper':operator,
                 'filterVal':value, 'filterUnits':units}
-        or as a list:
-            [property, operator, value, value]
-        The property to filter on must be a valid column name or the filename
-        of a mask image.
+
+        - If list:
+            The filter can also be given as a list of:
+            [property, operator, value] or
+            [property, operator, value, units]
+
+        - If numpy array:
+            The indices to filter on can be specified directly as a numpy array
+            of row or patch indices such as:
+            array([ 0,  2, 19, 20, 31, 37])
+
+            or as a numpy array of bools with the same length as the sky model.
+
+            If a numpy array is given and the indices correspond to patches, then
+            set aggregate=True.
+
+        The property to filter on must be one of the following:
+            - a valid column name
+            - the filename of a mask image
 
         Supported operators are:
             - !=
