@@ -105,7 +105,7 @@ then groups the sources into patches:
 
     # Select only sources in 'Patch_1'
     LSMTool.Steps.selectbright.Operation = SELECT
-    LSMTool.Steps.selectbright.FilterExpression = "Patch = 'Patch_1'"
+    LSMTool.Steps.selectbright.FilterExpression = "Patch = Patch_1"
 
     # Set the patch positions to their midpoint and write final skymodel
     LSMTool.Steps.setpos.Method = mid
