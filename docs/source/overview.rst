@@ -101,7 +101,6 @@ then groups the sources into patches:
     LSMTool.Steps.grp.Operation = GROUP
     LSMTool.Steps.grp.Algorithm = tessellate
     LSMTool.Steps.grp.TargetFlux = 50.0 Jy
-    LSMTool.Steps.grp.Method = mid
 
     # Select only sources in 'Patch_1'
     LSMTool.Steps.selectbright.Operation = SELECT
