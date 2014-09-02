@@ -1270,10 +1270,15 @@ class SkyModel(object):
         from astropy.table import Column
         import numpy as np
 
+        if weight:
+            method = 'wmean'
+        else:
+            method = 'mean'
+
         if self.hasPatches:
-            # Get weighted average RAs and Decs
-            RAAvg = self._getAveragedColumn('Ra', weight=weight)
-            DecAvg = self._getAveragedColumn('Dec', weight=weight)
+            # Get patch positions
+            RAAvg, DecAvg = self.getPatchPositions(method=method, asArray=True,
+                applyBeam=applyBeam)
 
             # Fill out the columns by repeating the average value over the
             # entire group
@@ -1338,11 +1343,11 @@ class SkyModel(object):
             Dec of coordinate 2 in degrees
 
         """
-        from astropy.coordinates import FK5
+        from astropy.coordinates import SkyCoord
         import astropy.units as u
 
-        coord1 = FK5(ra1, dec1, unit=(u.degree, u.degree))
-        coord2 = FK5(ra2, dec2, unit=(u.degree, u.degree))
+        coord1 = SkyCoord(ra1, dec1, unit=(u.degree, u.degree), frame='fk5')
+        coord2 = SkyCoord(ra2, dec2, unit=(u.degree, u.degree), frame='fk5')
 
         return coord1.separation(coord2)
 
@@ -1472,7 +1477,7 @@ class SkyModel(object):
                 - 'wmean': Stokes I weighted mean of patch values
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
-                - True: only valid when the filter indices are specify directly as a numpy array. If True, filtering is done on patches instead of sources.
+                - True: only valid when the filter indices are specified directly as a numpy array. If True, filtering is done on patches instead of sources.
         applyBeam : bool, optional
             If True, apparent fluxes will be used.
         useRegEx : bool, optional
