@@ -554,13 +554,15 @@ def ds9RegionWriter(table, fileName):
         dec = row['Dec']
         name = row['Name']
         if row['Type'].lower() == 'gaussian':
-            a = row['MajorAxis'] # arcsec
-            b = row['MinorAxis'] # arcsec
+            a = row['MajorAxis']/3600.0 # deg
+            b = row['MinorAxis']/3600.0 # deg
             pa = row['Orientation'] # degree
 
             # ds9 can't handle 1-D Gaussians, so make sure they are 2-D
-            if a < 1.0/3600.0: a = 1.0 # arcsec
-            if b < 1.0/3600.0: b = 1.0 # arcsec
+            if a < 1.0/3600.0:
+                a = 1.0/3600.0 # deg
+            if b < 1.0/3600.0:
+                b = 1.0/3600.0 # deg
             stype = 'GAUSSIAN'
             region = 'ellipse({0}, {1}, {2}, {3}, {4}) # text={{{5}}}\n'.format(ra,
                 dec, a, b, pa+90.0, name)
