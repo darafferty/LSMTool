@@ -535,8 +535,6 @@ def ds9RegionWriter(table, fileName):
     fileName : str
         Output ASCII file to which the sky model is written.
     """
-    from operations_lib import convertRAdeg, convertDecdeg
-
     regionFile = open(fileName, 'w')
     logging.debug('Writing ds9 region file to {0}'.format(fileName))
 
@@ -587,8 +585,6 @@ def kvisAnnWriter(table, fileName):
     fileName : str
         Output ASCII file to which the sky model is written.
     """
-    from operations_lib import convertRAdeg, convertDecdeg
-
     kvisFile = open(fileName, 'w')
     logging.debug('Writing kvis annotation file to {0}'.format(fileName))
 
