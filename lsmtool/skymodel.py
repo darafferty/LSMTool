@@ -312,6 +312,12 @@ class SkyModel(object):
             If True, a different projection center is used per patch. If False,
             a single projection center is used for all patches.
 
+        Returns
+        -------
+        positions : numpy array or dict
+            (RA, Dec) arrays (if asArray is False) of patch positions or a
+            dictionary of {'patchName':(RA, Dec)}.
+
         Examples
         --------
         Get the current patch positions::
@@ -508,6 +514,12 @@ class SkyModel(object):
         patchName : str, optional
             If given, return x and y for specified patch only
 
+        Returns
+        -------
+        x, y, midRA, midDec : numpy array, numpy array, float, float
+            arrays of x and y values and the midpoint RA and
+            Dec values
+
         """
         from operations_lib import radec2xy, xy2radec
         import numpy as np
@@ -541,6 +553,12 @@ class SkyModel(object):
     def getDefaultValues(self):
         """
         Returns dict of {colName:default} values for all columns with defaults.
+
+        Returns
+        -------
+        defaultDict : dict
+            Dict of {colName:default} values
+
         """
         colNames = self.getColNames()
         defaultDict = {}
@@ -596,6 +614,11 @@ class SkyModel(object):
         """
         Returns a list of all available column names.
 
+        Returns
+        -------
+        colNames : list
+            List of all column names
+
         Examples
         --------
         Get column names::
@@ -640,6 +663,11 @@ class SkyModel(object):
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam. This attenuation
             also applies to fluxes used in aggregation functions.
+
+        Returns
+        -------
+        colValues : numpy array
+            Array of column values. None is returned if column is not found.
 
         Examples
         --------
@@ -795,6 +823,12 @@ class SkyModel(object):
         rowName : str
             Name of the source or patch
 
+        Returns
+        -------
+        rowValues : astropy table or row
+            Table (if more than one source) or row (if one source). None is
+            returned if source is not found.
+
         Examples
         --------
         Get row values for the source 'src1'::
@@ -830,6 +864,11 @@ class SkyModel(object):
         ----------
         rowName : str
             Name of the source or patch
+
+        Returns
+        -------
+        indices : list
+            List of indices. None is returned if the source is not found.
 
         Examples
         --------
@@ -958,6 +997,12 @@ class SkyModel(object):
             If True and weight is True, attenuate the fluxes used for weighting
             by the beam
 
+        Returns
+        -------
+        data : numpy array
+            Array of patch sizes. None is returned if the sky model
+            does not have patches.
+
         """
         if self.hasPatches:
             col = self._getSizeColumn(weight=weight, applyBeam=applyBeam)
@@ -971,6 +1016,13 @@ class SkyModel(object):
     def getPatchNames(self):
         """
         Returns array of all patch names in the sky model.
+
+        Returns
+        -------
+        names : numpy array
+            Array of patch names. None is returned if the sky model
+            does not have patches.
+
         """
         if self.hasPatches:
             col = self.table.groups.keys['Patch']
@@ -995,6 +1047,10 @@ class SkyModel(object):
             if True, return the index of the group corresponding to the given
             name; otherwise return the index of the source
 
+        Returns
+        -------
+        indices : list
+            List of indices.
         """
         import numpy as np
 
@@ -1045,6 +1101,10 @@ class SkyModel(object):
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
+        Returns
+        -------
+        col : astropy Column
+            Nonaggregated Column object
          """
         colName = self._verifyColName(colName)
         if colName is None:
@@ -1078,6 +1138,10 @@ class SkyModel(object):
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
+        Returns
+        -------
+        col : astropy Column
+            Aggregated Column object
          """
         colName = self._verifyColName(colName)
         if colName is None:
