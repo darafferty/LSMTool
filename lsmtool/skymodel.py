@@ -1141,7 +1141,7 @@ class SkyModel(object):
         Returns
         -------
         col : astropy Column
-            Aggregated Column object
+            Column object with aggregated values
          """
         colName = self._verifyColName(colName)
         if colName is None:
@@ -1176,6 +1176,10 @@ class SkyModel(object):
         patch : bool, optional
             If True, col is assumed to be aggregated over patches
 
+        Returns
+        -------
+        col : astropy Column
+            Column object with flux values attenuated by the beam
         """
         from operations_lib import attenuate
 
@@ -1208,6 +1212,10 @@ class SkyModel(object):
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
+        Returns
+        -------
+        col : astropy Column
+            Column object with aggregated sum of values
         """
         import numpy as np
 
@@ -1232,6 +1240,10 @@ class SkyModel(object):
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
+        Returns
+        -------
+        col : astropy Column
+            Column object with aggregated min values
         """
         import numpy as np
 
@@ -1256,6 +1268,10 @@ class SkyModel(object):
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
+        Returns
+        -------
+        col : astropy Column
+            Column object with aggregated max values
         """
         import numpy as np
 
@@ -1282,6 +1298,10 @@ class SkyModel(object):
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
+        Returns
+        -------
+        col : astropy Column
+            Column object with aggregated mean values
         """
         from astropy.table import Column
         import numpy as np
@@ -1330,6 +1350,11 @@ class SkyModel(object):
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
 
+        Returns
+        -------
+        col : astropy Column
+            Column object with sizes from MajorAxis or from aggregated values if
+            the model has patches.
         """
         from astropy.table import Column
         import numpy as np
@@ -1406,6 +1431,10 @@ class SkyModel(object):
         dec2 : float
             Dec of coordinate 2 in degrees
 
+        Returns
+        -------
+        col : float
+            Angular separation in degrees
         """
         from astropy.coordinates import SkyCoord
         import astropy.units as u
