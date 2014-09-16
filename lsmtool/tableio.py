@@ -244,7 +244,7 @@ def skyModelReader(fileName):
         maxLen = 0
         for l in specOld:
             try:
-                if type(l) is float:
+                if type(l) is float or type(l) is int:
                     maxLen = 1
                 else:
                     specEntry = [float(f) for f in l.split(';')]
@@ -255,8 +255,8 @@ def skyModelReader(fileName):
         logging.debug('Maximum number of spectral index terms in model: {0}'.format(maxLen))
         for l in specOld:
             try:
-                if type(l) is float:
-                    specEntry = [l]
+                if type(l) is float or type(l) is int:
+                    specEntry = [float(l)]
                     specMask = [False]
                 else:
                     specEntry = [float(f) for f in l.split(';')]
@@ -613,6 +613,17 @@ def kvisAnnWriter(table, fileName):
 
     kvisFile.writelines(outLines)
     kvisFile.close()
+
+
+# def coneSearch(RA, Dec, dbname):
+#     """
+#     Returns table from a VO cone search
+#     """
+#     from astropy.vo.Conf import conesearch_dbname
+#
+#     # Define available databases
+#     allowedConeDBs = {'vlssr':'http://heasarc.gsfc.nasa.gov/cgi-bin/vo/cone/coneGet.pl?table=vlssr&',
+#         'vlss':'http://heasarc.gsfc.nasa.gov/cgi-bin/vo/cone/coneGet.pl?table=vlssr&'}
 
 
 # Register the file reader, identifier, and writer functions with astropy.io
