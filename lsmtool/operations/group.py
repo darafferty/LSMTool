@@ -131,6 +131,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
 
     elif os.path.exists(algorithm):
         # Mask image
+        mask = algorithm
         RARad = LSM.getColValues('Ra', units='radian')
         DecRad = LSM.getColValues('Dec', units='radian')
         patchCol = getPatchNamesFromMask(mask, RARad, DecRad)
@@ -169,14 +170,15 @@ def getPatchNamesFromMask(mask, RARad, DecRad):
     Returns an array of patch names for each (RA, Dec) pair in radians
     """
     import math
-    import pyrap
+    import pyrap.images as pim
     import scipy.ndimage as nd
+    import numpy as np
 
     try:
-        maskdata = pyrap.images.image(mask)
+        maskdata = pim.image(mask)
         maskval = maskdata.getdata()[0][0]
     except:
-        loggin.error("Error opening mask file '{0}'".format(mask))
+        logging.error("Error opening mask file '{0}'".format(mask))
         return None
 
     act_pixels = maskval
@@ -201,7 +203,7 @@ def getPatchNamesFromMask(mask, RARad, DecRad):
     n = 0
     for p in patchNums:
         if p != 0:
-            in_patch = N.where(patchnums == p)
+            in_patch = np.where(patchNums == p)
             patchNames.append('mask_patch_'+str(p))
         else:
             patchNames.append('patch_'+str(n))
