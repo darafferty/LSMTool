@@ -184,40 +184,38 @@ def skyModelReader(fileName):
                 colDefaults[i] = allowedColumnDefaults[colName]
 
     # Read model into astropy table object
-    modelFile = open(fileName)
-    lines = modelFile.readlines()
     outlines = []
     logging.debug('Reading file...')
-    for line in lines:
-        if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
-            continue
+    with open(fileName) as f:
+        for line in f:
+            if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
+                continue
 
-        # Check for SpectralIndex entries, which are unreadable as they use
-        # the same separator for multiple orders as used for the columns
-        line = line.strip('\n')
-        a = re.search('\[.*\]', line)
-        if a is not None:
-            b = line[a.start(): a.end()]
-            c = b.strip('[]')
-            if ',' in c:
-                c = c.replace(',', ';')
-            line = line.replace(b, c)
-        colLines = line.split(',')
+            # Check for SpectralIndex entries, which are unreadable as they use
+            # the same separator for multiple orders as used for the columns
+            line = line.strip('\n')
+            a = re.search('\[.*\]', line)
+            if a is not None:
+                b = line[a.start(): a.end()]
+                c = b.strip('[]')
+                if ',' in c:
+                    c = c.replace(',', ';')
+                line = line.replace(b, c)
+            colLines = line.split(',')
 
-        # Check for patch lines as any line with an empty Name entry. If found,
-        # store patch positions in the table meta data.
-        if colLines[0].strip() == '':
-            if len(colLines) > 4:
-                patchName = colLines[2].strip()
-                patchRA = RA2Angle(colLines[3].strip())
-                patchDec = Dec2Angle(colLines[4].strip())
-                metaDict[patchName] = [patchRA[0], patchDec[0]]
-            continue
+            # Check for patch lines as any line with an empty Name entry. If found,
+            # store patch positions in the table meta data.
+            if colLines[0].strip() == '':
+                if len(colLines) > 4:
+                    patchName = colLines[2].strip()
+                    patchRA = RA2Angle(colLines[3].strip())
+                    patchDec = Dec2Angle(colLines[4].strip())
+                    metaDict[patchName] = [patchRA[0], patchDec[0]]
+                continue
 
-        while len(colLines) < len(colNames):
-            colLines.append(' ')
-        outlines.append(','.join(colLines))
-    modelFile.close()
+            while len(colLines) < len(colNames):
+                colLines.append(' ')
+            outlines.append(','.join(colLines))
     outlines.append('\n') # needed in case of single-line sky models
 
     # Before loading table into an astropy Table object, set lengths of Name,
