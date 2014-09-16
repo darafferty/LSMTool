@@ -53,3 +53,5 @@ Session.vim
 
 # Project specific
 tests/test.sky
+
+tests/test_big.sky
