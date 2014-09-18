@@ -334,23 +334,20 @@ def parseFilter(filterExpression):
             logging.error('Filter value not understood.')
             return (None, None, None, None)
 
-    # Try and get the units
-    try:
-        filterUnits = filterValAndUnits.split(']')
-        if len(filterUnits) == 1:
-            parts = [''.join(g).strip() for _, g in groupby(filterUnits[0],
-                str.isalpha)]
-            filterUnits = parts[1]
-        else:
-            filterUnits = filterUnits[1].strip()
-    except IndexError:
-        filterUnits = None
-    if filterUnits == '':
-        filterUnits = None
-
-    if type(filterVal) is str and filterUnits is not None:
-        logging.error('Units are not allowed with string columns.')
-        return (None, None, None, None)
+    # Try and get the units (only if filterVal is not a string)
+    if type(filterVal) is not str:
+        try:
+            filterUnits = filterValAndUnits.split(']')
+            if len(filterUnits) == 1:
+                parts = [''.join(g).strip() for _, g in groupby(filterUnits[0],
+                    str.isalpha)]
+                filterUnits = parts[1]
+            else:
+                filterUnits = filterUnits[1].strip()
+        except IndexError:
+            filterUnits = None
+        if filterUnits == '':
+            filterUnits = None
 
     return (filterProp, filterOper, filterVal, filterUnits)
 
