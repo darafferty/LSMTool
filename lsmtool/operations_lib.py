@@ -77,7 +77,7 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
         timeIndx = 1.0
     time = min(time) + ( max(time) - min(time) ) * timeIndx
     logging.debug('Applying beam attenuation using beam at {0}% point of '
-        'observation.'.format(timeIndx*100.0)
+        'observation.'.format(timeIndx*100.0))
 
     attFluxes = []
     sr = lsr.stationresponse(beamMS, inverse=False, useElementResponse=False,
