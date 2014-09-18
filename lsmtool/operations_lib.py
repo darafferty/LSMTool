@@ -21,7 +21,7 @@ import sys
 import os
 
 
-def attenuate(beamMS, fluxes, RADeg, DecDeg):
+def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
     """
     Returns flux attenuated by primary beam.
 
@@ -35,6 +35,9 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg):
         List of RA values in degrees
     DecDeg : list
         List of Dec values in degrees
+    timeIndx : float (between 0 and 1), optional
+        Time as fraction of that covered by the beamMS for which the beam is
+        calculated
 
     Returns
     -------
@@ -52,11 +55,12 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg):
         import lofar.stationresponse as lsr
     except ImportError:
         logging.error('Could not import lofar.stationresponse')
-
+        return None
     try:
         t = pt.table(beamMS, ack=False)
     except:
-        raise Exception('Could not open {0}'.format(beamMS))
+        logging.error('Could not open {0}'.format(beamMS))
+        return None
 
     time = None
     ant1 = -1
@@ -67,7 +71,13 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg):
         tt = t.query('ANTENNA1=={0} AND ANTENNA2=={1}'.format(ant1, ant2), columns='TIME')
         time = tt.getcol("TIME")
     t.close()
-    time = min(time) + ( max(time) - min(time) ) / 2.
+    if timeIndx < 0.0:
+        timeIndx = 0.0
+    if timeIndx > 1.0:
+        timeIndx = 1.0
+    time = min(time) + ( max(time) - min(time) ) * timeIndx
+    logging.debug('Applying beam attenuation using beam at {0}% point of '
+        'observation.'.format(timeIndx*100.0)
 
     attFluxes = []
     sr = lsr.stationresponse(beamMS, inverse=False, useElementResponse=False,

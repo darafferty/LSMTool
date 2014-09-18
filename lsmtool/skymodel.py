@@ -62,9 +62,11 @@ class SkyModel(object):
         if beamMS is not None:
             self.beamMS = beamMS
             self._hasBeam = True
+            self.beamTime = 0.5
         else:
             self.beamMS = None
             self._hasBeam = False
+            self.beamTime = None
 
         if checkDup:
             logging.debug('Checking for duplicate lines...')
@@ -1183,6 +1185,10 @@ class SkyModel(object):
         """
         from operations_lib import attenuate
 
+        if not self._hasBeam:
+            logging.warn('No beam MS has been specified. No beam attenuation applied.')
+            return col
+
         if patch:
             if self._patchMethod is not None:
                 # Try to get patch positions from the meta data
@@ -1196,7 +1202,10 @@ class SkyModel(object):
             DecDeg = self.getColValues('Dec')
 
         flux = col.data
-        vals = attenuate(self.beamMS, flux, RADeg, DecDeg)
+        vals = attenuate(self.beamMS, flux, RADeg, DecDeg, timeIndx=self.beamTime)
+        if vals is None:
+            return col
+
         col[:] = vals
         return col
 
