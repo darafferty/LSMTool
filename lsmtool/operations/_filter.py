@@ -335,7 +335,9 @@ def parseFilter(filterExpression):
             return (None, None, None, None)
 
     # Try and get the units (only if filterVal is not a string)
-    if type(filterVal) is not str:
+    if type(filterVal) is str:
+        filterUnits = None
+    else:
         try:
             filterUnits = filterValAndUnits.split(']')
             if len(filterUnits) == 1:
