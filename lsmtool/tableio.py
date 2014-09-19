@@ -328,6 +328,8 @@ def RA2Angle(RA):
     RAAngle : astropy.coordinates.Angle object
 
     """
+    import astropy.units as u
+
     if type(RA) is str or type(RA) is float:
         RA = [RA]
 
@@ -337,11 +339,11 @@ def RA2Angle(RA):
                 + float(rasex.split(':')[1]) / 60.0
                 + float(rasex.split(':')[2]) / 3600.0) * 15.0
                 for rasex in RA]
-            RAAngle = Angle(RADeg, unit='degree')
+            RAAngle = Angle(RADeg, unit=u.deg)
         except:
             raise Exception('RA values not understood.')
     else:
-        RAAngle = Angle(RA, unit='degree')
+        RAAngle = Angle(RA, unit=u.deg)
 
     return RAAngle
 
@@ -361,6 +363,8 @@ def Dec2Angle(Dec):
     DecAngle : astropy.coordinates.Angle object
 
     """
+    import astropy.units as u
+
     if type(Dec) is str or type(Dec) is float:
         Dec = [Dec]
 
@@ -371,11 +375,11 @@ def Dec2Angle(Dec):
                  + float(decsex.split(':')[1]) / 60.0
                  + float(decsex.split(':')[2]) / 3600.0
                  for decsex in DecSex]
-            DecAngle = Angle(DecDeg, unit='degree')
+            DecAngle = Angle(DecDeg, unit=u.deg)
         except:
             raise Exception('Dec values not understood.')
     else:
-        DecAngle = Angle(Dec, unit='degree')
+        DecAngle = Angle(Dec, unit=u.deg)
 
     return DecAngle
 
