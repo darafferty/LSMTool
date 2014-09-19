@@ -195,7 +195,7 @@ def getPatchNamesFromMask(mask, RARad, DecRad):
             # != is a XOR for booleans
             patchNums.append(mask_labels[pixY, pixX])
         except:
-            vals.append(0)
+            patchNums.append(0)
 
     # Check if there is a patch with id = 0. If so, this means there were
     # some Gaussians that fell outside of the regions in the patch
