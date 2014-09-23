@@ -259,6 +259,9 @@ LSM.info()
 LSM.more()
     : Print the sky model to the screen, using more-like controls
 
+LSM.broadcast()
+    : Send the sky model to other applications using SAMP
+
 LSM.getColNames()
     : Returns a list of the column names in the sky model
 

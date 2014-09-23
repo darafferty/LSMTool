@@ -1526,7 +1526,17 @@ class SkyModel(object):
 
     def broadcast(self):
         """
-        Sends the sky model to another application using SAMP.
+        Sends the model to another application using SAMP.
+
+        If no running SAMP hub is detected, one is started. The receiving
+        application must be running before the table is broadcasted.
+
+        Examples
+        --------
+        Send the model to TOPCAT. First, start TOPCAT, then run the command::
+
+            >>> s.broadcast()
+
         """
         import tempfile
         import os
