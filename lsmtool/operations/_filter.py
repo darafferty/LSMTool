@@ -329,10 +329,11 @@ def parseFilter(filterExpression):
         try:
             parts = [''.join(g).strip() for _, g in groupby(filterValAndUnits,
                 str.isalpha)]
-            if type(parts[1]) is str:
-                if parts[1].lower() == 'e':
-                    # Check if number uses exponential notation (e.g., 1e8)
-                    parts = [parts[0] + parts[1] + parts[2]] + parts[3:]
+            if len(parts) > 1:
+                if type(parts[1]) is str:
+                    if parts[1].lower() == 'e':
+                        # Check if number uses exponential notation (e.g., 1e8)
+                        parts = [parts[0] + parts[1] + parts[2]] + parts[3:]
             filterVal = float(parts[0])
         except ValueError:
             logging.error('Filter value not understood.')

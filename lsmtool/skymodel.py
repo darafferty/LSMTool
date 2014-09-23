@@ -1525,7 +1525,9 @@ class SkyModel(object):
 
 
     def broadcast(self):
-        """Send the sky model using SAMP"""
+        """
+        Sends the sky model to another application using SAMP.
+        """
         import tempfile
         import os
 
