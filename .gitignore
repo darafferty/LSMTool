@@ -55,3 +55,7 @@ Session.vim
 tests/test.sky
 
 tests/test_big.sky
+
+tests/final.sky
+
+tests/plot.pdf
