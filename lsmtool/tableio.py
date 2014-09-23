@@ -51,8 +51,8 @@ allowedColumnUnits = {'name':None, 'type':None, 'patch':None, 'ra':'degree',
     'polarizedfraction':'PolarizedFraction', 'referencewavelength':'ReferenceWavelength',
     'referencefrequency':'Hz', 'spectralindex':None}
 
-allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':'N/A',
-    'dec': 'N/A', 'i':0.0, 'q':0.0, 'u':0.0, 'v':0.0, 'majoraxis':0.0,
+allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':0.0,
+    'dec':0.0, 'i':0.0, 'q':0.0, 'u':0.0, 'v':0.0, 'majoraxis':0.0,
     'minoraxis':0.0, 'orientation':0.0,
     'ishapelet':'N/A', 'qshapelet':'N/A', 'ushapelet':'N/A',
     'vshapelet':'N/A', 'category':2,
@@ -615,6 +615,32 @@ def kvisAnnWriter(table, fileName):
 
     kvisFile.writelines(outLines)
     kvisFile.close()
+
+
+def broadcastTable(fileName):
+    """Sends a table via SAMP"""
+    from astropy.vo.samp import SAMPHubServer, SAMPIntegratedClient, SAMPHubError
+    import urlparse
+
+    client = SAMPIntegratedClient()
+    try:
+        client.connect()
+        hub = None
+    except SAMPHubError as e:
+        logging.info("No running SAMP hub found. Starting one now...")
+        hub = SAMPHubServer()
+        hub.start()
+        client.connect()
+
+    params = {}
+    params["url"] = urlparse.urljoin('file:', os.path.abspath(fileName))
+    params["name"] = "LSMTool sky model"
+    message = {}
+    message["samp.mtype"] = "table.load.votable"
+    message["samp.params"] = params
+
+    client.notify_all(message)
+    client.disconnect()
 
 
 # def coneSearch(RA, Dec, dbname):

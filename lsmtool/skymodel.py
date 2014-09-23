@@ -1497,6 +1497,7 @@ class SkyModel(object):
 
         """
         import os
+
         if fileName is None:
             fileName = self._fileName
 
@@ -1521,6 +1522,16 @@ class SkyModel(object):
         if format != 'makesourcedb':
             table.meta = {}
         table.write(fileName, format=format)
+
+
+    def broadcast(self):
+        """Send the sky model using SAMP"""
+        import tempfile
+        import os
+
+        tfile = tempfile.NamedTemporaryFile(delete=False)
+        self.table.write(tfile, format='votable')
+        tableio.broadcastTable(tfile.name)
 
 
     def _clean(self):
