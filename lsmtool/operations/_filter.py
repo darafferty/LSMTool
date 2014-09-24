@@ -302,7 +302,7 @@ def parseFilter(filterExpression):
         logging.warn('"{0}" is not a valid column. Trying it as a mask '
             'filename instead...'.format(filterProp))
         filterVal = filterParts[1].strip()
-        return (filterProp, filterOper, filterVal, None)
+        return (filterProp, filterOper, bool(filterVal), None)
 
     # Get the filter value(s)
     filterValAndUnits = filterParts[1].strip()
