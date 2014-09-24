@@ -197,7 +197,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
                 aggregate=aggregate, applyBeam=applyBeam)
         else:
             # Assume filterProp is a mask filename and try to load mask
-            if os.path.exists(filterExpression):
+            if os.path.exists(filterProp):
                 mask = filterExpression
                 RARad = LSM.getColValues('Ra', units='radian')
                 DecRad = LSM.getColValues('Dec', units='radian')
@@ -299,8 +299,10 @@ def parseFilter(filterExpression):
     # Get the column to filter on
     filterProp = filterParts[0].strip().lower()
     if filterProp not in allowedColumnNames:
-        logging.error('Column name "{0}" is not a valid column.'.format(colName))
-        return (None, None, None, None)
+        logging.warn('"{0}" is not a valid column. Trying it as a mask '
+            'filename instead...'.format(filterProp))
+        filterVal = filterParts[1].strip()
+        return (filterProp, filterOper, filterVal, None)
 
     # Get the filter value(s)
     filterValAndUnits = filterParts[1].strip()
@@ -381,9 +383,6 @@ def convertOperStr(operStr):
                 # Pick longer match
                 filterOperStr = op
     if filterOperStr is None:
-#         logging.error("Filter operator '{0}' not understood. Supported "
-#             "operators are '!=', '<=', '>=', '>', '<', '=' (or '==')".
-#             format(operStr))
         return None, None
 
     return ops[filterOperStr], filterOperStr
