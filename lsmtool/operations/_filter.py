@@ -445,7 +445,7 @@ def getMaskValues(mask, RARad, DecRad):
         (_, _, pixY, pixX) = maskdata.topixel([a, b, decRad, raRad])
         try:
             # != is a XOR for booleans
-            if (not maskval[math.floor(pixY)][math.floor(pixX)]) != False:
+            if maskval[pixY, pixX]:
                 vals.append(True)
             else:
                 vals.append(False)
@@ -453,3 +453,49 @@ def getMaskValues(mask, RARad, DecRad):
             vals.append(False)
 
     return np.array(vals)
+
+def getPatchNamesFromMask(mask, RARad, DecRad):
+    """
+    Returns an array of patch names for each (RA, Dec) pair in radians
+    """
+    import math
+    import pyrap.images as pim
+    import scipy.ndimage as nd
+    import numpy as np
+
+    try:
+        maskdata = pim.image(mask)
+        maskval = maskdata.getdata()[0][0]
+    except:
+        logging.error("Error opening mask file '{0}'".format(mask))
+        return None
+
+    act_pixels = maskval
+    rank = len(act_pixels.shape)
+    connectivity = nd.generate_binary_structure(rank, rank)
+    mask_labels, count = nd.label(act_pixels, connectivity)
+
+    patchNums = []
+    patchNames = []
+    for raRad, decRad in zip(RARad, DecRad):
+        (a, b, _, _) = maskdata.toworld([0, 0, 0, 0])
+        (_, _, pixY, pixX) = maskdata.topixel([a, b, decRad, raRad])
+        try:
+            # != is a XOR for booleans
+            patchNums.append(mask_labels[pixY, pixX])
+        except:
+            patchNums.append(0)
+
+    # Check if there is a patch with id = 0. If so, this means there were
+    # some Gaussians that fell outside of the regions in the patch
+    # mask file.
+    n = 0
+    for p in patchNums:
+        if p != 0:
+            in_patch = np.where(patchNums == p)
+            patchNames.append('mask_patch_'+str(p))
+        else:
+            patchNames.append('patch_'+str(n))
+            n += 1
+
+    return np.array(patchNames)
