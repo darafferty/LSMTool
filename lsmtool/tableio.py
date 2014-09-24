@@ -623,14 +623,7 @@ def broadcastTable(fileName):
     import urlparse
 
     client = SAMPIntegratedClient()
-    try:
-        client.connect()
-        hub = None
-    except SAMPHubError as e:
-        logging.info("No running SAMP hub found. Starting one now...")
-        hub = SAMPHubServer()
-        hub.start()
-        client.connect()
+    client.connect()
 
     params = {}
     params["url"] = urlparse.urljoin('file:', os.path.abspath(fileName))
@@ -639,7 +632,10 @@ def broadcastTable(fileName):
     message["samp.mtype"] = "table.load.votable"
     message["samp.params"] = params
 
-    client.notify_all(message)
+    # Send message
+    client.call_all('lsmtool', message)
+
+    # Disconnect from the SAMP hub
     client.disconnect()
 
 

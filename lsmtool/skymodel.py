@@ -1541,9 +1541,10 @@ class SkyModel(object):
         import tempfile
         import os
 
-        tfile = tempfile.NamedTemporaryFile(delete=False)
+        tfile = tempfile.NamedTemporaryFile()
         self.table.write(tfile, format='votable')
         tableio.broadcastTable(tfile.name)
+        tfile.close()
 
 
     def _clean(self):
