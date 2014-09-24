@@ -137,9 +137,9 @@ Table [lsmtool:tab:local\ :sub:`v`\ al].
 +--------------------+-----------------+----------------+---------------------------------------------------------------+
 | **GROUP**                                                                                                             |
 +--------------------+-----------------+----------------+---------------------------------------------------------------+
-| Algorithm          | string          | tessellate     | One of tessellate, cluster, single, every                     |
+| Algorithm          | string          | tessellate     | One of tessellate, cluster, single, every, or a CASA mask file|
 +--------------------+-----------------+----------------+---------------------------------------------------------------+
-| TargetFlux         | string          | 10.0 Jy        |  Target total flux of patches (tessellate only)               |
+| TargetFlux         | string          | 10.0 Jy        | Target total flux of patches (tessellate only)                |
 +--------------------+-----------------+----------------+---------------------------------------------------------------+
 | NumClusters        | int             | 100            | Number of clusters (cluster only)                             |
 +--------------------+-----------------+----------------+---------------------------------------------------------------+
