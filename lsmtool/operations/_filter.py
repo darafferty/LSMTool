@@ -431,6 +431,7 @@ def getMaskValues(mask, RARad, DecRad):
     """
     import math
     import pyrap.images as pim
+    import numpy as np
 
     try:
         maskdata = pim.image(mask)
