@@ -191,7 +191,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
 
     if filt is None:
         # Get the column values to filter on
-        if LSM._verifyColName(filterProp) in LSM.table.colnames:
+        if LSM._verifyColName(filterProp, quiet=True) in LSM.table.colnames:
             filterProp = LSM._verifyColName(filterProp)
             colVals = LSM.getColValues(filterProp, units=filterUnits,
                 aggregate=aggregate, applyBeam=applyBeam)
