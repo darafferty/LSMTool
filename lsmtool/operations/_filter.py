@@ -205,6 +205,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
                 if colVals is None:
                     return 1
             else:
+                logging.error('Filter expression not understood')
                 return 1
 
         # Do the filtering
@@ -380,9 +381,9 @@ def convertOperStr(operStr):
                 # Pick longer match
                 filterOperStr = op
     if filterOperStr is None:
-        logging.error("Filter operator '{0}' not understood. Supported "
-            "operators are '!=', '<=', '>=', '>', '<', '=' (or '==')".
-            format(operStr))
+#         logging.error("Filter operator '{0}' not understood. Supported "
+#             "operators are '!=', '<=', '>=', '>', '<', '=' (or '==')".
+#             format(operStr))
         return None, None
 
     return ops[filterOperStr], filterOperStr
@@ -429,13 +430,13 @@ def getMaskValues(mask, RARad, DecRad):
     Returns an array of mask values for each (RA, Dec) pair in radians.
     """
     import math
-    import pyrap
+    import pyrap.images as pim
 
     try:
-        maskdata = pyrap.images.image(mask)
+        maskdata = pim.image(mask)
         maskval = maskdata.getdata()[0][0]
     except:
-        loggin.error("Error opening mask file '{0}'".format(mask))
+        logging.error("Could not open mask file '{0}'".format(mask))
         return None
 
     vals = []
