@@ -49,7 +49,7 @@ def run(step, parset, LSM):
 
 
 def select(LSM, filterExpression, aggregate=None, applyBeam=False,
-    useRegEx=False, force=False):
+    useRegEx=False, force=True):
     """
     Filters the sky model, keeping all sources that meet the given expression.
 

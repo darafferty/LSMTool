@@ -81,6 +81,10 @@ def move(LSM, name, position=None, shift=None):
     """
     from .. import tableio
 
+    if len(LSM) == 0:
+        logging.error('Sky model is empty.')
+        return
+
     if position is None and shift is None:
         raise ValueError("One of positon or shift must be specified.")
 

@@ -83,6 +83,10 @@ def plot(LSM, fileName=None):
     from ..operations_lib import radec2xy, makeWCS
     global midRA, midDec, ymin, xmin
 
+    if len(LSM) == 0:
+        logging.error('Sky model is empty.')
+        return
+
     fig = plt.figure(1,figsize=(7,7))
     plt.clf()
     x, y, midRA, midDec  = LSM._getXY()

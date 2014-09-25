@@ -62,6 +62,10 @@ def merge(LSM, patches, name=None):
         >>> LSM = lsmtool.load('sky.model')
         >>> merge(LSM, ['bin0', 'bin1', 'bin2'], 'binmerged')
     """
+    if len(LSM) == 0:
+        logging.error('Sky model is empty.')
+        return
+
     if name is None:
         name = patches[0]
 

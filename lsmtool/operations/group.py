@@ -94,6 +94,10 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
     import os
     from itertools import groupby
 
+    if len(LSM) == 0:
+        logging.error('Sky model is empty.')
+        return
+
     if algorithm.lower() == 'single':
         LSM.ungroup()
         addSingle(LSM, root+'_0')

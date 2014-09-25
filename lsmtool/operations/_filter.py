@@ -129,6 +129,10 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
     import os
     from astropy.table import Table
 
+    if len(LSM) == 0:
+        logging.error('Sky model is empty.')
+        return
+
     if filterExpression is None:
         raise ValueError('No filter expression specified.')
 
@@ -212,13 +216,16 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
         filt = [i for i in range(nrows) if i not in filt]
     if len(filt) == 0:
         if force:
-            LSM.table = Table()
+            LSM.table.remove_rows(range(len(LSM.table)))
+            LSM.hasPatches = False
             if exclusive:
                 logging.info('Removed all sources.')
+                return
             else:
                 logging.info('Kept zero sources.')
+                return
         else:
-            logging.warn('Filter would result in an empty sky model. '
+            raise RuntimeError('Filter would result in an empty sky model. '
                 'Use force=True to override.')
     if len(filt) == len(LSM):
         if exclusive:

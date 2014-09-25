@@ -524,6 +524,9 @@ class SkyModel(object):
         from operations_lib import radec2xy, xy2radec
         import numpy as np
 
+        if len(self.table) == 0:
+            return [0], [0], 0, 0
+
         RA = self.getColValues('Ra')
         Dec = self.getColValues('Dec')
         if patchName is not None:
@@ -1553,7 +1556,7 @@ class SkyModel(object):
 
 
     def select(self, filterExpression, aggregate=None, applyBeam=False,
-        useRegEx=False, force=False):
+        useRegEx=False, force=True):
         """
         Filters the sky model, keeping all sources that meet the given expression.
 
@@ -1649,7 +1652,7 @@ class SkyModel(object):
 
 
     def remove(self, filterExpression, aggregate=None, applyBeam=None,
-        useRegEx=False, force=False):
+        useRegEx=False, force=True):
         """
         Filters the sky model, removing all sources that meet the given expression.
 

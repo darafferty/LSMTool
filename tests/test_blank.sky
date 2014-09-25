@@ -1,0 +1,2 @@
+FORMAT = Name, Type, Ra, Dec, I, Q, U, V, ReferenceFrequency='60000000.0', SpectralIndex='[0.0]', MajorAxis, MinorAxis, Orientation
+

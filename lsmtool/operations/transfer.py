@@ -66,6 +66,10 @@ def transfer(LSM, patchSkyModel):
     """
     from ..skymodel import SkyModel
 
+    if len(LSM) == 0:
+        logging.error('Sky model is empty.')
+        return
+
     if type(patchSkyModel) is str:
         masterLSM = SkyModel(patchSkyModel)
     else:

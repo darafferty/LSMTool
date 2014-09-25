@@ -49,7 +49,7 @@ def run(step, parset, LSM):
 
 
 def remove(LSM, filterExpression, aggregate=None, applyBeam=None,
-    useRegEx=False, force=False):
+    useRegEx=False, force=True):
     """
     Filters the sky model, removing all sources that meet the given expression.
 
