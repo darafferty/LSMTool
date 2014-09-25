@@ -31,7 +31,12 @@ def run(step, parset, LSM):
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 100 )
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), False )
 
-    result = group(LSM, algorithm, targetFlux, numClusters, applyBeam, root)
+    try:
+        group(LSM, algorithm, targetFlux, numClusters, applyBeam, root)
+        result = 0
+    except Exception as e:
+        logging.error(e.message)
+        result = 1
 
     # Write to outFile
     if outFile != '' and result == 0:
@@ -106,8 +111,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
 
     elif algorithm.lower() == 'tessellate':
         if targetFlux is None:
-            logging.error('Please specify the targetFlux parameter.')
-            return 1
+            raise ValueError('Please specify the targetFlux parameter.')
         else:
             units = 'Jy'
             if type(targetFlux) is str:
@@ -134,8 +138,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
         LSM.setColValues('Patch', patchCol, index=2)
 
     else:
-        logging.error('Grouping alogrithm not understood.')
-        return 1
+        raise ValueError('Grouping alogrithm not understood.')
 
     # Update table grouping
     LSM._updateGroups()
@@ -170,12 +173,8 @@ def getPatchNamesFromMask(mask, RARad, DecRad):
     import scipy.ndimage as nd
     import numpy as np
 
-    try:
-        maskdata = pim.image(mask)
-        maskval = maskdata.getdata()[0][0]
-    except:
-        logging.error("Error opening mask file '{0}'".format(mask))
-        return None
+    maskdata = pim.image(mask)
+    maskval = maskdata.getdata()[0][0]
 
     act_pixels = maskval
     rank = len(act_pixels.shape)

@@ -33,7 +33,13 @@ def run(step, parset, LSM):
         filterExpression = None
     if aggregate == '':
         aggregate = None
-    result = select(LSM, filterExpression, aggregate=aggregate, applyBeam=applyBeam)
+
+    try:
+        select(LSM, filterExpression, aggregate=aggregate, applyBeam=applyBeam)
+        result = 0
+    except Exception as e:
+        logging.error(e.message)
+        result = 1
 
     # Write to outFile
     if outFile != '' and result == 0:
@@ -134,5 +140,5 @@ def select(LSM, filterExpression, aggregate=None, applyBeam=False,
     """
     from . import _filter
 
-    return _filter.filter(LSM, filterExpression, aggregate=aggregate,
+    _filter.filter(LSM, filterExpression, aggregate=aggregate,
         applyBeam=applyBeam, useRegEx=useRegEx, exclusive=False, force=force)

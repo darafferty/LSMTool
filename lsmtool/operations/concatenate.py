@@ -31,7 +31,12 @@ def run(step, parset, LSM):
     keep = parset.getString('.'.join(["LSMTool.Steps", step, "Keep"]), 'all' )
     inheritPatches = parset.getBool('.'.join(["LSMTool.Steps", step, "InheritPatches"]), False )
 
-    result = concatenate(LSM, skyModel2, matchBy, radius, keep, inheritPatches)
+    try:
+        concatenate(LSM, skyModel2, matchBy, radius, keep, inheritPatches)
+        result = 0
+    except Exception as e:
+        logging.error(e.message)
+        result = 1
 
     # Write to outFile
     if outFile != '' and result == 0:
@@ -225,5 +230,4 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
 
     LSM1._updateGroups()
     LSM1._info()
-    return 0
 

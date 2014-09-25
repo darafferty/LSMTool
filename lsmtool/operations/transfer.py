@@ -27,7 +27,12 @@ def run(step, parset, LSM):
     patchFile = parset.getString('.'.join(["LSMTool.Steps", step, "PatchFile"]), '' )
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
 
-    result = transfer(LSM, patchFile)
+    try:
+        transfer(LSM, patchFile)
+        result = 0
+    except Exception as e:
+        logging.error(e.message)
+        result = 1
 
     # Write to outFile
     if outFile != '' and result == 0:
@@ -85,4 +90,3 @@ def transfer(LSM, patchSkyModel):
     LSM.setColValues('Patch', patchNames)
     LSM._updateGroups()
     LSM._info()
-    return 0

@@ -18,7 +18,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
-from ..operations_lib import OperationError
 
 logging.debug('Loading REMOVE module.')
 
@@ -38,7 +37,7 @@ def run(step, parset, LSM):
     try:
         remove(LSM, filterExpression, aggregate=aggregate, applyBeam=applyBeam)
         result = 0
-    except OperationError as e:
+    except ModelOperationError as e:
         logging.error(e.message)
         result = 1
 

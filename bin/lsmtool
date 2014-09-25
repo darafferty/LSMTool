@@ -72,7 +72,11 @@ if __name__=='__main__':
         sys.exit(1)
 
     # Load the skymodel
-    LSM = skymodel.SkyModel(skyModelFile, beamMS=beamMS)
+    try:
+        LSM = skymodel.SkyModel(skyModelFile, beamMS=beamMS)
+    except Exception as e:
+        logging.error(e.message)
+        sys.exit(1)
 
     # from ~vdtol/Expion-2011-05-03/src
     parset = lofar.parameterset.parameterset(parsetFile)

@@ -22,6 +22,10 @@ import tableio
 import operations
 
 
+class ModelError(Exception):
+    pass
+
+
 class SkyModel(object):
     """
     Object that stores the sky model and provides methods for accessing it.
@@ -181,8 +185,7 @@ class SkyModel(object):
 
         """
         if patchName is not None and sourceName is not None:
-            logging.error('patchName and sourceName cannot both be specified.')
-            return
+            raise ValueError('patchName and sourceName cannot both be specified.')
 
         table = self.table
 
@@ -245,14 +248,14 @@ class SkyModel(object):
             colNameLower = colName.lower()
             if colNameLower not in tableio.allowedColumnNames:
                 if not quiet:
-                    logging.error('Column name "{0}" is not a valid makesourcedb '
+                    raise ModelError('Column name "{0}" is not a valid makesourcedb '
                         'column.'.format(colName))
                 return None
             else:
                 colNameKey = tableio.allowedColumnNames[colNameLower]
             if colNameKey not in self.table.keys() and onlyExisting:
                 if not quiet:
-                    logging.error('Column name "{0}" not found in sky model.'.
+                    raise ModelError('Column name "{0}" not found in sky model.'.
                         format(colName))
                 return None
 
@@ -275,7 +278,7 @@ class SkyModel(object):
                 else:
                     plur = 's'
                 if not quiet:
-                    logging.error("Column name{0} '{1}' not recognized. Ignoring".
+                    raise ModelError("Column name{0} '{1}' not recognized. Ignoring".
                         format(plur, ','.join(badNames)))
             if len(colNameLower) == 0:
                 return None
@@ -503,8 +506,7 @@ class SkyModel(object):
                     pos[1] = Dec2Angle(pos[1])
                 self.table.meta[patch] = pos
         else:
-            logging.error('Sky model does not have patches.')
-            return
+            raise ModelError('Sky model does not have patches.')
 
 
     def _getXY(self, patchName=None):
@@ -700,15 +702,13 @@ class SkyModel(object):
             return None
         if type(colName) is list:
             if len(colName) > 1:
-                logging.error('Only one column can be specified.')
-                return None
+                raise ValueError('Only one column can be specified.')
             else:
                 colName = colName[0]
 
         allowedFcns = ['sum', 'mean', 'wmean', 'min', 'max']
         if aggregate not in allowedFcns and aggregate is not None:
-            logging.error("Value of parameter 'aggregate' not understood.")
-            return None
+            raise ValueError("Value of parameter 'aggregate' not understood.")
         if aggregate in allowedFcns and self.hasPatches:
             col = self._getAggregatedColumn(colName, aggregate, applyBeam=applyBeam)
         else:
@@ -766,8 +766,7 @@ class SkyModel(object):
             return None
         if type(colName) is list:
             if len(colName) > 1:
-                logging.error('Only one column can be specified.')
-                return
+                raise ValueError('Only one column can be specified.')
             else:
                 colName = colName[0]
 
@@ -790,8 +789,7 @@ class SkyModel(object):
                 mask[indx] = False
         else:
             if len(values) != len(self.table):
-                logging.error('Length of input values must match length of table.')
-                return
+                raise ValueError('Length of input values must match length of table.')
             else:
                 if colName == 'Ra':
                     vals = RA2Angle(values)
@@ -854,8 +852,7 @@ class SkyModel(object):
             table = table.group_by('Patch') # ensure that grouping is preserved
             return table
         else:
-            logging.error("Row name '{0}' not recognized.".format(rowName))
-            return None
+            raise ValueError("Row name '{0}' not recognized.".format(rowName))
 
 
     def getRowIndex(self, rowName):
@@ -899,8 +896,7 @@ class SkyModel(object):
         elif rowName in patchNames:
             return np.where(patchNames == rowName)[0].tolist()
         else:
-            logging.error("Row name '{0}' not recognized.".format(rowName))
-            return None
+            raise ValueError("Row name '{0}' not recognized.".format(rowName))
 
 
     def setRowValues(self, values, mask=None):
@@ -952,8 +948,7 @@ class SkyModel(object):
                             found = True
                             verifiedValues[self._verifyColName(val)] = values[val]
                     if not found:
-                        logging.error("A value must be specified for '{0}'.".format(valReq))
-                        return 1
+                        raise ModelOperationError("A value must be specified for '{0}'.".format(valReq))
 
                 RA = verifiedValues['Ra']
                 Dec = verifiedValues['Dec']
@@ -961,9 +956,7 @@ class SkyModel(object):
                     verifiedValues['Ra'] = RA2Angle(RA)[0].value
                     verifiedValues['Dec'] = Dec2Angle(Dec)[0].value
                 except:
-                    logging.error('RA and/or Dec not understood.')
-                    return 1
-
+                    raise ModelOperationError('RA and/or Dec not understood.')
                 self.table.add_row(verifiedValues)
             else:
                 for colName, value in verifiedValues.iteritems():
@@ -971,18 +964,15 @@ class SkyModel(object):
                     self.table[colName][indx].mask = False
         elif type(dict) is list:
             if len(values) != len(self.table.columns):
-                logging.error('Length of input values must match number of tables.')
-                return 1
+                raise ModelOperationError('Length of input values must match number of tables.')
             else:
                 if indx is not None:
                     self.table.remove_row(indx)
                 self.table.add_row(values, mask=mask)
         else:
-            logging.error('Input row values not understood.')
-            return 1
+            raise ModelOperationError('Input row values not understood.')
 
         self._updateGroups()
-        return 0
 
 
     def getPatchSizes(self, units=None, weight=False, applyBeam=False):
@@ -1085,8 +1075,7 @@ class SkyModel(object):
                 logging.warn("Name{0} '{1}' not recognized. Ignoring.".
                     format(plur, ','.join(badNames)))
             if len(indx) == 0:
-                logging.error("None of the specified names were found.")
-                return None
+                raise ValueError("None of the specified names were found.")
             return indx
         else:
             return None
@@ -1162,8 +1151,7 @@ class SkyModel(object):
         elif aggregate == 'max':
             col = self._getMaxColumn(colName, applyBeam=applyBeam)
         else:
-            logging.error('Aggregation function not understood.'.format(colName))
-            col = None
+            raise ValueError('Aggregation function not understood.'.format(colName))
         return col
 
 
@@ -1202,8 +1190,10 @@ class SkyModel(object):
             DecDeg = self.getColValues('Dec')
 
         flux = col.data
-        vals = attenuate(self.beamMS, flux, RADeg, DecDeg, timeIndx=self.beamTime)
-        if vals is None:
+        try:
+            vals = attenuate(self.beamMS, flux, RADeg, DecDeg, timeIndx=self.beamTime)
+        except Exception as e:
+            logging.warn('{0}. No beam attenuation applied.'.format(e.message))
             return col
 
         col[:] = vals
@@ -1505,9 +1495,8 @@ class SkyModel(object):
             if clobber:
                 os.remove(fileName)
             else:
-                logging.error("The output file '{0}' exists and clobber = False.".
+                raise IOError("The output file '{0}' exists and clobber = False.".
                     format(fileName))
-                return
 
         table = self.table.copy()
 

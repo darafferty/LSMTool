@@ -18,7 +18,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
-from ..operations_lib import OperationError
 
 logging.debug('Loading GROUP module.')
 
@@ -88,7 +87,7 @@ def move(LSM, name, position=None, shift=None):
                 LSM.table['Ra'][indx] = tableio.RA2Angle(position[0])[0]
                 LSM.table['Dec'][indx] = tableio.Dec2Angle(position[1])[0]
             except Exception as e:
-                raise OperationError('Could not parse position: {0}'.format(e.message))
+                raise ValueError('Could not parse position: {0}'.format(e.message))
         if shift is not None:
             RA = LSM.table['Ra'][indx] + tableio.RA2Angle(shift[0])
             Dec = LSM.table['Dec'][indx] + tableio.Dec2Angle(shift[1])
@@ -103,7 +102,7 @@ def move(LSM, name, position=None, shift=None):
                     position[0] = tableio.RA2Angle(position[0])[0]
                     position[1] = tableio.Dec2Angle(position[1])[0]
                 except Exception as e:
-                    raise OperationError('Could not parse position: {0}'.format(e.message))
+                    raise ValueError('Could not parse position: {0}'.format(e.message))
                 LSM.table.meta[name] = position
             if shift is not None:
                 position = LSM.table.meta[name]
@@ -111,6 +110,6 @@ def move(LSM, name, position=None, shift=None):
                     position[1] + tableio.Dec2Angle(shift[1])]
             return 0
         else:
-            raise OperationError("Could not find patch '{0}'.".format(name))
+            raise ValueError("Could not find patch '{0}'.".format(name))
     else:
-        raise OperationError("Could not find source '{0}'.".format(name))
+        raise ValueError("Could not find source '{0}'.".format(name))
