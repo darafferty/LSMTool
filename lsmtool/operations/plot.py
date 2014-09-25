@@ -28,7 +28,13 @@ def run( step, parset, LSM ):
 
     if outFile == '':
         outFile = None
-    plot(LSM, outFile)
+
+    try:
+        plot(LSM, outFile)
+        result = 0
+    except Exception as e:
+        logging.error(e.message)
+        result = 1
 
     return 0
 

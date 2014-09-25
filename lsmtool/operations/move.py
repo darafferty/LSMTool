@@ -33,7 +33,13 @@ def run(step, parset, LSM):
         position = None
     if len(shift) < 2:
         shift = None
-    result = move(LSM, name, position, shift)
+
+    try:
+        move(LSM, name, position, shift)
+        result = 0
+    except Exception as e:
+        logging.error(e.message)
+        result = 1
 
     # Write to outFile
     if outFile != '' and result == 0:

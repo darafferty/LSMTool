@@ -37,7 +37,7 @@ def run(step, parset, LSM):
     try:
         remove(LSM, filterExpression, aggregate=aggregate, applyBeam=applyBeam)
         result = 0
-    except ModelOperationError as e:
+    except Exception as e:
         logging.error(e.message)
         result = 1
 
