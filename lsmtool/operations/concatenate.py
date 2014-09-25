@@ -203,6 +203,8 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
             colName = 'Name'
         elif matchBy.lower() == 'position':
             colName = 'match'
+        else:
+            raise ValueError('Invalid matchBy parameter.')
         vals = LSM1.table[colName]
         for val in vals:
             valsCur = LSM1.table[colName]
