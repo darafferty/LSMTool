@@ -102,7 +102,7 @@ if __name__=='__main__':
        start = time.clock()
        returncode = availableOperations[operation].run(step, parset, LSM)
        if returncode != 0:
-          logging.error("Step \'" + step + "\' incomplete. Try to continue anyway.")
+          logging.error("Step \'" + step + "\' incomplete. Trying to continue anyway...")
        else:
           logging.info("Step \'" + step + "\' completed successfully.")
        elapsed = (time.clock() - start)

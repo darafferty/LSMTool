@@ -478,8 +478,8 @@ class SkyModel(object):
         from tableio import RA2Angle, Dec2Angle
 
         if self.hasPatches:
-            if method is None:
-                return
+            if method is not in ['mid', 'mean', 'wmean', 'zero']:
+                raise ValueError('Invalid method parameter')
 
             if patchDict is None:
                 # Delete any previous patch positions
