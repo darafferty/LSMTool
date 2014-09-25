@@ -26,7 +26,7 @@ import sys
 import os
 import time
 import logging
-from lsmtool import _logging, skymodel, operations
+from lsmtool import _version, _logging, skymodel, operations
 import lofar.parameterset
 
 
@@ -34,7 +34,7 @@ if __name__=='__main__':
     # Options
     import optparse
     opt = optparse.OptionParser(usage='%prog <skymodel> <parset> [<beam MS>] \n'
-            +_author, version='%prog '+lsmtool._version.__version__)
+            +_author, version='%prog '+_version.__version__)
     opt.add_option('-q', help='Quiet', action='store_true', default=False)
     opt.add_option('-v', help='Verbose', action='store_true', default=False)
     (options, args) = opt.parse_args()
