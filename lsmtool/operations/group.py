@@ -105,10 +105,6 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
         LSM.setColValues('Patch', patchCol, index=2)
 
     elif algorithm.lower() == 'tessellate':
-        try:
-            from ..operations_lib import radec2xy
-        except:
-            from .operations_lib import radec2xy
         if targetFlux is None:
             logging.error('Please specify the targetFlux parameter.')
             return 1

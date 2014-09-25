@@ -18,10 +18,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
-try:
-    from ..operations_lib import OperationError
-except ImportError:
-    from .operations_lib import OperationError
+from ..operations_lib import OperationError
 
 logging.debug('Loading REMOVE module.')
 

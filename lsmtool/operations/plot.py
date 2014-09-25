@@ -18,10 +18,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
-try:
-    from ..operations_lib import OperationError
-except ImportError:
-    from .operations_lib import OperationError
+from ..operations_lib import OperationError
 
 logging.debug('Loading PLOT module.')
 
@@ -78,10 +75,7 @@ def plot(LSM, fileName=None):
     except:
         hasWCSaxes = False
     import numpy as np
-    try:
-        from ..operations_lib import radec2xy, xy2radec, makeWCS
-    except:
-        from .operations_lib import radec2xy, xy2radec, makeWCS
+    from ..operations_lib import radec2xy, makeWCS
     global midRA, midDec, ymin, xmin
 
     fig = plt.figure(1,figsize=(7,7))
@@ -162,10 +156,8 @@ def plot(LSM, fileName=None):
 
 def formatCoord(x, y):
     """Custom coordinate format"""
-    try:
-        from ..operations_lib import xy2radec
-    except:
-        from .operations_lib import xy2radec
+    from ..operations_lib import xy2radec
+
     global midRA, midDec
     RA, Dec = xy2radec([x], [y], midRA, midDec)
     return 'RA = {0:.2f} Dec = {1:.2f}'.format(RA[0], Dec[0])
@@ -173,10 +165,8 @@ def formatCoord(x, y):
 
 def RAtickformatter(x, pos):
     """Changes x tick labels from pixels to RA in degrees"""
-    try:
-        from ..operations_lib import xy2radec
-    except:
-        from .operations_lib import xy2radec
+    from ..operations_lib import xy2radec
+
     global ymin, midRA, midDec
     ratick = xy2radec([x], [ymin], midRA, midDec)[0][0]
     rastr = '{0:.2f}'.format(ratick)
@@ -185,10 +175,7 @@ def RAtickformatter(x, pos):
 
 def Dectickformatter(y, pos):
     """Changes y tick labels from pixels to Dec in degrees"""
-    try:
-        from ..operations_lib import xy2radec
-    except:
-        from .operations_lib import xy2radec
+    from ..operations_lib import xy2radec
 
     global xmin, midRA, midDec
     dectick = xy2radec([xmin], [y], midRA, midDec)[1][0]

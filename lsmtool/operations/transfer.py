@@ -59,10 +59,7 @@ def transfer(LSM, patchSkyModel):
         >>> setPatchPositions(LSM, method='mid')
 
     """
-    try:
-        from ..skymodel import SkyModel
-    except:
-        from .skymodel import SkyModel
+    from ..skymodel import SkyModel
 
     if type(patchSkyModel) is str:
         masterLSM = SkyModel(patchSkyModel)
