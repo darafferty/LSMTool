@@ -22,10 +22,6 @@ import tableio
 import operations
 
 
-class ModelError(Exception):
-    pass
-
-
 class SkyModel(object):
     """
     Object that stores the sky model and provides methods for accessing it.
@@ -248,14 +244,14 @@ class SkyModel(object):
             colNameLower = colName.lower()
             if colNameLower not in tableio.allowedColumnNames:
                 if not quiet:
-                    raise ModelError('Column name "{0}" is not a valid makesourcedb '
+                    raise ValueError('Column name "{0}" is not a valid makesourcedb '
                         'column.'.format(colName))
                 return None
             else:
                 colNameKey = tableio.allowedColumnNames[colNameLower]
             if colNameKey not in self.table.keys() and onlyExisting:
                 if not quiet:
-                    raise ModelError('Column name "{0}" not found in sky model.'.
+                    raise ValueError('Column name "{0}" not found in sky model.'.
                         format(colName))
                 return None
 
@@ -278,7 +274,7 @@ class SkyModel(object):
                 else:
                     plur = 's'
                 if not quiet:
-                    raise ModelError("Column name{0} '{1}' not recognized. Ignoring".
+                    logging.warn("Column name{0} '{1}' not recognized. Ignoring.".
                         format(plur, ','.join(badNames)))
             if len(colNameLower) == 0:
                 return None
@@ -506,7 +502,7 @@ class SkyModel(object):
                     pos[1] = Dec2Angle(pos[1])
                 self.table.meta[patch] = pos
         else:
-            raise ModelError('Sky model does not have patches.')
+            raise RuntimeError('Sky model does not have patches.')
 
 
     def _getXY(self, patchName=None):
