@@ -18,6 +18,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
+from ..operations_lib import OperationError
 
 logging.debug('Loading GROUP module.')
 
@@ -73,14 +74,10 @@ def move(LSM, name, position=None, shift=None):
         >>> move(LSM, '1609.6+6556', shift=[0.0, 10.0/3600.0])
 
     """
-    try:
-        from .. import tableio
-    except:
-        import tableio
+    from .. import tableio
 
     if position is None and shift is None:
-        logging.error("One of positon or shift must be specified.")
-        return 1
+        raise ValueError("One of positon or shift must be specified.")
 
     sourceNames = LSM.getColValues('Name')
 
@@ -90,8 +87,8 @@ def move(LSM, name, position=None, shift=None):
             try:
                 LSM.table['Ra'][indx] = tableio.RA2Angle(position[0])[0]
                 LSM.table['Dec'][indx] = tableio.Dec2Angle(position[1])[0]
-            except:
-                loggin.error('Postion not understood.')
+            except Exception as e:
+                raise OperationError('Could not parse position: {0}'.format(e.message))
         if shift is not None:
             RA = LSM.table['Ra'][indx] + tableio.RA2Angle(shift[0])
             Dec = LSM.table['Dec'][indx] + tableio.Dec2Angle(shift[1])
@@ -105,8 +102,8 @@ def move(LSM, name, position=None, shift=None):
                 try:
                     position[0] = tableio.RA2Angle(position[0])[0]
                     position[1] = tableio.Dec2Angle(position[1])[0]
-                except:
-                    loggin.error('Postion not understood.')
+                except Exception as e:
+                    raise OperationError('Could not parse position: {0}'.format(e.message))
                 LSM.table.meta[name] = position
             if shift is not None:
                 position = LSM.table.meta[name]
@@ -114,8 +111,6 @@ def move(LSM, name, position=None, shift=None):
                     position[1] + tableio.Dec2Angle(shift[1])]
             return 0
         else:
-            logging.error("Row name '{0}' not recognized.".format(name))
-            return 1
+            raise OperationError("Could not find patch '{0}'.".format(name))
     else:
-        logging.error("Row name '{0}' not recognized.".format(name))
-        return 1
+        raise OperationError("Could not find source '{0}'.".format(name))

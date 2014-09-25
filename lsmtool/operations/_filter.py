@@ -15,7 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
 import logging
+try:
+    from ..operations_lib import OperationError
+except ImportError:
+    from .operations_lib import OperationError
 
 
 def filter(LSM, filterExpression, exclusive=False, aggregate=None,
@@ -129,8 +134,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
     from astropy.table import Table
 
     if filterExpression is None:
-        logging.error('Please specify a filter expression.')
-        return 1
+        raise OperationError('No filter expression specified.')
 
     if LSM.hasPatches and aggregate is not None:
         nrows = len(LSM.getPatchNames())
@@ -139,17 +143,16 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
 
     filt = None
     if type(filterExpression) is list:
-        if len(filterExpression) == 3:
-            filterProp, filterOperStr, filterVal = filterExpression
-            filterUnits = None
-            filterOper, f = convertOperStr(filterOperStr)
-        elif len(filterExpression) == 4:
-            filterProp, filterOperStr, filterVal, filterUnits = filterExpression
-            filterOper, f = convertOperStr(filterOperStr)
-        else:
-            logging.error("Please specify filter list as "
-                "[property, operator, value, units].")
-            return 1
+        try:
+            if len(filterExpression) == 3:
+                filterProp, filterOperStr, filterVal = filterExpression
+                filterUnits = None
+                filterOper, f = convertOperStr(filterOperStr)
+            elif len(filterExpression) == 4:
+                filterProp, filterOperStr, filterVal, filterUnits = filterExpression
+                filterOper, f = convertOperStr(filterOperStr)
+        except Exception:
+            raise OperationError("Could not parse filter.")
 
     elif type(filterExpression) is dict:
         if ('filterProp' in filterExpression.keys() and
@@ -160,10 +163,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
             filterOper, f = convertOperStr(filterOperStr)
             filterVal = filterExpression['filterVal']
         else:
-            logging.error("Please specify filter dictionary as "
-                "{'filterProp':property, 'filterOper':operator, "
-                "'filterVal':value, 'filterUnits':units}")
-            return 1
+            raise OperationError("Could not parse filter.")
         if 'filterUnits' in filterExpression.keys():
             filterUnits = filterExpression['filterUnits']
         else:
@@ -180,14 +180,16 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
                 filt = [i for i in range(len(filterExpression)) if
                     filterExpression[i]]
             else:
-                logging.error("Boolean filter arrays be of same length as "
+                raise OperationError("Boolean filter arrays be of same length as "
                     "the sky model.")
-                return 1
         else:
             filt = filterExpression.tolist()
 
     else:
         return 1
+
+    if filterProp is None:
+        raise OperationError('Filter expression not understood')
 
     if filt is None:
         # Get the column values to filter on
@@ -202,11 +204,8 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
                 RARad = LSM.getColValues('Ra', units='radian')
                 DecRad = LSM.getColValues('Dec', units='radian')
                 colVals = getMaskValues(mask, RARad, DecRad)
-                if colVals is None:
-                    return 1
             else:
-                logging.error('Filter expression not understood')
-                return 1
+                raise OperationError('Filter expression not understood')
 
         # Do the filtering
         if colVals is None:
@@ -435,16 +434,14 @@ def getMaskValues(mask, RARad, DecRad):
     try:
         maskdata = pim.image(mask)
         maskval = maskdata.getdata()[0][0]
-    except:
-        logging.error("Could not open mask file '{0}'".format(mask))
-        return None
+    except Exception as e:
+        raise OperationError("Could not open mask file '{0}': {1}".format(mask, e.message))
 
     vals = []
     for raRad, decRad in zip(RARad, DecRad):
         (a, b, _, _) = maskdata.toworld([0, 0, 0, 0])
         (_, _, pixY, pixX) = maskdata.topixel([a, b, decRad, raRad])
         try:
-            # != is a XOR for booleans
             if maskval[pixY, pixX]:
                 vals.append(True)
             else:
@@ -453,49 +450,3 @@ def getMaskValues(mask, RARad, DecRad):
             vals.append(False)
 
     return np.array(vals)
-
-def getPatchNamesFromMask(mask, RARad, DecRad):
-    """
-    Returns an array of patch names for each (RA, Dec) pair in radians
-    """
-    import math
-    import pyrap.images as pim
-    import scipy.ndimage as nd
-    import numpy as np
-
-    try:
-        maskdata = pim.image(mask)
-        maskval = maskdata.getdata()[0][0]
-    except:
-        logging.error("Error opening mask file '{0}'".format(mask))
-        return None
-
-    act_pixels = maskval
-    rank = len(act_pixels.shape)
-    connectivity = nd.generate_binary_structure(rank, rank)
-    mask_labels, count = nd.label(act_pixels, connectivity)
-
-    patchNums = []
-    patchNames = []
-    for raRad, decRad in zip(RARad, DecRad):
-        (a, b, _, _) = maskdata.toworld([0, 0, 0, 0])
-        (_, _, pixY, pixX) = maskdata.topixel([a, b, decRad, raRad])
-        try:
-            # != is a XOR for booleans
-            patchNums.append(mask_labels[pixY, pixX])
-        except:
-            patchNums.append(0)
-
-    # Check if there is a patch with id = 0. If so, this means there were
-    # some Gaussians that fell outside of the regions in the patch
-    # mask file.
-    n = 0
-    for p in patchNums:
-        if p != 0:
-            in_patch = np.where(patchNums == p)
-            patchNames.append('mask_patch_'+str(p))
-        else:
-            patchNames.append('patch_'+str(n))
-            n += 1
-
-    return np.array(patchNames)

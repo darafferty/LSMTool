@@ -61,6 +61,10 @@ allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':0.0,
     'referencefrequency':0.0, 'spectralindex':[0.0]}
 
 
+class ModelLoadError(Exception):
+    pass
+
+
 def skyModelReader(fileName):
     """
     Reads a makesourcedb sky model file into an astropy table.
@@ -84,8 +88,8 @@ def skyModelReader(fileName):
     try:
         modelFile = open(fileName)
         logging.debug('Reading {0}'.format(fileName))
-    except IOError:
-        raise Exception('Could not open {0}'.format(fileName))
+    except IOError as e:
+        raise ModelLoadError('Could not open {0}: {1}'.format(fileName, e.strerror))
 
     # Read format line
     formatString = None
@@ -95,7 +99,7 @@ def skyModelReader(fileName):
             break
     modelFile.close()
     if formatString is None:
-        raise Exception("No valid format line found in file '{0}'.".format(fileName))
+        raise ModelLoadError("No valid format line found in file '{0}'.".format(fileName))
     formatString = formatString.strip()
     formatString = formatString.strip('# ')
     if formatString.lower().endswith('format'):
@@ -105,7 +109,7 @@ def skyModelReader(fileName):
         parts = formatString.split('=')[1:]
         formatString = 'FORMAT = ' + '='.join(parts).strip('# ()')
     else:
-        raise Exception("Format line in file '{0}' not understood.".format(fileName))
+        raise ModelLoadError("Format line in file '{0}' not understood.".format(fileName))
 
     # Check whether sky model has patches
     if 'Patch' in formatString:
@@ -116,7 +120,7 @@ def skyModelReader(fileName):
     # Get column names and default values. Non-string columns have default
     # values of 0.0 unless a different value is given in the header.
     if ',' not in formatString:
-        raise Exception("Sky model must use ',' as a field separator.")
+        raise ModelLoadError("Sky model must use ',' as a field separator.")
     colNames = formatString.split(',')
 
     # Check if a default value in the format string is a list. If it is, make
@@ -171,9 +175,9 @@ def skyModelReader(fileName):
             defaultVal = None
 
         if colName == '':
-            raise Exception('Skipping of columns is not yet supported.')
+            raise ModelLoadError('Skipping of columns is not yet supported.')
         if colName not in allowedColumnNames:
-            raise Exception("Column '{0}' is not currently allowed".format(colName,
+            raise ModelLoadError("Column '{0}' is not currently allowed".format(colName,
                 fileName))
         else:
             colNames[i] = allowedColumnNames[colName]
@@ -341,7 +345,8 @@ def RA2Angle(RA):
                 for rasex in RA]
             RAAngle = Angle(RADeg, unit=u.deg)
         except:
-            raise Exception('RA values not understood.')
+            raise ValueError('RA not understood (must be string in '
+                'makesourcedb format or float in degrees).')
     else:
         RAAngle = Angle(RA, unit=u.deg)
 
@@ -377,7 +382,8 @@ def Dec2Angle(Dec):
                  for decsex in DecSex]
             DecAngle = Angle(DecDeg, unit=u.deg)
         except:
-            raise Exception('Dec values not understood.')
+            raise ValueError('Dec not understood (must be string in '
+                'makesourcedb format or float in degrees).')
     else:
         DecAngle = Angle(Dec, unit=u.deg)
 

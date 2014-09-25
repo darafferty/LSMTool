@@ -18,6 +18,10 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
+try:
+    from ..operations_lib import OperationError
+except ImportError:
+    from .operations_lib import OperationError
 
 logging.debug('Loading REMOVE module.')
 
@@ -33,7 +37,13 @@ def run(step, parset, LSM):
         filterExpression = None
     if aggregate == '':
         aggregate = None
-    result = remove(LSM, filterExpression, aggregate=aggregate, applyBeam=applyBeam)
+
+    try:
+        remove(LSM, filterExpression, aggregate=aggregate, applyBeam=applyBeam)
+        result = 0
+    except OperationError as e:
+        logging.error(e.message)
+        result = 1
 
     # Write to outFile
     if outFile != '' and result == 0:
@@ -134,5 +144,5 @@ def remove(LSM, filterExpression, aggregate=None, applyBeam=None,
     """
     from . import _filter
 
-    return _filter.filter(LSM, filterExpression, aggregate=aggregate,
+    _filter.filter(LSM, filterExpression, aggregate=aggregate,
         applyBeam=applyBeam, useRegEx=useRegEx, exclusive=True, force=force)

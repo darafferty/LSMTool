@@ -18,6 +18,10 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
+try:
+    from ..operations_lib import OperationError
+except ImportError:
+    from .operations_lib import OperationError
 
 logging.debug('Loading PLOT module.')
 
@@ -65,9 +69,9 @@ def plot(LSM, fileName=None):
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FuncFormatter
-    except:
-        print('PyPlot could not be imported. Plotting is not available.')
-        return
+    except Exception as e:
+        raise OperationError('PyPlot could not be imported. Plotting is not '
+            'available: {0}'.format(e.message))
     try:
         from wcsaxes import WCSAxes
         hasWCSaxes = True

@@ -21,6 +21,10 @@ import sys
 import os
 
 
+class OperationError(Exception):
+    pass
+
+
 def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
     """
     Returns flux attenuated by primary beam.
