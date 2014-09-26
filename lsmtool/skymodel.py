@@ -1516,14 +1516,17 @@ class SkyModel(object):
         """
         Sends the model to another application using SAMP.
 
-        If no running SAMP hub is detected, one is started. The receiving
-        application must be running before the table is broadcasted.
+        Both the SAMP hub and the receiving application must be running before
+        the table is broadcasted. Examples of SMAP-aware applications are
+        TOPCAT, Aladin, and ds9.
 
         Examples
         --------
         Send the model to TOPCAT. First, start TOPCAT, then run the command::
 
             >>> s.broadcast()
+
+        TOPCAT should then load the table.
 
         """
         import tempfile
@@ -1902,7 +1905,7 @@ class SkyModel(object):
         Parameters
         ----------
         LSM2 : str or SkyModel object
-            Sky model to concatenate with the parent sky model
+            Secondary sky model to concatenate with the parent sky model
         matchBy : str, optional
             Determines how duplicate sources are determined:
             - 'name' => duplicates are identified by name
@@ -1916,13 +1919,13 @@ class SkyModel(object):
             - 'all' => all duplicates are kept; those with identical names are re-
                 named
             - 'from1' => duplicates kept are those from sky model 1 (the parent)
-            - 'from2' => duplicates kept are those from sky model 2 (LSM2)
+            - 'from2' => duplicates kept are those from sky model 2 (the secondary)
 
         Examples
         --------
         Concatenate two sky models, identifying duplicates by matching to the source
         names. When duplicates are found, keep the source from the parent sky model
-        and discard the duplicate from second sky model (this might be useful when
+        and discard the duplicate from secondary sky model (this might be useful when
         merging two gsm.py sky models that have some overlap)::
 
             >>> LSM2 = lsmtool.load('gsm_sky2.model')
@@ -1930,7 +1933,7 @@ class SkyModel(object):
 
         Concatenate two sky models, identifying duplicates by matching to the source
         positions within a radius of 10 arcsec. When duplicates are found, keep the
-        source from the second sky model and discard the duplicate from the parent
+        source from the secondary sky model and discard the duplicate from the parent
         sky model (this might be useful when replacing parts of a low-resolution
         sky model with a high-resolution one)::
 

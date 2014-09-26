@@ -119,7 +119,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
         LSM2 = skymodel.SkyModel(LSM2)
 
     if len(LSM1) == 0:
-        logging.info('Parent sky model is empty. Concatenated sky model will '
+        logging.info('Parent sky model is empty. Concatenated sky model is '
             'copy of secondary sky model.')
         LSM1.table = LSM2.table
         LSM1._updateGroups()

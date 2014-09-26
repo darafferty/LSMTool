@@ -340,7 +340,9 @@ def RA2Angle(RA):
                 + float(rasex.split(':')[2]) / 3600.0) * 15.0
                 for rasex in RA]
             RAAngle = Angle(RADeg, unit=u.deg)
-        except:
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
             raise ValueError('RA not understood (must be string in '
                 'makesourcedb format or float in degrees).')
     else:
@@ -377,7 +379,9 @@ def Dec2Angle(Dec):
                  + float(decsex.split(':')[2]) / 3600.0
                  for decsex in DecSex]
             DecAngle = Angle(DecDeg, unit=u.deg)
-        except:
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
             raise ValueError('Dec not understood (must be string in '
                 'makesourcedb format or float in degrees).')
     else:
