@@ -28,7 +28,13 @@ def run( step, parset, LSM ):
 
     if outFile == '':
         outFile = None
-    plot(LSM, outFile)
+
+    try:
+        plot(LSM, outFile)
+        result = 0
+    except Exception as e:
+        logging.error(e.message)
+        result = 1
 
     return 0
 
@@ -65,20 +71,21 @@ def plot(LSM, fileName=None):
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FuncFormatter
-    except:
-        print('PyPlot could not be imported. Plotting is not available.')
-        return
+    except Exception as e:
+        raise ImportError('PyPlot could not be imported. Plotting is not '
+            'available: {0}'.format(e.message))
     try:
         from wcsaxes import WCSAxes
         hasWCSaxes = True
     except:
         hasWCSaxes = False
     import numpy as np
-    try:
-        from ..operations_lib import radec2xy, xy2radec, makeWCS
-    except:
-        from .operations_lib import radec2xy, xy2radec, makeWCS
+    from ..operations_lib import radec2xy, makeWCS
     global midRA, midDec, ymin, xmin
+
+    if len(LSM) == 0:
+        logging.error('Sky model is empty.')
+        return
 
     fig = plt.figure(1,figsize=(7,7))
     plt.clf()
@@ -158,10 +165,8 @@ def plot(LSM, fileName=None):
 
 def formatCoord(x, y):
     """Custom coordinate format"""
-    try:
-        from ..operations_lib import xy2radec
-    except:
-        from .operations_lib import xy2radec
+    from ..operations_lib import xy2radec
+
     global midRA, midDec
     RA, Dec = xy2radec([x], [y], midRA, midDec)
     return 'RA = {0:.2f} Dec = {1:.2f}'.format(RA[0], Dec[0])
@@ -169,10 +174,8 @@ def formatCoord(x, y):
 
 def RAtickformatter(x, pos):
     """Changes x tick labels from pixels to RA in degrees"""
-    try:
-        from ..operations_lib import xy2radec
-    except:
-        from .operations_lib import xy2radec
+    from ..operations_lib import xy2radec
+
     global ymin, midRA, midDec
     ratick = xy2radec([x], [ymin], midRA, midDec)[0][0]
     rastr = '{0:.2f}'.format(ratick)
@@ -181,10 +184,7 @@ def RAtickformatter(x, pos):
 
 def Dectickformatter(y, pos):
     """Changes y tick labels from pixels to Dec in degrees"""
-    try:
-        from ..operations_lib import xy2radec
-    except:
-        from .operations_lib import xy2radec
+    from ..operations_lib import xy2radec
 
     global xmin, midRA, midDec
     dectick = xy2radec([xmin], [y], midRA, midDec)[1][0]

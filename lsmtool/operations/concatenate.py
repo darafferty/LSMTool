@@ -31,7 +31,12 @@ def run(step, parset, LSM):
     keep = parset.getString('.'.join(["LSMTool.Steps", step, "Keep"]), 'all' )
     inheritPatches = parset.getBool('.'.join(["LSMTool.Steps", step, "InheritPatches"]), False )
 
-    result = concatenate(LSM, skyModel2, matchBy, radius, keep, inheritPatches)
+    try:
+        concatenate(LSM, skyModel2, matchBy, radius, keep, inheritPatches)
+        result = 0
+    except Exception as e:
+        logging.error(e.message)
+        result = 1
 
     # Write to outFile
     if outFile != '' and result == 0:
@@ -100,10 +105,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
     from astropy.coordinates import SkyCoord, Angle
     from astropy import units as u
     import numpy as np
-    try:
-        from .. import skymodel
-    except:
-        import skymodel
+    from .. import skymodel
     from distutils.version import StrictVersion
     import scipy
     if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
@@ -115,6 +117,18 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
 
     if type(LSM2) is str:
         LSM2 = skymodel.SkyModel(LSM2)
+
+    if len(LSM1) == 0:
+        logging.info('Parent sky model is empty. Concatenated sky model is '
+            'copy of secondary sky model.')
+        LSM1.table = LSM2.table
+        LSM1._updateGroups()
+        LSM1._info()
+        return
+    if len(LSM2) == 0:
+        logging.info('Secondary sky model is empty. Parent sky model left '
+            'unaltered.')
+        return
 
     if (LSM1.hasPatches and not LSM2.hasPatches):
          LSM2.group('every')
@@ -201,6 +215,8 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
             colName = 'Name'
         elif matchBy.lower() == 'position':
             colName = 'match'
+        else:
+            raise ValueError('Invalid matchBy parameter.')
         vals = LSM1.table[colName]
         for val in vals:
             valsCur = LSM1.table[colName]
@@ -228,5 +244,4 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
 
     LSM1._updateGroups()
     LSM1._info()
-    return 0
 

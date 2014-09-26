@@ -45,23 +45,10 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
 
     """
     import numpy as np
+    import pyrap.tables as pt
+    import lofar.stationresponse as lsr
 
-    try:
-        import pyrap.tables as pt
-    except ImportError:
-        logging.error('Could not import pyrap.tables')
-        return None
-    try:
-        import lofar.stationresponse as lsr
-    except ImportError:
-        logging.error('Could not import lofar.stationresponse')
-        return None
-    try:
-        t = pt.table(beamMS, ack=False)
-    except:
-        logging.error('Could not open {0}'.format(beamMS))
-        return None
-
+    t = pt.table(beamMS, ack=False)
     time = None
     ant1 = -1
     ant2 = 1
@@ -76,8 +63,8 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
     if timeIndx > 1.0:
         timeIndx = 1.0
     time = min(time) + ( max(time) - min(time) ) * timeIndx
-    logging.debug('Applying beam attenuation using beam at {0}% point of '
-        'observation.'.format(timeIndx*100.0))
+    logging.debug('Applying beam attenuation using beam at time of {0}% point of '
+        'observation.'.format(int(timeIndx*100.0)))
 
     attFluxes = []
     sr = lsr.stationresponse(beamMS, inverse=False, useElementResponse=False,

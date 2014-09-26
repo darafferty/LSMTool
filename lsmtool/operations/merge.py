@@ -29,7 +29,13 @@ def run(step, parset, LSM):
     name = parset.getString('.'.join(["LSMTool.Steps", step, "Name"]), '' )
     if name == '':
         name = None
-    result = merge(LSM, patches, name)
+
+    try:
+        result = merge(LSM, patches, name)
+        result = 0
+    except Exception as e:
+        logging.error(e.message)
+        result = 1
 
     # Write to outFile
     if outFile != '' and result == 0:
@@ -56,16 +62,18 @@ def merge(LSM, patches, name=None):
         >>> LSM = lsmtool.load('sky.model')
         >>> merge(LSM, ['bin0', 'bin1', 'bin2'], 'binmerged')
     """
+    if len(LSM) == 0:
+        logging.error('Sky model is empty.')
+        return
+
     if name is None:
         name = patches[0]
 
     for patchName in patches:
         indices = LSM.getRowIndex(patchName)
         if indices is None:
-            return 1
+            raise ValueError("Could not find patch '{0}'.".format(patchName))
         else:
             LSM.table['Patch'][indices] = name
     LSM._updateGroups()
     LSM._info()
-
-    return 0

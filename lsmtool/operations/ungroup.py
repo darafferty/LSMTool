@@ -26,7 +26,12 @@ def run(step, parset, LSM):
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
 
-    LSM.ungroup()
+    try:
+        LSM.ungroup()
+        result = 0
+    except Exception as e:
+        logging.error(e.message)
+        result = 1
 
     # Write to outFile
     if outFile != '':

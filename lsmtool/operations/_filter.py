@@ -15,11 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
 import logging
 
 
 def filter(LSM, filterExpression, exclusive=False, aggregate=None,
-    applyBeam=False, useRegEx=False, force=False):
+    applyBeam=False, useRegEx=False, force=True):
     """
     Filters the sky model, keeping all sources that meet the given expression.
 
@@ -128,9 +129,12 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
     import os
     from astropy.table import Table
 
+    if len(LSM) == 0:
+        logging.error('Sky model is empty.')
+        return
+
     if filterExpression is None:
-        logging.error('Please specify a filter expression.')
-        return 1
+        raise ValueError('No filter expression specified.')
 
     if LSM.hasPatches and aggregate is not None:
         nrows = len(LSM.getPatchNames())
@@ -139,17 +143,16 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
 
     filt = None
     if type(filterExpression) is list:
-        if len(filterExpression) == 3:
-            filterProp, filterOperStr, filterVal = filterExpression
-            filterUnits = None
-            filterOper, f = convertOperStr(filterOperStr)
-        elif len(filterExpression) == 4:
-            filterProp, filterOperStr, filterVal, filterUnits = filterExpression
-            filterOper, f = convertOperStr(filterOperStr)
-        else:
-            logging.error("Please specify filter list as "
-                "[property, operator, value, units].")
-            return 1
+        try:
+            if len(filterExpression) == 3:
+                filterProp, filterOperStr, filterVal = filterExpression
+                filterUnits = None
+                filterOper, f = convertOperStr(filterOperStr)
+            elif len(filterExpression) == 4:
+                filterProp, filterOperStr, filterVal, filterUnits = filterExpression
+                filterOper, f = convertOperStr(filterOperStr)
+        except Exception:
+            raise ValueError("Could not parse filter.")
 
     elif type(filterExpression) is dict:
         if ('filterProp' in filterExpression.keys() and
@@ -160,10 +163,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
             filterOper, f = convertOperStr(filterOperStr)
             filterVal = filterExpression['filterVal']
         else:
-            logging.error("Please specify filter dictionary as "
-                "{'filterProp':property, 'filterOper':operator, "
-                "'filterVal':value, 'filterUnits':units}")
-            return 1
+            raise ValueError("Could not parse filter.")
         if 'filterUnits' in filterExpression.keys():
             filterUnits = filterExpression['filterUnits']
         else:
@@ -180,14 +180,16 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
                 filt = [i for i in range(len(filterExpression)) if
                     filterExpression[i]]
             else:
-                logging.error("Boolean filter arrays be of same length as "
+                raise ValueError("Boolean filter arrays be of same length as "
                     "the sky model.")
-                return 1
         else:
             filt = filterExpression.tolist()
 
     else:
-        return 1
+        raise ValueError("Could not parse filter.")
+
+    if filt is None and filterProp is None:
+        raise ValueError('Filter expression not understood')
 
     if filt is None:
         # Get the column values to filter on
@@ -202,36 +204,34 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
                 RARad = LSM.getColValues('Ra', units='radian')
                 DecRad = LSM.getColValues('Dec', units='radian')
                 colVals = getMaskValues(mask, RARad, DecRad)
-                if colVals is None:
-                    return 1
             else:
-                logging.error('Filter expression not understood')
-                return 1
+                raise ValueError('Could not parse filter.')
 
         # Do the filtering
         if colVals is None:
-            return 1
+            raise ValueError("Could not parse filter.")
         filt = getFilterIndices(colVals, filterOper, filterVal, useRegEx=useRegEx)
 
     if exclusive:
         filt = [i for i in range(nrows) if i not in filt]
     if len(filt) == 0:
         if force:
-            LSM.table = Table()
+            LSM.table.remove_rows(range(len(LSM.table)))
+            LSM.hasPatches = False
             if exclusive:
                 logging.info('Removed all sources.')
+                return
             else:
                 logging.info('Kept zero sources.')
-            return 0
+                return
         else:
-            logging.error('Filter would result in an empty sky model.')
-            return 1
+            raise RuntimeError('Filter would result in an empty sky model. '
+                'Use force=True to override.')
     if len(filt) == len(LSM):
         if exclusive:
             logging.info('Removed zero sources.')
         else:
             logging.info('Kept all sources.')
-        return 0
 
     if LSM.hasPatches and aggregate is not None:
         sourcesToKeep = LSM.getPatchNames()[filt]
@@ -269,7 +269,6 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
             logging.info('Kept {0} source{1}.'.format(nRowsNew, plustr))
 
     LSM._info()
-    return 0
 
 
 def parseFilter(filterExpression):
@@ -292,9 +291,8 @@ def parseFilter(filterExpression):
 
     filterParts = filterExpression.split(filterOperStr)
     if len(filterParts) != 2:
-        logging.error("Filter expression must be of the form '<property> "
+        raise ValueError("Filter expression must be of the form '<property> "
             "<operator> <value> <unit>'\nE.g., 'Flux >= 10 Jy'")
-        return (None, None, None, None)
 
     # Get the column to filter on
     filterProp = filterParts[0].strip().lower()
@@ -309,9 +307,8 @@ def parseFilter(filterExpression):
     if allowedColumnDefaults[filterProp] == 'N/A':
         # Column values are strings. Allow only '==' and '!=' operators
         if filterOperStr not in ['=', '==', '!=']:
-            logging.error("Filter operator '{0}' not allow with string columns. "
+            raise ValueError("Filter operator '{0}' not allow with string columns. "
                 "Supported operators are '!=' or '=' (or '==')".format(filterOperStr))
-            return (None, None, None, None)
 
         # Check for a list of values
         if '[' in filterValAndUnits and ']' in filterValAndUnits:
@@ -339,8 +336,7 @@ def parseFilter(filterExpression):
                         parts = [parts[0] + parts[1] + parts[2]] + parts[3:]
             filterVal = float(parts[0])
         except ValueError:
-            logging.error('Filter value not understood.')
-            return (None, None, None, None)
+            raise ValueError('Filter value not understood.')
 
     # Try and get the units (only if filterVal is not a string)
     if type(filterVal) is str:
@@ -413,9 +409,8 @@ def getFilterIndices(colVals, filterOper, filterVal, useRegEx=False):
                 else:
                     filt = [i for i, item in enumerate(colVals) if not fnmatch.fnmatch(item, val)]
             else:
-                logging.error("Filter operator '{0}' not allow with string columns. "
+                raise ValueError("Filter operator '{0}' not allow with string columns. "
                     "Supported operators are '!=' or '=' (or '==')".format(filterOper))
-                return None
         else:
             filtBool = filterOper(colVals, val)
             filt = [f for f in range(len(colVals)) if filtBool[f]]
@@ -432,19 +427,14 @@ def getMaskValues(mask, RARad, DecRad):
     import pyrap.images as pim
     import numpy as np
 
-    try:
-        maskdata = pim.image(mask)
-        maskval = maskdata.getdata()[0][0]
-    except:
-        logging.error("Could not open mask file '{0}'".format(mask))
-        return None
+    maskdata = pim.image(mask)
+    maskval = maskdata.getdata()[0][0]
 
     vals = []
     for raRad, decRad in zip(RARad, DecRad):
         (a, b, _, _) = maskdata.toworld([0, 0, 0, 0])
         (_, _, pixY, pixX) = maskdata.topixel([a, b, decRad, raRad])
         try:
-            # != is a XOR for booleans
             if maskval[pixY, pixX]:
                 vals.append(True)
             else:

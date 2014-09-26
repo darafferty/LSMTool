@@ -24,10 +24,7 @@ logging.debug('Loading ADD module.')
 
 def run(step, parset, LSM):
 
-    try:
-        from ..tableio import allowedColumnNames
-    except:
-        from .tableio import allowedColumnNames
+    from ..tableio import allowedColumnNames
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
     colNamesVals = {}
@@ -41,8 +38,12 @@ def run(step, parset, LSM):
                 pass
             colNamesVals[allowedColumnNames[colName]] = val
 
-
-    result = add(LSM, colNamesVals)
+    try:
+        add(LSM, colNamesVals)
+        result = 0
+    except Exception as e:
+        logging.error(e.message)
+        result = 1
 
     if outFile != '' and result == 0:
         LSM.write(outFile, clobber=True)
@@ -72,9 +73,7 @@ def add(LSM, colNamesVals):
     """
     sourceNames = LSM.getColValues('Name').tolist()
     if colNamesVals['Name'] in sourceNames:
-        logging.error('A source with the same name already exists.')
-        return 1
+        raise ValueError('A source with the same name already exists.')
 
-    result = LSM.setRowValues(colNamesVals)
+    LSM.setRowValues(colNamesVals)
     LSM._info()
-    return result

@@ -181,8 +181,7 @@ class SkyModel(object):
 
         """
         if patchName is not None and sourceName is not None:
-            logging.error('patchName and sourceName cannot both be specified.')
-            return
+            raise ValueError('patchName and sourceName cannot both be specified.')
 
         table = self.table
 
@@ -245,14 +244,14 @@ class SkyModel(object):
             colNameLower = colName.lower()
             if colNameLower not in tableio.allowedColumnNames:
                 if not quiet:
-                    logging.error('Column name "{0}" is not a valid makesourcedb '
+                    raise ValueError('Column name "{0}" is not a valid makesourcedb '
                         'column.'.format(colName))
                 return None
             else:
                 colNameKey = tableio.allowedColumnNames[colNameLower]
             if colNameKey not in self.table.keys() and onlyExisting:
                 if not quiet:
-                    logging.error('Column name "{0}" not found in sky model.'.
+                    raise ValueError('Column name "{0}" not found in sky model.'.
                         format(colName))
                 return None
 
@@ -275,7 +274,7 @@ class SkyModel(object):
                 else:
                     plur = 's'
                 if not quiet:
-                    logging.error("Column name{0} '{1}' not recognized. Ignoring".
+                    logging.warn("Column name{0} '{1}' not recognized. Ignoring.".
                         format(plur, ','.join(badNames)))
             if len(colNameLower) == 0:
                 return None
@@ -479,8 +478,8 @@ class SkyModel(object):
         from tableio import RA2Angle, Dec2Angle
 
         if self.hasPatches:
-            if method is None:
-                return
+            if method not in ['mid', 'mean', 'wmean', 'zero']:
+                raise ValueError('Invalid method parameter')
 
             if patchDict is None:
                 # Delete any previous patch positions
@@ -503,8 +502,7 @@ class SkyModel(object):
                     pos[1] = Dec2Angle(pos[1])
                 self.table.meta[patch] = pos
         else:
-            logging.error('Sky model does not have patches.')
-            return
+            raise RuntimeError('Sky model does not have patches.')
 
 
     def _getXY(self, patchName=None):
@@ -525,6 +523,9 @@ class SkyModel(object):
         """
         from operations_lib import radec2xy, xy2radec
         import numpy as np
+
+        if len(self.table) == 0:
+            return [0], [0], 0, 0
 
         RA = self.getColValues('Ra')
         Dec = self.getColValues('Dec')
@@ -700,15 +701,13 @@ class SkyModel(object):
             return None
         if type(colName) is list:
             if len(colName) > 1:
-                logging.error('Only one column can be specified.')
-                return None
+                raise ValueError('Only one column can be specified.')
             else:
                 colName = colName[0]
 
         allowedFcns = ['sum', 'mean', 'wmean', 'min', 'max']
         if aggregate not in allowedFcns and aggregate is not None:
-            logging.error("Value of parameter 'aggregate' not understood.")
-            return None
+            raise ValueError("Value of parameter 'aggregate' not understood.")
         if aggregate in allowedFcns and self.hasPatches:
             col = self._getAggregatedColumn(colName, aggregate, applyBeam=applyBeam)
         else:
@@ -766,8 +765,7 @@ class SkyModel(object):
             return None
         if type(colName) is list:
             if len(colName) > 1:
-                logging.error('Only one column can be specified.')
-                return
+                raise ValueError('Only one column can be specified.')
             else:
                 colName = colName[0]
 
@@ -790,8 +788,7 @@ class SkyModel(object):
                 mask[indx] = False
         else:
             if len(values) != len(self.table):
-                logging.error('Length of input values must match length of table.')
-                return
+                raise ValueError('Length of input values must match length of table.')
             else:
                 if colName == 'Ra':
                     vals = RA2Angle(values)
@@ -854,8 +851,7 @@ class SkyModel(object):
             table = table.group_by('Patch') # ensure that grouping is preserved
             return table
         else:
-            logging.error("Row name '{0}' not recognized.".format(rowName))
-            return None
+            raise ValueError("Row name '{0}' not recognized.".format(rowName))
 
 
     def getRowIndex(self, rowName):
@@ -899,8 +895,7 @@ class SkyModel(object):
         elif rowName in patchNames:
             return np.where(patchNames == rowName)[0].tolist()
         else:
-            logging.error("Row name '{0}' not recognized.".format(rowName))
-            return None
+            raise ValueError("Row name '{0}' not recognized.".format(rowName))
 
 
     def setRowValues(self, values, mask=None):
@@ -952,8 +947,7 @@ class SkyModel(object):
                             found = True
                             verifiedValues[self._verifyColName(val)] = values[val]
                     if not found:
-                        logging.error("A value must be specified for '{0}'.".format(valReq))
-                        return 1
+                        raise ModelOperationError("A value must be specified for '{0}'.".format(valReq))
 
                 RA = verifiedValues['Ra']
                 Dec = verifiedValues['Dec']
@@ -961,9 +955,7 @@ class SkyModel(object):
                     verifiedValues['Ra'] = RA2Angle(RA)[0].value
                     verifiedValues['Dec'] = Dec2Angle(Dec)[0].value
                 except:
-                    logging.error('RA and/or Dec not understood.')
-                    return 1
-
+                    raise ModelOperationError('RA and/or Dec not understood.')
                 self.table.add_row(verifiedValues)
             else:
                 for colName, value in verifiedValues.iteritems():
@@ -971,18 +963,15 @@ class SkyModel(object):
                     self.table[colName][indx].mask = False
         elif type(dict) is list:
             if len(values) != len(self.table.columns):
-                logging.error('Length of input values must match number of tables.')
-                return 1
+                raise ModelOperationError('Length of input values must match number of tables.')
             else:
                 if indx is not None:
                     self.table.remove_row(indx)
                 self.table.add_row(values, mask=mask)
         else:
-            logging.error('Input row values not understood.')
-            return 1
+            raise ModelOperationError('Input row values not understood.')
 
         self._updateGroups()
-        return 0
 
 
     def getPatchSizes(self, units=None, weight=False, applyBeam=False):
@@ -1085,8 +1074,7 @@ class SkyModel(object):
                 logging.warn("Name{0} '{1}' not recognized. Ignoring.".
                     format(plur, ','.join(badNames)))
             if len(indx) == 0:
-                logging.error("None of the specified names were found.")
-                return None
+                raise ValueError("None of the specified names were found.")
             return indx
         else:
             return None
@@ -1162,8 +1150,7 @@ class SkyModel(object):
         elif aggregate == 'max':
             col = self._getMaxColumn(colName, applyBeam=applyBeam)
         else:
-            logging.error('Aggregation function not understood.'.format(colName))
-            col = None
+            raise ValueError('Aggregation function not understood.'.format(colName))
         return col
 
 
@@ -1202,8 +1189,10 @@ class SkyModel(object):
             DecDeg = self.getColValues('Dec')
 
         flux = col.data
-        vals = attenuate(self.beamMS, flux, RADeg, DecDeg, timeIndx=self.beamTime)
-        if vals is None:
+        try:
+            vals = attenuate(self.beamMS, flux, RADeg, DecDeg, timeIndx=self.beamTime)
+        except Exception as e:
+            logging.warn('{0}. No beam attenuation applied.'.format(e.message))
             return col
 
         col[:] = vals
@@ -1505,9 +1494,8 @@ class SkyModel(object):
             if clobber:
                 os.remove(fileName)
             else:
-                logging.error("The output file '{0}' exists and clobber = False.".
+                raise IOError("The output file '{0}' exists and clobber = False.".
                     format(fileName))
-                return
 
         table = self.table.copy()
 
@@ -1528,14 +1516,17 @@ class SkyModel(object):
         """
         Sends the model to another application using SAMP.
 
-        If no running SAMP hub is detected, one is started. The receiving
-        application must be running before the table is broadcasted.
+        Both the SAMP hub and the receiving application must be running before
+        the table is broadcasted. Examples of SMAP-aware applications are
+        TOPCAT, Aladin, and ds9.
 
         Examples
         --------
         Send the model to TOPCAT. First, start TOPCAT, then run the command::
 
             >>> s.broadcast()
+
+        TOPCAT should then load the table.
 
         """
         import tempfile
@@ -1568,7 +1559,7 @@ class SkyModel(object):
 
 
     def select(self, filterExpression, aggregate=None, applyBeam=False,
-        useRegEx=False, force=False):
+        useRegEx=False, force=True):
         """
         Filters the sky model, keeping all sources that meet the given expression.
 
@@ -1664,7 +1655,7 @@ class SkyModel(object):
 
 
     def remove(self, filterExpression, aggregate=None, applyBeam=None,
-        useRegEx=False, force=False):
+        useRegEx=False, force=True):
         """
         Filters the sky model, removing all sources that meet the given expression.
 
@@ -1914,7 +1905,7 @@ class SkyModel(object):
         Parameters
         ----------
         LSM2 : str or SkyModel object
-            Sky model to concatenate with the parent sky model
+            Secondary sky model to concatenate with the parent sky model
         matchBy : str, optional
             Determines how duplicate sources are determined:
             - 'name' => duplicates are identified by name
@@ -1928,13 +1919,13 @@ class SkyModel(object):
             - 'all' => all duplicates are kept; those with identical names are re-
                 named
             - 'from1' => duplicates kept are those from sky model 1 (the parent)
-            - 'from2' => duplicates kept are those from sky model 2 (LSM2)
+            - 'from2' => duplicates kept are those from sky model 2 (the secondary)
 
         Examples
         --------
         Concatenate two sky models, identifying duplicates by matching to the source
         names. When duplicates are found, keep the source from the parent sky model
-        and discard the duplicate from second sky model (this might be useful when
+        and discard the duplicate from secondary sky model (this might be useful when
         merging two gsm.py sky models that have some overlap)::
 
             >>> LSM2 = lsmtool.load('gsm_sky2.model')
@@ -1942,7 +1933,7 @@ class SkyModel(object):
 
         Concatenate two sky models, identifying duplicates by matching to the source
         positions within a radius of 10 arcsec. When duplicates are found, keep the
-        source from the second sky model and discard the duplicate from the parent
+        source from the secondary sky model and discard the duplicate from the parent
         sky model (this might be useful when replacing parts of a low-resolution
         sky model with a high-resolution one)::
 
