@@ -108,7 +108,10 @@ def plot(LSM, fileName=None):
     # larger than 1000
     s = []
     fluxes = LSM.getColValues('I')
-    minflux = np.min(fluxes[fluxes > 0.0])
+    if len(fluxes[fluxes > 0.0]) == 0:
+        minflux = 0.0
+    else:
+        minflux = np.min(fluxes[fluxes > 0.0])
     for flux in LSM.getColValues('I'):
         if flux > 0.0:
             s.append(min(1000.0, (1.0+2.0*np.log10(flux/minflux))*50.0))
