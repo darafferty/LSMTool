@@ -188,7 +188,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
     else:
         raise ValueError("Could not parse filter.")
 
-    if filterProp is None:
+    if filt is None and filterProp is None:
         raise ValueError('Filter expression not understood')
 
     if filt is None:
