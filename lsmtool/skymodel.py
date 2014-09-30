@@ -1460,6 +1460,7 @@ class SkyModel(object):
                 - 'hdf5'
                 - 'ds9'
                 - 'kvis'
+                - 'casa'
                 - plus all other formats supported by the astropy.table package
         clobber : bool, optional
             If True, an existing file is overwritten.

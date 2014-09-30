@@ -541,7 +541,7 @@ def ds9RegionWriter(table, fileName):
     table : astropy.table.Table object
         Input sky model table
     fileName : str
-        Output ASCII file to which the sky model is written.
+        Output file to which the sky model is written
     """
     regionFile = open(fileName, 'w')
     logging.debug('Writing ds9 region file to {0}'.format(fileName))
@@ -562,15 +562,15 @@ def ds9RegionWriter(table, fileName):
         dec = row['Dec']
         name = row['Name']
         if row['Type'].lower() == 'gaussian':
-            a = row['MajorAxis']/3600.0 # deg
-            b = row['MinorAxis']/3600.0 # deg
+            a = row['MajorAxis'] / 3600.0 # deg
+            b = row['MinorAxis'] / 3600.0 # deg
             pa = row['Orientation'] # degree
 
             # ds9 can't handle 1-D Gaussians, so make sure they are 2-D
-            if a < 1.0/3600.0:
-                a = 1.0/3600.0 # deg
-            if b < 1.0/3600.0:
-                b = 1.0/3600.0 # deg
+            if a < 1.0 / 3600.0:
+                a = 1.0 / 3600.0 # deg
+            if b < 1.0 / 3600.0:
+                b = 1.0 / 3600.0 # deg
             stype = 'GAUSSIAN'
             region = 'ellipse({0}, {1}, {2}, {3}, {4}) # text={{{5}}}\n'.format(ra,
                 dec, a, b, pa+90.0, name)
@@ -593,7 +593,7 @@ def kvisAnnWriter(table, fileName):
     table : astropy.table.Table object
         Input sky model table
     fileName : str
-        Output ASCII file to which the sky model is written.
+        Output file to which the sky model is written
     """
     kvisFile = open(fileName, 'w')
     logging.debug('Writing kvis annotation file to {0}'.format(fileName))
@@ -611,8 +611,8 @@ def kvisAnnWriter(table, fileName):
         name = row['Name']
 
         if row['Type'].lower() == 'gaussian':
-            a = row['MajorAxis']/3600.0 # degree
-            b = row['MinorAxis']/3600.0 # degree
+            a = row['MajorAxis'] / 3600.0 # degree
+            b = row['MinorAxis'] / 3600.0 # degree
             pa = row['Orientation'] # degree
             outLines.append('ELLIPSE W {0} {1} {2} {3} {4}\n'.format(ra, dec, a, b, pa))
         else:
@@ -621,6 +621,50 @@ def kvisAnnWriter(table, fileName):
 
     kvisFile.writelines(outLines)
     kvisFile.close()
+
+
+def casaRegionWriter(table, fileName):
+    """
+    Writes model to a casa region file.
+
+    Parameters
+    ----------
+    table : astropy.table.Table object
+        Input sky model table
+    fileName : str
+        Output file to which the sky model is written
+     """
+    casaFile = open(fileName, 'w')
+    logging.debug('Writing CASA box file to {0}'.format(fileName))
+
+    outLines = []
+    outLines.append('#CRTF0\n')
+    outLines.append('global coord=J2000\n\n')
+
+    # Make sure all columns have the correct units
+    for colName in table.columns:
+        units = allowedColumnUnits[colName.lower()]
+        if units is not None:
+            table[colName].convert_unit_to(units)
+
+    minSize = 30.0 / 3600.0 # min size in degrees
+    for row in table:
+        ra = row['Ra']
+        dec = row['Dec']
+        name = row['Name']
+
+        if row['Type'].lower() == 'gaussian':
+            a = row['MajorAxis'] / 3600.0 # degree
+            b = row['MinorAxis'] / 3600.0 # degree
+            pa = row['Orientation'] # degree
+            outLines.append('ellipse[[{0}deg, {1}deg], [{2}deg, {3}deg], '
+                '{4}deg]\n'.format(ra, dec, a, b, pa))
+        else:
+            outLines.append('ellipse[[{0}deg, {1}deg], [{2}deg, {3}deg], '
+                '{4}deg]\n'.format(ra, dec, minSize, minSize, 0.0))
+
+    casaFile.writelines(outLines)
+    casaFile.close()
 
 
 def broadcastTable(fileName):
@@ -662,4 +706,5 @@ registry.register_identifier('makesourcedb', Table, skyModelIdentify)
 registry.register_writer('makesourcedb', Table, skyModelWriter)
 registry.register_writer('ds9', Table, ds9RegionWriter)
 registry.register_writer('kvis', Table, kvisAnnWriter)
+registry.register_writer('casa', Table, casaRegionWriter)
 
