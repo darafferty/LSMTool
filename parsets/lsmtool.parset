@@ -25,6 +25,7 @@ LSMTool.Steps.group.Algorithm = tessellate # one of tessellate, cluster, single,
 LSMTool.Steps.group.TargetFlux = 10.0 Jy # target total flux of patches (tessellate only)
 LSMTool.Steps.group.Root = Patch # root to use for patch names
 LSMTool.Steps.group.ApplyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
+LSMTool.Steps.setpos.Method = mid # set patch positions by one of mid, mean, or wmean
 LSMTool.Steps.group.OutFile = out_sky_model.sky
 
 LSMTool.Steps.ungroup.Operation = UNGROUP # Remove patches
@@ -66,3 +67,4 @@ LSMTool.Steps.setpos.OutFile = out_sky_model.sky
 
 LSMTool.Steps.plot.Operation = PLOT # Plot sky model
 LSMTool.Steps.plot.OutFile = out_sky_model.pdf
+LSMTool.Steps.plot.LabelBy = Patch

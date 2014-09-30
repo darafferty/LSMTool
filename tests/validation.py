@@ -32,9 +32,9 @@ s.move('Patch_1', position =  ['16:04:16.2288', '58.03.06.912'])
 print('Merge patches Patch_0 and Patch_2')
 s.merge(['Patch_0', 'Patch_2'], name = 'merged_patch')
 
-print('Set patch positions to midpoint of patch and write final model to file')
+print('Reset patch positions to midpoint of patch and write final model to file')
 s.setPatchPositions(method='mid')
 s.write('tests/final.sky', clobber=True)
 
 print('Plot the sky model')
-s.plot('tests/plot.pdf')
+s.plot('tests/plot.pdf', labelBy='Patch')

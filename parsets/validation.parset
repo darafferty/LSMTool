@@ -49,7 +49,7 @@ LSMTool.Steps.merge.Operation = MERGE
 LSMTool.Steps.merge.Patches = [Patch_0, Patch_2]
 LSMTool.Steps.merge.Name = merged_patch
 
-# Set patch positions to midpoint of patch and write final model to file
+# Reset patch positions to midpoint of patch and write final model to file
 LSMTool.Steps.setpos.Operation = SETPATCHPOSITIONS
 LSMTool.Steps.setpos.Method = mid
 LSMTool.Steps.setpos.OutFile = tests/final.sky
@@ -57,3 +57,4 @@ LSMTool.Steps.setpos.OutFile = tests/final.sky
 # Plot the sky model
 LSMTool.Steps.plot.Operation = PLOT
 LSMTool.Steps.plot.OutFile = tests/plot.pdf
+LSMTool.Steps.plot.LabelBy = Patch

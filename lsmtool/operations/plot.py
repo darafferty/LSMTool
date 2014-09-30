@@ -25,9 +25,12 @@ logging.debug('Loading PLOT module.')
 def run( step, parset, LSM ):
 
     outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
+    labelBy = parset.getString('.'.join(["LSMTool.Steps", step, "LabelBy"]), '' )
 
     if outFile == '':
         outFile = None
+    if labelBy == '':
+        labelBy = None
 
     try:
         plot(LSM, outFile)
@@ -51,6 +54,9 @@ def plot(LSM, fileName=None, labelBy=None):
     ----------
     fileName : str, optional
         If given, the plot is saved to a file instead of displayed.
+    labelBy : str, optional
+        One of 'Name' or 'Patch': label points using source names ('Name') or
+        patch names ('Patch')
 
     Examples:
     ---------
