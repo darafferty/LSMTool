@@ -39,7 +39,7 @@ def run( step, parset, LSM ):
     return 0
 
 
-def plot(LSM, fileName=None):
+def plot(LSM, fileName=None, labelBy=None):
     """
     Shows a simple plot of the sky model.
 
@@ -154,6 +154,27 @@ def plot(LSM, fileName=None):
     else:
         plt.xlabel("RA (arb. units)")
         plt.ylabel("Dec (arb. units)")
+
+    if labelBy is not None:
+        if labelBy.lower() == 'name':
+            labels = LSM.getColValues('name')
+            xls = x
+            yls = y
+        elif labelBy.lower() == 'patch':
+            if LSM.hasPatches:
+                labels = LSM.getPatchNames()
+                xls = xp
+                yls = yp
+            else:
+                labels = LSM.getColValues('name')
+                xls = x
+                yls = y
+        else:
+            raise ValueError("The lableBy parameter must be one of 'Name' or "
+                "'Patch'.")
+        for label, xl, yl in zip(labels, xls, yls):
+            plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
+                'offset points', ha='right', va='bottom')
 
     # Define coodinate formater to show RA and Dec under mouse pointer
     RAformatter = FuncFormatter(RAtickformatter)
