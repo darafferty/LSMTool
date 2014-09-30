@@ -37,4 +37,4 @@ s.setPatchPositions(method='mid')
 s.write('tests/final.sky', clobber=True)
 
 print('Plot the sky model')
-s.plot('tests/plot.pdf', labelBy='Patch')
+s.plot('tests/plot.pdf', labelBy='patch')

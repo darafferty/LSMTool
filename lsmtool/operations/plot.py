@@ -55,8 +55,8 @@ def plot(LSM, fileName=None, labelBy=None):
     fileName : str, optional
         If given, the plot is saved to a file instead of displayed.
     labelBy : str, optional
-        One of 'Name' or 'Patch': label points using source names ('Name') or
-        patch names ('Patch')
+        One of 'source' or 'patch': label points using source names ('source') or
+        patch names ('patch')
 
     Examples:
     ---------
@@ -162,7 +162,7 @@ def plot(LSM, fileName=None, labelBy=None):
         plt.ylabel("Dec (arb. units)")
 
     if labelBy is not None:
-        if labelBy.lower() == 'name':
+        if labelBy.lower() == 'source':
             labels = LSM.getColValues('name')
             xls = x
             yls = y
@@ -176,8 +176,8 @@ def plot(LSM, fileName=None, labelBy=None):
                 xls = x
                 yls = y
         else:
-            raise ValueError("The lableBy parameter must be one of 'Name' or "
-                "'Patch'.")
+            raise ValueError("The lableBy parameter must be one of 'source' or "
+                "'patch'.")
         for label, xl, yl in zip(labels, xls, yls):
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')

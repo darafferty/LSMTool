@@ -57,4 +57,4 @@ LSMTool.Steps.setpos.OutFile = tests/final.sky
 # Plot the sky model
 LSMTool.Steps.plot.Operation = PLOT
 LSMTool.Steps.plot.OutFile = tests/plot.pdf
-LSMTool.Steps.plot.LabelBy = Patch
+LSMTool.Steps.plot.LabelBy = patch
