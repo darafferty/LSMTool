@@ -30,9 +30,10 @@ def run(step, parset, LSM):
     targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "TargetFlux"]), '1.0 Jy' )
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 100 )
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), False )
+    method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), 'mid' )
 
     try:
-        group(LSM, algorithm, targetFlux, numClusters, applyBeam, root)
+        group(LSM, algorithm, targetFlux, numClusters, applyBeam, root, method)
         result = 0
     except Exception as e:
         logging.error(e.message)
@@ -46,9 +47,9 @@ def run(step, parset, LSM):
 
 
 def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
-    root='Patch'):
+    root='Patch', method='mid'):
     """
-    Groups sources into patches
+    Groups sources into patches.
 
     Parameters
     ----------
@@ -78,6 +79,13 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
         Root string from which patch names are constructed (when algorithm =
         'single', 'cluster', or 'tesselate'). Patch names will be 'root_INDX',
         where INDX is an integer ranging from (0:nPatches).
+    method : None or str, optional
+        This parameter specifies the method used to set the patch positions:
+        - 'mid' => the position is set to the midpoint of the patch
+        - 'mean' => the positions is set to the mean RA and Dec of the patch
+        - 'wmean' => the position is set to the flux-weighted mean RA and
+        Dec of the patch
+        - 'zero' => set all positions to [0.0, 0.0]
 
     Examples
     --------
@@ -144,8 +152,9 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
     else:
         raise ValueError('Grouping alogrithm not understood.')
 
-    # Update table grouping
+    # Update table grouping and set default patch positions
     LSM._updateGroups()
+    LSM.setPatchPositions(method=method, applyBeam=applyBeam)
     LSM._info()
     return 0
 

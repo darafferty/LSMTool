@@ -1752,7 +1752,7 @@ class SkyModel(object):
 
 
     def group(self, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
-        root='Patch'):
+        root='Patch', method='mid'):
         """
         Groups sources into patches.
 
@@ -1784,6 +1784,13 @@ class SkyModel(object):
             Root string from which patch names are constructed (when algorithm =
             'single', 'cluster', or 'tesselate'). Patch names will be 'root_INDX',
             where INDX is an integer ranging from (0:nPatches).
+        method : None or str, optional
+            This parameter specifies the method used to set the patch positions:
+            - 'mid' => the position is set to the midpoint of the patch
+            - 'mean' => the positions is set to the mean RA and Dec of the patch
+            - 'wmean' => the position is set to the flux-weighted mean RA and
+            Dec of the patch
+            - 'zero' => set all positions to [0.0, 0.0]
 
         Examples
         --------
@@ -1794,7 +1801,8 @@ class SkyModel(object):
 
         """
         operations.group.group(self, algorithm, targetFlux=targetFlux,
-            numClusters=numClusters, applyBeam=applyBeam, root=root)
+            numClusters=numClusters, applyBeam=applyBeam, root=root,
+            method=method)
 
 
     def transfer(self, patchSkyModel):
@@ -1948,7 +1956,7 @@ class SkyModel(object):
             radius=radius, keep=keep, inheritPatches=inheritPatches)
 
 
-    def plot(self, fileName=None):
+    def plot(self, fileName=None, labelBy=None):
         """
         Shows a simple plot of the sky model.
 
@@ -1972,4 +1980,4 @@ class SkyModel(object):
             >>> s.plot('sky_plot.pdf')
 
         """
-        operations.plot.plot(self, fileName=fileName)
+        operations.plot.plot(self, fileName=fileName, labelBy=labelBy)
