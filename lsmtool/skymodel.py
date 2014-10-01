@@ -866,7 +866,7 @@ class SkyModel(object):
         Returns
         -------
         indices : list
-            List of indices. None is returned if the source is not found.
+            List of indices. ValueError is raised if the source is not found.
 
         Examples
         --------
@@ -1806,7 +1806,7 @@ class SkyModel(object):
             method=method)
 
 
-    def transfer(self, patchSkyModel):
+    def transfer(self, patchSkyModel, matchBy='name', radius=0.1):
         """
         Transfer patches from the input sky model.
 
@@ -1828,7 +1828,8 @@ class SkyModel(object):
             >>> s.setPatchPositions(method='mid')
 
         """
-        operations.transfer.transfer(self, patchSkyModel)
+        operations.transfer.transfer(self, patchSkyModel, matchBy=matchBy,
+            radius=radius)
 
 
     def move(self, name, position=None, shift=None):

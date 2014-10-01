@@ -88,7 +88,8 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
 
 
 def radec2xy(RA, Dec, refRA=None, refDec=None):
-    """Returns x, y for input ra, dec.
+    """
+    Returns x, y for input ra, dec.
 
     Note that the reference RA and Dec must be the same in calls to both
     radec2xy() and xy2radec() if matched pairs of (x, y) <=> (RA, Dec) are
@@ -133,7 +134,8 @@ def radec2xy(RA, Dec, refRA=None, refDec=None):
 
 
 def xy2radec(x, y, refRA=0.0, refDec=0.0):
-    """Returns x, y for input ra, dec.
+    """
+    Returns x, y for input ra, dec.
 
     Note that the reference RA and Dec must be the same in calls to both
     radec2xy() and xy2radec() if matched pairs of (x, y) <=> (RA, Dec) are
@@ -174,7 +176,22 @@ def xy2radec(x, y, refRA=0.0, refDec=0.0):
 
 
 def makeWCS(refRA, refDec):
-    """Makes simple WCS object"""
+    """
+    Makes simple WCS object.
+
+    Parameters
+    ----------
+    refRA : float
+        Reference RA in degrees
+    refDec : float
+        Reference Dec in degrees
+
+    Returns
+    -------
+    w : astropy.wcs.WCS object
+        A simple TAN-projection WCS object for specified reference position
+
+    """
     from astropy.wcs import WCS
     import numpy as np
 
@@ -186,4 +203,58 @@ def makeWCS(refRA, refDec):
     w.wcs.set_pv([(2, 1, 45.0)])
 
     return w
+
+
+def matchSky(LSM1, LSM2, radius=0.1):
+    """
+    Matches two sky models by position.
+
+    Parameters
+    ----------
+    LSM1 : SkyModel object
+        Sky model for which match indices are desired
+    LSM2 : SkyModel object
+        Sky model to match against
+    radius : float or str, optional
+        Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
+        for matching when matchBy='position'
+
+    Returns
+    -------
+    matches1, matches2 : np.array, np.array
+        matches1 is the array of indices of LSM1 that have matches in LSM2
+        within the specified radius. matches2 is the array of indices of LSM2
+        for the same sources.
+
+    """
+
+    from astropy.coordinates import SkyCoord, Angle
+    from astropy import units as u
+    from distutils.version import StrictVersion
+    import numpy as np
+    import scipy
+    if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
+        logging.debug('The installed version of SciPy contains a bug that affects catalog matching. '
+            'Falling back on (slower) matching script.')
+        from operations._matching import match_coordinates_sky
+    else:
+        from astropy.coordinates.matching import match_coordinates_sky
+
+    catalog1 = SkyCoord(LSM1.getColValues('Ra'), LSM1.getColValues('Dec'),
+        unit=(u.degree, u.degree), frame='fk5')
+    catalog2 = SkyCoord(LSM2.getColValues('Ra'), LSM2.getColValues('Dec'),
+        unit=(u.degree, u.degree), frame='fk5')
+    idx, d2d, d3d = match_coordinates_sky(catalog1, catalog2)
+
+    try:
+        radius = float(radius)
+    except ValueError:
+        pass
+    if type(radius) is float:
+        radius = '{0} degree'.format(radius)
+    radius = Angle(radius).degree
+    matches1 = np.where(d2d.value <= radius)
+    matches2 = idx[matches1]
+
+    return matches1, matches2
 

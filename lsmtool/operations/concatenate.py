@@ -102,18 +102,8 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
 
     """
     from astropy.table import vstack, Column
-    from astropy.coordinates import SkyCoord, Angle
-    from astropy import units as u
+    from ..operations_lib import matchSky
     import numpy as np
-    from .. import skymodel
-    from distutils.version import StrictVersion
-    import scipy
-    if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
-        logging.debug('The installed version of SciPy contains a bug that affects catalog matching. '
-            'Falling back on (slower) matching script.')
-        from ._matching import match_coordinates_sky
-    else:
-        from astropy.coordinates.matching import match_coordinates_sky
 
     if type(LSM2) is str:
         LSM2 = skymodel.SkyModel(LSM2)
@@ -180,27 +170,12 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
     if matchBy.lower() == 'name':
         LSM1.table = vstack([table1, table2])
     elif matchBy.lower() == 'position':
-        # Create catalogs
-        catalog1 = SkyCoord(LSM1.getColValues('Ra'), LSM1.getColValues('Dec'),
-            unit=(u.degree, u.degree), frame='fk5')
-        catalog2 = SkyCoord(LSM2.getColValues('Ra'), LSM2.getColValues('Dec'),
-            unit=(u.degree, u.degree), frame='fk5')
-        idx, d2d, d3d = match_coordinates_sky(catalog1, catalog2)
-
-        try:
-            radius = float(radius)
-        except ValueError:
-            pass
-        if type(radius) is float:
-            radius = '{0} degree'.format(radius)
-        radius = Angle(radius).degree
-        matches = np.where(d2d.value <= radius)
-
+        matches1, matches2 = matchSky(LSM1, LSM2, radius=radius)
         matchCol1 = np.array(range(len(LSM1)))
         matchCol2 = np.array(range(len(LSM2))) + len(LSM1)
 
         # Set values to be the same for the matches
-        matchCol2[idx[matches]] = matchCol1[matches]
+        matchCol2[matches2] = matchCol1[matches1]
 
         # Now add columns and stack
         col1 = Column(name='match', data=matchCol1)

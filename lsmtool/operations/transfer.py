@@ -41,7 +41,7 @@ def run(step, parset, LSM):
     return result
 
 
-def transfer(LSM, patchSkyModel):
+def transfer(LSM, patchSkyModel, matchBy='name', radius=0.1):
     """
     Transfer patches from the input sky model.
 
@@ -54,17 +54,34 @@ def transfer(LSM, patchSkyModel):
     ----------
     patchSkyModel : str or SkyModel object
         Input sky model from which to transfer patches.
+    matchBy : str, optional
+        Determines how duplicate sources are determined:
+        - 'name' => duplicates are identified by name
+        - 'position' => duplicates are identified by radius. Sources within the
+            radius specified by the radius parameter are considered duplicates
+    radius : float or str, optional
+        Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
+        for matching when matchBy='position'
 
     Examples
     --------
-    Transfer patches from one sky model to another and set their positions::
+    Transfer patches from one sky model to another by matching to the source
+    names and set their positions::
 
         >>> LSM = lsmtool.load('sky.model')
         >>> transfer(LSM, 'master_sky.model')
         >>> setPatchPositions(LSM, method='mid')
 
+    Transfer patches by matching sources that lie within 10 arcsec of one
+    another::
+
+        >>> LSM = lsmtool.load('sky.model')
+        >>> transfer(LSM, 'master_sky.model', matchBy='position', radius='10.0 arcsec')
+        >>> setPatchPositions(LSM, method='mid')
+
     """
     from ..skymodel import SkyModel
+    from ..operations_lib import matchSky
 
     if len(LSM) == 0:
         logging.error('Sky model is empty.')
@@ -74,23 +91,37 @@ def transfer(LSM, patchSkyModel):
         masterLSM = SkyModel(patchSkyModel)
     else:
         masterLSM = patchSkyModel
-    masterNames = masterLSM.getColValues('Name').tolist()
-    masterPatchNames = masterLSM.getColValues('Patch').tolist()
 
     # Group LSM by source. This ensures that any sources not in the master
     # sky model are given a patch of their own
-    logging.debug('Grouping master sky model by one patch per source.')
+    logging.debug('Grouping master sky model by one patch per source...')
     LSM.group('every')
+    patchNames = LSM.getColValues('Patch')
+    masterPatchNames = masterLSM.getColValues('Patch')
 
-    logging.debug('Transferring patches.')
-    names = LSM.getColValues('Name')
-    patchNames = LSM.getColValues('Patch').tolist()
+    if matchBy.lower() == 'name':
+        logging.debug('Transferring patches by matching names...')
+        names = LSM.getColValues('Name')
+        masterNames = masterLSM.getColValues('Name')
 
-    toIndx = [i for i in range(len(LSM)) if names[i] in masterNames]
-    masterIndx = [masterNames.index(name) for name in names[toIndx]]
-    for i, indx in enumerate(toIndx):
-        patchNames[indx] = masterPatchNames[masterIndx[i]]
+        lrIntr = lambda l, r: list(set(l).intersection(r))
+        commonNames = lrIntr(names.tolist(), masterNames.tolist())
+        nMissing = len(names) - len(commonNames)
 
-    LSM.setColValues('Patch', patchNames)
+        for name in commonNames:
+            indx = LSM.getRowIndex(name)
+            masterIndx = masterLSM.getRowIndex(name)
+            LSM.table['Patch'][indx] = masterLSM.table['Patch'][masterIndx]
+
+    elif matchBy.lower() == 'position':
+        logging.debug('Transferring patches by matching positions...')
+        matches1, matches2 = matchSky(LSM, masterLSM, radius=radius)
+        nMissing = len(LSM) - len(matches1[0])
+
+        # Set patch names to be the same for the matches
+        LSM.table['Patch'][matches1] = masterLSM.table['Patch'][matches2]
+
+    logging.debug('Number of sources not present in patchSkyModel: {0}'.format(
+        nMissing))
     LSM._updateGroups()
     LSM._info()

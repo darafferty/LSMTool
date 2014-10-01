@@ -638,7 +638,7 @@ def casaRegionWriter(table, fileName):
     logging.debug('Writing CASA box file to {0}'.format(fileName))
 
     outLines = []
-    outLines.append('#CRTF0\n')
+    outLines.append('#CRTFv0\n')
     outLines.append('global coord=J2000\n\n')
 
     # Make sure all columns have the correct units
@@ -647,7 +647,7 @@ def casaRegionWriter(table, fileName):
         if units is not None:
             table[colName].convert_unit_to(units)
 
-    minSize = 30.0 / 3600.0 # min size in degrees
+    minSize = 10.0 / 3600.0 # min size in degrees
     for row in table:
         ra = row['Ra']
         dec = row['Dec']
@@ -655,7 +655,12 @@ def casaRegionWriter(table, fileName):
 
         if row['Type'].lower() == 'gaussian':
             a = row['MajorAxis'] / 3600.0 # degree
+            if a < minSize:
+                a = minSize
             b = row['MinorAxis'] / 3600.0 # degree
+            if b < minSize:
+                b = minSize
+
             pa = row['Orientation'] # degree
             outLines.append('ellipse[[{0}deg, {1}deg], [{2}deg, {3}deg], '
                 '{4}deg]\n'.format(ra, dec, a, b, pa))
