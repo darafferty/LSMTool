@@ -248,6 +248,8 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
         if exclusive:
             logging.info('Removed {0} patch{1}.'.format(nPatchesOrig-nPatchesNew, plustr))
         else:
+            if nPatchesNew > 1:
+                plustr = 'es'
             logging.info('Kept {0} patch{1}.'.format(nPatchesNew, plustr))
     else:
         nRowsOrig = len(LSM)
