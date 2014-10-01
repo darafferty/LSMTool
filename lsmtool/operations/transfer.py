@@ -98,6 +98,7 @@ def transfer(LSM, patchSkyModel, matchBy='name', radius=0.1):
     LSM.group('every')
     patchNames = LSM.getColValues('Patch')
     masterPatchNames = masterLSM.getColValues('Patch')
+    table = LSM.table.copy()
 
     if matchBy.lower() == 'name':
         logging.debug('Transferring patches by matching names...')
@@ -111,7 +112,7 @@ def transfer(LSM, patchSkyModel, matchBy='name', radius=0.1):
         for name in commonNames:
             indx = LSM.getRowIndex(name)
             masterIndx = masterLSM.getRowIndex(name)
-            LSM.table['Patch'][indx] = masterLSM.table['Patch'][masterIndx]
+            table['Patch'][indx] = masterLSM.table['Patch'][masterIndx]
 
     elif matchBy.lower() == 'position':
         logging.debug('Transferring patches by matching positions...')
@@ -119,9 +120,10 @@ def transfer(LSM, patchSkyModel, matchBy='name', radius=0.1):
         nMissing = len(LSM) - len(matches1[0])
 
         # Set patch names to be the same for the matches
-        LSM.table['Patch'][matches1] = masterLSM.table['Patch'][matches2]
+        table['Patch'][matches1] = masterLSM.table['Patch'][matches2]
 
     logging.debug('Number of sources not present in patchSkyModel: {0}'.format(
         nMissing))
+    LSM.table = table
     LSM._updateGroups()
     LSM._info()

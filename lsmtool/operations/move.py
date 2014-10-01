@@ -89,21 +89,21 @@ def move(LSM, name, position=None, shift=None):
         raise ValueError("One of positon or shift must be specified.")
 
     sourceNames = LSM.getColValues('Name')
-
+    table = LSM.table.copy()
     if name in sourceNames:
         indx = LSM._getNameIndx(name)
         if position is not None:
             try:
-                LSM.table['Ra'][indx] = tableio.RA2Angle(position[0])[0]
-                LSM.table['Dec'][indx] = tableio.Dec2Angle(position[1])[0]
+                table['Ra'][indx] = tableio.RA2Angle(position[0])[0]
+                table['Dec'][indx] = tableio.Dec2Angle(position[1])[0]
             except Exception as e:
                 raise ValueError('Could not parse position: {0}'.format(e.message))
         if shift is not None:
             RA = LSM.table['Ra'][indx] + tableio.RA2Angle(shift[0])
             Dec = LSM.table['Dec'][indx] + tableio.Dec2Angle(shift[1])
-            LSM.table['Ra'][indx] = tableio.RA2Angle(RA)[0]
-            LSM.table['Dec'][indx] = tableio.Dec2Angle(Dec)[0]
-        return 0
+            table['Ra'][indx] = tableio.RA2Angle(RA)[0]
+            table['Dec'][indx] = tableio.Dec2Angle(Dec)[0]
+        LSM.table = table
     elif LSM.hasPatches:
         patchNames = LSM.getPatchNames()
         if name in patchNames:
@@ -113,12 +113,12 @@ def move(LSM, name, position=None, shift=None):
                     position[1] = tableio.Dec2Angle(position[1])[0]
                 except Exception as e:
                     raise ValueError('Could not parse position: {0}'.format(e.message))
-                LSM.table.meta[name] = position
+                table.meta[name] = position
             if shift is not None:
                 position = LSM.table.meta[name]
-                LSM.table.meta[name] = [position[0] + tableio.RA2Angle(shift[0]),
+                table.meta[name] = [position[0] + tableio.RA2Angle(shift[0]),
                     position[1] + tableio.Dec2Angle(shift[1])]
-            return 0
+            LSM.table = table
         else:
             raise ValueError("Could not find patch '{0}'.".format(name))
     else:

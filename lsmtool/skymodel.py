@@ -842,6 +842,8 @@ class SkyModel(object):
         """
         sourceNames = self.getColValues('Name')
         patchNames = self.getPatchNames()
+        if patchNames is None:
+            patchNames = []
         if rowName in sourceNames:
             indx = self._getNameIndx(rowName)
             return self.table.filled()[indx]
@@ -898,7 +900,7 @@ class SkyModel(object):
             raise ValueError("Row name '{0}' not recognized.".format(rowName))
 
 
-    def setRowValues(self, values, mask=None):
+    def setRowValues(self, values, mask=None, returnVerified=False):
         """
         Sets values for a single row.
 
@@ -947,7 +949,7 @@ class SkyModel(object):
                             found = True
                             verifiedValues[self._verifyColName(val)] = values[val]
                     if not found:
-                        raise ModelOperationError("A value must be specified for '{0}'.".format(valReq))
+                        raise ValueError("A value must be specified for '{0}'.".format(valReq))
 
                 RA = verifiedValues['Ra']
                 Dec = verifiedValues['Dec']
@@ -955,7 +957,7 @@ class SkyModel(object):
                     verifiedValues['Ra'] = RA2Angle(RA)[0].value
                     verifiedValues['Dec'] = Dec2Angle(Dec)[0].value
                 except:
-                    raise ModelOperationError('RA and/or Dec not understood.')
+                    raise ValueError('RA and/or Dec not understood.')
                 self.table.add_row(verifiedValues)
             else:
                 for colName, value in verifiedValues.iteritems():
@@ -963,15 +965,17 @@ class SkyModel(object):
                     self.table[colName][indx].mask = False
         elif type(dict) is list:
             if len(values) != len(self.table.columns):
-                raise ModelOperationError('Length of input values must match number of tables.')
+                raise ValueError('Length of input values must match number of tables.')
             else:
                 if indx is not None:
                     self.table.remove_row(indx)
                 self.table.add_row(values, mask=mask)
         else:
-            raise ModelOperationError('Input row values not understood.')
+            raise ValueError('Input row values not understood.')
 
         self._updateGroups()
+        if returnVerified:
+            return verifiedValues
 
 
     def getPatchSizes(self, units=None, weight=False, applyBeam=False):

@@ -69,11 +69,14 @@ def merge(LSM, patches, name=None):
     if name is None:
         name = patches[0]
 
+    table = LSM.table.copy()
     for patchName in patches:
         indices = LSM.getRowIndex(patchName)
         if indices is None:
             raise ValueError("Could not find patch '{0}'.".format(patchName))
         else:
-            LSM.table['Patch'][indices] = name
+            table['Patch'][indices] = name
+
+    LSM.table = table
     LSM._updateGroups()
     LSM._info()
