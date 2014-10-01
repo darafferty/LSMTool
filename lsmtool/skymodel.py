@@ -914,6 +914,9 @@ class SkyModel(object):
         mask : list or array of bools, optional
             If values is a list or array, a mask can be specified (True means
             the value is masked).
+        returnVerified : bool, optional
+            If True, the values are verified and returned, allowing them to be
+            passed to table.add_row().
 
         Examples
         --------
