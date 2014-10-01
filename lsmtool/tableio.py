@@ -250,7 +250,7 @@ def skyModelReader(fileName):
                         maxLen = len(specEntry)
             except:
                 pass
-        logging.debug('Maximum number of spectral index terms in model: {0}'.format(maxLen))
+        logging.debug('Maximum number of spectral-index terms in model: {0}'.format(maxLen))
         for l in specOld:
             try:
                 if type(l) is float or type(l) is int:

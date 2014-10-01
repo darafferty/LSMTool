@@ -541,11 +541,14 @@ class SkyModel(object):
             ymid = min(y) + (max(y) - min(y)) / 2.0
             xind = np.argsort(x)
             yind = np.argsort(y)
-            midxind = np.where(np.array(x)[xind] > xmid)[0][0]
-            midyind = np.where(np.array(y)[yind] > ymid)[0][0]
-            midRA = RA[xind[midxind]]
-            midDec = Dec[yind[midyind]]
-            x, y  = radec2xy(RA, Dec, midRA, midDec)
+            try:
+                midxind = np.where(np.array(x)[xind] > xmid)[0][0]
+                midyind = np.where(np.array(y)[yind] > ymid)[0][0]
+                midRA = RA[xind[midxind]]
+                midDec = Dec[yind[midyind]]
+                x, y  = radec2xy(RA, Dec, midRA, midDec)
+            except IndexError:
+                pass
         else:
             midRA = RA[0]
             midDec = Dec[0]
