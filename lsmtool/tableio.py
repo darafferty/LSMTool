@@ -508,8 +508,8 @@ def rowStr(row, metaDict):
                 hasfillVal = False
             if type(d) is np.ndarray:
                 dlist = d.tolist()
-                # Blank the value if it's equal to fill or default values
-                if (hasfillVal and dlist == fillVal) or (not hasfillVal and dlist == defaultVal):
+                # Blank the value if it's equal to fill values
+                if hasfillVal and dlist == fillVal:
                     dlist = []
                 # Remove blanked values
                 if len(dlist) > 0:
