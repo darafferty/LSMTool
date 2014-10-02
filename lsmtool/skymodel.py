@@ -548,7 +548,8 @@ class SkyModel(object):
                 midDec = Dec[yind[midyind]]
                 x, y  = radec2xy(RA, Dec, midRA, midDec)
             except IndexError:
-                pass
+                midRA = RA[0]
+                midDec = Dec[0]
         else:
             midRA = RA[0]
             midDec = Dec[0]
