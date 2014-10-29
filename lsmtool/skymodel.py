@@ -884,8 +884,8 @@ class SkyModel(object):
         Get row indices for the patch 'bin1' and verify the patch name::
 
             >>> ind = s.getRowIndex('bin1')
-            >>> print(s.getPatchNames()[ind])
-            ['bin1' 'bin1']
+            >>> print(s.getColValues('patch')[ind])
+            ['bin1', 'bin1', 'bin1']
 
         """
         import numpy as np
@@ -1941,6 +1941,9 @@ class SkyModel(object):
                 named
             - 'from1' => duplicates kept are those from sky model 1 (the parent)
             - 'from2' => duplicates kept are those from sky model 2 (the secondary)
+        inheritPatches : bool, optional
+            If True, duplicates inherit the patch name from the parent sky model. If
+            False, duplicates keep their own patch names.
 
         Examples
         --------
