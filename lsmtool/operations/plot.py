@@ -147,6 +147,9 @@ def plot(LSM, fileName=None, labelBy=None):
     if LSM.hasPatches:
         RAp, Decp = LSM.getPatchPositions(asArray=True)
         goodInd = np.where( (RAp != 0.0) & (Decp != 0.0) )
+        if len(goodInd[0]) < len(RAp):
+            logging.info('Some patch positions are unset. Run setPatchPositions() '
+                'before plotting to see patch positions and patch names.')
         xp, yp = radec2xy(RAp[goodInd], Decp[goodInd], midRA, midDec)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
 
