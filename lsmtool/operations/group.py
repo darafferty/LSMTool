@@ -138,9 +138,14 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
         f = LSM.getColValues('I', units=units, applyBeam=applyBeam)
         vobin = _tessellate.bin2D(np.array(x), np.array(y), f,
             target_flux=targetFlux)
-        vobin.bin_voronoi()
-        patchCol = _tessellate.bins2Patches(vobin, root=root)
-        LSM.setColValues('Patch', patchCol, index=2)
+        try:
+            vobin.bin_voronoi()
+            patchCol = _tessellate.bins2Patches(vobin, root=root)
+            LSM.setColValues('Patch', patchCol, index=2)
+        except ValueError:
+            # Catch error in some cases with high target flux relative to
+            # total model flux
+            addSingle(LSM, root+'_0')
 
     elif os.path.exists(algorithm):
         # Mask image
