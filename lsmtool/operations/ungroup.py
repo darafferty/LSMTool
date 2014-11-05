@@ -19,7 +19,8 @@
 
 import logging
 
-logging.debug('Loading UNGROUP module.')
+log = logging.getLogger('LSMTool.UNGROUP')
+log.debug('Loading UNGROUP module.')
 
 
 def run(step, parset, LSM):
@@ -30,7 +31,7 @@ def run(step, parset, LSM):
         LSM.ungroup()
         result = 0
     except Exception as e:
-        logging.error(e.message)
+        log.error(e.message)
         result = 1
 
     # Write to outFile

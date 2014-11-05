@@ -19,7 +19,8 @@
 
 import logging
 
-logging.debug('Loading SELECT module.')
+log = logging.getLogger('LSMTool.SELECT')
+log.debug('Loading SELECT module.')
 
 
 def run(step, parset, LSM):
@@ -38,7 +39,7 @@ def run(step, parset, LSM):
         select(LSM, filterExpression, aggregate=aggregate, applyBeam=applyBeam)
         result = 0
     except Exception as e:
-        logging.error(e.message)
+        log.error(e.message)
         result = 1
 
     # Write to outFile

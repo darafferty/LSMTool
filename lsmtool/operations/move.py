@@ -19,7 +19,8 @@
 
 import logging
 
-logging.debug('Loading GROUP module.')
+log = logging.getLogger('LSMTool.MOVE')
+log.debug('Loading MOVE module.')
 
 
 def run(step, parset, LSM):
@@ -38,7 +39,7 @@ def run(step, parset, LSM):
         move(LSM, name, position, shift)
         result = 0
     except Exception as e:
-        logging.error(e.message)
+        log.error(e.message)
         result = 1
 
     # Write to outFile
@@ -82,7 +83,7 @@ def move(LSM, name, position=None, shift=None):
     from .. import tableio
 
     if len(LSM) == 0:
-        logging.error('Sky model is empty.')
+        log.error('Sky model is empty.')
         return
 
     if position is None and shift is None:

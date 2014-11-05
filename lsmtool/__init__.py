@@ -26,6 +26,7 @@ SkyModel object.
 from ._version import changelog
 from .skymodel import SkyModel
 import _logging as logger
+logger.setLevel('info')
 
 
 def load(fileName, beamMS=None):

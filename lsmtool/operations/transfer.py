@@ -19,7 +19,8 @@
 
 import logging
 
-logging.debug('Loading TRANSFER module.')
+log = logging.getLogger('LSMTool.TRANSFER')
+log.debug('Loading TRANSFER module.')
 
 
 def run(step, parset, LSM):
@@ -31,7 +32,7 @@ def run(step, parset, LSM):
         transfer(LSM, patchFile)
         result = 0
     except Exception as e:
-        logging.error(e.message)
+        log.error(e.message)
         result = 1
 
     # Write to outFile
@@ -84,7 +85,7 @@ def transfer(LSM, patchSkyModel, matchBy='name', radius=0.1):
     from ..operations_lib import matchSky
 
     if len(LSM) == 0:
-        logging.error('Sky model is empty.')
+        log.error('Sky model is empty.')
         return
 
     if type(patchSkyModel) is str:
@@ -94,14 +95,14 @@ def transfer(LSM, patchSkyModel, matchBy='name', radius=0.1):
 
     # Group LSM by source. This ensures that any sources not in the master
     # sky model are given a patch of their own
-    logging.debug('Grouping master sky model by one patch per source...')
+    log.debug('Grouping master sky model by one patch per source...')
     LSM.group('every')
     patchNames = LSM.getColValues('Patch')
     masterPatchNames = masterLSM.getColValues('Patch')
     table = LSM.table.copy()
 
     if matchBy.lower() == 'name':
-        logging.debug('Transferring patches by matching names...')
+        log.debug('Transferring patches by matching names...')
         names = LSM.getColValues('Name')
         masterNames = masterLSM.getColValues('Name')
 
@@ -115,14 +116,14 @@ def transfer(LSM, patchSkyModel, matchBy='name', radius=0.1):
             table['Patch'][indx] = masterLSM.table['Patch'][masterIndx]
 
     elif matchBy.lower() == 'position':
-        logging.debug('Transferring patches by matching positions...')
+        log.debug('Transferring patches by matching positions...')
         matches1, matches2 = matchSky(LSM, masterLSM, radius=radius)
         nMissing = len(LSM) - len(matches1[0])
 
         # Set patch names to be the same for the matches
         table['Patch'][matches1] = masterLSM.table['Patch'][matches2]
 
-    logging.debug('Number of sources not present in patchSkyModel: {0}'.format(
+    log.debug('Number of sources not present in patchSkyModel: {0}'.format(
         nMissing))
     LSM.table = table
     LSM._updateGroups()

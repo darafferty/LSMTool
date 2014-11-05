@@ -17,6 +17,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
+log = logging.getLogger('LSMTool.Filter')
 
 
 def filter(LSM, filterExpression, exclusive=False, aggregate=None,
@@ -130,7 +131,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
     from astropy.table import Table
 
     if len(LSM) == 0:
-        logging.error('Sky model is empty.')
+        log.error('Sky model is empty.')
         return
 
     if filterExpression is None:
@@ -219,19 +220,20 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
             LSM.table.remove_rows(range(len(LSM.table)))
             LSM.hasPatches = False
             if exclusive:
-                logging.info('Removed all sources.')
+                log.info('Removed all sources.')
                 return
             else:
-                logging.info('Kept zero sources.')
+                log.info('Kept zero sources.')
                 return
         else:
             raise RuntimeError('Filter would result in an empty sky model. '
                 'Use force=True to override.')
     if len(filt) == len(LSM):
         if exclusive:
-            logging.info('Removed zero sources.')
+            log.info('Removed zero sources.')
         else:
-            logging.info('Kept all sources.')
+            log.info('Kept all sources.')
+        return
 
     if LSM.hasPatches and aggregate is not None:
         sourcesToKeep = LSM.getPatchNames()[filt]
@@ -246,11 +248,11 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
         else:
             plustr = 'es'
         if exclusive:
-            logging.info('Removed {0} patch{1}.'.format(nPatchesOrig-nPatchesNew, plustr))
+            log.info('Removed {0} patch{1}.'.format(nPatchesOrig-nPatchesNew, plustr))
         else:
             if nPatchesNew > 1:
                 plustr = 'es'
-            logging.info('Kept {0} patch{1}.'.format(nPatchesNew, plustr))
+            log.info('Kept {0} patch{1}.'.format(nPatchesNew, plustr))
     else:
         nRowsOrig = len(LSM)
         LSM.table = LSM.table[filt]
@@ -262,13 +264,13 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
                 plustr = ''
             else:
                 plustr = 's'
-            logging.info('Removed {0} source{1}.'.format(nRowsOrig-nRowsNew, plustr))
+            log.info('Removed {0} source{1}.'.format(nRowsOrig-nRowsNew, plustr))
         else:
             if nRowsNew == 1:
                 plustr = ''
             else:
                 plustr = 's'
-            logging.info('Kept {0} source{1}.'.format(nRowsNew, plustr))
+            log.info('Kept {0} source{1}.'.format(nRowsNew, plustr))
 
     LSM._info()
 
@@ -299,7 +301,7 @@ def parseFilter(filterExpression):
     # Get the column to filter on
     filterProp = filterParts[0].strip().lower()
     if filterProp not in allowedColumnNames:
-        logging.warn('"{0}" is not a valid column. Trying it as a mask '
+        log.warn('"{0}" is not a valid column. Trying it as a mask '
             'filename instead...'.format(filterProp))
         filterVal = filterParts[1].strip()
         return (filterProp, filterOper, bool(filterVal), None)

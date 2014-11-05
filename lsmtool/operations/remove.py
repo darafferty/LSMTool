@@ -18,8 +18,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
-
-logging.debug('Loading REMOVE module.')
+log = logging.getLogger('LSMTool.REMOVE')
+log.debug('Loading REMOVE module.')
 
 
 def run(step, parset, LSM):
@@ -38,7 +38,7 @@ def run(step, parset, LSM):
         remove(LSM, filterExpression, aggregate=aggregate, applyBeam=applyBeam)
         result = 0
     except Exception as e:
-        logging.error(e.message)
+        log.error(e.message)
         result = 1
 
     # Write to outFile

@@ -80,10 +80,12 @@ def skyModelReader(fileName):
     table : astropy.table.Table object
 
     """
+    log = logging.getLogger('LSMTool.Load')
+
     # Open the input file
     try:
         modelFile = open(fileName)
-        logging.debug('Reading {0}'.format(fileName))
+        log.debug('Reading {0}'.format(fileName))
     except IOError as e:
         raise IOError('Could not open {0}: {1}'.format(fileName, e.strerror))
 
@@ -185,7 +187,7 @@ def skyModelReader(fileName):
 
     # Read model into astropy table object
     outlines = []
-    logging.debug('Reading file...')
+    log.debug('Reading file...')
     with open(fileName) as f:
         for line in f:
             if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
@@ -229,13 +231,13 @@ def skyModelReader(fileName):
         patchCol = 'col{0}'.format(colNames.index('Patch')+1)
         converters[patchCol] = [ascii.convert_numpy('S50')]
 
-    logging.debug('Creating table...')
+    log.debug('Creating table...')
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
         names=colNames, comment='#', data_start=0, converters=converters)
 
     # Convert spectral index values from strings to arrays.
     if 'SpectralIndex' in table.keys():
-        logging.debug('Converting spectral indices...')
+        log.debug('Converting spectral indices...')
         specOld = table['SpectralIndex'].data.tolist()
         specVec = []
         maskVec = []
@@ -250,7 +252,7 @@ def skyModelReader(fileName):
                         maxLen = len(specEntry)
             except:
                 pass
-        logging.debug('Maximum number of spectral-index terms in model: {0}'.format(maxLen))
+        log.debug('Maximum number of spectral-index terms in model: {0}'.format(maxLen))
         for l in specOld:
             try:
                 if type(l) is float or type(l) is int:
@@ -274,7 +276,7 @@ def skyModelReader(fileName):
         table.add_column(specCol, index=specIndx)
 
     # Convert RA and Dec to Angle objects
-    logging.debug('Converting RA...')
+    log.debug('Converting RA...')
     RARaw = table['Ra'].data.tolist()
     RACol = Column(name='Ra', data=RA2Angle(RARaw))
     def raformat(val):
@@ -284,7 +286,7 @@ def skyModelReader(fileName):
     table.remove_column('Ra')
     table.add_column(RACol, index=RAIndx)
 
-    logging.debug('Converting Dec...')
+    log.debug('Converting Dec...')
     DecRaw = table['Dec'].data.tolist()
     DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
     def decformat(val):
@@ -296,7 +298,7 @@ def skyModelReader(fileName):
 
     # Set column units and default values
     for i, colName in enumerate(colNames):
-        logging.debug("Setting units for column '{0}' to {1}".format(
+        log.debug("Setting units for column '{0}' to {1}".format(
             colName, allowedColumnUnits[colName.lower()]))
         table.columns[colName].unit = allowedColumnUnits[colName.lower()]
 
@@ -305,7 +307,7 @@ def skyModelReader(fileName):
             if colName == 'SpectralIndex':
                 while fillVal < maxLen:
                     fillVal.append(0.0)
-            logging.debug("Setting default value for column '{0}' to {1}".
+            log.debug("Setting default value for column '{0}' to {1}".
                 format(colName, fillVal))
             table.columns[colName].fill_value = fillVal
     table.meta = metaDict
@@ -416,8 +418,10 @@ def skyModelWriter(table, fileName):
     fileName : str
         Output ASCII file to which the sky model is written.
     """
+    log = logging.getLogger('LSMTool.Write')
+
     modelFile = open(fileName, 'w')
-    logging.debug('Writing model to {0}'.format(fileName))
+    log.debug('Writing model to {0}'.format(fileName))
 
     # Make sure all columns have the correct makesourcedb units
     for colName in table.columns:
@@ -543,8 +547,10 @@ def ds9RegionWriter(table, fileName):
     fileName : str
         Output file to which the sky model is written
     """
+    log = logging.getLogger('LSMTool.Write')
+
     regionFile = open(fileName, 'w')
-    logging.debug('Writing ds9 region file to {0}'.format(fileName))
+    log.debug('Writing ds9 region file to {0}'.format(fileName))
 
     outLines = []
     outLines.append('# Region file format: DS9 version 4.0\nglobal color=green '\
@@ -595,8 +601,10 @@ def kvisAnnWriter(table, fileName):
     fileName : str
         Output file to which the sky model is written
     """
+    log = logging.getLogger('LSMTool.Write')
+
     kvisFile = open(fileName, 'w')
-    logging.debug('Writing kvis annotation file to {0}'.format(fileName))
+    log.debug('Writing kvis annotation file to {0}'.format(fileName))
 
     # Make sure all columns have the correct units
     for colName in table.columns:
@@ -634,8 +642,10 @@ def casaRegionWriter(table, fileName):
     fileName : str
         Output file to which the sky model is written
      """
+    log = logging.getLogger('LSMTool.Write')
+
     casaFile = open(fileName, 'w')
-    logging.debug('Writing CASA box file to {0}'.format(fileName))
+    log.debug('Writing CASA box file to {0}'.format(fileName))
 
     outLines = []
     outLines.append('#CRTFv0\n')

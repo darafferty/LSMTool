@@ -48,6 +48,7 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
     import pyrap.tables as pt
     import lofar.stationresponse as lsr
 
+    log = logging.getLogger('LSMTool')
     t = pt.table(beamMS, ack=False)
     time = None
     ant1 = -1
@@ -63,7 +64,7 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
     if timeIndx > 1.0:
         timeIndx = 1.0
     time = min(time) + ( max(time) - min(time) ) * timeIndx
-    logging.debug('Applying beam attenuation using beam at time of {0}% point of '
+    log.debug('Applying beam attenuation using beam at time of {0}% point of '
         'observation.'.format(int(timeIndx*100.0)))
 
     attFluxes = []
@@ -233,8 +234,9 @@ def matchSky(LSM1, LSM2, radius=0.1):
     from distutils.version import StrictVersion
     import numpy as np
     import scipy
+    log = logging.getLogger('LSMTool')
     if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
-        logging.debug('The installed version of SciPy contains a bug that affects catalog matching. '
+        log.debug('The installed version of SciPy contains a bug that affects catalog matching. '
             'Falling back on (slower) matching script.')
         from operations._matching import match_coordinates_sky
     else:

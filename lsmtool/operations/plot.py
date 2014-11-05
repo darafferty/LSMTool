@@ -19,7 +19,8 @@
 
 import logging
 
-logging.debug('Loading PLOT module.')
+log = logging.getLogger('LSMTool.PLOT')
+log.debug('Loading PLOT module.')
 
 
 def run( step, parset, LSM ):
@@ -36,7 +37,7 @@ def run( step, parset, LSM ):
         plot(LSM, outFile)
         result = 0
     except Exception as e:
-        logging.error(e.message)
+        log.error(e.message)
         result = 1
 
     return 0
@@ -90,7 +91,7 @@ def plot(LSM, fileName=None, labelBy=None):
     global midRA, midDec, ymin, xmin
 
     if len(LSM) == 0:
-        logging.error('Sky model is empty.')
+        log.error('Sky model is empty.')
         return
 
     fig = plt.figure(1,figsize=(7,7))
@@ -148,7 +149,7 @@ def plot(LSM, fileName=None, labelBy=None):
         RAp, Decp = LSM.getPatchPositions(asArray=True)
         goodInd = np.where( (RAp != 0.0) & (Decp != 0.0) )
         if len(goodInd[0]) < len(RAp):
-            logging.info('Some patch positions are unset. Run setPatchPositions() '
+            log.info('Some patch positions are unset. Run setPatchPositions() '
                 'before plotting to see patch positions and patch names.')
         xp, yp = radec2xy(RAp[goodInd], Decp[goodInd], midRA, midDec)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')

@@ -19,7 +19,8 @@
 
 import logging
 
-logging.debug('Loading MERGE module.')
+log = logging.getLogger('LSMTool.MERGE')
+log.debug('Loading MERGE module.')
 
 
 def run(step, parset, LSM):
@@ -34,7 +35,7 @@ def run(step, parset, LSM):
         result = merge(LSM, patches, name)
         result = 0
     except Exception as e:
-        logging.error(e.message)
+        log.error(e.message)
         result = 1
 
     # Write to outFile
@@ -63,7 +64,7 @@ def merge(LSM, patches, name=None):
         >>> merge(LSM, ['bin0', 'bin1', 'bin2'], 'binmerged')
     """
     if len(LSM) == 0:
-        logging.error('Sky model is empty.')
+        log.error('Sky model is empty.')
         return
 
     if name is None:

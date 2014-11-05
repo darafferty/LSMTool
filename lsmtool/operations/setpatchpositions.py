@@ -17,7 +17,8 @@
 
 import logging
 
-logging.debug('Loading SETPATCHPOSITIONS module.')
+log = logging.getLogger('LSMTool.SETPATCHPOSITIONS')
+log.debug('Loading SETPATCHPOSITIONS module.')
 
 
 def run(step, parset, LSM):
@@ -30,7 +31,7 @@ def run(step, parset, LSM):
         LSM.setPatchPositions(method=method, applyBeam=applyBeam)
         result = 0
     except Exception as e:
-        logging.error(e.message)
+        log.error(e.message)
         result = 1
 
     # Write to outFile

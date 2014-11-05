@@ -19,7 +19,8 @@
 
 import logging
 
-logging.debug('Loading ADD module.')
+log = logging.getLogger('LSMTool.ADD')
+log.debug('Loading ADD module.')
 
 
 def run(step, parset, LSM):
@@ -42,7 +43,7 @@ def run(step, parset, LSM):
         add(LSM, colNamesVals)
         result = 0
     except Exception as e:
-        logging.error(e.message)
+        log.error(e.message)
         result = 1
 
     if outFile != '' and result == 0:

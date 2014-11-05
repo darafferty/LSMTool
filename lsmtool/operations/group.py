@@ -19,7 +19,8 @@
 
 import logging
 
-logging.debug('Loading GROUP module.')
+log = logging.getLogger('LSMTool.GROUP')
+log.debug('Loading GROUP module.')
 
 
 def run(step, parset, LSM):
@@ -36,7 +37,7 @@ def run(step, parset, LSM):
         group(LSM, algorithm, targetFlux, numClusters, applyBeam, root, method)
         result = 0
     except Exception as e:
-        logging.error(e.message)
+        log.error(e.message)
         result = 1
 
     # Write to outFile
@@ -103,7 +104,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
     from itertools import groupby
 
     if len(LSM) == 0:
-        logging.error('Sky model is empty.')
+        log.error('Sky model is empty.')
         return
 
     if algorithm.lower() == 'single':

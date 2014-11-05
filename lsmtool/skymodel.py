@@ -56,7 +56,10 @@ class SkyModel(object):
         """
         from astropy.table import Table, Column
 
+        self.log = logging.getLogger('LSMTool')
+        self.log.debug("Attempting to load file '{0}'...".format(fileName))
         self.table = Table.read(fileName, format='makesourcedb')
+        self.log.debug("Successfully loaded file '{0}'".format(fileName))
         self._fileName = fileName
 
         if beamMS is not None:
@@ -69,14 +72,14 @@ class SkyModel(object):
             self.beamTime = None
 
         if checkDup:
-            logging.debug('Checking for duplicate lines...')
+            self.log.debug('Checking model for duplicate lines...')
             self._clean()
 
-        logging.debug('Grouping table by patch...')
+        self.log.debug('Processing patches (if any)...')
         self._patchMethod = None
         self._updateGroups()
 
-        logging.debug("Successfully read file '{0}'".format(fileName))
+        self.log.debug("Successfully loaded sky model")
 
 
     def __len__(self):
@@ -123,9 +126,9 @@ class SkyModel(object):
         else:
             plur = 'es'
         if useLogInfo:
-            logCall = logging.info
+            logCall = self.log.info
         else:
-            logCall = logging.debug
+            logCall = self.log.debug
 
         logCall('Model contains {0} sources in {1} patch{2} of which:\n'
             '      {3} are type POINT\n'
@@ -274,7 +277,7 @@ class SkyModel(object):
                 else:
                     plur = 's'
                 if not quiet:
-                    logging.warn("Column name{0} '{1}' not recognized. Ignoring.".
+                    self.log.warn("Column name{0} '{1}' not recognized. Ignoring.".
                         format(plur, ','.join(badNames)))
             if len(colNameLower) == 0:
                 return None
@@ -750,7 +753,7 @@ class SkyModel(object):
             the value is masked).
         index : int, optional
             Index that specifies the column position in the table, if column is
-            not already present in the table
+            not already present in the table.
 
         Examples
         --------
@@ -1082,7 +1085,7 @@ class SkyModel(object):
                     plur = ''
                 else:
                     plur = 's'
-                logging.warn("Name{0} '{1}' not recognized. Ignoring.".
+                self.log.warn("Name{0} '{1}' not recognized. Ignoring.".
                     format(plur, ','.join(badNames)))
             if len(indx) == 0:
                 raise ValueError("None of the specified names were found.")
@@ -1184,7 +1187,7 @@ class SkyModel(object):
         from operations_lib import attenuate
 
         if not self._hasBeam:
-            logging.warn('No beam MS has been specified. No beam attenuation applied.')
+            self.log.warn('No beam MS has been specified. No beam attenuation applied.')
             return col
 
         if patch:
@@ -1203,7 +1206,7 @@ class SkyModel(object):
         try:
             vals = attenuate(self.beamMS, flux, RADeg, DecDeg, timeIndx=self.beamTime)
         except Exception as e:
-            logging.warn('{0}. No beam attenuation applied.'.format(e.message))
+            self.log.warn('{0}. No beam attenuation applied.'.format(e.message))
             return col
 
         col[:] = vals
@@ -1567,7 +1570,7 @@ class SkyModel(object):
         self.table = self.table[filt]
         nRowsNew = len(self.table)
         if nRowsOrig-nRowsNew > 0:
-            logging.info('Removed {0} duplicate sources.'.format(nRowsOrig-nRowsNew))
+            self.log.info('Removed {0} duplicate sources.'.format(nRowsOrig-nRowsNew))
 
 
     def select(self, filterExpression, aggregate=None, applyBeam=False,

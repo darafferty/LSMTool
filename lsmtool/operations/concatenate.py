@@ -19,7 +19,8 @@
 
 import logging
 
-logging.debug('Loading CONCATENATE module.')
+log = logging.getLogger('LSMTool.CONCATENATE')
+log.debug('Loading CONCATENATE module.')
 
 
 def run(step, parset, LSM):
@@ -35,7 +36,7 @@ def run(step, parset, LSM):
         concatenate(LSM, skyModel2, matchBy, radius, keep, inheritPatches)
         result = 0
     except Exception as e:
-        logging.error(e.message)
+        log.error(e.message)
         result = 1
 
     # Write to outFile
@@ -109,14 +110,14 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
         LSM2 = skymodel.SkyModel(LSM2)
 
     if len(LSM1) == 0:
-        logging.info('Parent sky model is empty. Concatenated sky model is '
+        log.info('Parent sky model is empty. Concatenated sky model is '
             'copy of secondary sky model.')
         LSM1.table = LSM2.table
         LSM1._updateGroups()
         LSM1._info()
         return
     if len(LSM2) == 0:
-        logging.info('Secondary sky model is empty. Parent sky model left '
+        log.info('Secondary sky model is empty. Parent sky model left '
             'unaltered.')
         return
 
