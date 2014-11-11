@@ -26,21 +26,30 @@ class SkyModel(object):
     """
     Object that stores the sky model and provides methods for accessing it.
     """
-    def __init__(self, fileName, beamMS=None, checkDup=False):
+    def __init__(self, fileName, beamMS=None, checkDup=False, VOPosition=None,
+        VORadius=None):
         """
         Initializes SkyModel object.
 
         Parameters
         ----------
         fileName : str
-            Input ASCII file from which the sky model is read. Must
-            respect the makesourcedb format
+            Input ASCII file from which the sky model is read (must respect the
+            makesourcedb format), name of VO service to query (must be one of
+            'VLSSr', 'WENSS', or 'NVSS'), or dict (single source only)
         beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table
         checkDup: bool, optional
             If True, the sky model is checked for duplicate sources (with the
             same name)
+        VOPosition : list of floats
+            A list specifying a new position as [RA, Dec] in either makesourcedb
+            format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
+            [123.2312, 23.3422]) for a cone search
+        VORadius : float or str, optional
+            Radius in degrees (if float) or 'value unit' (if str; e.g.,
+            '30 arcsec') for cone search region in degrees
 
         Examples
         --------
@@ -53,14 +62,47 @@ class SkyModel(object):
 
             >>> s = SkyModel('sky.model', beamMS='SB100.MS')
 
+        Load a VLSSr sky model into a SkyModel object::
+
+            >>> s = SkyModel('VLSSr', VOPosition=[212.8352792, 52.202644],
+                VOradius=5.0)
+
         """
         from astropy.table import Table, Column
+        from tableio import requiredColumnNames, processFormatString, processLine, createTable
 
         self.log = logging.getLogger('LSMTool')
-        self.log.debug("Attempting to load file '{0}'...".format(fileName))
-        self.table = Table.read(fileName, format='makesourcedb')
-        self.log.debug("Successfully loaded file '{0}'".format(fileName))
-        self._fileName = fileName
+        if type(fileName) is str:
+            if fileName in tableio.allowedVOServices:
+                self.log.debug("Attempting to load model from VO service '{0}'...".format(fileName))
+                self.table = tableio.coneSearch(fileName, VOPosition, VORadius)
+                self.log.debug("Successfully loaded model from VO service '{0}'".format(fileName))
+                self._fileName = None
+            else:
+                self.log.debug("Attempting to load model from file '{0}'...".format(fileName))
+                self.table = Table.read(fileName, format='makesourcedb')
+                self.log.debug("Successfully loaded model from file '{0}'".format(fileName))
+                self._fileName = fileName
+        elif type(fileName) is dict:
+            self.log.debug("Attempting to create model from input dict...")
+            # Create header
+            formatString = '#FORMAT = ' + ', '.join(fileName.keys())
+
+            # Process the header
+            colNames, hasPatches, colDefaults, metaDict = processFormatString(formatString)
+
+            # Process the model
+            outlines = []
+            stringValues = ['{0}'.format(v) for v in fileName.values()]
+            line = ', '.join(stringValues)
+            outline, metaDict = processLine(line, metaDict, colNames)
+            if outline is not None:
+                outlines.append(outline)
+            outlines.append('\n') # needed in case of single-line sky models
+            table = createTable(outlines, metaDict, colNames)
+            self.table = table
+            self.log.debug("Successfully created model from input dict")
+            self._fileName = None
 
         if beamMS is not None:
             self.beamMS = beamMS
@@ -939,53 +981,11 @@ class SkyModel(object):
                 'Dec':'+14.46.31.5', 'I':23.2, 'Type':'POINT'}
 
         """
-        from tableio import RA2Angle, Dec2Angle
-        import numpy as np
+        # Read model into astropy table object
+        tempLSM = SkyModel(values)
 
-        requiredValues = ['Name', 'Ra', 'Dec', 'I', 'Type']
-        if self.hasPatches:
-            requiredValues.append('Patch')
-
-        rowName = str(values['Name'])
-        indx = self._getNameIndx(rowName)
-
-        if isinstance(values, dict):
-            if indx is None:
-                verifiedValues = {}
-                for valReq in requiredValues:
-                    found = False
-                    for val in values:
-                        if self._verifyColName(valReq) == self._verifyColName(val):
-                            found = True
-                            verifiedValues[self._verifyColName(val)] = values[val]
-                    if not found:
-                        raise ValueError("A value must be specified for '{0}'.".format(valReq))
-
-                RA = verifiedValues['Ra']
-                Dec = verifiedValues['Dec']
-                try:
-                    verifiedValues['Ra'] = RA2Angle(RA)[0].value
-                    verifiedValues['Dec'] = Dec2Angle(Dec)[0].value
-                except:
-                    raise ValueError('RA and/or Dec not understood.')
-                self.table.add_row(verifiedValues)
-            else:
-                for colName, value in verifiedValues.iteritems():
-                    self.table[colName][indx] = value
-                    self.table[colName][indx].mask = False
-        elif type(dict) is list:
-            if len(values) != len(self.table.columns):
-                raise ValueError('Length of input values must match number of tables.')
-            else:
-                if indx is not None:
-                    self.table.remove_row(indx)
-                self.table.add_row(values, mask=mask)
-        else:
-            raise ValueError('Input row values not understood.')
-
-        self._updateGroups()
-        if returnVerified:
-            return verifiedValues
+        # Concatenate tables
+        self.concatenate(tempLSM, matchBy='name', keep='from2', inheritPatches=False)
 
 
     def getPatchSizes(self, units=None, weight=False, applyBeam=False):
@@ -1503,7 +1503,10 @@ class SkyModel(object):
         import os
 
         if fileName is None:
-            fileName = self._fileName
+            if self._fileName is None:
+                raise IOError("No file name specified.")
+            else:
+                fileName = self._fileName
 
         if os.path.exists(fileName):
             if clobber:

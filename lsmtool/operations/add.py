@@ -76,9 +76,6 @@ def add(LSM, colNamesVals):
     if colNamesVals['Name'] in sourceNames:
         raise ValueError('A source with the same name already exists.')
 
-    table = LSM.table.copy()
-    verifiedValues = LSM.setRowValues(colNamesVals, returnVerified=True)
-    table.add_row(verifiedValues)
-    LSM.table = table
+    LSM.setRowValues(colNamesVals)
     LSM._updateGroups()
     LSM._info()

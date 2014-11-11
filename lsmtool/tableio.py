@@ -60,6 +60,13 @@ allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':0.0,
     'polarizedfraction':0.0, 'referencewavelength':'N/A',
     'referencefrequency':0.0, 'spectralindex':[0.0]}
 
+requiredColumnNames = ['Name', 'Type', 'Ra', 'Dec', 'I']
+
+allowedVOServices = {
+    'vlssr':'http://heasarc.gsfc.nasa.gov/cgi-bin/vo/cone/coneGet.pl?table=vlssr&',
+    'nvss':'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/65&amp;',
+    'wenss':'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;'}
+
 
 def skyModelReader(fileName):
     """
@@ -98,130 +105,48 @@ def skyModelReader(fileName):
     modelFile.close()
     if formatString is None:
         raise IOError("No valid format line found in file '{0}'.".format(fileName))
-    formatString = formatString.strip()
-    formatString = formatString.strip('# ')
-    if formatString.lower().endswith('format'):
-        parts = formatString.split('=')[:-1]
-        formatString = 'FORMAT = ' + '='.join(parts).strip('# ()')
-    elif formatString.lower().startswith('format'):
-        parts = formatString.split('=')[1:]
-        formatString = 'FORMAT = ' + '='.join(parts).strip('# ()')
-    else:
-        raise IOError("Format line in file '{0}' not understood.".format(fileName))
 
-    # Check whether sky model has patches
-    if 'Patch' in formatString:
-        hasPatches = True
-    else:
-        hasPatches = False
-
-    # Get column names and default values. Non-string columns have default
-    # values of 0.0 unless a different value is given in the header.
-    if ',' not in formatString:
-        raise IOError("Sky model must use ',' as a field separator.")
-    colNames = formatString.split(',')
-
-    # Check if a default value in the format string is a list. If it is, make
-    # sure the list is complete
-    cnStart = None
-    cnEnd = None
-    for cn in colNames:
-        if '[' in cn and ']' not in cn:
-            cnStart = cn
-        if ']' in cn and '[' not in cn:
-            cnEnd = cn
-    if cnStart is not None:
-        indx1 = colNames.index(cnStart)
-        indx2 = colNames.index(cnEnd)
-        colNamesFixed = []
-        toJoin = []
-        for i, cn in enumerate(colNames):
-            if i < indx1:
-                colNamesFixed.append(cn)
-            elif i >= indx1 and i <= indx2:
-                toJoin.append(cn)
-                if i == len(colNames)-1:
-                    colNamesFixed.append(','.join(toJoin))
-            elif i > indx2:
-                if i == indx2 + 1:
-                    colNamesFixed.append(','.join(toJoin))
-                    colNamesFixed.append(cn)
-                else:
-                    colNamesFixed.append(cn)
-        colNames = colNamesFixed
-
-    # Now get the defaults
-    colDefaults = [None] * len(colNames)
-    metaDict = {}
-    colNames[0] = colNames[0].split('=')[1]
-    for i in range(len(colNames)):
-        parts = colNames[i].split('=')
-        colName = parts[0].strip().lower()
-        if len(parts) == 2:
-            try:
-                if '[' in parts[1]:
-                    # Default is a list
-                    defParts = parts[1].strip("'[]").split(',')
-                    defaultVal = []
-                    for p in defParts:
-                        defaultVal.append(float(p.strip()))
-                else:
-                    defaultVal = float(parts[1].strip("'"))
-            except ValueError:
-                defaultVal = None
-        else:
-            defaultVal = None
-
-        if colName == '':
-            raise IOError('Skipping of columns is not yet supported.')
-        if colName not in allowedColumnNames:
-            raise IOError("Column '{0}' is not currently allowed".format(colName,
-                fileName))
-        else:
-            colNames[i] = allowedColumnNames[colName]
-            if defaultVal is not None:
-                colDefaults[i] = defaultVal
-                metaDict[colNames[i]] = defaultVal
-            elif allowedColumnDefaults[colName] is not None:
-                colDefaults[i] = allowedColumnDefaults[colName]
+    # Process the header
+    colNames, hasPatches, colDefaults, metaDict = processFormatString(formatString)
 
     # Read model into astropy table object
     outlines = []
     log.debug('Reading file...')
     with open(fileName) as f:
         for line in f:
-            if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
-                continue
-
-            # Check for SpectralIndex entries, which are unreadable as they use
-            # the same separator for multiple orders as used for the columns
-            line = line.strip('\n')
-            a = re.search('\[.*\]', line)
-            if a is not None:
-                b = line[a.start(): a.end()]
-                c = b.strip('[]')
-                if ',' in c:
-                    c = c.replace(',', ';')
-                line = line.replace(b, c)
-            colLines = line.split(',')
-
-            # Check for patch lines as any line with an empty Name entry. If found,
-            # store patch positions in the table meta data.
-            if colLines[0].strip() == '':
-                if len(colLines) > 4:
-                    patchName = colLines[2].strip()
-                    patchRA = RA2Angle(colLines[3].strip())
-                    patchDec = Dec2Angle(colLines[4].strip())
-                    metaDict[patchName] = [patchRA[0], patchDec[0]]
-                continue
-
-            while len(colLines) < len(colNames):
-                colLines.append(' ')
-            outlines.append(','.join(colLines))
+            outline, metaDict = processLine(line, metaDict, colNames)
+            if outline is not None:
+                outlines.append(outline)
     outlines.append('\n') # needed in case of single-line sky models
 
+    # Create table
+    table = createTable(outlines, metaDict, colNames)
+
+    return table
+
+
+def createTable(outlines, metaDict, colNames):
+    """
+    Creates an astropy table from inputs.
+
+    Parameters
+    ----------
+    outlines : list of str
+        Input lines
+    metaDict : dict
+        Input meta data
+    colNames : list of str
+        Input column names
+
+    Returns
+    -------
+    table : astropy.table.Table object
+
+    """
     # Before loading table into an astropy Table object, set lengths of Name,
     # Patch, and Type columns to 50 characters
+    log = logging.getLogger('LSMTool.Load')
+
     converters = {}
     nameCol = 'col{0}'.format(colNames.index('Name')+1)
     converters[nameCol] = [ascii.convert_numpy('S50')]
@@ -305,7 +230,7 @@ def skyModelReader(fileName):
         if hasattr(table.columns[colName], 'filled') and colDefaults[i] is not None:
             fillVal = colDefaults[i]
             if colName == 'SpectralIndex':
-                while fillVal < maxLen:
+                while len(fillVal) < maxLen:
                     fillVal.append(0.0)
             log.debug("Setting default value for column '{0}' to {1}".
                 format(colName, fillVal))
@@ -313,6 +238,173 @@ def skyModelReader(fileName):
     table.meta = metaDict
 
     return table
+
+
+def processFormatString(formatString):
+    """
+    Proccesses the header string
+
+    Parameters
+    ----------
+    formatString : str
+        Header line
+
+    Returns
+    -------
+    colNames : list of str
+        Output column names
+    hasPatches : bool
+        Flag for patches
+    colDefaults : dict
+        Default values
+    metaDict : dict
+        Output meta data
+
+    """
+    formatString = formatString.strip()
+    formatString = formatString.strip('# ')
+    if formatString.lower().endswith('format'):
+        parts = formatString.split('=')[:-1]
+        formatString = 'FORMAT = ' + '='.join(parts).strip('# ()')
+    elif formatString.lower().startswith('format'):
+        parts = formatString.split('=')[1:]
+        formatString = 'FORMAT = ' + '='.join(parts).strip('# ()')
+    else:
+        raise IOError("Format line not understood.")
+
+    # Check whether sky model has patches
+    if 'Patch' in formatString:
+        hasPatches = True
+    else:
+        hasPatches = False
+
+    # Get column names and default values. Non-string columns have default
+    # values of 0.0 unless a different value is given in the header.
+    if ',' not in formatString:
+        raise IOError("Sky model must use ',' as a field separator.")
+    colNames = formatString.split(',')
+
+    # Check if a default value in the format string is a list. If it is, make
+    # sure the list is complete
+    cnStart = None
+    cnEnd = None
+    for cn in colNames:
+        if '[' in cn and ']' not in cn:
+            cnStart = cn
+        if ']' in cn and '[' not in cn:
+            cnEnd = cn
+    if cnStart is not None:
+        indx1 = colNames.index(cnStart)
+        indx2 = colNames.index(cnEnd)
+        colNamesFixed = []
+        toJoin = []
+        for i, cn in enumerate(colNames):
+            if i < indx1:
+                colNamesFixed.append(cn)
+            elif i >= indx1 and i <= indx2:
+                toJoin.append(cn)
+                if i == len(colNames)-1:
+                    colNamesFixed.append(','.join(toJoin))
+            elif i > indx2:
+                if i == indx2 + 1:
+                    colNamesFixed.append(','.join(toJoin))
+                    colNamesFixed.append(cn)
+                else:
+                    colNamesFixed.append(cn)
+        colNames = colNamesFixed
+
+    # Now get the defaults
+    colDefaults = [None] * len(colNames)
+    metaDict = {}
+    colNames[0] = colNames[0].split('=')[1]
+    for i in range(len(colNames)):
+        parts = colNames[i].split('=')
+        colName = parts[0].strip().lower()
+        if len(parts) == 2:
+            try:
+                if '[' in parts[1]:
+                    # Default is a list
+                    defParts = parts[1].strip("'[]").split(',')
+                    defaultVal = []
+                    for p in defParts:
+                        defaultVal.append(float(p.strip()))
+                else:
+                    defaultVal = float(parts[1].strip("'"))
+            except ValueError:
+                defaultVal = None
+        else:
+            defaultVal = None
+
+        if colName == '':
+            raise IOError('Skipping of columns is not yet supported.')
+        if colName not in allowedColumnNames:
+            raise IOError("Column '{0}' is not currently allowed".format(colName))
+        else:
+            colNames[i] = allowedColumnNames[colName]
+            if defaultVal is not None:
+                colDefaults[i] = defaultVal
+                metaDict[colNames[i]] = defaultVal
+            elif allowedColumnDefaults[colName] is not None:
+                colDefaults[i] = allowedColumnDefaults[colName]
+
+    # Check for required columns
+    for reqCol in requiredColumnNames:
+        if reqCol not in colNames:
+            raise IOError("Sky model must have a '{0}' column.".format(reqCol))
+
+    return colNames, hasPatches, colDefaults, metaDict
+
+
+def processLine(line, metaDict, colNames):
+    """
+    Processes a makesourcedb line
+
+    Parameters
+    ----------
+    line : str
+        Data line
+    metaDict : dict
+        Input meta data
+    colNames : list of str
+        Input column names
+
+    Returns
+    -------
+    line : str
+        Processed line
+    metaDict : dict
+        Output meta data
+
+    """
+    if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
+        return None, metaDict
+
+    # Check for SpectralIndex entries, which are unreadable as they use
+    # the same separator for multiple orders as used for the columns
+    line = line.strip('\n')
+    a = re.search('\[.*\]', line)
+    if a is not None:
+        b = line[a.start(): a.end()]
+        c = b.strip('[]')
+        if ',' in c:
+            c = c.replace(',', ';')
+        line = line.replace(b, c)
+    colLines = line.split(',')
+
+    # Check for patch lines as any line with an empty Name entry. If found,
+    # store patch positions in the table meta data.
+    if colLines[0].strip() == '':
+        if len(colLines) > 4:
+            patchName = colLines[2].strip()
+            patchRA = RA2Angle(colLines[3].strip())
+            patchDec = Dec2Angle(colLines[4].strip())
+            metaDict[patchName] = [patchRA[0], patchDec[0]]
+        return None, metaDict
+
+    while len(colLines) < len(colNames):
+        colLines.append(' ')
+
+    return ','.join(colLines), metaDict
 
 
 def RA2Angle(RA):
@@ -337,11 +429,7 @@ def RA2Angle(RA):
 
     if type(RA[0]) is str:
         try:
-            RADeg = [(float(rasex.split(':')[0])
-                + float(rasex.split(':')[1]) / 60.0
-                + float(rasex.split(':')[2]) / 3600.0) * 15.0
-                for rasex in RA]
-            RAAngle = Angle(RADeg, unit=u.deg)
+            RAAngle = Angle(Angle(RA, unit=u.hourangle), unit=u.deg)
         except KeyboardInterrupt:
             raise
         except Exception as e:
@@ -375,14 +463,16 @@ def Dec2Angle(Dec):
 
     if type(Dec[0]) is str:
         try:
-            DecSex = [decstr.replace('.', ':', 2) for decstr in Dec]
-            DecDeg = [float(decsex.split(':')[0])
-                 + float(decsex.split(':')[1]) / 60.0
-                 + float(decsex.split(':')[2]) / 3600.0
-                 for decsex in DecSex]
-            DecAngle = Angle(DecDeg, unit=u.deg)
+            DecAngle = Angle(Dec, unit=u.deg)
         except KeyboardInterrupt:
             raise
+        except ValueError:
+            try:
+                DecSex = [decstr.replace('.', ':', 2) for decstr in Dec]
+                DecAngle = Angle(DecSex, unit=u.deg)
+            except Exception as e:
+                raise ValueError('Dec not understood (must be string in '
+                    'makesourcedb format or float in degrees).')
         except Exception as e:
             raise ValueError('Dec not understood (must be string in '
                 'makesourcedb format or float in degrees).')
@@ -704,15 +794,144 @@ def broadcastTable(fileName):
     client.disconnect()
 
 
-# def coneSearch(RA, Dec, dbname):
-#     """
-#     Returns table from a VO cone search
-#     """
-#     from astropy.vo.Conf import conesearch_dbname
-#
-#     # Define available databases
-#     allowedConeDBs = {'vlssr':'http://heasarc.gsfc.nasa.gov/cgi-bin/vo/cone/coneGet.pl?table=vlssr&',
-#         'vlss':'http://heasarc.gsfc.nasa.gov/cgi-bin/vo/cone/coneGet.pl?table=vlssr&'}
+def coneSearch(VOService, position, radius):
+    """
+    Returns table from a VO cone search
+    """
+    log = logging.getLogger('LSMTool.Load')
+    try:
+        import pyvo as vo
+    except ImportError as e:
+        log.error('Could not import PyVO. VO cone searches not possible')
+        return
+
+    # Define allowed cone-search databases. These are the ones we know how to
+    # convert to makesourcedb-formated sky models.
+    columnMapping = {
+        'vlssr':{'name':'name', 'ra':'ra', 'dec':'dec', 'flux_74_mhz':'i',
+            'referencefrequency':74e6},
+        'nvss':{'NVSS':'name', 'RAJ2000':'ra', 'DEJ2000':'dec', 'S1.4':'i',
+            'MajAxis':'majoraxis', 'MinAxis':'minoraxis', 'referencefrequency':1.4e9},
+        'wenss':{'Name':'name', 'RAJ2000':'ra', 'DEJ2000':'dec', 'Sint':'i',
+            'MajAxis':'majoraxis', 'MinAxis':'minoraxis', 'PA':'orientation',
+            'referencefrequency':325e6}
+        }
+
+    if VOService.lower() in allowedVOServices:
+        url = allowedVOServices[VOService.lower()]
+    else:
+        raise ValueError('VO query service not known. Allowed services are: '
+            '{0}'.format(allowedVOServices.keys()))
+
+    # Get raw VO catalog
+    log.debug('Querying VO service...')
+    try:
+        position = [RA2Angle(position[0])[0].value, Dec2Angle(position[1])[0].value]
+    except TypeError:
+        raise ValueError('VO query positon not understood.')
+    try:
+        radius = Angle(radius, unit='degree').value
+    except TypeError:
+        raise ValueError('VO query radius not understood.')
+    VOcatalog = vo.conesearch(url, position, radius=radius)
+
+    log.debug('Creating table...')
+    try:
+        table = Table.read(VOcatalog.votable)
+    except IndexError:
+        # Empty query result
+        log.error('No sources found. Sky model is empty.')
+        table = makeEmptyTable()
+        return table
+
+    # Remove unneeded columns
+    colsToRemove = []
+    for colName in table.colnames:
+        if colName not in columnMapping[VOService.lower()]:
+            colsToRemove.append(colName)
+        elif columnMapping[VOService.lower()][colName] not in allowedColumnNames:
+            colsToRemove.append(colName)
+    for colName in colsToRemove:
+        table.remove_column(colName)
+
+    # Rename columns to match makesourcedb conventions
+    for colName in table.colnames:
+        if colName != allowedColumnNames[columnMapping[VOService.lower()][colName]]:
+            table.rename_column(colName, allowedColumnNames[columnMapping[
+                VOService.lower()][colName]])
+
+    # Convert RA and Dec to Angle objects
+    log.debug('Converting RA...')
+    RARaw = table['Ra'].data.tolist()
+    RACol = Column(name='Ra', data=RA2Angle(RARaw))
+    def raformat(val):
+        return Angle(val, unit='degree').to_string(unit='hourangle', sep=':')
+    RACol.format = raformat
+    RAIndx = table.keys().index('Ra')
+    table.remove_column('Ra')
+    table.add_column(RACol, index=RAIndx)
+
+    log.debug('Converting Dec...')
+    DecRaw = table['Dec'].data.tolist()
+    DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
+    def decformat(val):
+        return Angle(val, unit='degree').to_string(unit='degree', sep='.')
+    DecCol.format = decformat
+    DecIndx = table.keys().index('Dec')
+    table.remove_column('Dec')
+    table.add_column(DecCol, index=DecIndx)
+
+    # Make sure Name is a str column
+    NameRaw = table['Name'].data.tolist()
+    NameCol = Column(name='Name', data=NameRaw, dtype='S50')
+    table.remove_column('Name')
+    table.add_column(NameCol, index=0)
+
+    # Add source-type column
+    types = ['POINT'] * len(table)
+    if 'majoraxis' in columnMapping[VOService.lower()].values():
+        for i, maj in enumerate(table[allowedColumnNames['majoraxis']]):
+            if maj > 0.0:
+                types[i] = 'GAUSSIAN'
+    col = Column(name='Type', data=types, dtype='S50')
+    table.add_column(col, index=1)
+
+    # Add reference-frequency column
+    refFreq = columnMapping[VOService.lower()]['referencefrequency']
+    col = Column(name='ReferenceFrequency', data=np.array([refFreq]*len(table), dtype=np.float))
+    table.add_column(col)
+
+    # Set column units and default values
+    for i, colName in enumerate(table.colnames):
+        log.debug("Setting units for column '{0}' to {1}".format(
+            colName, allowedColumnUnits[colName.lower()]))
+        table.columns[colName].unit = allowedColumnUnits[colName.lower()]
+
+        if hasattr(table.columns[colName], 'filled') and allowedColumnDefaults[colName.lower()] is not None:
+            fillVal = allowedColumnDefaults[colName.lower()]
+            if colName == 'SpectralIndex':
+                while len(fillVal) < 1:
+                    fillVal.append(0.0)
+            log.debug("Setting default value for column '{0}' to {1}".
+                format(colName, fillVal))
+            table.columns[colName].fill_value = fillVal
+
+    return table
+
+
+def makeEmptyTable():
+    """Returns an empty sky model table"""
+    outlines = ['Z, Z, 0.0, 0.0, 0.0\n']
+    colNames = ['Name', 'Type', 'Ra', 'Dec', 'I']
+    converters = {}
+    nameCol = 'col{0}'.format(colNames.index('Name')+1)
+    converters[nameCol] = [ascii.convert_numpy('S50')]
+    typeCol = 'col{0}'.format(colNames.index('Type')+1)
+    converters[typeCol] = [ascii.convert_numpy('S50')]
+    table = Table.read(outlines, guess=False, format='ascii.no_header', delimiter=',',
+        names=colNames, comment='#', data_start=0, converters=converters)
+    table.remove_rows(0)
+    return table
 
 
 # Register the file reader, identifier, and writer functions with astropy.io
