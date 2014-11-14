@@ -206,7 +206,7 @@ def makeWCS(refRA, refDec):
     return w
 
 
-def matchSky(LSM1, LSM2, radius=0.1):
+def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
     """
     Matches two sky models by position.
 
@@ -219,6 +219,10 @@ def matchSky(LSM1, LSM2, radius=0.1):
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
         for matching when matchBy='position'
+    byPatch : bool, optional
+        If True, matching is done by patches
+    nearestOnly : bool, optional
+        If True, only the nearest of multiple matches is returned
 
     Returns
     -------
@@ -242,10 +246,16 @@ def matchSky(LSM1, LSM2, radius=0.1):
     else:
         from astropy.coordinates.matching import match_coordinates_sky
 
-    catalog1 = SkyCoord(LSM1.getColValues('Ra'), LSM1.getColValues('Dec'),
-        unit=(u.degree, u.degree), frame='fk5')
-    catalog2 = SkyCoord(LSM2.getColValues('Ra'), LSM2.getColValues('Dec'),
-        unit=(u.degree, u.degree), frame='fk5')
+    if byPatch:
+        RA, Dec = LSM1.getPatchPositions(asArray=True)
+        catalog1 = SkyCoord(RA, Dec, unit=(u.degree, u.degree), frame='fk5')
+        RA, Dec = LSM2.getPatchPositions(asArray=True)
+        catalog2 = SkyCoord(RA, Dec, unit=(u.degree, u.degree), frame='fk5')
+    else:
+        catalog1 = SkyCoord(LSM1.getColValues('Ra'), LSM1.getColValues('Dec'),
+            unit=(u.degree, u.degree), frame='fk5')
+        catalog2 = SkyCoord(LSM2.getColValues('Ra'), LSM2.getColValues('Dec'),
+            unit=(u.degree, u.degree), frame='fk5')
     idx, d2d, d3d = match_coordinates_sky(catalog1, catalog2)
 
     try:
@@ -255,8 +265,52 @@ def matchSky(LSM1, LSM2, radius=0.1):
     if type(radius) is float:
         radius = '{0} degree'.format(radius)
     radius = Angle(radius).degree
-    matches1 = np.where(d2d.value <= radius)
+    matches1 = np.where(d2d.value <= radius)[0]
     matches2 = idx[matches1]
 
+    if nearestOnly:
+        filter = []
+        for i in range(len(matches1)):
+            mind = np.where(matches2 == matches2[i])[0]
+            nMatches = len(mind)
+            if nMatches > 1:
+                mradii = d2d.value[matches1][mind]
+                if d2d.value[matches1][i] == np.min(mradii):
+                    filter.append(i)
+            else:
+                filter.append(i)
+        matches1 = matches1[filter]
+        matches2 = matches2[filter]
+
     return matches1, matches2
+
+
+def calculateSeparation(ra1, dec1, ra2, dec2):
+    """
+    Returns angular separation between two coordinates (all in degrees).
+
+    Parameters
+    ----------
+    ra1 : float
+        RA of coordinate 1 in degrees
+    dec1 : float
+        Dec of coordinate 1 in degrees
+    ra2 : float
+        RA of coordinate 2 in degrees
+    dec2 : float
+        Dec of coordinate 2 in degrees
+
+    Returns
+    -------
+    separation : float
+        Angular separation in degrees
+
+    """
+    from astropy.coordinates import SkyCoord
+    import astropy.units as u
+
+    coord1 = SkyCoord(ra1, dec1, unit=(u.degree, u.degree), frame='fk5')
+    coord2 = SkyCoord(ra2, dec2, unit=(u.degree, u.degree), frame='fk5')
+
+    return coord1.separation(coord2)
 
