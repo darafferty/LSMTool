@@ -108,7 +108,7 @@ class SkyModel(object):
             if outline is not None:
                 outlines.append(outline)
             outlines.append('\n') # needed in case of single-line sky models
-            table = createTable(outlines, metaDict, colNames)
+            table = createTable(outlines, metaDict, colNames, colDefaults)
             self.table = table
             self.log.debug("Successfully created model from input dict")
             self._fileName = None
