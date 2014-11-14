@@ -110,6 +110,9 @@ def compare(LSM1, LSM2, radius=0.1, outDir=None, labelBy=None, ignoreSpec=None,
         nearestOnly=nearestOnly)
     matches12, matches22 = matchSky(LSM2, LSM1, radius=radius, byPatch=byPatch,
         nearestOnly=nearestOnly)
+    if len(matches11) == 0:
+        log.info('No matches found.')
+        return
 
     # Get reference frequencies
     if byPatch:
@@ -174,6 +177,9 @@ def compare(LSM1, LSM2, radius=0.1, outDir=None, labelBy=None, ignoreSpec=None,
         if matches11[i] in good:
             matches1.append(matches11[i])
             matches2.append(matches21[i])
+    if len(matches1) == 0:
+        log.info('No suitable sources found for comparison.')
+        return
 
     # Apply the filters
     if byPatch:
