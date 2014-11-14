@@ -27,7 +27,7 @@ class SkyModel(object):
     Object that stores the sky model and provides methods for accessing it.
     """
     def __init__(self, fileName, beamMS=None, checkDup=False, VOPosition=None,
-        VORadius=None):
+        VORadius=None, assocTheta='10 arcsec'):
         """
         Initializes SkyModel object.
 
@@ -36,7 +36,7 @@ class SkyModel(object):
         fileName : str
             Input ASCII file from which the sky model is read (must respect the
             makesourcedb format), name of VO service to query (must be one of
-            'VLSSr', 'WENSS', or 'NVSS'), or dict (single source only)
+            'VLSSr', 'WENSS', 'NVSS', or 'GSM'), or dict (single source only)
         beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table
@@ -50,6 +50,9 @@ class SkyModel(object):
         VORadius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g.,
             '30 arcsec') for cone search region in degrees
+        assocTheta : float or str, optional
+            Radius in degrees (if float) or 'value unit' (if str; e.g.,
+            '30 arcsec') for GSM source association
 
         Examples
         --------
@@ -73,10 +76,16 @@ class SkyModel(object):
 
         self.log = logging.getLogger('LSMTool')
         if type(fileName) is str:
-            if fileName in tableio.allowedVOServices:
+            if fileName.lower() in tableio.allowedVOServices:
                 self.log.debug("Attempting to load model from VO service '{0}'...".format(fileName))
                 self.table = tableio.coneSearch(fileName, VOPosition, VORadius)
                 self.log.debug("Successfully loaded model from VO service '{0}'".format(fileName))
+                self._fileName = None
+            elif fileName.lower() == 'gsm':
+                self.log.debug("Attempting to load model from GSM...")
+                fileName = tableio.getGSM(VOPosition, VORadius, assocTheta)
+                self.table = Table.read(fileName, format='makesourcedb')
+                self.log.debug("Successfully loaded model from GSM")
                 self._fileName = None
             else:
                 self.log.debug("Attempting to load model from file '{0}'...".format(fileName))
@@ -1234,7 +1243,12 @@ class SkyModel(object):
         def npsum(array):
             return np.sum(array, axis=0)
 
-        col = self.table[colName].groups.aggregate(npsum)
+        if hasattr(self.table[colName], 'filled'):
+            col = self.table[colName].filled()
+            col.group_by(self.table['Patch'])
+            col.groups.aggregate(npsum)
+        else:
+            col = self.table[colName].groups.aggregate(npsum)
         if applyBeam and colName in ['I', 'Q', 'U', 'V']:
             col = self._applyBeamToCol(col, patch=True)
 
@@ -1262,7 +1276,12 @@ class SkyModel(object):
         def npmin(array):
             return np.min(array, axis=0)
 
-        col = self.table[colName].groups.aggregate(npmin)
+        if hasattr(self.table[colName], 'filled'):
+            col = self.table[colName].filled()
+            col.group_by(self.table['Patch'])
+            col.groups.aggregate(npmin)
+        else:
+            col = self.table[colName].groups.aggregate(npmin)
         if applyBeam and colName in ['I', 'Q', 'U', 'V']:
             col = self._applyBeamToCol(col, patch=True)
 
@@ -1290,7 +1309,12 @@ class SkyModel(object):
         def npmax(array):
             return np.max(array, axis=0)
 
-        col = self.table[colName].groups.aggregate(npmax)
+        if hasattr(self.table[colName], 'filled'):
+            col = self.table[colName].filled()
+            col.group_by(self.table['Patch'])
+            col.groups.aggregate(npmax)
+        else:
+            col = self.table[colName].groups.aggregate(npmax)
         if applyBeam and colName in ['I', 'Q', 'U', 'V']:
             col = self._applyBeamToCol(col, patch=True)
 
@@ -1322,7 +1346,10 @@ class SkyModel(object):
             def npsum(array):
                 return np.sum(array, axis=0)
 
-            vals = self.table[colName].data
+            if hasattr(self.table[colName], 'filled'):
+                vals = self.table[colName].filled().data
+            else:
+                vals = self.table[colName].data
             if weight:
                 weights = self.getColValues('I', applyBeam=applyBeam)
                 if weights.shape != vals.shape:
@@ -1445,16 +1472,12 @@ class SkyModel(object):
 
         Returns
         -------
-        col : float
+        separation : float
             Angular separation in degrees
         """
-        from astropy.coordinates import SkyCoord
-        import astropy.units as u
+        from operations_lib import calculateSeparation
 
-        coord1 = SkyCoord(ra1, dec1, unit=(u.degree, u.degree), frame='fk5')
-        coord2 = SkyCoord(ra2, dec2, unit=(u.degree, u.degree), frame='fk5')
-
-        return coord1.separation(coord2)
+        return calculateSeparation(ra1, dec1, ra2, dec2)
 
 
     def write(self, fileName=None, format='makesourcedb', clobber=False,
@@ -1976,6 +1999,45 @@ class SkyModel(object):
             LSM2 = SkyModel(LSM2)
         operations.concatenate.concatenate(self, LSM2, matchBy=matchBy,
             radius=radius, keep=keep, inheritPatches=inheritPatches)
+
+
+    def compare(self, LSM2, radius=0.1, outDir=None, labelBy=None,
+        ignoreSpec=None, excludeMultiple=True):
+        """
+        Compare two sky models
+
+        Parameters
+        ----------
+        LSM1 : SkyModel object
+            Parent sky model
+        LSM2 : SkyModel object
+            Sky model to compare to the parent sky model
+        radius : float or str, optional
+            Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
+            for matching
+        outDir : str, optional
+            If given, the plots and stats are saved to this directory instead of
+            displayed
+        labelBy : str, optional
+            One of 'source' or 'patch': label points using source names ('source') or
+            patch names ('patch')
+        ignoreSpec : float, optional
+            Ignore sources with this spectral index
+        excludeMultiple : bool, optional
+            If True, sources with multiple matches are excluded
+
+        Examples
+        --------
+        Compare two sky models and save plots::
+
+            >>> LSM2 = lsmtool.load('sky2.model')
+            >>> s.compare(LSM2, outDir='comparison_results/')
+
+        """
+        if type(LSM2) is str:
+            LSM2 = SkyModel(LSM2)
+        operations.compare.compare(self, LSM2, radius=radius, outDir=outDir,
+            labelBy=labelBy, ignoreSpec=ignoreSpec, excludeMultiple=excludeMultiple)
 
 
     def plot(self, fileName=None, labelBy=None):
