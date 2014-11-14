@@ -37,7 +37,7 @@ def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
     fileName : str
         Name of input ASCII file from which the sky model is read (must respect
         the makesourcedb format) or name of VO service to query (must be one of
-        'VLSSr', 'WENSS', or 'NVSS'), or dict (single source only)
+        'VLSSr', 'WENSS', 'NVSS', or 'GSM'), or dict (single source only)
     beamMS : str, optional
         Measurement set from which the primary beam will be estimated. A
         column of attenuated Stokes I fluxes will be added to the table

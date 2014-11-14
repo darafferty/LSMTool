@@ -6,13 +6,13 @@ LSMTool.Steps = [select, remove, transfer, group, ungroup, merge, move, concaten
 
 LSMTool.Steps.select.Operation = SELECT # Select sources by source or patch properties
 LSMTool.Steps.select.FilterExpression = I > 10.0 Jy # any valid column name can be used
-LSMTool.Steps.select.Aggregate = False # Filter by aggregated patch property instead of by source property
+LSMTool.Steps.select.Aggregate = sum # Filter by aggregated patch property instead of by source property
 LSMTool.Steps.select.ApplyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
 LSMTool.Steps.select.OutFile = out_sky_model.sky
 
 LSMTool.Steps.remove.Operation = REMOVE # Remove sources by source or patch properties
 LSMTool.Steps.remove.FilterExpression = I > 10.0 Jy # any valid column name can be used
-LSMTool.Steps.remove.Aggregate = False # Filter by aggregated patch property instead of by source property
+LSMTool.Steps.remove.Aggregate = sum # Filter by aggregated patch property instead of by source property
 LSMTool.Steps.remove.ApplyBeam = True # If true, apparent fluxes will be used (a beam MS must be given to the beamMS parameter of lsmtool.py)
 LSMTool.Steps.remove.OutFile = out_sky_model.sky
 
