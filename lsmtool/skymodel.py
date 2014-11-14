@@ -84,7 +84,7 @@ class SkyModel(object):
             elif fileName.lower() == 'gsm':
                 self.log.debug("Attempting to load model from GSM...")
                 fileName = tableio.getGSM(VOPosition, VORadius, assocTheta)
-                self.table = Table.read(fileName, format='makesourcedb')
+                self.table = Table.read(fileName.name, format='makesourcedb')
                 self.log.debug("Successfully loaded model from GSM")
                 self._fileName = None
             else:
