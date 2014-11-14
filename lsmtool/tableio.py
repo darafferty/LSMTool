@@ -120,12 +120,12 @@ def skyModelReader(fileName):
     outlines.append('\n') # needed in case of single-line sky models
 
     # Create table
-    table = createTable(outlines, metaDict, colNames)
+    table = createTable(outlines, metaDict, colNames, colDefaults)
 
     return table
 
 
-def createTable(outlines, metaDict, colNames):
+def createTable(outlines, metaDict, colNames, colDefaults):
     """
     Creates an astropy table from inputs.
 
@@ -137,6 +137,8 @@ def createTable(outlines, metaDict, colNames):
         Input meta data
     colNames : list of str
         Input column names
+    colDefaults : list
+        Input column default values
 
     Returns
     -------
@@ -798,12 +800,9 @@ def coneSearch(VOService, position, radius):
     """
     Returns table from a VO cone search
     """
+    import pyvo as vo
+
     log = logging.getLogger('LSMTool.Load')
-    try:
-        import pyvo as vo
-    except ImportError as e:
-        log.error('Could not import PyVO. VO cone searches not possible')
-        return
 
     # Define allowed cone-search databases. These are the ones we know how to
     # convert to makesourcedb-formated sky models.
@@ -917,6 +916,35 @@ def coneSearch(VOService, position, radius):
             table.columns[colName].fill_value = fillVal
 
     return table
+
+
+def getGSM(position, radius, assocTheta):
+    """
+    Returns the file name from a gsm.py search
+    """
+    import tempfile
+    import subprocess
+    import lofar.gsm.gsmutils as gsm
+
+    log = logging.getLogger('LSMTool.Load')
+
+    outFile = tempfile.NamedTemporaryFile()
+    RA = RA2Angle(position[0])[0].value
+    Dec = Dec2Angle(position[1])[0].value
+    try:
+        radius = Angle(radius, unit='degree').value
+    except TypeError:
+        raise ValueError('GSM query radius not understood.')
+    try:
+        assocTheta = Angle(assocTheta, unit='degree').value
+    except TypeError:
+        raise ValueError('GSM association radius not understood.')
+
+    cmd = ['gsm.py', outFile.name, '{0}'.format(RA), '{0}'.format(Dec),
+        '{0}'.format(radius), '{0}'.format(assocTheta)]
+    subprocess.call(cmd)
+
+    return outFile
 
 
 def makeEmptyTable():
