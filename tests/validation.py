@@ -20,6 +20,13 @@ s.ungroup()
 print('Concatenate with concat.sky')
 s.concatenate('tests/concat.sky', matchBy = 'position', radius = '30 arcsec', keep = 'from2')
 
+print('Compare to concat.sky')
+c = lsmtool.load('tests/concat.sky')
+c.ungroup()
+c.select('I > 5.0 Jy')
+s.ungroup()
+s.compare(c, outDir='tests/')
+
 print('Add a source')
 s.add({'Name': 'src1', 'Type': 'POINT', 'Ra': 277.4232, 'Dec': 48.3689, 'I': 0.69})
 
