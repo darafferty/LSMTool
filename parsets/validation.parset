@@ -1,7 +1,7 @@
 # Validation LSMTool parset
 # Can be run with "bin/lsmtool tests/no_patches.sky parsets/validation.parset"
 
-LSMTool.Steps = [select, transfer, remove, ungroup, concatenate, add, group, move, merge, setpos, plot]
+LSMTool.Steps = [select, transfer, remove, ungroup, concatenate, compare, add, group, move, merge, setpos, plot]
 
 # Select individual sources with Stokes I fluxes above 1 Jy
 LSMTool.Steps.select.Operation = SELECT
@@ -25,6 +25,11 @@ LSMTool.Steps.concatenate.Skymodel2 = tests/concat.sky
 LSMTool.Steps.concatenate.MatchBy = position
 LSMTool.Steps.concatenate.Radius = 30 arcsec
 LSMTool.Steps.concatenate.Keep = from2
+
+# Compare to concat.sky
+LSMTool.Steps.compare.Operation = COMPARE
+LSMTool.Steps.compare.OutDir = tests/
+LSMTool.Steps.compare.SkyModel2 = concat.sky
 
 # Add a source
 LSMTool.Steps.add.Operation = ADD

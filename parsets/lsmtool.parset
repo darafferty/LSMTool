@@ -1,7 +1,7 @@
 # Example of LSMTool parset
 # Includes all possible options
 
-LSMTool.Steps = [select, remove, transfer, group, ungroup, merge, move, concatenate, add, plot]
+LSMTool.Steps = [select, remove, transfer, group, ungroup, merge, move, concatenate, compare, add, plot]
 
 
 LSMTool.Steps.select.Operation = SELECT # Select sources by source or patch properties
@@ -50,6 +50,14 @@ LSMTool.Steps.concatenate.Keep = all # if two sources match then keep all, from1
 LSMTool.Steps.concatenate.InheritPatches = True # matches inherit patches from parent sky model
 LSMTool.Steps.concatenate.OutFile = out_sky_model.sky
 
+LSMTool.Steps.compare.Operation = COMPARE # Compare fluxes and positions between two sky models
+LSMTool.Steps.compare.OutDir = comparison_plots/ # Output directory for plots
+LSMTool.Steps.compare.SkyModel2 = in_sky_model2.sky
+LSMTool.Steps.compare.Radius = 10 arcsec # radius within which matches are identified
+LSMTool.Steps.compare.LabelBy = patch # label plot points by source or patch
+LSMTool.Steps.compare.ExcludeMultiple = True # Exclude sources with multiple matches
+LSMTool.Steps.compare.IgnoreSpec = -0.7 # Ignore any source in SkyModel2 with this spectra index
+
 LSMTool.Steps.add.Operation = ADD # Add a source
 LSMTool.Steps.add.Name = src1 # required
 LSMTool.Steps.add.Type = POINT # required
@@ -67,4 +75,4 @@ LSMTool.Steps.setpos.OutFile = out_sky_model.sky
 
 LSMTool.Steps.plot.Operation = PLOT # Plot sky model
 LSMTool.Steps.plot.OutFile = out_sky_model.pdf
-LSMTool.Steps.plot.LabelBy = patch
+LSMTool.Steps.plot.LabelBy = patch # label plot points by source or patch

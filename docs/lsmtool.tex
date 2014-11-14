@@ -68,6 +68,7 @@ These are the operations that LSMTool can perform:
  \item[ADD]: Add a source
  \item[SETPATCHPOSITIONS]: Calculate and set patch positions
  \item[PLOT]: Plot a simple representation of the sky model
+ \item[COMPARE]: Compare source fluxes and positions of two sky models
 \end{description}
 
 
@@ -159,6 +160,13 @@ AnyValidColumnName & & value & Any valid column name can be specified\\
 \multicolumn{4}{l}{\textbf{PLOT}}\\
 LabelBy & string & patch & Label points by: source or patch\\
 \hline
+\multicolumn{4}{l}{\textbf{COMPARE}}\\
+OutDir & string & comparison_plots/ & Output directory for plots\\
+SkyModel2 & string & in_sky_model2.sky & Name of second sky model\\
+Radius & string & 10 arcsec & Radius within which matches are identified\\
+LabelBy & patch & string & Label plot points by source or patch\\
+ExcludeMultiple & bool & True & Exclude sources with multiple matches\\
+IgnoreSpec & float & -0.7 & Ignore any source in SkyModel2 with this spectral index\\
 \end{tabular}
 \caption{Definition of variables in the LSMTool parset. \label{lsmtool:tab:local_val}}
 \end{table}
