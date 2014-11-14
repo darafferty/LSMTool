@@ -1245,14 +1245,14 @@ class SkyModel(object):
 
         if hasattr(self.table[colName], 'filled'):
             col = self.table[colName].filled()
-            col.group_by(self.table['Patch'])
-            col.groups.aggregate(npsum)
+            gcol = col.group_by(self.table['Patch'])
+            gcol = gcol.groups.aggregate(npsum)
         else:
-            col = self.table[colName].groups.aggregate(npsum)
+            gcol = self.table[colName].groups.aggregate(npsum)
         if applyBeam and colName in ['I', 'Q', 'U', 'V']:
-            col = self._applyBeamToCol(col, patch=True)
+            gcol = self._applyBeamToCol(gcol, patch=True)
 
-        return col
+        return gcol
 
 
     def _getMinColumn(self, colName, applyBeam=False):
@@ -1278,14 +1278,14 @@ class SkyModel(object):
 
         if hasattr(self.table[colName], 'filled'):
             col = self.table[colName].filled()
-            col.group_by(self.table['Patch'])
-            col.groups.aggregate(npmin)
+            gcol = col.group_by(self.table['Patch'])
+            gcol = gcol.groups.aggregate(npmin)
         else:
-            col = self.table[colName].groups.aggregate(npmin)
+            gcol = self.table[colName].groups.aggregate(npmin)
         if applyBeam and colName in ['I', 'Q', 'U', 'V']:
-            col = self._applyBeamToCol(col, patch=True)
+            gcol = self._applyBeamToCol(gcol, patch=True)
 
-        return col
+        return gcol
 
 
     def _getMaxColumn(self, colName, applyBeam=False):
@@ -1311,14 +1311,14 @@ class SkyModel(object):
 
         if hasattr(self.table[colName], 'filled'):
             col = self.table[colName].filled()
-            col.group_by(self.table['Patch'])
-            col.groups.aggregate(npmax)
+            gcol = col.group_by(self.table['Patch'])
+            gcol = gcol.groups.aggregate(npmax)
         else:
-            col = self.table[colName].groups.aggregate(npmax)
+            gcol = self.table[colName].groups.aggregate(npmax)
         if applyBeam and colName in ['I', 'Q', 'U', 'V']:
-            col = self._applyBeamToCol(col, patch=True)
+            gcol = self._applyBeamToCol(gcol, patch=True)
 
-        return col
+        return gcol
 
 
     def _getAveragedColumn(self, colName, weight=True, applyBeam=False):
@@ -2001,7 +2001,7 @@ class SkyModel(object):
             radius=radius, keep=keep, inheritPatches=inheritPatches)
 
 
-    def compare(self, LSM2, radius=0.1, outDir=None, labelBy=None,
+    def compare(self, LSM2, radius='10 arcsec', outDir=None, labelBy=None,
         ignoreSpec=None, excludeMultiple=True):
         """
         Compare two sky models
