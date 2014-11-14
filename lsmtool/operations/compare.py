@@ -27,16 +27,23 @@ def run(step, parset, LSM):
 
     outDir = parset.getString('.'.join(["LSMTool.Steps", step, "OutDir"]), '' )
     skyModel2 = parset.getString('.'.join(["LSMTool.Steps", step, "Skymodel2"]), '' )
-    radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '0.1' )
+    radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '10 arcsec' )
     labelBy = parset.getString('.'.join(["LSMTool.Steps", step, "LabelBy"]), '' )
+    excludeMultiple = parset.getBool('.'.join(["LSMTool.Steps", step, "ExcludeMultiple"]), True )
+    ignoreSpec = parset.getString('.'.join(["LSMTool.Steps", step, "IgnoreSpec"]), '' )
 
     if outDir == '':
         outDir = None
     if labelBy == '':
         labelBy = None
+    if ignoreSpec == '':
+        ignoreSpec = None
+    else:
+        ignoreSpec = float(ignoreSpec)
 
     try:
-        compare(LSM, skyModel2, radius, outDir, labelBy)
+        compare(LSM, skyModel2, radius=radius, outDir=outDir, labelBy=labelBy,
+            excludeMultiple=excludeMultiple, ignoreSpec=ignoreSpec)
         result = 0
     except Exception as e:
         log.error(e.message)
@@ -243,7 +250,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir=None, labelBy=None,
     if not os.path.exists(outDir):
         os.makedirs(outDir)
     plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir)
-    plotFluxRatioPos(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir)
+    plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir)
     plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir)
     plotOffsets(RA, Dec, RA2, Dec2, labels, outDir)
 
@@ -342,7 +349,7 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir):
     plt.savefig(outDir+'flux_ratio_vs_flux.pdf', format='pdf')
 
 
-def plotFluxRatioPos(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels, outDir):
+def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels, outDir):
     """
     Makes sky plot of measured-to-predicted flux ratio
     """
@@ -377,8 +384,8 @@ def plotFluxRatioPos(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels, o
     plt.title('Flux Ratios (Model 1 / Model 2)')
 
     # Set symbol color by ratio
-    vmin = np.min(ratio)
-    vmax = np.max(ratio)
+    vmin = np.min(ratio) - 0.1
+    vmax = np.max(ratio) + 0.1
     sm = plt.cm.ScalarMappable(cmap=plt.cm.jet,
         norm=plt.normalize(vmin=vmin, vmax=vmax))
     sm.set_array(ratio)
