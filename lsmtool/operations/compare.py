@@ -45,8 +45,8 @@ def run(step, parset, LSM):
     return result
 
 
-def compare(LSM1, LSM2, radius=0.1, outDir=None, labelBy=None, ignoreSpec=None,
-    excludeMultiple=True):
+def compare(LSM1, LSM2, radius='10 arcsec', outDir=None, labelBy=None,
+    ignoreSpec=None, excludeMultiple=True):
     """
     Compare two sky models
 
@@ -82,6 +82,7 @@ def compare(LSM1, LSM2, radius=0.1, outDir=None, labelBy=None, ignoreSpec=None,
     from astropy.table import vstack, Column
     from ..operations_lib import matchSky, radec2xy
     import numpy as np
+    import os
 
     if type(LSM2) is str:
         LSM2 = skymodel.SkyModel(LSM2)
@@ -235,6 +236,12 @@ def compare(LSM1, LSM2, radius=0.1, outDir=None, labelBy=None, ignoreSpec=None,
         labels = None
 
     # Make plots
+    if outDir is None:
+        outDir = '.'
+    if outDir[-1] != '/':
+        outDir += '/'
+    if not os.path.exists(outDir):
+        os.makedirs(outDir)
     plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir)
     plotFluxRatioPos(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir)
     plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir)
@@ -245,7 +252,6 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels, outDi
     """
     Makes plot of measured-to-predicted flux ratio vs. distance from center
     """
-    import os
     import numpy as np
     from ..operations_lib import calculateSeparation
     try:
@@ -287,10 +293,6 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels, outDi
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    if outDir[-1] != '/':
-        outDir += '/'
-    if not os.path.exists(outDir):
-        os.makedirs(outDir)
     plt.savefig(outDir+'flux_ratio_vs_distance.pdf', format='pdf')
 
 
@@ -337,10 +339,6 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir):
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    if outDir[-1] != '/':
-        outDir += '/'
-    if not os.path.exists(outDir):
-        os.makedirs(outDir)
     plt.savefig(outDir+'flux_ratio_vs_flux.pdf', format='pdf')
 
 
@@ -413,10 +411,6 @@ def plotFluxRatioPos(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels, o
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    if outDir[-1] != '/':
-        outDir += '/'
-    if not os.path.exists(outDir):
-        os.makedirs(outDir)
     plt.savefig(outDir+'flux_ratio_sky.pdf', format='pdf')
 
 
@@ -469,8 +463,4 @@ def plotOffsets(RA, Dec, refRA, refDec, labels, outDir):
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    if outDir[-1] != '/':
-        outDir += '/'
-    if not os.path.exists(outDir):
-        os.makedirs(outDir)
     plt.savefig(outDir+'postional_offsets.pdf', format='pdf')
