@@ -944,7 +944,7 @@ def getGSM(position, radius, assocTheta):
         '{0}'.format(radius), '{0}'.format(assocTheta)]
     subprocess.call(cmd)
 
-    return outFile
+    return outFile.name
 
 
 def makeEmptyTable():
