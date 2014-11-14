@@ -608,7 +608,7 @@ class SkyModel(object):
             midRA = RA[0]
             midDec = Dec[0]
 
-        return x, y, midRA, midDec
+        return np.array(x), np.array(y), midRA, midDec
 
 
     def getDefaultValues(self):
