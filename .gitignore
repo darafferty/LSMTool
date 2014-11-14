@@ -59,3 +59,11 @@ tests/test_big.sky
 tests/final.sky
 
 tests/plot.pdf
+
+tests/flux_ratio_sky.pdf
+
+tests/flux_ratio_vs_distance.pdf
+
+tests/flux_ratio_vs_flux.pdf
+
+tests/postional_offsets.pdf
