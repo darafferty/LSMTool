@@ -32,6 +32,7 @@ The following operations are available:
 * ADD: Add a source
 * SETPATCHPOSITIONS: Calculate and set patch positions
 * PLOT: Plot the sky model
+* COMPARE: Compare source fluxes and positions of two sky models
 
 For details, please see the [full documentation](docs/build/html/index.html).
 
