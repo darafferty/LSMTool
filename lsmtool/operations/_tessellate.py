@@ -87,7 +87,7 @@ def guess_regular_grid(xnodes, ynodes, pixelsize=None) :
     """
     ## First deriving a pixel size
     xn_rav, yn_rav = xnodes.ravel(), ynodes.ravel()
-    if pixelsize == None :
+    if pixelsize is None :
         pixelsize = derive_pixelsize(xnodes, ynodes)
     minxn = np.int(np.min(xn_rav) / pixelsize) * pixelsize
     minyn = np.int(np.min(yn_rav) / pixelsize) * pixelsize
@@ -109,7 +109,7 @@ def derive_unbinned_field(xnodes, ynodes, data, xunb=None, yunb=None) :
 
        Return: xunb, yunb, and unbinned_data arrays with the same shape as xunb,
     """
-    if xunb == None :
+    if xunb is None :
         xunb, yunb = guess_regular_grid(xnodes, ynodes)
 
     x_rav, y_rav = xunb.ravel(), yunb.ravel()
@@ -136,7 +136,7 @@ class bin2D:
         self.data = data.ravel()
 
         ## Sort all pixels by their distance to the maximum flux
-        if pixelsize == None :
+        if pixelsize is None :
             self.pixelsize = derive_pixelsize(self.xin, self.yin, verbose=1)
         else :
             self.pixelsize = pixelsize
@@ -275,7 +275,7 @@ class bin2D:
 
     ### Compute WEIGHTED centroid of bins ======================================
     def bin2d_weighted_centroid(self, weight=None, verbose=0):
-        if weight != None : self.weight = weight
+        if weight is not None : self.weight = weight
 
         self.Areanode, self.bins = np.histogram(self.status, bins=np.arange(np.max(self.status+0.5))+0.5)
         ## Select the ones which have at least one bin
@@ -303,8 +303,8 @@ class bin2D:
         """
         Assign the bins when the nodes are derived With Scaling factor
         """
-        if scale != None: self.scale = scale
-        if sel_pixels == None : sel_pixels = range(self.xin.size)
+        if scale is not None: self.scale = scale
+        if sel_pixels is None : sel_pixels = range(self.xin.size)
         for i in sel_pixels :
             minind = argmin(dist2(self.xin[i], self.yin[i], self.xnode, self.ynode, scale=self.scale))
             self.status[i] = self.statusnode[minind]
@@ -326,7 +326,7 @@ class bin2D:
         self.status = np.zeros(self.npix, dtype=Nint)
         self.statusnode = np.arange(self.xnode.size) + 1
 
-        if wvt != None : self.wvt = wvt
+        if wvt is not None : self.wvt = wvt
         if self.wvt : self.weight = np.ones_like(self.data)
         else : self.weight = self.data**4
 
@@ -354,8 +354,8 @@ class bin2D:
         wvt: default is None (will use preset value, see self.wvt)
         cvt: default is None (will use preset value, see self.cvt)
         """
-        if cvt != None : self.cvt = cvt
-        if wvt != None : self.wvt = wvt
+        if cvt is not None : self.cvt = cvt
+        if wvt is not None : self.wvt = wvt
 
         self.bin2d_accretion(verbose=verbose)
         self.bin2d_centroid()
@@ -402,7 +402,7 @@ class bin2D:
         for i in range(len(self.xin)) :
             patches.append(mpatches.Rectangle((self.xin[i],self.yin[i]), binsize*10, binsize*10))
 
-        if datain == None :
+        if datain is None :
             dataout = self.status
             mycmap = 'prism'
         else :
@@ -413,7 +413,7 @@ class bin2D:
                     dataout[listbins] = [datain[i]]*len(listbins)
             elif len(datain) == self.xin.size :
                 dataout = datain
-            if mycmap == None : mycmap = 'jet'
+            if mycmap is None : mycmap = 'jet'
 
         colors = dataout * 100.0 / max(dataout)
         collection = PatchCollection(patches, cmap=mycmap)
@@ -442,7 +442,7 @@ class bin2D:
         Output = xnode, ynode, bindata, S/N
         """
 
-        if datain == None: datain = copy.copy(self.data)
+        if datain is None: datain = copy.copy(self.data)
 
         dataout = np.zeros(self.xnode.size, Nfloat)
         xout = np.zeros_like(dataout)
