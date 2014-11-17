@@ -67,15 +67,15 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir=None, labelBy=None,
         Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
         for matching
     outDir : str, optional
-        If given, the plots and stats are saved to this directory instead of
-        displayed
+        If given, plots are saved to this directory
     labelBy : str, optional
         One of 'source' or 'patch': label points using source names ('source') or
         patch names ('patch')
     ignoreSpec : float, optional
         Ignore sources with this spectral index
     excludeMultiple : bool, optional
-        If True, sources with multiple matches are excluded
+        If True, sources with multiple matches are excluded. If False, the
+        nearest of the multiple matches will be used for comparison
 
     Examples
     --------
