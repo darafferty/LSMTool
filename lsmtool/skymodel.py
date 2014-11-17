@@ -83,8 +83,9 @@ class SkyModel(object):
                 self._fileName = None
             elif fileName.lower() == 'gsm':
                 self.log.debug("Attempting to load model from GSM...")
-                fileName = tableio.getGSM(VOPosition, VORadius, assocTheta)
-                self.table = Table.read(fileName.name, format='makesourcedb')
+                fileObj = tableio.getGSM(VOPosition, VORadius, assocTheta)
+                self.table = Table.read(fileObj.name, format='makesourcedb')
+                fileObj.close()
                 self.log.debug("Successfully loaded model from GSM")
                 self._fileName = None
             else:
@@ -201,7 +202,14 @@ class SkyModel(object):
         """
         import copy
 
-        return copy.deepcopy(self)
+        # The logger's stream handlers are not copyable with deepcopy, so copy
+        # them by hand:
+        self.log = None
+        LSMCopy = copy.deepcopy(self)
+        LSMCopy.log = logging.getLogger('LSMTool')
+        self.log = logging.getLogger('LSMTool')
+
+        return LSMCopy
 
 
     def more(self, colName=None, patchName=None, sourceName=None, sortBy=None,
