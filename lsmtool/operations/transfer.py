@@ -118,7 +118,7 @@ def transfer(LSM, patchSkyModel, matchBy='name', radius=0.1):
     elif matchBy.lower() == 'position':
         log.debug('Transferring patches by matching positions...')
         matches1, matches2 = matchSky(LSM, masterLSM, radius=radius)
-        nMissing = len(LSM) - len(matches1[0])
+        nMissing = len(LSM) - len(matches1)
 
         # Set patch names to be the same for the matches
         table['Patch'][matches1] = masterLSM.table['Patch'][matches2]
