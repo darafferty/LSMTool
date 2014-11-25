@@ -94,6 +94,7 @@ if __name__=='__main__':
                            "PLOT": operations.plot,
                            "SETPATCHPOSITIONS": operations.setpatchpositions,
                            "TRANSFER": operations.transfer
+                           "COMPARE": operations.compare
                            }
 
     for step in steps:

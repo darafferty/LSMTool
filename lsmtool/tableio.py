@@ -244,7 +244,7 @@ def createTable(outlines, metaDict, colNames, colDefaults):
 
 def processFormatString(formatString):
     """
-    Proccesses the header string
+    Proccesses the header string.
 
     Parameters
     ----------
@@ -359,7 +359,7 @@ def processFormatString(formatString):
 
 def processLine(line, metaDict, colNames):
     """
-    Processes a makesourcedb line
+    Processes a makesourcedb line.
 
     Parameters
     ----------
@@ -451,7 +451,7 @@ def Dec2Angle(Dec):
     ----------
     Dec : str, float or list of str, float
         Values of Dec to convert. Can be strings in makesourcedb format or floats
-        in degrees.
+        in degrees
 
     Returns
     -------
@@ -508,7 +508,8 @@ def skyModelWriter(table, fileName):
     Parameters
     ----------
     fileName : str
-        Output ASCII file to which the sky model is written.
+        Output ASCII file to which the sky model is written
+
     """
     log = logging.getLogger('LSMTool.Write')
 
@@ -584,6 +585,7 @@ def rowStr(row, metaDict):
     -------
     line : str
         Sting representing a row in a makesourcedb sky model file
+
     """
     line = []
     for colKey in row.columns:
@@ -638,6 +640,7 @@ def ds9RegionWriter(table, fileName):
         Input sky model table
     fileName : str
         Output file to which the sky model is written
+
     """
     log = logging.getLogger('LSMTool.Write')
 
@@ -692,6 +695,7 @@ def kvisAnnWriter(table, fileName):
         Input sky model table
     fileName : str
         Output file to which the sky model is written
+
     """
     log = logging.getLogger('LSMTool.Write')
 
@@ -733,7 +737,8 @@ def casaRegionWriter(table, fileName):
         Input sky model table
     fileName : str
         Output file to which the sky model is written
-     """
+
+    """
     log = logging.getLogger('LSMTool.Write')
 
     casaFile = open(fileName, 'w')
@@ -775,7 +780,15 @@ def casaRegionWriter(table, fileName):
 
 
 def broadcastTable(fileName):
-    """Sends a table via SAMP"""
+    """
+    Sends a table via SAMP.
+
+    Parameters
+    ----------
+    fileName : str
+        Name of sky model file to broadcast
+
+    """
     from astropy.vo.samp import SAMPHubServer, SAMPIntegratedClient, SAMPHubError
     import urlparse
 
@@ -798,7 +811,19 @@ def broadcastTable(fileName):
 
 def coneSearch(VOService, position, radius):
     """
-    Returns table from a VO cone search
+    Returns table from a VO cone search.
+
+    Parameters
+    ----------
+    VOService : str
+        Name of VO service to query (must be one of 'VLSSr', 'WENSS', or 'NVSS')
+    position : list of floats
+        A list specifying a new position as [RA, Dec] in either makesourcedb
+        format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
+        [123.2312, 23.3422])
+    radius : float or str, optional
+        Radius in degrees (if float) or 'value unit' (if str; e.g.,
+        '30 arcsec') for cone search region in degrees
     """
     import pyvo as vo
 
@@ -920,7 +945,21 @@ def coneSearch(VOService, position, radius):
 
 def getGSM(position, radius, assocTheta):
     """
-    Returns the file name from a gsm.py search
+    Returns the file name from a gsm.py search.
+
+    Parameters
+    ----------
+    position : list of floats
+        A list specifying a new position as [RA, Dec] in either makesourcedb
+        format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
+        [123.2312, 23.3422])
+    radius : float or str, optional
+        Radius in degrees (if float) or 'value unit' (if str; e.g.,
+        '30 arcsec') for cone search region in degrees
+    assocTheta : float or str, optional
+        Radius in degrees (if float) or 'value unit' (if str; e.g.,
+        '30 arcsec') for GSM source association
+
     """
     import tempfile
     import subprocess
@@ -948,7 +987,9 @@ def getGSM(position, radius, assocTheta):
 
 
 def makeEmptyTable():
-    """Returns an empty sky model table"""
+    """
+    Returns an empty sky model table.
+    """
     outlines = ['Z, Z, 0.0, 0.0, 0.0\n']
     colNames = ['Name', 'Type', 'Ra', 'Dec', 'I']
     converters = {}

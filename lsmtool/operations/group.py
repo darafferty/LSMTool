@@ -55,31 +55,31 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
     Parameters
     ----------
     LSM : SkyModel object
-        Input sky model.
+        Input sky model
     algorithm : str
         Algorithm to use for grouping:
         - 'single' => all sources are grouped into a single patch
         - 'every' => every source gets a separate patch named 'source_patch'
         - 'cluster' => SAGECAL clustering algorithm that groups sources into
-            specified number of clusters (specified by the numClusters parameter).
+            specified number of clusters (specified by the numClusters parameter)
         - 'tessellate' => group into tiles whose total flux approximates
-            the target flux (specified by the targetFlux parameter).
+            the target flux (specified by the targetFlux parameter)
         - the filename of a mask image => group by masked regions (where mask =
             True). Source outside of masked regions are given patches of their
-            own.
+            own
     targetFlux : str or float, optional
         Target flux for tessellation (the total flux of each tile will be close
         to this value). The target flux can be specified as either a float in Jy
-        or as a string with units (e.g., '25.0 mJy').
+        or as a string with units (e.g., '25.0 mJy')
     numClusters : int, optional
         Number of clusters for clustering. Sources are grouped around the
-        numClusters brightest sources.
+        numClusters brightest sources
     applyBeam : bool, optional
-        If True, fluxes will be attenuated by the beam.
+        If True, fluxes will be attenuated by the beam
     root : str, optional
         Root string from which patch names are constructed (when algorithm =
         'single', 'cluster', or 'tesselate'). Patch names will be 'root_INDX',
-        where INDX is an integer ranging from (0:nPatches).
+        where INDX is an integer ranging from (0:nPatches)
     method : None or str, optional
         This parameter specifies the method used to set the patch positions:
         - 'mid' => the position is set to the midpoint of the patch

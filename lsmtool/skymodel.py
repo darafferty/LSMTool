@@ -301,6 +301,7 @@ class SkyModel(object):
         -------
         colName : str, None
             Properly formatted name of column or None if colName not found
+
         """
         if type(colName) is str:
             colNameLower = colName.lower()
@@ -646,7 +647,7 @@ class SkyModel(object):
         colDict : dict
             Dict specifying column names and default values as
             {'colName':value} where the value is in the units accepted by
-            makesourcedb (e.g., Hz for ReferenceFrequency).
+            makesourcedb (e.g., Hz for 'ReferenceFrequency').
 
         Examples
         --------
@@ -898,12 +899,12 @@ class SkyModel(object):
         --------
         Get row values for the source 'src1'::
 
-            >>> r = s.getRowValues('src1')
+            >>> rows = s.getRowValues('src1')
 
         Sum over the fluxes of sources in the 'bin1' patch::
 
             >>> tot = 0.0
-            >>> for r in s.getRowValues('bin1'): tot += r['I']
+            >>> for row in s.getRowValues('bin1'): tot += row['I']
 
         """
         sourceNames = self.getColValues('Name')
@@ -970,6 +971,9 @@ class SkyModel(object):
         """
         Sets values for a single row.
 
+        If a row with the given name already exists, its values are
+        updated. If not, a new row is made and appended to the table.
+
         Parameters
         ----------
         values : list, numpy array, or dict
@@ -986,16 +990,17 @@ class SkyModel(object):
 
         Examples
         --------
-        Set row values for the source 'src1'::
+        Set row values for the source 'src1' (which can be a new source or an
+        existing source)::
 
             >>> s.setRowValues({'Name':'src1', 'Ra':213.123, 'Dec':23.1232,
-                'I':23.2, 'Type':'POINT'}
+                'I':23.2, 'Type':'POINT'})
 
         The RA and Dec values can be in degrees (as above) or in makesourcedb
         format. E.g.::
 
             >>> s.setRowValues({'Name':'src1', 'Ra':'12:22:21.1',
-                'Dec':'+14.46.31.5', 'I':23.2, 'Type':'POINT'}
+                'Dec':'+14.46.31.5', 'I':23.2, 'Type':'POINT'})
 
         """
         # Read model into astropy table object
@@ -1023,7 +1028,7 @@ class SkyModel(object):
         -------
         data : numpy array
             Array of patch sizes. None is returned if the sky model
-            does not have patches.
+            does not have patches
 
         """
         if self.hasPatches:
@@ -1043,7 +1048,7 @@ class SkyModel(object):
         -------
         names : numpy array
             Array of patch names. None is returned if the sky model
-            does not have patches.
+            does not have patches
 
         """
         if self.hasPatches:
@@ -1072,7 +1077,7 @@ class SkyModel(object):
         Returns
         -------
         indices : list
-            List of indices.
+            List of indices
         """
         import numpy as np
 
@@ -1118,14 +1123,15 @@ class SkyModel(object):
         Parameters
         ----------
         colName : str
-            Name of column to get. If not found, None is returned.
+            Name of column to get. If not found, None is returned
         applyBeam : bool, optional
-            If True, fluxes will be attenuated by the beam.
+            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
         col : astropy Column
             Nonaggregated Column object
+
          """
         colName = self._verifyColName(colName)
         if colName is None:
@@ -1146,7 +1152,7 @@ class SkyModel(object):
         Parameters
         ----------
         colName : str
-            Name of column to get. If not found, None is returned.
+            Name of column to get. If not found, None is returned
         aggregate : str, optional
             If set, the array returned will be of values aggregated
             over the patch members. The following aggregation functions are
@@ -1157,12 +1163,13 @@ class SkyModel(object):
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
         applyBeam : bool, optional
-            If True, fluxes will be attenuated by the beam.
+            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
         col : astropy Column
             Column object with aggregated values
+
          """
         colName = self._verifyColName(colName)
         if colName is None:
@@ -1200,6 +1207,7 @@ class SkyModel(object):
         -------
         col : astropy Column
             Column object with flux values attenuated by the beam
+
         """
         from operations_lib import attenuate
 
@@ -1239,12 +1247,13 @@ class SkyModel(object):
         colName : str
             Column name
         applyBeam : bool, optional
-            If True, fluxes will be attenuated by the beam.
+            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
         col : astropy Column
             Column object with aggregated sum of values
+
         """
         import numpy as np
 
@@ -1272,12 +1281,13 @@ class SkyModel(object):
         colName : str
             Column name
         applyBeam : bool, optional
-            If True, fluxes will be attenuated by the beam.
+            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
         col : astropy Column
             Column object with aggregated min values
+
         """
         import numpy as np
 
@@ -1305,12 +1315,13 @@ class SkyModel(object):
         colName : str
             Column name
         applyBeam : bool, optional
-            If True, fluxes will be attenuated by the beam.
+            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
         col : astropy Column
             Column object with aggregated max values
+
         """
         import numpy as np
 
@@ -1340,12 +1351,13 @@ class SkyModel(object):
         weight : bool, optional
             If True, return average weighted by flux
         applyBeam : bool, optional
-            If True, fluxes will be attenuated by the beam.
+            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
         col : astropy Column
             Column object with aggregated mean values
+
         """
         from astropy.table import Column
         import numpy as np
@@ -1395,13 +1407,14 @@ class SkyModel(object):
         weight : bool, optional
             If True, return size weighted by flux
         applyBeam : bool, optional
-            If True, fluxes will be attenuated by the beam.
+            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
         col : astropy Column
             Column object with sizes from MajorAxis or from aggregated values if
-            the model has patches.
+            the model has patches
+
         """
         from astropy.table import Column
         import numpy as np
@@ -1465,7 +1478,7 @@ class SkyModel(object):
 
     def _calculateSeparation(self, ra1, dec1, ra2, dec2):
         """
-        Returns angular separation between two coordinates (all in degrees).
+        Returns angular separation between two coordinates (all in degrees)
 
         Parameters
         ----------
@@ -1482,6 +1495,7 @@ class SkyModel(object):
         -------
         separation : float
             Angular separation in degrees
+
         """
         from operations_lib import calculateSeparation
 
@@ -1858,27 +1872,29 @@ class SkyModel(object):
         """
         Transfer patches from the input sky model.
 
-        Sources with the same name as those in patchSkyModel will be grouped into
-        the patches defined in patchSkyModel. Sources that do not appear in patchSkyModel
-        will be placed into separate patches (one per source). Patch positions are
-        not transferred.
+        Sources matching those in patchSkyModel will be grouped into
+        the patches defined in patchSkyModel. Sources that do not appear in
+        patchSkyModel will be placed into separate patches (one per source).
+        Patch positions are not transferred (as they may no longer be appropriate
+        after transfer).
 
         Parameters
         ----------
         patchSkyModel : str or SkyModel object
             Input sky model from which to transfer patches.
         matchBy : str, optional
-            Determines how duplicate sources are determined:
-            - 'name' => duplicates are identified by name
-            - 'position' => duplicates are identified by radius. Sources within the
-                radius specified by the radius parameter are considered duplicates
+            Determines how matching sources are determined:
+            - 'name' => matches are identified by name
+            - 'position' => matches are identified by radius. Sources within the
+                radius specified by the radius parameter are considered matches
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
             for matching when matchBy='position'
 
         Examples
         --------
-        Transfer patches from one sky model to another and set their positions::
+        Transfer patches from one sky model to another and set their positions
+        (matching sources are identified by name)::
 
             >>> s.transfer('master_sky.model')
             >>> s.setPatchPositions(method='mid')
@@ -1928,7 +1944,8 @@ class SkyModel(object):
         Parameters
         ----------
         colNamesVals : dict
-            A dictionary that specifies the column values for the source to be added.
+            A dictionary that specifies the column values for the source to be
+            added
 
         Examples:
         ---------
@@ -1949,13 +1966,14 @@ class SkyModel(object):
         Parameters
         ----------
         patches : list of str
-            List of patches to merge
+            List of patch names to merge
         name : str, optional
-            Name of resulting merged patch
+            Name of resulting merged patch. If None, the merged patch uses the
+            name of the first patch in the input patches list
 
         Examples
         --------
-        Merge three patches into one::
+        Merge three patches into one named 'binmerged'::
 
             >>> s.merge(['bin0', 'bin1', 'bin2'], 'binmerged')
 
@@ -2024,10 +2042,8 @@ class SkyModel(object):
 
         Parameters
         ----------
-        LSM1 : SkyModel object
-            Parent sky model
         LSM2 : SkyModel object
-            Sky model to compare to the parent sky model
+            Secondary sky model to compare to the parent sky model
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
             for matching

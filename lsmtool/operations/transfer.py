@@ -46,20 +46,23 @@ def transfer(LSM, patchSkyModel, matchBy='name', radius=0.1):
     """
     Transfer patches from the input sky model.
 
-    Sources with the same name as those in patchSkyModel will be grouped into
-    the patches defined in patchSkyModel. Sources that do not appear in patchSkyModel
-    will be placed into separate patches (one per source). Patch positions are
-    not transferred.
+    Sources matching those in patchSkyModel will be grouped into
+    the patches defined in patchSkyModel. Sources that do not appear in
+    patchSkyModel will be placed into separate patches (one per source).
+    Patch positions are not transferred (as they may no longer be appropriate
+    after transfer).
 
     Parameters
     ----------
+    LSM : SkyModel object
+        Input sky model
     patchSkyModel : str or SkyModel object
-        Input sky model from which to transfer patches.
+        Input sky model from which to transfer patches
     matchBy : str, optional
-        Determines how duplicate sources are determined:
-        - 'name' => duplicates are identified by name
-        - 'position' => duplicates are identified by radius. Sources within the
-            radius specified by the radius parameter are considered duplicates
+        Determines how matching sources are determined:
+        - 'name' => matches are identified by name
+        - 'position' => matches are identified by radius. Sources within the
+            radius specified by the radius parameter are considered matches
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
         for matching when matchBy='position'

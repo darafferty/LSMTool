@@ -59,11 +59,13 @@ def select(LSM, filterExpression, aggregate=None, applyBeam=False,
 
     Parameters
     ----------
+    LSM : SkyModel object
+        Input sky model
     filterExpression : str, dict, list, or numpy array
         - If string:
             A string specifying the filter expression in the form:
             '<property> <operator> <value> [<units>]'
-            (e.g., 'I <= 10.5 Jy').
+            (e.g., 'I <= 10.5 Jy')
 
         - If dict:
             The filter can also be given as a dictionary in the form:
@@ -83,7 +85,7 @@ def select(LSM, filterExpression, aggregate=None, applyBeam=False,
             or as a numpy array of bools with the same length as the sky model.
 
             If a numpy array is given and the indices correspond to patches, then
-            set aggregate=True.
+            set aggregate=True
 
         The property to filter on must be one of the following:
             - a valid column name
@@ -96,7 +98,7 @@ def select(LSM, filterExpression, aggregate=None, applyBeam=False,
             - >
             - <
             - = (or '==')
-        Units are optional and must be specified as required by astropy.units.
+        Units are optional and must be specified as required by astropy.units
     aggregate : str, optional
         If set, the array returned will be of values aggregated
         over the patch members. The following aggregation functions are
@@ -108,12 +110,12 @@ def select(LSM, filterExpression, aggregate=None, applyBeam=False,
             - 'max': maximum of patch values
             - True: only valid when the filter indices are specified directly as
                 a numpy array. If True, filtering is done on patches instead of
-                sources.
+                sources
     applyBeam : bool, optional
-        If True, apparent fluxes will be used.
+        If True, apparent fluxes will be used
     useRegEx : bool, optional
         If True, string matching will use regular expression matching. If
-        False, string matching uses Unix filename matching.
+        False, string matching uses Unix filename matching
 
     Examples
     --------

@@ -53,8 +53,10 @@ def plot(LSM, fileName=None, labelBy=None):
 
     Parameters
     ----------
+    LSM : SkyModel object
+        Input sky model
     fileName : str, optional
-        If given, the plot is saved to a file instead of displayed.
+        If given, the plot is saved to a file instead of displayed
     labelBy : str, optional
         One of 'source' or 'patch': label points using source names ('source') or
         patch names ('patch')

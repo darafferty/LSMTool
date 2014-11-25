@@ -58,15 +58,17 @@ def move(LSM, name, position=None, shift=None):
 
     Parameters
     ----------
+    LSM : SkyModel object
+        Input sky model
     name : str
-        Source name.
+        Source name
     position : list, optional
         A list specifying a new position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
-        [123.2312, 23.3422]).
+        [123.2312, 23.3422])
     shift : list, optional
         A list specifying the shift as [RAShift, DecShift] in
-        in degrees (e.g., [0.02312, 0.00342]).
+        in degrees (e.g., [0.02312, 0.00342])
 
     Examples
     --------

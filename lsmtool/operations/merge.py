@@ -51,17 +51,21 @@ def merge(LSM, patches, name=None):
 
     Parameters
     ----------
+    LSM : SkyModel object
+        Input sky model
     patches : list of str
         List of patches to merge
     name : str, optional
-        Name of resulting merged patch
+        Name of resulting merged patch. If None, the merged patch uses the name
+        of the first patch in the input patches list
 
     Examples
     --------
-    Merge three patches into one::
+    Merge three patches into one patch named 'binmerged'::
 
         >>> LSM = lsmtool.load('sky.model')
         >>> merge(LSM, ['bin0', 'bin1', 'bin2'], 'binmerged')
+
     """
     if len(LSM) == 0:
         log.error('Sky model is empty.')

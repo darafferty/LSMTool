@@ -59,9 +59,9 @@ def add(LSM, colNamesVals):
     Parameters
     ----------
     LSM : SkyModel object
-        Input sky model.
+        Input sky model
     colNamesVals : dict
-        A dictionary that specifies the column values for the source to be added.
+        A dictionary that specifies the column values for the source to be added
 
     Examples:
     ---------
