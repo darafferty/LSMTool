@@ -101,7 +101,7 @@ def plot(LSM, fileName=None, labelBy=None):
     x, y, midRA, midDec  = LSM._getXY()
     if hasWCSaxes:
         wcs = makeWCS(midRA, midDec)
-        ax = WCSAxes(fig, [0.12, 0.12, 0.8, 0.8], wcs=wcs)
+        ax = WCSAxes(fig, [0.15, 0.15, 0.8, 0.8], wcs=wcs)
         fig.add_axes(ax)
     else:
         ax = plt.gca()
@@ -159,9 +159,11 @@ def plot(LSM, fileName=None, labelBy=None):
     # Set axis labels, etc.
     if hasWCSaxes:
         RAAxis = ax.coords['ra']
+        RAAxis.set_axislabel('RA', minpad=0.5)
+        RAAxis.set_major_formatter('hh:mm:ss')
         DecAxis = ax.coords['dec']
-        RAAxis.set_axislabel('RA')
-        DecAxis.set_axislabel('Dec')
+        DecAxis.set_axislabel('Dec', minpad=0.5)
+        DecAxis.set_major_formatter('dd:mm:ss')
         ax.coords.grid(color='black', alpha=0.5, linestyle='solid')
     else:
         plt.xlabel("RA (arb. units)")
