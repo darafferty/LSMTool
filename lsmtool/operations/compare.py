@@ -33,7 +33,7 @@ def run(step, parset, LSM):
     ignoreSpec = parset.getString('.'.join(["LSMTool.Steps", step, "IgnoreSpec"]), '' )
 
     if outDir == '':
-        outDir = None
+        outDir = '.'
     if labelBy == '':
         labelBy = None
     if ignoreSpec == '':
@@ -52,10 +52,21 @@ def run(step, parset, LSM):
     return result
 
 
-def compare(LSM1, LSM2, radius='10 arcsec', outDir=None, labelBy=None,
+def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     ignoreSpec=None, excludeMultiple=True):
     """
     Compare two sky models
+
+    Comparison plots and a text file with statistics are written out to the
+    an output directory. Plots are made for:
+        - flux ratio vs. radius from sky model center
+        - flux ratio vs. sky position
+        - flux ratio vs flux
+        - position offsets
+    The following statistics are saved to 'stats.txt' in the output directory:
+        - mean and standard deviation of flux ratio
+        - mean and standard deviation of RA offsets (in degrees)
+        - mean and standard deviation of Dec offsets (in degrees)
 
     Parameters
     ----------
@@ -67,7 +78,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir=None, labelBy=None,
         Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
         for matching
     outDir : str, optional
-        If given, plots are saved to this directory
+        Plots are saved to this directory
     labelBy : str, optional
         One of 'source' or 'patch': label points using source names ('source') or
         patch names ('patch')
@@ -79,7 +90,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir=None, labelBy=None,
 
     Examples
     --------
-    Compare two sky models and save plots::
+    Compare two sky models and save plots and stats to 'comparison_results/'::
 
         >>> LSM1 = lsmtool.load('sky1.model')
         >>> LSM2 = lsmtool.load('sky2.model')
@@ -253,14 +264,22 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir=None, labelBy=None,
     plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir)
     plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir)
     plotOffsets(RA, Dec, RA2, Dec2, labels, outDir)
+    argInfo = 'Used radius = {0}, ignoreSpec = {1}, and excludeMultiple = {2}'.format(
+        radius, ignoreSpec, excludeMultiple)
+    stats = findStats(predFlux, fluxes1, RA, Dec, RA2, Dec2, outDir, argInfo,
+        LSM1._info(), LSM2._info())
+
+    return stats
 
 
-def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels, outDir):
+def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
+    outDir, clip=True):
     """
     Makes plot of measured-to-predicted flux ratio vs. distance from center
     """
     import numpy as np
     from ..operations_lib import calculateSeparation
+    from astropy.stats.funcs import sigma_clip
     try:
         import os
         if 'DISPLAY' not in os.environ:
@@ -286,8 +305,12 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels, outDi
     plt.xlabel('Distance from center (deg)')
 
     # Calculate mean ratio and std dev.
-    mean_ratio = np.mean(ratio)
-    std = np.std(ratio)
+    if clip:
+        mean_ratio = np.mean(sigma_clip(ratio))
+        std = np.std(sigma_clip(ratio))
+    else:
+        mean_ratio = np.mean(ratio)
+        std = np.std(ratio)
     xmin, xmax, ymin, ymax = plt.axis()
     ax1.plot([0.0, xmax], [mean_ratio, mean_ratio], '--g')
     ax1.plot([0.0, xmax], [mean_ratio+std, mean_ratio+std], '-.g')
@@ -303,13 +326,14 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels, outDi
     plt.savefig(outDir+'flux_ratio_vs_distance.pdf', format='pdf')
 
 
-def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir):
+def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, clip=True):
     """
     Makes plot of measured-to-predicted flux ratio vs. flux
     """
     import os
     import numpy as np
     from ..operations_lib import calculateSeparation
+    from astropy.stats.funcs import sigma_clip
     try:
         import os
         if 'DISPLAY' not in os.environ:
@@ -332,8 +356,12 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir):
     plt.xlabel('Model 1 flux (Jy)')
 
     # Calculate mean ratio and std dev.
-    mean_ratio = np.mean(ratio)
-    std = np.std(ratio)
+    if clip:
+        mean_ratio = np.mean(sigma_clip(ratio))
+        std = np.std(sigma_clip(ratio))
+    else:
+        mean_ratio = np.mean(ratio)
+        std = np.std(ratio)
     xmin, xmax, ymin, ymax = plt.axis()
     ax1.plot([0.0, xmax], [mean_ratio, mean_ratio], '--g')
     ax1.plot([0.0, xmax], [mean_ratio+std, mean_ratio+std], '-.g')
@@ -349,13 +377,15 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir):
     plt.savefig(outDir+'flux_ratio_vs_flux.pdf', format='pdf')
 
 
-def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels, outDir):
+def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
+    outDir):
     """
     Makes sky plot of measured-to-predicted flux ratio
     """
     import os
     import numpy as np
     from ..operations_lib import calculateSeparation, makeWCS
+    from astropy.stats.funcs import sigma_clip
     try:
         import os
         if 'DISPLAY' not in os.environ:
@@ -428,6 +458,7 @@ def plotOffsets(RA, Dec, refRA, refDec, labels, outDir):
     from ..operations_lib import calculateSeparation
     import os
     import numpy as np
+    from astropy.stats.funcs import sigma_clip
     try:
         import os
         if 'DISPLAY' not in os.environ:
@@ -471,3 +502,95 @@ def plotOffsets(RA, Dec, refRA, refDec, labels, outDir):
                 'offset points', ha='right', va='bottom')
 
     plt.savefig(outDir+'postional_offsets.pdf', format='pdf')
+
+
+def findStats(predFlux, measFlux, RA, Dec, refRA, refDec, outDir, info0, info1,
+    info2):
+    """
+    Calculates statistics and saves them to 'stats.txt'
+    """
+    import os
+    import numpy as np
+    from ..operations_lib import calculateSeparation
+    from astropy.stats.funcs import sigma_clip
+
+    ratio = measFlux / predFlux
+    meanRatio = np.mean(ratio)
+    stdRatio = np.std(ratio)
+    clippedRatio = sigma_clip(ratio)
+    meanClippedRatio = np.mean(clippedRatio)
+    stdClippedRatio = np.std(clippedRatio)
+
+    RAOffsets = np.zeros(len(RA))
+    DecOffsets = np.zeros(len(Dec))
+    for i in range(len(RA)):
+        if RA[i] >= refRA[i]:
+            sign = 1.0
+        else:
+            sign = -1.0
+        RAOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], refRA[i], Dec[i]).value # deg
+        if Dec[i] >= refDec[i]:
+            sign = 1.0
+        else:
+            sign = -1.0
+        DecOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], RA[i], refDec[i]).value # deg
+
+    meanRAOffset = np.mean(RAOffsets)
+    stdRAOffset = np.std(RAOffsets)
+    clippedRAOffsets = sigma_clip(RAOffsets)
+    meanClippedRAOffset = np.mean(clippedRAOffsets)
+    stdClippedRAOffset = np.std(clippedRAOffsets)
+
+    meanDecOffset = np.mean(DecOffsets)
+    stdDecOffset = np.std(DecOffsets)
+    clippedDecOffsets = sigma_clip(DecOffsets)
+    meanClippedDecOffset = np.mean(clippedDecOffsets)
+    stdClippedDecOffset = np.std(clippedDecOffsets)
+
+    stats = {'meanRatio':meanRatio,
+             'stdRatio':stdRatio,
+             'meanClippedRatio':meanClippedRatio,
+             'stdClippedRatio':stdClippedRatio,
+             'meanRAOffsetDeg':meanRAOffset,
+             'stdRAOffsetDeg':stdRAOffset,
+             'meanClippedRAOffsetDeg':meanClippedRAOffset,
+             'stdClippedRAOffsetDeg':stdClippedRAOffset,
+             'meanDecOffsetDeg':meanDecOffset,
+             'stdDecOffsetDeg':stdDecOffset,
+             'meanClippedDecOffsetDeg':meanClippedDecOffset,
+             'stdClippedDecOffsetDeg':stdClippedDecOffset}
+
+    outLines = ['Statistics from sky model comparison\n']
+    outLines.append('------------------------------------\n\n')
+
+    outLines.append('Sky model 1:\n')
+    outLines.append(info1+'\n\n')
+    outLines.append('Sky model 2:\n')
+    outLines.append(info2+'\n\n')
+
+    outLines.append(info0+'\n')
+    outLines.append('Number of matches found for comparison: {0}\n\n'.format(len(predFlux)))
+
+    outLines.append('Mean flux ratio (1 / 2): {0}\n'.format(meanRatio))
+    outLines.append('Std. dev. flux ratio (1 / 2): {0}\n'.format(stdRatio))
+    outLines.append('Mean 3-sigma-clipped flux ratio (1 / 2): {0}\n'.format(meanClippedRatio))
+    outLines.append('Std. dev. 3-sigma-clipped flux ratio (1 / 2): {0}\n\n'.format(stdClippedRatio))
+
+    outLines.append('Mean RA offset (1 - 2): {0} degrees\n'.format(meanRAOffset))
+    outLines.append('Std. dev. RA offset (1 - 2): {0} degrees\n'.format(stdRAOffset))
+    outLines.append('Mean 3-sigma-clipped RA offset (1 - 2): {0} degrees\n'.format(meanClippedRAOffset))
+    outLines.append('Std. dev. 3-sigma-clipped RA offset (1 - 2): {0} degrees\n\n'.format(stdClippedRAOffset))
+
+    outLines.append('Mean Dec offset (1 - 2): {0} degrees\n'.format(meanDecOffset))
+    outLines.append('Std. dev. Dec offset (1 - 2): {0} degrees\n'.format(stdDecOffset))
+    outLines.append('Mean 3-sigma-clipped Dec offset (1 - 2): {0} degrees\n'.format(meanClippedDecOffset))
+    outLines.append('Std. dev. 3-sigma-clipped Dec offset (1 - 2): {0} degrees\n\n'.format(stdClippedDecOffset))
+
+    fileName = outDir+'stats.txt'
+    statsFile = open(fileName, 'w')
+    statsFile.writelines(outLines)
+    statsFile.close()
+
+    return stats
+
+

@@ -130,4 +130,5 @@ def transfer(LSM, patchSkyModel, matchBy='name', radius=0.1):
         nMissing))
     LSM.table = table
     LSM._updateGroups()
+    LSM._addHistory('TRANSFER')
     LSM._info()

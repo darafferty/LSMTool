@@ -63,7 +63,7 @@ def test_group():
 
 def test_move():
     print('Move patch Patch_1 to 16:04:16.2288, 58.03.06.912')
-    s.move('Patch_1', position =  ['16:04:16.2288', '58.03.06.912'])
+    s.move('Patch_1', position=['16:04:16.2288', '58.03.06.912'])
     assert round(s.getPatchPositions()['Patch_1'][0].value, 4) == 241.0676
 
 

@@ -538,6 +538,9 @@ def skyModelWriter(table, fileName):
             colHeader = colName
         formatString.append(colHeader)
     outLines.append('FORMAT = {0}'.format(', '.join(formatString)))
+    if 'History' in table.meta:
+        outLines.append('\n\n# LSMTool history:\n# ')
+        outLines.append('\n# '.join(table.meta['History']))
     outLines.append('\n')
     outLines.append('\n')
 

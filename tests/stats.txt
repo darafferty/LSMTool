@@ -1,0 +1,48 @@
+Statistics from sky model comparison
+------------------------------------
+
+Sky model 1:
+Model contains 2165 sources in 0 patches of which:
+      1863 are type POINT
+      302 are type GAUSSIAN
+      Associated beam MS: None
+
+      History:
+      2014-11-27 13:48:54: LOAD (from file 'tests/no_patches.sky')
+      2014-11-27 13:48:54: FILTER (I > 1.0 Jy)
+      2014-11-27 13:48:56: GROUP (algorithm = 'every')
+      2014-11-27 13:49:03: SETPATCHPOSITIONS (method = 'mid')
+      2014-11-27 13:49:05: TRANSFER
+      2014-11-27 13:49:06: FILTER (I < 2.0 Jy)
+      2014-11-27 13:49:06: UNGROUP
+      2014-11-27 13:49:09: CONCATENATE (matchBy = 'position', radius = 30 arcsec keep = 'from2')
+
+Sky model 2:
+Model contains 94 sources in 0 patches of which:
+      41 are type POINT
+      53 are type GAUSSIAN
+      Associated beam MS: None
+
+      History:
+      2014-11-27 13:49:11: LOAD (from file 'tests/concat.sky')
+      2014-11-27 13:49:11: UNGROUP
+      2014-11-27 13:49:11: FILTER (I > 5.0 Jy)
+
+Used radius = 10 arcsec, ignoreSpec = None, and excludeMultiple = True
+Number of matches found for comparison: 94
+
+Mean flux ratio (1 / 2): 1.0
+Std. dev. flux ratio (1 / 2): 0.0
+Mean 3-sigma-clipped flux ratio (1 / 2): 1.0
+Std. dev. 3-sigma-clipped flux ratio (1 / 2): 0.0
+
+Mean RA offset (1 - 2): 1.02333958036e-14 degrees
+Std. dev. RA offset (1 - 2): 1.04638108421e-14 degrees
+Mean 3-sigma-clipped RA offset (1 - 2): 1.02333958036e-14 degrees
+Std. dev. 3-sigma-clipped RA offset (1 - 2): 1.04638108421e-14 degrees
+
+Mean Dec offset (1 - 2): 1.02333958036e-14 degrees
+Std. dev. Dec offset (1 - 2): 1.04638108421e-14 degrees
+Mean 3-sigma-clipped Dec offset (1 - 2): 1.02333958036e-14 degrees
+Std. dev. 3-sigma-clipped Dec offset (1 - 2): 1.04638108421e-14 degrees
+

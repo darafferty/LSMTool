@@ -75,12 +75,14 @@ class SkyModel(object):
         from tableio import requiredColumnNames, processFormatString, processLine, createTable
 
         self.log = logging.getLogger('LSMTool')
+        self.history = []
         if type(fileName) is str:
             if fileName.lower() in tableio.allowedVOServices:
                 self.log.debug("Attempting to load model from VO service '{0}'...".format(fileName))
                 self.table = tableio.coneSearch(fileName, VOPosition, VORadius)
                 self.log.debug("Successfully loaded model from VO service '{0}'".format(fileName))
                 self._fileName = None
+                self._addHistory("LOAD (from {0} at position {1})".format(fileName, VOPosition))
             elif fileName.lower() == 'gsm':
                 self.log.debug("Attempting to load model from GSM...")
                 fileObj = tableio.getGSM(VOPosition, VORadius, assocTheta)
@@ -88,11 +90,13 @@ class SkyModel(object):
                 fileObj.close()
                 self.log.debug("Successfully loaded model from GSM")
                 self._fileName = None
+                self._addHistory("LOAD (from GSM at position {0})".format(VOPosition))
             else:
                 self.log.debug("Attempting to load model from file '{0}'...".format(fileName))
                 self.table = Table.read(fileName, format='makesourcedb')
                 self.log.debug("Successfully loaded model from file '{0}'".format(fileName))
                 self._fileName = fileName
+                self._addHistory("LOAD (from file '{0}')".format(fileName))
         elif type(fileName) is dict:
             self.log.debug("Attempting to create model from input dict...")
             # Create header
@@ -113,6 +117,7 @@ class SkyModel(object):
             self.table = table
             self.log.debug("Successfully created model from input dict")
             self._fileName = None
+            self._addHistory("LOAD (from input dict)")
 
         if beamMS is not None:
             self.beamMS = beamMS
@@ -159,6 +164,21 @@ class SkyModel(object):
             self.hasPatches = False
 
 
+    def _addHistory(self, entry=""):
+        """
+        Adds entry to the history with current date and time
+
+        Parameters
+        ----------
+        entry : str, optional
+            String to add to history
+
+        """
+        import datetime
+        current_time = str(datetime.datetime.now()).split('.')[0]
+        self.history.append(current_time + ": " + str(entry))
+
+
     def _info(self, useLogInfo=False):
         """
         Prints information about the sky model.
@@ -182,18 +202,22 @@ class SkyModel(object):
         else:
             logCall = self.log.debug
 
-        logCall('Model contains {0} sources in {1} patch{2} of which:\n'
-            '      {3} are type POINT\n'
-            '      {4} are type GAUSSIAN\n'
-            '      Associated beam MS: {5}'.format(len(self.table), nPatches, plur,
-            nPoint, nGaus, self.beamMS))
+        info = 'Model contains {0} sources in {1} patch{2} of which:\n'\
+               '      {3} are type POINT\n'\
+               '      {4} are type GAUSSIAN\n'\
+               '      Associated beam MS: {5}\n\n'\
+               '      History:\n'\
+               '      {6}'.format(len(self.table), nPatches, plur,
+               nPoint, nGaus, self.beamMS, '\n      '.join(self.history))
+        logCall(info)
+        return info
 
 
     def info(self):
         """
         Prints information about the sky model.
         """
-        self._info(useLogInfo=True)
+        infoStr = self._info(useLogInfo=True)
 
 
     def copy(self):
@@ -207,6 +231,7 @@ class SkyModel(object):
         self.log = None
         LSMCopy = copy.deepcopy(self)
         LSMCopy.log = logging.getLogger('LSMTool')
+        LSMCopy._addHistory('COPY')
         self.log = logging.getLogger('LSMTool')
 
         return LSMCopy
@@ -564,6 +589,7 @@ class SkyModel(object):
                 if type(pos[1]) is str or type(pos[1]) is float:
                     pos[1] = Dec2Angle(pos[1])
                 self.table.meta[patch] = pos
+            self._addHistory("SETPATCHPOSITIONS (method = '{0}')".format(method))
         else:
             raise RuntimeError('Sky model does not have patches.')
 
@@ -677,6 +703,7 @@ class SkyModel(object):
                     self.table.meta.pop(patchName)
             self.table.remove_column('Patch')
             self._updateGroups()
+            self._addHistory('UNGROUP')
             self._info()
 
 
@@ -1069,7 +1096,8 @@ class SkyModel(object):
         Parameters
         ----------
         name : str, list of str
-            source or patch name or list of names
+            source or patch name or list of names (UNIX-style wildcards are
+            allowed)
         patch : bool
             if True, return the index of the group corresponding to the given
             name; otherwise return the index of the source
@@ -1080,6 +1108,7 @@ class SkyModel(object):
             List of indices
         """
         import numpy as np
+        import fnmatch
 
         if patch:
             if self.hasPatches:
@@ -1090,18 +1119,19 @@ class SkyModel(object):
             names = self.getColValues('Name').tolist()
 
         if type(name) is str or type(name) is np.string_:
-            if name not in names:
+            indx = [i for i, item in enumerate(names) if fnmatch.fnmatch(item, name)]
+            if len(indx) == 0:
                 return None
-            indx = names.index(name)
-            return [indx]
+            return indx
         elif type(name) is list:
             indx = []
             for n in name:
                 badNames = []
-                if n not in names:
+                nindx = [i for i, item in enumerate(names) if fnmatch.fnmatch(item, n)]
+                if len(indx) == 0:
                     badNames.append(n)
                 else:
-                    indx.append(names.index(n))
+                    indx += nindx
             if len(badNames) > 0:
                 if len(badNames) == 1:
                     plur = ''
@@ -1503,7 +1533,7 @@ class SkyModel(object):
 
 
     def write(self, fileName=None, format='makesourcedb', clobber=False,
-        sortBy=None, lowToHigh=False):
+        sortBy=None, lowToHigh=False, addHistory=True):
         """
         Writes the sky model to a file.
 
@@ -1528,6 +1558,9 @@ class SkyModel(object):
             a list is given, sorting is done on the columns in the order given
         lowToHigh : bool, optional
             If True, sort values from low to high instead of high to low
+        addHistory : bool, optional
+            If True, the history of operations is written to the sky model
+            header
 
         Examples
         --------
@@ -1569,6 +1602,9 @@ class SkyModel(object):
             if not lowToHigh:
                 indx = indx[::-1]
             table = table[indx]
+
+        if addHistory:
+            table.meta['History'] = self.history
 
         if format != 'makesourcedb':
             table.meta = {}
@@ -1906,22 +1942,37 @@ class SkyModel(object):
 
     def move(self, name, position=None, shift=None):
         """
-        Move or shift a source.
+        Move or shift a source or sources.
 
-        If both a position and a shift are specified, the source is moved to the
-        new position and then shifted.
+        If both a position and a shift are specified, a source is moved to the
+        new position and then shifted. Note that only a single source can be
+        moved to a new position. However, multiple sources can be shifted.
+
+        If an xyshift is specified, a FITS file must also be specified to define
+        the WCS system. If a position, a shift, and an xyshift are all specified,
+        a source is moved to the new position, shifted in RA and Dec, and then
+        shifted in x and y.
 
         Parameters
         ----------
-        name : str
-            Source name.
+        LSM : SkyModel object
+            Input sky model
+        name : str or list
+            Source name or list of names (can include wildcards)
         position : list, optional
             A list specifying a new position as [RA, Dec] in either makesourcedb
             format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
-            [123.2312, 23.3422]).
+            [123.2312, 23.3422])
         shift : list, optional
-            A list specifying the shift as [RAShift, DecShift] in
-            in degrees (e.g., [0.02312, 0.00342]).
+            A list specifying the shift as [RAShift, DecShift] in degrees (e.g.,
+            [0.02312, 0.00342])
+        xyshift : list, optional
+            A list specifying the shift as [xShift, yShift] in pixels. A FITS file
+            must be specified with the fitsFILE argument
+        fitsFile : str, optional
+            A FITS file from which to take WCS information to transform the pixel
+            coordinates to RA and Dec values. The xyshift argument must be specfied
+            for this to be useful
 
         Examples
         --------
@@ -1932,6 +1983,10 @@ class SkyModel(object):
         Shift the source by 10 arcsec in Dec::
 
             >>> s.move('1609.6+6556', shift=[0.0, 10.0/3600.0])
+
+        Shift all sources by 10 pixels in x::
+
+            >>> s.move('*', xyshift=[10, 0], fitsFile='image.fits')
 
         """
         operations.move.move(self, name, position=position, shift=shift)
@@ -2035,10 +2090,22 @@ class SkyModel(object):
             radius=radius, keep=keep, inheritPatches=inheritPatches)
 
 
-    def compare(self, LSM2, radius='10 arcsec', outDir=None, labelBy=None,
+    def compare(self, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         ignoreSpec=None, excludeMultiple=True):
         """
-        Compare two sky models
+        Compare two sky models.
+
+        Comparison plots and a text file with statistics are written out to the
+        an output directory. Plots are made for:
+            - flux ratio vs. radius from sky model center
+            - flux ratio vs. sky position
+            - flux ratio vs flux
+            - position offsets
+        The following statistics are saved to 'stats.txt' in the output directory:
+            - mean and standard deviation of flux ratio
+            - mean and standard deviation of RA offsets
+            - mean and standard deviation of Dec offsets
+        These statistics are also returned as a dictionary.
 
         Parameters
         ----------
@@ -2048,7 +2115,7 @@ class SkyModel(object):
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
             for matching
         outDir : str, optional
-            If given, plots are saved to this directory
+            Plots are saved to this directory
         labelBy : str, optional
             One of 'source' or 'patch': label points using source names ('source') or
             patch names ('patch')
@@ -2057,6 +2124,24 @@ class SkyModel(object):
         excludeMultiple : bool, optional
             If True, sources with multiple matches are excluded. If False, the
             nearest of the multiple matches will be used for comparison
+
+        Returns
+        -------
+        stats : dict
+            Dict of statistics with the following keys (where the clipped values
+            are after 3-sigma clipping):
+                - 'meanRatio'
+                - 'stdRatio'
+                - 'meanRAOffsetDeg'
+                - 'stdRAOffsetDeg'
+                - 'meanDecOffsetDeg'
+                - 'stdDecOffsetDeg'
+                - 'meanClippedRatio'
+                - 'stdClippedRatio'
+                - 'meanClippedRAOffsetDeg'
+                - 'stdClippedRAOffsetDeg'
+                - 'meanClippedDecOffsetDeg'
+                - 'stdClippedDecOffsetDeg'
 
         Examples
         --------
@@ -2068,8 +2153,9 @@ class SkyModel(object):
         """
         if type(LSM2) is str:
             LSM2 = SkyModel(LSM2)
-        operations.compare.compare(self, LSM2, radius=radius, outDir=outDir,
+        stats = operations.compare.compare(self, LSM2, radius=radius, outDir=outDir,
             labelBy=labelBy, ignoreSpec=ignoreSpec, excludeMultiple=excludeMultiple)
+        return stats
 
 
     def plot(self, fileName=None, labelBy=None):

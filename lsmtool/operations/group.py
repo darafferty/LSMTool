@@ -160,6 +160,12 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
 
     # Update table grouping and set default patch positions
     LSM._updateGroups()
+    history = "algorithm = '{0}'".format(algorithm)
+    if algorithm.lower() == 'cluster':
+        history += ', numClusters = {0}'.format(numClusters)
+    elif algorithm.lower() == 'tessellate':
+        history += ', targetFlux = {0}'.format(targetFlux)
+    LSM._addHistory("GROUP ({0})".format(history))
     LSM.setPatchPositions(method=method, applyBeam=applyBeam)
     LSM._info()
     return 0

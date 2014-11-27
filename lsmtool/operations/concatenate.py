@@ -219,5 +219,10 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
         LSM1.table.remove_column('match')
 
     LSM1._updateGroups()
+    history = "matchBy = '{0}', ".format(matchBy)
+    if matchBy.lower() == 'position':
+        history += "radius = {0}".format(radius)
+    history += " keep = '{0}'".format(keep)
+    LSM1._addHistory("CONCATENATE ({0})".format(history))
     LSM1._info()
 

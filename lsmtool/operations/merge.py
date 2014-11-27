@@ -84,4 +84,5 @@ def merge(LSM, patches, name=None):
 
     LSM.table = table
     LSM._updateGroups()
+    LSM._addHistory("MERGE ('{0}' into '{1}')".format(patches, name))
     LSM._info()

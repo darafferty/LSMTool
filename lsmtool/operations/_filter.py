@@ -272,6 +272,12 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
                 plustr = 's'
             log.info('Kept {0} source{1}.'.format(nRowsNew, plustr))
 
+    if type(filterExpression) is np.ndarray:
+        history = 'with array of indices/bools'
+    else:
+        _, filterOperStr = convertOperStr(filterOper)
+        history = '{0} {1} {2} {3}'.format(filterProp, filterOperStr, filterVal, filterUnits)
+    LSM._addHistory('FILTER ({0})'.format(history))
     LSM._info()
 
 
@@ -375,13 +381,19 @@ def convertOperStr(operStr):
     filterOperStr = None
     ops = {'!=':op.ne, '<=':op.le, '>=':op.ge, '>':op.gt, '<':op.lt,
         '==':op.eq, '=':op.eq}
-    for op in ops:
-        if op in operStr:
-            if filterOperStr is None:
-                filterOperStr = op
-            elif len(op) > len(filterOperStr):
-                # Pick longer match
-                filterOperStr = op
+
+    if type(operStr) is str:
+        for op in ops:
+            if op in operStr:
+                if filterOperStr is None:
+                    filterOperStr = op
+                elif len(op) > len(filterOperStr):
+                    # Pick longer match
+                    filterOperStr = op
+    else:
+        for k, v in ops.iteritems():
+            if v == operStr:
+                filterOperStr = k
     if filterOperStr is None:
         return None, None
 
