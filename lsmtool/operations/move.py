@@ -49,26 +49,39 @@ def run(step, parset, LSM):
     return result
 
 
-def move(LSM, name, position=None, shift=None):
+def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
     """
-    Move or shift a source.
+    Move or shift a source or sources.
 
-    If both a position and a shift are specified, the source is moved to the
-    new position and then shifted.
+    If both a position and a shift are specified, a source is moved to the
+    new position and then shifted. Note that only a single source can be
+    moved to a new position. However, multiple sources can be shifted.
+
+    If an xyshift is specified, a FITS file must also be specified to define
+    the WCS system. If a position, a shift, and an xyshift are all specified,
+    a source is moved to the new position, shifted in RA and Dec, and then
+    shifted in x and y.
 
     Parameters
     ----------
     LSM : SkyModel object
         Input sky model
-    name : str
-        Source name
+    name : str or list
+        Source name or list of names (can include wildcards)
     position : list, optional
         A list specifying a new position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
         [123.2312, 23.3422])
     shift : list, optional
-        A list specifying the shift as [RAShift, DecShift] in
-        in degrees (e.g., [0.02312, 0.00342])
+        A list specifying the shift as [RAShift, DecShift] in degrees (e.g.,
+        [0.02312, 0.00342])
+    xyshift : list, optional
+        A list specifying the shift as [xShift, yShift] in pixels. A FITS file
+        must be specified with the fitsFILE argument
+    fitsFile : str, optional
+        A FITS file from which to take WCS information to transform the pixel
+        coordinates to RA and Dec values. The xyshift argument must be specfied
+        for this to be useful
 
     Examples
     --------
@@ -81,36 +94,64 @@ def move(LSM, name, position=None, shift=None):
 
         >>> move(LSM, '1609.6+6556', shift=[0.0, 10.0/3600.0])
 
+    Shift all sources by 10 pixels in x::
+
+        >>> move(LSM, '*', xyshift=[10, 0], fitsFile='image.fits')
+
     """
     from .. import tableio
+    from astropy.io.fits import getheader
+    from astropy import wcs
 
     if len(LSM) == 0:
         log.error('Sky model is empty.')
         return
 
-    if position is None and shift is None:
-        raise ValueError("One of positon or shift must be specified.")
+    if fitsFile is not None:
+        if xyshift is None:
+            log.warn("A FITS file is specified, but no xyshift is specified.")
+        hdr = getheader(fitsFile, 1)
+        w = wcs.WCS(hdr)
+    elif xyshift is not None:
+        raise ValueError("A FITS file must be specified to use xyshift.")
+    if position is None and shift is None and xyshift is None:
+        raise ValueError("One of positon, shift, or xyshift must be specified.")
 
     sourceNames = LSM.getColValues('Name')
     table = LSM.table.copy()
-    if name in sourceNames:
-        indx = LSM._getNameIndx(name)
+    indx = LSM._getNameIndx(name)
+    if indx is not None:
         if position is not None:
+            if len(indx) > 1:
+                raise ValueError('Only one source can be moved to a new position')
             try:
                 table['Ra'][indx] = tableio.RA2Angle(position[0])[0]
                 table['Dec'][indx] = tableio.Dec2Angle(position[1])[0]
             except Exception as e:
                 raise ValueError('Could not parse position: {0}'.format(e.message))
         if shift is not None:
-            RA = LSM.table['Ra'][indx] + tableio.RA2Angle(shift[0])
-            Dec = LSM.table['Dec'][indx] + tableio.Dec2Angle(shift[1])
-            table['Ra'][indx] = tableio.RA2Angle(RA)[0]
-            table['Dec'][indx] = tableio.Dec2Angle(Dec)[0]
+            for ind in indx:
+                RA = LSM.table['Ra'][ind] + tableio.RA2Angle(shift[0])
+                Dec = LSM.table['Dec'][ind] + tableio.Dec2Angle(shift[1])
+                table['Ra'][ind] = tableio.RA2Angle(RA)[0]
+                table['Dec'][ind] = tableio.Dec2Angle(Dec)[0]
+        if xyshift is not None:
+            for ind in indx:
+                radec = np.array([LSM.table['Ra'][ind], LSM.table['Dec'][ind]])
+                xy = w.wcs_world2pix(radec, 1)
+                xy[0] += xyshift[0]
+                xy[1] += xyshift[1]
+                RADec = w.wcs_pix2world(xy, 1)
+                table['Ra'][ind] = tableio.RA2Angle(RADec[0])[0]
+                table['Dec'][ind] = tableio.Dec2Angle(RADec[1])[0]
         LSM.table = table
     elif LSM.hasPatches:
+        indx = LSM._getNameIndx(name, patch=True)
         patchNames = LSM.getPatchNames()
-        if name in patchNames:
+        if indx is not None:
             if position is not None:
+                if len(indx) > 1:
+                    raise ValueError('Only one source can be moved to a new position')
                 try:
                     position[0] = tableio.RA2Angle(position[0])[0]
                     position[1] = tableio.Dec2Angle(position[1])[0]
@@ -118,11 +159,31 @@ def move(LSM, name, position=None, shift=None):
                     raise ValueError('Could not parse position: {0}'.format(e.message))
                 table.meta[name] = position
             if shift is not None:
-                position = LSM.table.meta[name]
-                table.meta[name] = [position[0] + tableio.RA2Angle(shift[0]),
-                    position[1] + tableio.Dec2Angle(shift[1])]
+                for ind in indx:
+                    pname = patchNames[ind]
+                    position = LSM.table.meta[name]
+                    table.meta[name] = [position[0] + tableio.RA2Angle(shift[0]),
+                        position[1] + tableio.Dec2Angle(shift[1])]
+            if xyshift is not None:
+                for ind in indx:
+                    pname = patchNames[ind]
+                    radec = np.array(LSM.table.meta[name])
+                    xy = w.wcs_world2pix(radec, 1)
+                    xy[0] += xyshift[0]
+                    xy[1] += xyshift[1]
+                    RADec = w.wcs_pix2world(xy, 1)
+                    table.meta[name] = [RADec[0], RADec[1]]
             LSM.table = table
         else:
             raise ValueError("Could not find patch '{0}'.".format(name))
     else:
         raise ValueError("Could not find source '{0}'.".format(name))
+
+    history = "'{0}' by {1} deg".format(name, shift)
+    if position is not None:
+        history += ', moved to {0}'.format(position)
+    if shift is not None:
+        history += ', shifted by {1} degrees'.format(shift)
+    if xyshift is not None:
+        history += ', shifted by {1} pixels'.format(shift)
+    LSM._addHistory("Move ({0})".format(history))
