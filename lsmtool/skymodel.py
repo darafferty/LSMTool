@@ -36,7 +36,7 @@ class SkyModel(object):
         fileName : str
             Input ASCII file from which the sky model is read (must respect the
             makesourcedb format), name of VO service to query (must be one of
-            'VLSSr', 'WENSS', 'NVSS', or 'GSM'), or dict (single source only)
+            'WENSS', 'NVSS', or 'GSM'), or dict (single source only)
         beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table
@@ -65,9 +65,9 @@ class SkyModel(object):
 
             >>> s = SkyModel('sky.model', beamMS='SB100.MS')
 
-        Load a VLSSr sky model into a SkyModel object::
+        Load a WENSS catalog into a SkyModel object::
 
-            >>> s = SkyModel('VLSSr', VOPosition=[212.8352792, 52.202644],
+            >>> s = SkyModel('WENSS', VOPosition=[212.8352792, 52.202644],
                 VOradius=5.0)
 
         """

@@ -63,7 +63,6 @@ allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':0.0,
 requiredColumnNames = ['Name', 'Type', 'Ra', 'Dec', 'I']
 
 allowedVOServices = {
-    'vlssr':'http://heasarc.gsfc.nasa.gov/cgi-bin/vo/cone/coneGet.pl?table=vlssr&',
     'nvss':'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/65&amp;',
     'wenss':'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;'}
 
@@ -222,6 +221,10 @@ def createTable(outlines, metaDict, colNames, colDefaults):
     DecIndx = table.keys().index('Dec')
     table.remove_column('Dec')
     table.add_column(DecCol, index=DecIndx)
+
+    def fluxformat(val):
+        return '{0:0.3f}'.format(val)
+    table.columns['I'].format = fluxformat
 
     # Set column units and default values
     for i, colName in enumerate(colNames):
@@ -819,7 +822,7 @@ def coneSearch(VOService, position, radius):
     Parameters
     ----------
     VOService : str
-        Name of VO service to query (must be one of 'VLSSr', 'WENSS', or 'NVSS')
+        Name of VO service to query (must be one of 'WENSS' or 'NVSS')
     position : list of floats
         A list specifying a new position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
@@ -835,8 +838,6 @@ def coneSearch(VOService, position, radius):
     # Define allowed cone-search databases. These are the ones we know how to
     # convert to makesourcedb-formated sky models.
     columnMapping = {
-        'vlssr':{'name':'name', 'ra':'ra', 'dec':'dec', 'flux_74_mhz':'i',
-            'referencefrequency':74e6},
         'nvss':{'NVSS':'name', 'RAJ2000':'ra', 'DEJ2000':'dec', 'S1.4':'i',
             'MajAxis':'majoraxis', 'MinAxis':'minoraxis', 'referencefrequency':1.4e9},
         'wenss':{'Name':'name', 'RAJ2000':'ra', 'DEJ2000':'dec', 'Sint':'i',
@@ -914,6 +915,15 @@ def coneSearch(VOService, position, radius):
     table.remove_column('Name')
     table.add_column(NameCol, index=0)
 
+    # Convert flux and axis values to floats
+    for name in ['I', 'MajorAxis', 'MinorAxis', 'Orientation']:
+        indx = table.index_column(name)
+        intRaw = table[name].data.tolist()
+        floatCol = Column(name=name, data=intRaw, dtype='float')
+        table.remove_column(name)
+        table.add_column(floatCol, index=indx)
+
+
     # Add source-type column
     types = ['POINT'] * len(table)
     if 'majoraxis' in columnMapping[VOService.lower()].values():
@@ -929,10 +939,17 @@ def coneSearch(VOService, position, radius):
     table.add_column(col)
 
     # Set column units and default values
+    def fluxformat(val):
+        return '{0:0.3f}'.format(val)
     for i, colName in enumerate(table.colnames):
         log.debug("Setting units for column '{0}' to {1}".format(
             colName, allowedColumnUnits[colName.lower()]))
-        table.columns[colName].unit = allowedColumnUnits[colName.lower()]
+        if colName == 'I':
+            table.columns[colName].unit = 'mJy'
+            table.columns[colName].convert_unit_to('Jy')
+            table.columns[colName].format = fluxformat
+        else:
+            table.columns[colName].unit = allowedColumnUnits[colName.lower()]
 
         if hasattr(table.columns[colName], 'filled') and allowedColumnDefaults[colName.lower()] is not None:
             fillVal = allowedColumnDefaults[colName.lower()]

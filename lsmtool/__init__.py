@@ -37,7 +37,7 @@ def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
     fileName : str
         Name of input ASCII file from which the sky model is read (must respect
         the makesourcedb format) or name of VO service to query (must be one of
-        'VLSSr', 'WENSS', 'NVSS', or 'GSM'), or dict (single source only)
+        'WENSS', 'NVSS', or 'GSM'), or dict (single source only)
     beamMS : str, optional
         Measurement set from which the primary beam will be estimated. A
         column of attenuated Stokes I fluxes will be added to the table
@@ -67,10 +67,10 @@ def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
 
         >>> s = lsmtool.load('sky.model', 'SB100.MS')
 
-    Load a sky model from the VLSSr using all sources within 5 degrees of the
+    Load a sky model from the WENSS using all sources within 5 degrees of the
     position RA = 212.8352792, Dec = 52.202644::
 
-        >>> s = lsmtool.load('VLSSr', VOPosition=[212.8352792, 52.202644],
+        >>> s = lsmtool.load('WENSS', VOPosition=[212.8352792, 52.202644],
             VOradius=5.0)
 
     Load a sky model from a dictionary defining the source::
