@@ -917,11 +917,12 @@ def coneSearch(VOService, position, radius):
 
     # Convert flux and axis values to floats
     for name in ['I', 'MajorAxis', 'MinorAxis', 'Orientation']:
-        indx = table.index_column(name)
-        intRaw = table[name].data.tolist()
-        floatCol = Column(name=name, data=intRaw, dtype='float')
-        table.remove_column(name)
-        table.add_column(floatCol, index=indx)
+        if name in table.colnames:
+            indx = table.index_column(name)
+            intRaw = table[name].data.tolist()
+            floatCol = Column(name=name, data=intRaw, dtype='float')
+            table.remove_column(name)
+            table.add_column(floatCol, index=indx)
 
 
     # Add source-type column

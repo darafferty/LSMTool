@@ -202,13 +202,17 @@ class SkyModel(object):
         else:
             logCall = self.log.debug
 
+        x, y, refRA, refDec = self._getXY()
+
         info = 'Model contains {0} sources in {1} patch{2} of which:\n'\
                '      {3} are type POINT\n'\
                '      {4} are type GAUSSIAN\n'\
-               '      Associated beam MS: {5}\n\n'\
+               '      Associated beam MS: {5}\n'\
+               '      Approximate center: {6}, {7}\n\n'\
                '      History:\n'\
-               '      {6}'.format(len(self.table), nPatches, plur,
-               nPoint, nGaus, self.beamMS, '\n      '.join(self.history))
+               '      {8}'.format(len(self.table), nPatches, plur,
+               nPoint, nGaus, self.beamMS, refRA, refDec,
+               '\n      '.join(self.history))
         logCall(info)
         return info
 
