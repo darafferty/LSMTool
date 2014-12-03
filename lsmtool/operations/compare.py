@@ -53,7 +53,7 @@ def run(step, parset, LSM):
 
 
 def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
-    ignoreSpec=None, excludeMultiple=True):
+    ignoreSpec=None, excludeMultiple=True, excludeByFlux=True):
     """
     Compare two sky models
 
@@ -87,6 +87,9 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     excludeMultiple : bool, optional
         If True, sources with multiple matches are excluded. If False, the
         nearest of the multiple matches will be used for comparison
+    excludeByFlux : bool, optional
+        If True, matches whose predicted fluxes differ from the parent model
+        fluxes by 25% are excluded from the positional offset plot.
 
     Examples
     --------
@@ -263,7 +266,9 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir)
     plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir)
     plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir)
-    plotOffsets(RA, Dec, RA2, Dec2, labels, outDir)
+    retstatus = plotOffsets(RA, Dec, RA2, Dec2, labels, outDir, predFlux, fluxes1, excludeByFlux)
+    if retstatus == 1:
+        log.warn('No matches found within +/- 25% of predicted flux. Skipping offset plot.')
     argInfo = 'Used radius = {0}, ignoreSpec = {1}, and excludeMultiple = {2}'.format(
         radius, ignoreSpec, excludeMultiple)
     stats = findStats(predFlux, fluxes1, RA, Dec, RA2, Dec2, outDir, argInfo,
@@ -451,7 +456,8 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
     plt.savefig(outDir+'flux_ratio_sky.pdf', format='pdf')
 
 
-def plotOffsets(RA, Dec, refRA, refDec, labels, outDir):
+def plotOffsets(RA, Dec, refRA, refDec, labels, outDir, predFlux, measFlux,
+    excludeByFlux):
     """
     Makes plot of measured - predicted RA and DEC offsets
     """
@@ -469,6 +475,16 @@ def plotOffsets(RA, Dec, refRA, refDec, labels, outDir):
     except Exception as e:
         raise ImportError('PyPlot could not be imported. Plotting is not '
             'available: {0}'.format(e.message))
+
+    if excludeByFlux:
+        ratio = measFlux / predFlux
+        goodInd = np.where((ratio > 0.75) & (ratio < 1.25))[0]
+        if len(goodInd) == 0:
+            return 1
+        RA = RA[goodInd]
+        Dec = Dec[goodInd]
+        refRA = refRA[goodInd]
+        refDec = refDec[goodInd]
 
     RAOffsets = np.zeros(len(RA))
     DecOffsets = np.zeros(len(Dec))
@@ -502,6 +518,7 @@ def plotOffsets(RA, Dec, refRA, refDec, labels, outDir):
                 'offset points', ha='right', va='bottom')
 
     plt.savefig(outDir+'postional_offsets.pdf', format='pdf')
+    return 0
 
 
 def findStats(predFlux, measFlux, RA, Dec, refRA, refDec, outDir, info0, info1,
