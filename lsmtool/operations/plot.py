@@ -96,12 +96,12 @@ def plot(LSM, fileName=None, labelBy=None):
         log.error('Sky model is empty.')
         return
 
-    fig = plt.figure(1,figsize=(7.54,7))
+    fig = plt.figure(1,figsize=(7.66,7))
     plt.clf()
     x, y, midRA, midDec  = LSM._getXY()
     if hasWCSaxes:
         wcs = makeWCS(midRA, midDec)
-        ax = WCSAxes(fig, [0.15, 0.1, 0.8, 0.8], wcs=wcs)
+        ax = WCSAxes(fig, [0.16, 0.1, 0.8, 0.8], wcs=wcs)
         fig.add_axes(ax)
     else:
         ax = plt.gca()
