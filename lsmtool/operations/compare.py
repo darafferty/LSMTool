@@ -234,13 +234,11 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     # Find reference RA and Dec for center of LSM1
     x, y, refRA, refDec = LSM1._getXY()
     if byPatch:
-        RAp, Decp = LSM1.getPatchPositions(asArray=True)
-        RAp = RAp[matches1]
-        Decp = Decp[matches1]
-        x, y = radec2xy(RAp, Decp, refRA, refDec)
+        x, y = radec2xy(RA, Dec, refRA, refDec)
     else:
         x = x[matches1]
         y = y[matches1]
+    refx, refy = radec2xy(RA2, Dec2, refRA, refDec)
 
     if labelBy is not None:
         if labelBy.lower() == 'source':
@@ -266,7 +264,8 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir)
     plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir)
     plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir)
-    retstatus = plotOffsets(RA, Dec, RA2, Dec2, labels, outDir, predFlux, fluxes1, excludeByFlux)
+    retstatus = plotOffsets(RA, Dec, RA2, Dec2, x, y, refx, refy, labels,
+        outDir, predFlux, fluxes1, excludeByFlux)
     if retstatus == 1:
         log.warn('No matches found within +/- 25% of predicted flux. Skipping offset plot.')
     argInfo = 'Used radius = {0}, ignoreSpec = {1}, and excludeMultiple = {2}'.format(
@@ -456,10 +455,10 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
     plt.savefig(outDir+'flux_ratio_sky.pdf', format='pdf')
 
 
-def plotOffsets(RA, Dec, refRA, refDec, labels, outDir, predFlux, measFlux,
-    excludeByFlux):
+def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
+    predFlux, measFlux, excludeByFlux):
     """
-    Makes plot of measured - predicted RA and DEC offsets
+    Makes plot of measured - predicted RA and DEC and x and y offsets
     """
     from ..operations_lib import calculateSeparation
     import os
@@ -488,17 +487,21 @@ def plotOffsets(RA, Dec, refRA, refDec, labels, outDir, predFlux, measFlux,
 
     RAOffsets = np.zeros(len(RA))
     DecOffsets = np.zeros(len(Dec))
+    xOffsets = np.zeros(len(RA))
+    yOffsets = np.zeros(len(Dec))
     for i in range(len(RA)):
         if RA[i] >= refRA[i]:
             sign = 1.0
         else:
             sign = -1.0
         RAOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], refRA[i], Dec[i]).value * 3600.0 # arcsec
+        xOffsets[i] = x[i] - refx[i]
         if Dec[i] >= refDec[i]:
             sign = 1.0
         else:
             sign = -1.0
         DecOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], RA[i], refDec[i]).value * 3600.0 # arcsec
+        yOffsets[i] = y[i] - refy[i]
 
     fig = plt.figure(figsize=(7.0, 5.0))
     ax1 = plt.subplot(1, 1, 1)
@@ -516,8 +519,25 @@ def plotOffsets(RA, Dec, refRA, refDec, labels, outDir, predFlux, measFlux,
         for label, xl, yl in zip(labels, xls, yls):
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
+    plt.savefig(outDir+'positional_offsets_sky.pdf', format='pdf')
 
-    plt.savefig(outDir+'postional_offsets.pdf', format='pdf')
+    fig = plt.figure(figsize=(7.0, 5.0))
+    ax1 = plt.subplot(1, 1, 1)
+    plt.title('Positional offsets (Model 1 - Model 2)')
+    ax1.plot(xOffsets, yOffsets, 'o')
+    xmin, xmax, ymin, ymax = plt.axis()
+    ax1.plot([xmin, xmax], [0.0, 0.0], '--g')
+    ax1.plot([0.0, 0.0], [ymin, ymax], '--g')
+    plt.xlabel('Image-plane X Offset (arb. units)')
+    plt.ylabel('Image-plane Y Offset (arb. units)')
+
+    if labels is not None:
+        xls = RAOffsets
+        yls = DecOffsets
+        for label, xl, yl in zip(labels, xls, yls):
+            plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
+                'offset points', ha='right', va='bottom')
+    plt.savefig(outDir+'positional_offsets_im.pdf', format='pdf')
     return 0
 
 
