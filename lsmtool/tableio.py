@@ -817,10 +817,10 @@ def factorDirectionsWriter(table, fileName):
         if patchName in table.meta:
             gRA, gDec = table.meta[patchName]
         else:
-            gRA = 0.0
-            gDec = 0.0
-        outLines.append('{0}, {1}, {2}, , , , , \n'.format(patchName, gRA,
-            gDec))
+            gRA = Angle(0.0)
+            gDec = Angle(0.0)
+        outLines.append('{0}, {1}, {2}, , , , , \n'.format(patchName, gRA.value,
+            gDec.value))
 
     regionFile.writelines(outLines)
     regionFile.close()
