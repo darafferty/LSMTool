@@ -785,6 +785,47 @@ def casaRegionWriter(table, fileName):
     casaFile.close()
 
 
+def factorDirectionsWriter(table, fileName):
+    """
+    Writes patches to a factor directions file.
+
+    Parameters
+    ----------
+    table : astropy.table.Table object
+        Input sky model table; must have patches defined
+    fileName : str
+        Output file to which the sky model is written
+
+    """
+    log = logging.getLogger('LSMTool.Write')
+
+    regionFile = open(fileName, 'w')
+    log.debug('Writing factor directions file to {0}'.format(fileName))
+
+    outLines = []
+    outLines.append('# Name, RA, DEC, regionfile, multiscale, solint_amp, solint_ph, HDR\n')
+
+    # Make sure all columns have the correct units
+    for colName in table.columns:
+        units = allowedColumnUnits[colName.lower()]
+        if units is not None:
+            table[colName].convert_unit_to(units)
+
+    table = table.group_by('Patch')
+    patchNames = table.groups.keys['Patch']
+    for i, patchName in enumerate(patchNames):
+        if patchName in table.meta:
+            gRA, gDec = table.meta[patchName]
+        else:
+            gRA = 0.0
+            gDec = 0.0
+        outLines.append('{0}, {1}, {2}, , , , , \n'.format(patchName, gRA,
+            gDec))
+
+    regionFile.writelines(outLines)
+    regionFile.close()
+
+
 def broadcastTable(fileName):
     """
     Sends a table via SAMP.
@@ -1031,4 +1072,5 @@ registry.register_writer('makesourcedb', Table, skyModelWriter)
 registry.register_writer('ds9', Table, ds9RegionWriter)
 registry.register_writer('kvis', Table, kvisAnnWriter)
 registry.register_writer('casa', Table, casaRegionWriter)
+registry.register_writer('factor', Table, factorDirectionsWriter)
 

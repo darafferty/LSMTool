@@ -1554,6 +1554,7 @@ class SkyModel(object):
                 - 'ds9'
                 - 'kvis'
                 - 'casa'
+                - 'factor'
                 - plus all other formats supported by the astropy.table package
         clobber : bool, optional
             If True, an existing file is overwritten.
@@ -1610,9 +1611,9 @@ class SkyModel(object):
         if addHistory:
             table.meta['History'] = self.history
 
-        if format != 'makesourcedb':
+        if format.lower() != 'makesourcedb' and format.lower() != 'factor':
             table.meta = {}
-        table.write(fileName, format=format)
+        table.write(fileName, format=format.lower())
 
 
     def broadcast(self):
