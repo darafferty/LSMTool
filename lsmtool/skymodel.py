@@ -208,7 +208,7 @@ class SkyModel(object):
                '      {3} are type POINT\n'\
                '      {4} are type GAUSSIAN\n'\
                '      Associated beam MS: {5}\n'\
-               '      Approximate center: {6}, {7}\n\n'\
+               '      Approximate RA, Dec of center: {6}, {7}\n\n'\
                '      History:\n'\
                '      {8}'.format(len(self.table), nPatches, plur,
                nPoint, nGaus, self.beamMS, refRA, refDec,
@@ -1711,7 +1711,7 @@ class SkyModel(object):
                 - = (or '==')
             Units are optional and must be specified as required by astropy.units.
         aggregate : str, optional
-            If set, the array returned will be of values aggregated
+            If set, the selection will be done on values aggregated
             over the patch members. The following aggregation functions are
             available:
                 - 'sum': sum of patch values
@@ -1745,11 +1745,17 @@ class SkyModel(object):
 
             >>> s.select('I > 1.5 Jy', aggregate='sum')
 
+        Or, to filter on patches smaller than 5 arcmin in size::
+
+            >>> sizes = s.getPatchSizes(units='arcmin')
+            >>> s.select(sizes < 5.0, aggregate=True)
+
         Filter on source names, keeping those that match "src*_1?"::
 
             >>> s.select('Name == src*_1?')
 
-        Use a CASA clean mask image to keep sources that lie in masked regions::
+        Use a CASA clean mask image named 'clean_mask.mask' to remove sources
+        that lie in masked regions::
 
             >>> s.filter('clean_mask.mask == True')
 
@@ -1807,7 +1813,7 @@ class SkyModel(object):
                 - = (or '==')
             Units are optional and must be specified as required by astropy.units.
         aggregate : str, optional
-            If set, the array returned will be of values aggregated
+            If set, the selection will be done on values aggregated
             over the patch members. The following aggregation functions are
             available:
             - 'sum': sum of patch values
@@ -1836,17 +1842,23 @@ class SkyModel(object):
             INFO: Removed 1102 sources.
 
         If the sky model has patches and the filter is desired per patch, use
-        ``aggregate = function``. For example, to select on the sum of the patch
+        ``aggregate = function``. For example, to filter on the sum of the patch
         fluxes::
 
             >>> s.remove('I > 1.5 Jy', aggregate='sum')
+
+        Or, to filter on patches smaller than 5 arcmin in size::
+
+            >>> sizes = s.getPatchSizes(units='arcmin')
+            >>> s.remove(sizes < 5.0, aggregate=True)
 
         Filter on source names, removing those that match "src*_1?" (e.g.,
         'src2345_15', 'srcB2_1a', etc.)::
 
             >>> s.remove('Name == src*_1?')
 
-        Use a CASA clean mask image to remove sources that lie in masked regions::
+        Use a CASA clean mask image named 'clean_mask.mask' to remove sources
+        that lie in masked regions::
 
             >>> s.remove('clean_mask.mask == True')
 
