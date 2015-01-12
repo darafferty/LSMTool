@@ -1516,9 +1516,9 @@ class SkyModel(object):
 
         Parameters
         ----------
-        ra1 : float
+        ra1 : float or array
             RA of coordinate 1 in degrees
-        dec1 : float
+        dec1 : float or array
             Dec of coordinate 1 in degrees
         ra2 : float
             RA of coordinate 2 in degrees
@@ -1527,13 +1527,70 @@ class SkyModel(object):
 
         Returns
         -------
-        separation : float
+        separation : Angle object or array
             Angular separation in degrees
 
         """
         from operations_lib import calculateSeparation
 
         return calculateSeparation(ra1, dec1, ra2, dec2)
+
+
+    def getDistance(self, RA, Dec, byPatch=False, units=None):
+        """
+        Returns angular distance for each source or patch to specified position
+
+        Parameters
+        ----------
+        RA : float or str
+            RA of position to which the distance is desired (in degrees or
+            makesourcedb format)
+        Dec : float or str
+            Dec of position to which the distance is desired (in degrees or
+            makesourcedb format)
+        byPatch : bool, optional
+            Calculate distance by patches instead of by sources
+        units : str, optional
+            Units for resulting distance
+
+        Returns
+        -------
+        dist : array
+            Array of distances
+
+        Examples
+        --------
+        Find distance in degrees to a position for all sources::
+
+            >>> s.getDistance(94.0, 42.0)
+
+        Find distance in arcmin::
+
+            >>> s.getDistance(94.0, 42.0, units='arcmin')
+
+        Find distance to patch centers:
+
+            >>> s.setPatchPositions(method='mid')
+            >>> s.getDistance(94.0, 42.0, byPatch=True)
+
+        """
+        from tableio import RA2Angle, Dec2Angle
+
+        if byPatch and self.hasPatches:
+            # Get patch positions
+            sRA, sDec = self.getPatchPositions(asArray=True)
+        else:
+            sRA = self.getColValues('RA')
+            sDec = self.getColValues('Dec')
+
+        RA = RA2Angle(RA)
+        Dec = Dec2Angle(Dec)
+
+        dist = self._calculateSeparation(sRA, sDec, RA, Dec)
+        if units is not None:
+            return dist.to(units).value
+        else:
+            return dist.value
 
 
     def write(self, fileName=None, format='makesourcedb', clobber=False,

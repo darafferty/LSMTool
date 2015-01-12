@@ -291,9 +291,9 @@ def calculateSeparation(ra1, dec1, ra2, dec2):
 
     Parameters
     ----------
-    ra1 : float
+    ra1 : float or numpy array
         RA of coordinate 1 in degrees
-    dec1 : float
+    dec1 : float or numpy array
         Dec of coordinate 1 in degrees
     ra2 : float
         RA of coordinate 2 in degrees
@@ -302,7 +302,7 @@ def calculateSeparation(ra1, dec1, ra2, dec2):
 
     Returns
     -------
-    separation : float
+    separation : astropy Angle or numpy array
         Angular separation in degrees
 
     """
