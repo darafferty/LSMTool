@@ -1551,7 +1551,7 @@ class SkyModel(object):
         byPatch : bool, optional
             Calculate distance by patches instead of by sources
         units : str, optional
-            Units for resulting distance
+            Units for resulting distance. If None, units are degrees
 
         Returns
         -------
@@ -1955,8 +1955,10 @@ class SkyModel(object):
             If True, fluxes will be attenuated by the beam.
         root : str, optional
             Root string from which patch names are constructed (when algorithm =
-            'single', 'cluster', or 'tesselate'). Patch names will be 'root_INDX',
-            where INDX is an integer ranging from (0:nPatches).
+            'single', 'cluster', or 'tesselate'). For 'single', the patch name
+            will be set to root; for the other grouping algorithms, the patch
+            names will be 'root_INDX', where INDX is an integer ranging from
+            (0:nPatches).
         method : None or str, optional
             This parameter specifies the method used to set the patch positions:
             - 'mid' => the position is set to the midpoint of the patch
