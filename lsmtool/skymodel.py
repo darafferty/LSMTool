@@ -909,6 +909,8 @@ class SkyModel(object):
             else:
                 newCol = Column(name=colName, data=data)
             self.table.add_column(newCol, index=index)
+        if colName == 'Patch':
+            self._updateGroups()
 
 
     def getRowValues(self, rowName):
