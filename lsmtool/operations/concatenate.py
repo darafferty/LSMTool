@@ -104,10 +104,11 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
     """
     from astropy.table import vstack, Column
     from ..operations_lib import matchSky
+    from ..skymodel import SkyModel
     import numpy as np
 
     if type(LSM2) is str:
-        LSM2 = skymodel.SkyModel(LSM2)
+        LSM2 = SkyModel(LSM2)
 
     if len(LSM1) == 0:
         log.info('Parent sky model is empty. Concatenated sky model is '

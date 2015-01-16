@@ -98,16 +98,16 @@ if __name__=='__main__':
                            }
 
     for step in steps:
-       operation = parset.getString('.'.join(["LSMTool.Steps", step, "Operation"]))
-       logging.info("--> Starting \'" + step + "\' step (operation: " + operation + ").")
-       start = time.clock()
-       returncode = availableOperations[operation].run(step, parset, LSM)
-       if returncode != 0:
-          logging.error("Step \'" + step + "\' incomplete. Trying to continue anyway...")
-       else:
-          logging.info("Step \'" + step + "\' completed successfully.")
-       elapsed = (time.clock() - start)
-       logging.debug("Time for this step: "+str(elapsed)+" s.")
+        operation = parset.getString('.'.join(["LSMTool.Steps", step, "Operation"]))
+        logging.info("--> Starting \'" + step + "\' step (operation: " + operation + ").")
+        start = time.clock()
+        returncode = availableOperations[operation].run(step, parset, LSM)
+        if returncode != 0:
+           logging.error("Step \'" + step + "\' incomplete. Trying to continue anyway...")
+        else:
+           logging.info("Step \'" + step + "\' completed successfully.")
+        elapsed = (time.clock() - start)
+        logging.debug("Time for this step: "+str(elapsed)+" s.")
 
     logging.info("Done.")
 
