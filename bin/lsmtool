@@ -93,7 +93,7 @@ if __name__=='__main__':
                            "MOVE": operations.move,
                            "PLOT": operations.plot,
                            "SETPATCHPOSITIONS": operations.setpatchpositions,
-                           "TRANSFER": operations.transfer
+                           "TRANSFER": operations.transfer,
                            "COMPARE": operations.compare
                            }
 
