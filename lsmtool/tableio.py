@@ -73,7 +73,7 @@ def skyModelReader(fileName):
 
     See http://www.lofar.org/operations/doku.php?id=engineering:software:tools:makesourcedb#format_string
     for details. Note that source names, types, and patch names are limited to
-    a length of 50 characters.
+    a length of 100 characters.
 
     Parameters
     ----------
@@ -145,17 +145,17 @@ def createTable(outlines, metaDict, colNames, colDefaults):
 
     """
     # Before loading table into an astropy Table object, set lengths of Name,
-    # Patch, and Type columns to 50 characters
+    # Patch, and Type columns to 100 characters
     log = logging.getLogger('LSMTool.Load')
 
     converters = {}
     nameCol = 'col{0}'.format(colNames.index('Name')+1)
-    converters[nameCol] = [ascii.convert_numpy('S50')]
+    converters[nameCol] = [ascii.convert_numpy('S100')]
     typeCol = 'col{0}'.format(colNames.index('Type')+1)
-    converters[typeCol] = [ascii.convert_numpy('S50')]
+    converters[typeCol] = [ascii.convert_numpy('S100')]
     if 'Patch' in colNames:
         patchCol = 'col{0}'.format(colNames.index('Patch')+1)
-        converters[patchCol] = [ascii.convert_numpy('S50')]
+        converters[patchCol] = [ascii.convert_numpy('S100')]
 
     log.debug('Creating table...')
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
@@ -553,7 +553,11 @@ def skyModelWriter(table, fileName):
         patchNames = table.groups.keys['Patch']
         for i, patchName in enumerate(patchNames):
             if patchName in table.meta:
-                gRA, gDec = table.meta[patchName]
+                try:
+                    gRA, gDec = table.meta[patchName]
+                except ValueError:
+                    raise ValueError('Multiple positions per patch. Please set'
+                    'the patch positions.')
             else:
                 gRA = 0.0
                 gDec = 0.0
@@ -952,7 +956,7 @@ def coneSearch(VOService, position, radius):
 
     # Make sure Name is a str column
     NameRaw = table['Name'].data.tolist()
-    NameCol = Column(name='Name', data=NameRaw, dtype='S50')
+    NameCol = Column(name='Name', data=NameRaw, dtype='S100')
     table.remove_column('Name')
     table.add_column(NameCol, index=0)
 
@@ -972,7 +976,7 @@ def coneSearch(VOService, position, radius):
         for i, maj in enumerate(table[allowedColumnNames['majoraxis']]):
             if maj > 0.0:
                 types[i] = 'GAUSSIAN'
-    col = Column(name='Type', data=types, dtype='S50')
+    col = Column(name='Type', data=types, dtype='S100')
     table.add_column(col, index=1)
 
     # Add reference-frequency column
@@ -1056,9 +1060,9 @@ def makeEmptyTable():
     colNames = ['Name', 'Type', 'Ra', 'Dec', 'I']
     converters = {}
     nameCol = 'col{0}'.format(colNames.index('Name')+1)
-    converters[nameCol] = [ascii.convert_numpy('S50')]
+    converters[nameCol] = [ascii.convert_numpy('S100')]
     typeCol = 'col{0}'.format(colNames.index('Type')+1)
-    converters[typeCol] = [ascii.convert_numpy('S50')]
+    converters[typeCol] = [ascii.convert_numpy('S100')]
     table = Table.read(outlines, guess=False, format='ascii.no_header', delimiter=',',
         names=colNames, comment='#', data_start=0, converters=converters)
     table.remove_rows(0)
