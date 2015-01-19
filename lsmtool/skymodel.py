@@ -1710,15 +1710,19 @@ class SkyModel(object):
         if len(names) == len(nameSet):
             return
 
-        filt = []
+        filtNames = []
+        filtIndices = []
         for i, name in enumerate(self.getColValues('Name')):
-            if name not in filt:
-                filt.append(i)
+            if name in filtNames:
+                filtIndices.append(i)
+            else:
+                filtNames.append(name)
         nRowsOrig = len(self.table)
-        self.table = self.table[filt]
+        self.table = self.table[filtIndices]
         nRowsNew = len(self.table)
         if nRowsOrig-nRowsNew > 0:
             self.log.info('Removed {0} duplicate sources.'.format(nRowsOrig-nRowsNew))
+        self._updateGroups()
 
 
     def select(self, filterExpression, aggregate=None, applyBeam=False,
