@@ -429,7 +429,7 @@ def RA2Angle(RA):
     """
     import astropy.units as u
 
-    if type(RA) is str or type(RA) is float:
+    if type(RA) is not list:
         RA = [RA]
 
     if type(RA[0]) is str:
@@ -463,7 +463,7 @@ def Dec2Angle(Dec):
     """
     import astropy.units as u
 
-    if type(Dec) is str or type(Dec) is float:
+    if type(Dec) is not list:
         Dec = [Dec]
 
     if type(Dec[0]) is str:
