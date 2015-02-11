@@ -1669,6 +1669,8 @@ class SkyModel(object):
             if format.lower() == 'factor' and self.hasPatches:
                 indx = np.argsort(self.getColValues('I', aggregate='sum'))
                 table.meta['patch_order'] = indx
+                if not lowToHigh:
+                    indx = indx[::-1]
             else:
                 indx = table.argsort(colName)
                 if not lowToHigh:
