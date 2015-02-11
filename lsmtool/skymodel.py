@@ -1942,7 +1942,7 @@ class SkyModel(object):
             applyBeam=applyBeam, useRegEx=useRegEx, force=force)
 
 
-    def group(self, algorithm, targetFlux=None, numClusters=100, fwhmArcsec=None,
+    def group(self, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         threshold=0.1, applyBeam=False, root='Patch', method='mid'):
         """
         Groups sources into patches.
@@ -1972,8 +1972,10 @@ class SkyModel(object):
         numClusters : int, optional
             Number of clusters for clustering. Sources are grouped around the
             numClusters brightest sources.
-        fwhmArcsec : float, optional
-            FWHM in arcsec of convolving Gaussian used for thresholding
+        FWHM : str or float, optional
+            FWHM of convolving Gaussian used for thresholding. The FWHM can
+            be specified as either a float in degrees or as a string with units
+            (e.g., '25.0 arcsec')
         threshold : float, optional
             Value between 0 and 1 above which emission is considered for thresholding
         applyBeam : bool, optional
@@ -2001,7 +2003,7 @@ class SkyModel(object):
 
         """
         operations.group.group(self, algorithm, targetFlux=targetFlux,
-            numClusters=numClusters, fwhmArcsec=fwhmArcsec, threshold=threshold,
+            numClusters=numClusters, FWHM=FWHM, threshold=threshold,
             applyBeam=applyBeam, root=root, method=method)
 
 

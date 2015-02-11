@@ -125,6 +125,8 @@ PatchFile & string & sky\_model\_with\_patches.sky & File with patches that will
 Algorithm & string & tessellate & One of tessellate, cluster, single, every, or a CASA mask filename\\
 TargetFlux & string & 10.0 Jy & Target total flux of patches (tessellate only)\\
 NumClusters & int & 100 & Number of clusters (cluster only)\\
+Threshold & float & 0.1 & Island threshold from 0 to 1 (threshold only)\\
+FWHM & string & 60 arcsec & FWHM of Gaussian for smoothing before thresholding (threshold only)\\
 ApplyBeam & bool & True & If true, apparent fluxes will be used \\
 \hline
 \multicolumn{4}{l}{\textbf{UNGROUP}}\\
@@ -215,6 +217,7 @@ In addition to the operations described above, a number of other methods are ava
  \item[LSM.getPatchPositions()]: Returns patch RA and Dec values
  \item[LSM.getDefaultValues()]: Returns column default values
  \item[LSM.getPatchSizes()]: Returns an array of patch sizes
+ \item[LSM.getDistance()]: Returns an array of angular distances
  \item[LSM.setColValues()]: Sets column values
  \item[LSM.setRowValues()]: Sets row values
  \item[LSM.setDefaultValues()]: Sets default column values

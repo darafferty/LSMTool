@@ -31,7 +31,7 @@ def run(step, parset, LSM):
     targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "TargetFlux"]), '1.0 Jy' )
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 100 )
     threshold = parset.getString('.'.join(["LSMTool.Steps", step, "Threshold"]), '1.0 Jy' )
-    fwhmArcsec = parset.getString('.'.join(["LSMTool.Steps", step, "fwhmArcsec"]), '1.0 Jy' )
+    FWHM = parset.getString('.'.join(["LSMTool.Steps", step, "FWHM"]), '1.0 Jy' )
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), False )
     method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), 'mid' )
 
@@ -49,7 +49,7 @@ def run(step, parset, LSM):
     return result
 
 
-def group(LSM, algorithm, targetFlux=None, numClusters=100, fwhmArcsec=None,
+def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
     threshold=0.1, applyBeam=False, root='Patch', method='mid'):
     """
     Groups sources into patches.
@@ -79,8 +79,10 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, fwhmArcsec=None,
     numClusters : int, optional
         Number of clusters for clustering. Sources are grouped around the
         numClusters brightest sources
-    fwhmArcsec : float, optional
-        FWHM in arcsec of convolving Gaussian used for thresholding
+    FWHM : str or float, optional
+        FWHM of convolving Gaussian used for thresholding. The FWHM can
+        be specified as either a float in degrees or as a string with units
+        (e.g., '25.0 arcsec')
     threshold : float, optional
         Value between 0 and 1 above which emission is considered for thresholding
     applyBeam : bool, optional
@@ -160,10 +162,26 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, fwhmArcsec=None,
             addSingle(LSM, root+'_0')
 
     elif algorithm.lower() == 'threshold':
+        from astropy.coordinates import SkyCoord, Angle
+
         if threshold is None:
             threshold = 0.1
-        if fwhmArcsec is None:
-            raise ValueError('Please specify the fwhmArcsec parameter.')
+        if threshold is < 0.01:
+            threshold = 0.01
+        if threshold is > 1.0:
+            threshold = 1.0
+        if FWHM is None:
+            raise ValueError('Please specify the FWHM parameter.')
+        else:
+            units = 'degree'
+            if type(FWHM) is str:
+                parts = [''.join(g).strip() for _, g in groupby(FWHM,
+                    str.isalpha)]
+                FWHM = float(parts[0])
+                if len(parts) == 2:
+                    units = parts[1]
+            fwhmArcsec = Angle(FWHM, unit=units).to('arcsec').value
+
         patchCol = _threshold.getPatchNamesByThreshold(LSM, fwhmArcsec, threshold)
         LSM.setColValues('Patch', patchCol, index=2)
 

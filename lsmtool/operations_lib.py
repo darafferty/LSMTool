@@ -246,6 +246,7 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
     from distutils.version import StrictVersion
     import numpy as np
     import scipy
+
     log = logging.getLogger('LSMTool')
     if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
         log.debug('The installed version of SciPy contains a bug that affects catalog matching. '
