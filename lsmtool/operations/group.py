@@ -166,9 +166,9 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
 
         if threshold is None:
             threshold = 0.1
-        if threshold is < 0.01:
+        if threshold < 0.01:
             threshold = 0.01
-        if threshold is > 1.0:
+        if threshold > 1.0:
             threshold = 1.0
         if FWHM is None:
             raise ValueError('Please specify the FWHM parameter.')
