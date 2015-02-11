@@ -30,6 +30,8 @@ def run(step, parset, LSM):
     root = parset.getString('.'.join(["LSMTool.Steps", step, "Root"]), 'Patch' )
     targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "TargetFlux"]), '1.0 Jy' )
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 100 )
+    threshold = parset.getString('.'.join(["LSMTool.Steps", step, "Threshold"]), '1.0 Jy' )
+    fwhmArcsec = parset.getString('.'.join(["LSMTool.Steps", step, "fwhmArcsec"]), '1.0 Jy' )
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), False )
     method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), 'mid' )
 
@@ -47,8 +49,8 @@ def run(step, parset, LSM):
     return result
 
 
-def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
-    root='Patch', method='mid'):
+def group(LSM, algorithm, targetFlux=None, numClusters=100, fwhmArcsec=None,
+    threshold=0.1, applyBeam=False, root='Patch', method='mid'):
     """
     Groups sources into patches.
 
@@ -64,6 +66,9 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
             specified number of clusters (specified by the numClusters parameter)
         - 'tessellate' => group into tiles whose total flux approximates
             the target flux (specified by the targetFlux parameter)
+        - 'threshold' => group by convolving the sky model with a Gaussian beam
+            and then thresholding to find islands of emission (NOTE: all sources
+            are currently considered to be point sources)
         - the filename of a mask image => group by masked regions (where mask =
             True). Source outside of masked regions are given patches of their
             own
@@ -74,6 +79,10 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
     numClusters : int, optional
         Number of clusters for clustering. Sources are grouped around the
         numClusters brightest sources
+    fwhmArcsec : float, optional
+        FWHM in arcsec of convolving Gaussian used for thresholding
+    threshold : float, optional
+        Value between 0 and 1 above which emission is considered for thresholding
     applyBeam : bool, optional
         If True, fluxes will be attenuated by the beam
     root : str, optional
@@ -101,6 +110,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
     """
     from . import _tessellate
     from . import _cluster
+    from . import _threshold
     import numpy as np
     import os
     from itertools import groupby
@@ -148,6 +158,14 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
             # Catch error in some cases with high target flux relative to
             # total model flux
             addSingle(LSM, root+'_0')
+
+    elif algorithm.lower() == 'threshold':
+        if threshold is None:
+            threshold = 0.1
+        if fwhmArcsec is None:
+            raise ValueError('Please specify the fwhmArcsec parameter.')
+        patchCol = _threshold.getPatchNamesByThreshold(LSM, fwhmArcsec, threshold)
+        LSM.setColValues('Patch', patchCol, index=2)
 
     elif os.path.exists(algorithm):
         # Mask image

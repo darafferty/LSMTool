@@ -88,7 +88,7 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
     return np.array(attFluxes)
 
 
-def radec2xy(RA, Dec, refRA=None, refDec=None):
+def radec2xy(RA, Dec, refRA=None, refDec=None, crdelt=None):
     """
     Returns x, y for input ra, dec.
 
@@ -106,6 +106,8 @@ def radec2xy(RA, Dec, refRA=None, refDec=None):
         Reference RA in degrees.
     refDec : float, optional
         Reference Dec in degrees
+    crdelt: float, optional
+        Delta in degrees for sky grid
 
     Returns
     -------
@@ -124,7 +126,7 @@ def radec2xy(RA, Dec, refRA=None, refDec=None):
         refDec = Dec[0]
 
     # Make wcs object to handle transformation from ra and dec to pixel coords.
-    w = makeWCS(refRA, refDec)
+    w = makeWCS(refRA, refDec, crdelt=crdelt)
 
     for ra_deg, dec_deg in zip(RA, Dec):
         ra_dec = np.array([[ra_deg, dec_deg]])
@@ -134,7 +136,7 @@ def radec2xy(RA, Dec, refRA=None, refDec=None):
     return x, y
 
 
-def xy2radec(x, y, refRA=0.0, refDec=0.0):
+def xy2radec(x, y, refRA=0.0, refDec=0.0, crdelt=None):
     """
     Returns x, y for input ra, dec.
 
@@ -152,6 +154,8 @@ def xy2radec(x, y, refRA=0.0, refDec=0.0):
         Reference RA in degrees
     refDec : float, optional
         Reference Dec in degrees
+    crdelt: float, optional
+        Delta in degrees for sky grid
 
     Returns
     -------
@@ -166,7 +170,7 @@ def xy2radec(x, y, refRA=0.0, refDec=0.0):
     Dec = []
 
     # Make wcs object to handle transformation from ra and dec to pixel coords.
-    w = makeWCS(refRA, refDec)
+    w = makeWCS(refRA, refDec, crdelt=crdelt)
 
     for xp, yp in zip(x, y):
         x_y = np.array([[xp, yp]])
@@ -176,7 +180,7 @@ def xy2radec(x, y, refRA=0.0, refDec=0.0):
     return RA, Dec
 
 
-def makeWCS(refRA, refDec):
+def makeWCS(refRA, refDec, crdelt=None):
     """
     Makes simple WCS object.
 
@@ -186,6 +190,8 @@ def makeWCS(refRA, refDec):
         Reference RA in degrees
     refDec : float
         Reference Dec in degrees
+    crdelt: float, optional
+        Delta in degrees for sky grid
 
     Returns
     -------
@@ -198,7 +204,9 @@ def makeWCS(refRA, refDec):
 
     w = WCS(naxis=2)
     w.wcs.crpix = [1000, 1000]
-    w.wcs.cdelt = np.array([-0.066667, 0.066667])
+    if crdelt is None:
+        crdelt = 0.066667 # 4 arcmin
+    w.wcs.cdelt = np.array([-crdelt, crdelt])
     w.wcs.crval = [refRA, refDec]
     w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
     w.wcs.set_pv([(2, 1, 45.0)])

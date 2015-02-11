@@ -600,7 +600,7 @@ class SkyModel(object):
             raise RuntimeError('Sky model does not have patches.')
 
 
-    def _getXY(self, patchName=None):
+    def _getXY(self, patchName=None, crdelt=None):
         """
         Returns lists of projected x and y values for all sources.
 
@@ -608,6 +608,8 @@ class SkyModel(object):
         ----------
         patchName : str, optional
             If given, return x and y for specified patch only
+        crdelt: float, optional
+            Delta in degrees for sky grid
 
         Returns
         -------
@@ -628,7 +630,7 @@ class SkyModel(object):
             ind = self.getRowIndex(patchName)
             RA = RA[ind]
             Dec = Dec[ind]
-        x, y  = radec2xy(RA, Dec)
+        x, y  = radec2xy(RA, Dec, crdelt=crdelt)
 
         # Refine x and y using midpoint
         if len(x) > 1:
@@ -641,7 +643,7 @@ class SkyModel(object):
                 midyind = np.where(np.array(y)[yind] > ymid)[0][0]
                 midRA = RA[xind[midxind]]
                 midDec = Dec[yind[midyind]]
-                x, y  = radec2xy(RA, Dec, midRA, midDec)
+                x, y  = radec2xy(RA, Dec, midRA, midDec, crdelt=crdelt)
             except IndexError:
                 midRA = RA[0]
                 midDec = Dec[0]
@@ -1940,8 +1942,8 @@ class SkyModel(object):
             applyBeam=applyBeam, useRegEx=useRegEx, force=force)
 
 
-    def group(self, algorithm, targetFlux=None, numClusters=100, applyBeam=False,
-        root='Patch', method='mid'):
+    def group(self, algorithm, targetFlux=None, numClusters=100, fwhmArcsec=None,
+        threshold=0.1, applyBeam=False, root='Patch', method='mid'):
         """
         Groups sources into patches.
 
@@ -1957,6 +1959,9 @@ class SkyModel(object):
                 specified number of clusters (specified by the numClusters parameter).
             - 'tessellate' => group into tiles whose total flux approximates
                 the target flux (specified by the targetFlux parameter).
+            - 'threshold' => group by convolving the sky model with a Gaussian beam
+                and then thresholding to find islands of emission (NOTE: all sources
+                are currently considered to be point sources)
             - the filename of a mask image => group by masked regions (where mask =
                 True). Source outside of masked regions are given patches of their
                 own.
@@ -1967,6 +1972,10 @@ class SkyModel(object):
         numClusters : int, optional
             Number of clusters for clustering. Sources are grouped around the
             numClusters brightest sources.
+        fwhmArcsec : float, optional
+            FWHM in arcsec of convolving Gaussian used for thresholding
+        threshold : float, optional
+            Value between 0 and 1 above which emission is considered for thresholding
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
         root : str, optional
@@ -1992,8 +2001,8 @@ class SkyModel(object):
 
         """
         operations.group.group(self, algorithm, targetFlux=targetFlux,
-            numClusters=numClusters, applyBeam=applyBeam, root=root,
-            method=method)
+            numClusters=numClusters, fwhmArcsec=fwhmArcsec, threshold=threshold,
+            applyBeam=applyBeam, root=root, method=method)
 
 
     def transfer(self, patchSkyModel, matchBy='name', radius=0.1):
