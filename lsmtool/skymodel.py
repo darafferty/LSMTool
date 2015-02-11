@@ -203,15 +203,17 @@ class SkyModel(object):
             logCall = self.log.debug
 
         x, y, refRA, refDec = self._getXY()
+        totFlux = np.sum(self.getColValues('I', units='Jy'))
 
         info = 'Model contains {0} sources in {1} patch{2} of which:\n'\
                '      {3} are type POINT\n'\
                '      {4} are type GAUSSIAN\n'\
                '      Associated beam MS: {5}\n'\
-               '      Approximate RA, Dec of center: {6}, {7}\n\n'\
+               '      Approximate RA, Dec of center: {6}, {7}\n'\
+               '      Total flux: {8} Jy\n\n'\
                '      History:\n'\
-               '      {8}'.format(len(self.table), nPatches, plur,
-               nPoint, nGaus, self.beamMS, refRA, refDec,
+               '      {9}'.format(len(self.table), nPatches, plur,
+               nPoint, nGaus, self.beamMS, refRA, refDec, totFlux,
                '\n      '.join(self.history))
         logCall(info)
         return info
@@ -1659,13 +1661,18 @@ class SkyModel(object):
 
         table = self.table.copy()
 
-        # Sort if desired
+        # Sort if desired. For 'factor' output, save the order of patches in the
+        # table meta
         if sortBy is not None:
             colName = self._verifyColName(sortBy)
-            indx = table.argsort(colName)
-            if not lowToHigh:
-                indx = indx[::-1]
-            table = table[indx]
+            if format.lower() == 'factor' and self.hasPatches:
+                indx = np.argsort(self.getColValues('I', aggregate='sum'))
+                table.meta['patch_order'] = indx
+            else:
+                indx = table.argsort(colName)
+                if not lowToHigh:
+                    indx = indx[::-1]
+                table = table[indx]
 
         if addHistory:
             table.meta['History'] = self.history
