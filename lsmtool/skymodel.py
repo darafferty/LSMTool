@@ -1645,6 +1645,7 @@ class SkyModel(object):
 
         """
         import os
+        import numpy as np
 
         if fileName is None:
             if self._fileName is None:
