@@ -540,7 +540,7 @@ class SkyModel(object):
             If no patchDict is given, this parameter specifies the method used
             to set the patch positions:
             - 'mid' => the position is set to the midpoint of the patch
-            - 'mean' => the positions is set to the mean RA and Dec of the patch
+            - 'mean' => the position is set to the mean RA and Dec of the patch
             - 'wmean' => the position is set to the flux-weighted mean RA and
             Dec of the patch
             - 'zero' => set all positions to [0.0, 0.0]
@@ -1682,6 +1682,10 @@ class SkyModel(object):
         if addHistory:
             table.meta['History'] = self.history
 
+        # Add patch sizes in arcmin
+        if format.lower() == 'factor' and self.hasPatches:
+            table.meta['patch_size'] = self.getPatchSizes(units='arcmin')
+
         if format.lower() != 'makesourcedb' and format.lower() != 'factor':
             table.meta = {}
         table.write(fileName, format=format.lower())
@@ -1961,7 +1965,7 @@ class SkyModel(object):
                 the target flux (specified by the targetFlux parameter).
             - 'threshold' => group by convolving the sky model with a Gaussian beam
                 and then thresholding to find islands of emission (NOTE: all sources
-                are currently considered to be point sources)
+                are currently considered to be point sources of flux unity)
             - the filename of a mask image => group by masked regions (where mask =
                 True). Source outside of masked regions are given patches of their
                 own.

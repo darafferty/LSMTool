@@ -830,14 +830,18 @@ def factorDirectionsWriter(table, fileName):
         indx = table.meta['patch_order']
     else:
         indx = range(len(table))
-    for i, patchName in enumerate(patchNames[indx]):
+    if 'patch_size' in table.meta:
+        sizes = table.meta['patch_size']
+    else:
+        sizes = [''] * len(table)
+    for patchName, size in zip(patchNames[indx], sizes[indx]):
         if patchName in table.meta:
             gRA, gDec = table.meta[patchName]
         else:
             gRA = Angle(0.0)
             gDec = Angle(0.0)
-        outLines.append('{0}, {1}, {2}, , , , , , \n'.format(patchName, gRA.value,
-            gDec.value))
+        outLines.append('{0}, {1}, {2}, , , , , , {3}\n'.format(patchName, gRA.value,
+            gDec.value, size))
 
     regionFile.writelines(outLines)
     regionFile.close()
