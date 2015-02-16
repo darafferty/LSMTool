@@ -68,7 +68,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
             the target flux (specified by the targetFlux parameter)
         - 'threshold' => group by convolving the sky model with a Gaussian beam
             and then thresholding to find islands of emission (NOTE: all sources
-            are currently considered to be point sources)
+            are currently considered to be point sources of flux unity)
         - the filename of a mask image => group by masked regions (where mask =
             True). Source outside of masked regions are given patches of their
             own
