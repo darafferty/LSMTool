@@ -35,7 +35,7 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1):
     xint = np.array(x, dtype=int)
     xint += -1 * min(xint) + 1
     yint = np.array(y, dtype=int)
-    yint += -1 * min(yint)) + 1
+    yint += -1 * min(yint) + 1
     image[xint, yint] = 1.0
     image = blur_image(image, fwhmArcsec/240.0)
 
