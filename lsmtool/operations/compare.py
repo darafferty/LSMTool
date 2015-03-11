@@ -283,7 +283,10 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
     """
     import numpy as np
     from ..operations_lib import calculateSeparation
-    from astropy.stats.funcs import sigma_clip
+    try:
+        from astropy.stats.funcs import sigma_clip
+    except ImportError:
+        from astropy.stats import sigma_clip
     try:
         import os
         if 'DISPLAY' not in os.environ:
@@ -337,7 +340,10 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, clip=True):
     import os
     import numpy as np
     from ..operations_lib import calculateSeparation
-    from astropy.stats.funcs import sigma_clip
+    try:
+        from astropy.stats.funcs import sigma_clip
+    except ImportError:
+        from astropy.stats import sigma_clip
     try:
         import os
         if 'DISPLAY' not in os.environ:
@@ -389,7 +395,10 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
     import os
     import numpy as np
     from ..operations_lib import calculateSeparation, makeWCS
-    from astropy.stats.funcs import sigma_clip
+    try:
+        from astropy.stats.funcs import sigma_clip
+    except ImportError:
+        from astropy.stats import sigma_clip
     try:
         import os
         if 'DISPLAY' not in os.environ:
@@ -463,7 +472,10 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
     from ..operations_lib import calculateSeparation
     import os
     import numpy as np
-    from astropy.stats.funcs import sigma_clip
+    try:
+        from astropy.stats.funcs import sigma_clip
+    except ImportError:
+        from astropy.stats import sigma_clip
     try:
         import os
         if 'DISPLAY' not in os.environ:
@@ -549,7 +561,10 @@ def findStats(predFlux, measFlux, RA, Dec, refRA, refDec, outDir, info0, info1,
     import os
     import numpy as np
     from ..operations_lib import calculateSeparation
-    from astropy.stats.funcs import sigma_clip
+    try:
+        from astropy.stats.funcs import sigma_clip
+    except ImportError:
+        from astropy.stats import sigma_clip
 
     ratio = measFlux / predFlux
     meanRatio = np.mean(ratio)
