@@ -441,7 +441,7 @@ class SkyModel(object):
         if self.hasPatches:
             if patchName is None:
                 patchName = self.getPatchNames()
-            if type(patchName) is str:
+            if type(patchName) is str or type(patchName) is np.string_:
                 patchName = [patchName]
             if method is None:
                 patchDict = {}
@@ -1985,10 +1985,9 @@ class SkyModel(object):
         applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam.
         root : str, optional
-            Root string from which patch names are constructed (when algorithm =
-            'single', 'cluster', or 'tesselate'). For 'single', the patch name
-            will be set to root; for the other grouping algorithms, the patch
-            names will be 'root_INDX', where INDX is an integer ranging from
+            Root string from which patch names are constructed. For 'single', the
+            patch name will be set to root; for the other grouping algorithms, the
+            patch names will be 'root_INDX', where INDX is an integer ranging from
             (0:nPatches).
         method : None or str, optional
             This parameter specifies the method used to set the patch positions:

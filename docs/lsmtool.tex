@@ -166,7 +166,7 @@ LabelBy & string & patch & Label points by: source or patch\\
 OutDir & string & comparison_plots/ & Output directory for plots\\
 SkyModel2 & string & in_sky_model2.sky & Name of second sky model\\
 Radius & string & 10 arcsec & Radius within which matches are identified\\
-LabelBy & patch & string & Label plot points by source or patch\\
+LabelBy & string & patch & Label plot points by source or patch\\
 ExcludeMultiple & bool & True & Exclude sources with multiple matches\\
 IgnoreSpec & float & -0.7 & Ignore any source in SkyModel2 with this spectral index\\
 \end{tabular}
@@ -217,7 +217,7 @@ In addition to the operations described above, a number of other methods are ava
  \item[LSM.getPatchPositions()]: Returns patch RA and Dec values
  \item[LSM.getDefaultValues()]: Returns column default values
  \item[LSM.getPatchSizes()]: Returns an array of patch sizes
- \item[LSM.getDistance()]: Returns an array of angular distances
+ \item[LSM.getDistance()]: Returns an array of angular distances to given position
  \item[LSM.setColValues()]: Sets column values
  \item[LSM.setRowValues()]: Sets row values
  \item[LSM.setDefaultValues()]: Sets default column values
