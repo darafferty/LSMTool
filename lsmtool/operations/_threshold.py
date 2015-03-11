@@ -20,7 +20,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1):
+def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root=root):
     """
     Projects sky model to image plane, convolves with Gaussian, and finds islands
     of emission
@@ -40,7 +40,7 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1):
     image = blur_image(image, fwhmArcsec/240.0)
 
     mask = image / threshold >= 1.0
-    patchCol = getPatchNamesFromMask(mask, xint, yint)
+    patchCol = getPatchNamesFromMask(mask, xint, yint, root=root)
 
     return patchCol
 
@@ -62,7 +62,7 @@ def blur_image(im, n, ny=None) :
     return improc
 
 
-def getPatchNamesFromMask(mask, x, y):
+def getPatchNamesFromMask(mask, x, y, root='mask'):
     """
     Returns an array of patch names for each (x, y) pair
     """
@@ -90,7 +90,7 @@ def getPatchNamesFromMask(mask, x, y):
     for p in patchNums:
         if p != 0:
             in_patch = np.where(patchNums == p)
-            patchNames.append('mask_patch_'+str(p))
+            patchNames.append('{0}_patch_'.format(root)+str(p))
         else:
             patchNames.append('patch_'+str(n))
             n += 1

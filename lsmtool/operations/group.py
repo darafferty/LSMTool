@@ -88,10 +88,9 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
     applyBeam : bool, optional
         If True, fluxes will be attenuated by the beam
     root : str, optional
-        Root string from which patch names are constructed (when algorithm =
-        'single', 'cluster', or 'tesselate'). For 'single', the patch name
-        will be set to root; for the other grouping algorithms, the patch
-        names will be 'root_INDX', where INDX is an integer ranging from
+        Root string from which patch names are constructed. For 'single', the
+        patch name will be set to root; for the other grouping algorithms, the
+        patch names will be 'root_INDX', where INDX is an integer ranging from
         (0:nPatches).
     method : None or str, optional
         This parameter specifies the method used to set the patch positions:
@@ -182,7 +181,8 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
                     units = parts[1]
             fwhmArcsec = Angle(FWHM, unit=units).to('arcsec').value
 
-        patchCol = _threshold.getPatchNamesByThreshold(LSM, fwhmArcsec, threshold)
+        patchCol = _threshold.getPatchNamesByThreshold(LSM, fwhmArcsec, threshold,
+            root=root)
         LSM.setColValues('Patch', patchCol, index=2)
 
     elif os.path.exists(algorithm):
@@ -190,7 +190,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         mask = algorithm
         RARad = LSM.getColValues('Ra', units='radian')
         DecRad = LSM.getColValues('Dec', units='radian')
-        patchCol = getPatchNamesFromMask(mask, RARad, DecRad)
+        patchCol = getPatchNamesFromMask(mask, RARad, DecRad, root=root)
         LSM.setColValues('Patch', patchCol, index=2)
 
     else:
@@ -227,7 +227,7 @@ def addEvery(LSM):
     LSM.setColValues('Patch', names, index=2)
 
 
-def getPatchNamesFromMask(mask, RARad, DecRad):
+def getPatchNamesFromMask(mask, RARad, DecRad, root='mask'):
     """
     Returns an array of patch names for each (RA, Dec) pair in radians
     """
@@ -262,7 +262,7 @@ def getPatchNamesFromMask(mask, RARad, DecRad):
     for p in patchNums:
         if p != 0:
             in_patch = np.where(patchNums == p)
-            patchNames.append('mask_patch_'+str(p))
+            patchNames.append('{0}_patch_'.format(root)+str(p))
         else:
             patchNames.append('patch_'+str(n))
             n += 1
