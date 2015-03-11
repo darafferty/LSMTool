@@ -6,27 +6,31 @@ Model contains 2165 sources in 0 patches of which:
       1863 are type POINT
       302 are type GAUSSIAN
       Associated beam MS: None
+      Approximate RA, Dec of center: 256.46804, 58.50839
+      Total flux: 5345.7507 Jy
 
       History:
-      2014-11-27 13:48:54: LOAD (from file 'tests/no_patches.sky')
-      2014-11-27 13:48:54: FILTER (I > 1.0 Jy)
-      2014-11-27 13:48:56: GROUP (algorithm = 'every')
-      2014-11-27 13:49:03: SETPATCHPOSITIONS (method = 'mid')
-      2014-11-27 13:49:05: TRANSFER
-      2014-11-27 13:49:06: FILTER (I < 2.0 Jy)
-      2014-11-27 13:49:06: UNGROUP
-      2014-11-27 13:49:09: CONCATENATE (matchBy = 'position', radius = 30 arcsec keep = 'from2')
+      2015-03-05 17:11:38: LOAD (from file 'tests/no_patches.sky')
+      2015-03-05 17:11:38: FILTER (I > 1.0 Jy)
+      2015-03-05 17:11:40: GROUP (algorithm = 'every')
+      2015-03-05 17:11:48: SETPATCHPOSITIONS (method = 'mid')
+      2015-03-05 17:11:50: TRANSFER
+      2015-03-05 17:11:51: FILTER (I < 2.0 Jy)
+      2015-03-05 17:11:51: UNGROUP
+      2015-03-05 17:11:54: CONCATENATE (matchBy = 'position', radius = 30 arcsec keep = 'from2')
 
 Sky model 2:
 Model contains 94 sources in 0 patches of which:
       41 are type POINT
       53 are type GAUSSIAN
       Associated beam MS: None
+      Approximate RA, Dec of center: 224.78504, 69.45906
+      Total flux: 1084.3945 Jy
 
       History:
-      2014-11-27 13:49:11: LOAD (from file 'tests/concat.sky')
-      2014-11-27 13:49:11: UNGROUP
-      2014-11-27 13:49:11: FILTER (I > 5.0 Jy)
+      2015-03-05 17:11:56: LOAD (from file 'tests/concat.sky')
+      2015-03-05 17:11:56: UNGROUP
+      2015-03-05 17:11:56: FILTER (I > 5.0 Jy)
 
 Used radius = 10 arcsec, ignoreSpec = None, and excludeMultiple = True
 Number of matches found for comparison: 94
