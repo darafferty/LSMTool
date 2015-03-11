@@ -20,7 +20,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root=root):
+def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold'):
     """
     Projects sky model to image plane, convolves with Gaussian, and finds islands
     of emission
