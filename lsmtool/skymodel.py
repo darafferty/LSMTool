@@ -1686,6 +1686,11 @@ class SkyModel(object):
         if format.lower() == 'factor' and self.hasPatches:
             table.meta['patch_size'] = self.getPatchSizes(units='arcmin')
 
+        # Add patch fluxes in mJy
+        if format.lower() == 'factor' and self.hasPatches:
+            table.meta['patch_flux'] = self.getColValues('I', aggregate='sum',
+                units='mJy')
+
         if format.lower() != 'makesourcedb' and format.lower() != 'factor':
             table.meta = {}
         table.write(fileName, format=format.lower())

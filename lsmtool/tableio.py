@@ -793,8 +793,9 @@ def factorDirectionsWriter(table, fileName):
     """
     Writes patches to a Factor directions file.
 
-    Note that Factor respects the order of patches and they are sorted here
-    by apparent flux from brightest to faintest.
+    Note that Factor respects the order of patches and they are sorted here by
+    apparent flux from brightest to faintest. Default phase and amplitude
+    solution intervals are scaled by the sqrt(flux).
 
     Parameters
     ----------
@@ -811,7 +812,7 @@ def factorDirectionsWriter(table, fileName):
 
     outLines = []
     outLines.append('# Name, RA (deg), DEC (deg), regionfile, multiscale, solint_amp, '
-        'solint_ph, make_final_image, cal_radius (arcmin)\n')
+        'solint_ph, make_final_image, cal_radius (arcmin), apparent_flux (mJy)\n')
     if 'History' in table.meta:
         outLines.append('\n# LSMTool history:\n# ')
         outLines.append('\n# '.join(table.meta['History']))
@@ -834,14 +835,18 @@ def factorDirectionsWriter(table, fileName):
         sizes = table.meta['patch_size']
     else:
         sizes = [''] * len(table)
-    for patchName, size in zip(patchNames[indx], sizes[indx]):
+    if 'patch_flux' in table.meta:
+        fluxes = table.meta['patch_flux']
+    else:
+        fluxes = [''] * len(table)
+    for patchName, size, flux in zip(patchNames[indx], sizes[indx], fluxes[indx]):
         if patchName in table.meta:
             gRA, gDec = table.meta[patchName]
         else:
             gRA = Angle(0.0)
             gDec = Angle(0.0)
-        outLines.append('{0}, {1}, {2}, , , , , , {3}\n'.format(patchName, gRA.value,
-            gDec.value, size))
+        outLines.append('{0}, {1}, {2}, , , , , , {3}, {4}\n'.format(patchName,
+            gRA.value, gDec.value, size, flux))
 
     regionFile.writelines(outLines)
     regionFile.close()
