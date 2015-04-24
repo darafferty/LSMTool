@@ -288,9 +288,8 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
     except ImportError:
         from astropy.stats import sigma_clip
     try:
-        import os
-        if 'DISPLAY' not in os.environ:
-            import matplotlib
+        import matplotlib
+        if matplotlib.get_backend() is not 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FuncFormatter
@@ -345,9 +344,8 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, clip=True):
     except ImportError:
         from astropy.stats import sigma_clip
     try:
-        import os
-        if 'DISPLAY' not in os.environ:
-            import matplotlib
+        import matplotlib
+        if matplotlib.get_backend() is not 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FuncFormatter
@@ -400,9 +398,8 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
     except ImportError:
         from astropy.stats import sigma_clip
     try:
-        import os
-        if 'DISPLAY' not in os.environ:
-            import matplotlib
+        import matplotlib
+        if matplotlib.get_backend() is not 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FuncFormatter
@@ -477,9 +474,8 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
     except ImportError:
         from astropy.stats import sigma_clip
     try:
-        import os
-        if 'DISPLAY' not in os.environ:
-            import matplotlib
+        import matplotlib
+        if matplotlib.get_backend() is not 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FuncFormatter
