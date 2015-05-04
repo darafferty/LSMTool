@@ -811,8 +811,9 @@ def factorDirectionsWriter(table, fileName):
     log.debug('Writing Factor directions file to {0}'.format(fileName))
 
     outLines = []
-    outLines.append('# Name, RA (deg), DEC (deg), regionfile, multiscale, solint_amp, '
-        'solint_ph, make_final_image, cal_radius (arcmin), apparent_flux (mJy)\n')
+    outLines.append('# name position atrous_do mscale_field_do cal_imsize '
+        'solint_ph solint_amp field_imsize dynamic_range region_selfcal '
+        'region_field peel_skymodel outlier_source cal_radius_deg cal_flux\n')
     if 'History' in table.meta:
         outLines.append('\n# LSMTool history:\n# ')
         outLines.append('\n# '.join(table.meta['History']))
@@ -830,23 +831,26 @@ def factorDirectionsWriter(table, fileName):
     if 'patch_order' in table.meta:
         indx = table.meta['patch_order']
     else:
-        indx = range(len(table))
+        indx = range(len(table.groups))
     if 'patch_size' in table.meta:
         sizes = table.meta['patch_size']
     else:
-        sizes = [''] * len(table)
+        sizes = [''] * len(table.groups)
     if 'patch_flux' in table.meta:
         fluxes = table.meta['patch_flux']
     else:
-        fluxes = [''] * len(table)
+        fluxes = [''] * len(table.groups)
     for patchName, size, flux in zip(patchNames[indx], sizes[indx], fluxes[indx]):
         if patchName in table.meta:
             gRA, gDec = table.meta[patchName]
         else:
             gRA = Angle(0.0)
             gDec = Angle(0.0)
-        outLines.append('{0}, {1}, {2}, , , , , , {3}, {4}\n'.format(patchName,
-            gRA.value, gDec.value, size, flux))
+        outLines.append('{0} {1},{2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} '
+            '{13} {14} {15}\n'.format(patchName,
+            gRA.to_string(unit='hourangle', sep='hms'), gDec.to_string(sep='dms'),
+            False, False, max(512, int(size*1.5*3600.0*1.5)), 1, 60, 2048, 'LD',
+            'empty', 'empty', 'empty', False, size, flux))
 
     regionFile.writelines(outLines)
     regionFile.close()
