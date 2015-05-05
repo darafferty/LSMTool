@@ -1682,9 +1682,9 @@ class SkyModel(object):
         if addHistory:
             table.meta['History'] = self.history
 
-        # Add patch sizes in arcmin
+        # Add patch sizes in degrees
         if format.lower() == 'factor' and self.hasPatches:
-            table.meta['patch_size'] = self.getPatchSizes(units='arcmin')
+            table.meta['patch_size'] = self.getPatchSizes(units='deg')
 
         # Add patch fluxes in mJy
         if format.lower() == 'factor' and self.hasPatches:
