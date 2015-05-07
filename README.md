@@ -53,6 +53,7 @@ If you want to install LSMTool yourself, follow the instructions below.
 * [Matplotlib][http://www.matplotlib.org/]
 * [Astropy][http://www.astropy.org/] 0.4 or later
 * [WCSAxes][http://wcsaxes.readthedocs.org] 0.2 or later (optional, for improved plotting)
+* [PyVO][http://pyvo.readthedocs.org] (optional, for VO access)
 
 ### Downloading and Installing
 
