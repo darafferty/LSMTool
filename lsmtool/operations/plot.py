@@ -34,7 +34,7 @@ def run( step, parset, LSM ):
         labelBy = None
 
     try:
-        plot(LSM, outFile)
+        plot(LSM, fileName=outFile, labelBy=labelBy)
         result = 0
     except Exception as e:
         log.error(e.message)
