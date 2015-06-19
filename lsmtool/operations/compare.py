@@ -26,7 +26,7 @@ log.debug('Loading COMPARE module.')
 def run(step, parset, LSM):
 
     outDir = parset.getString('.'.join(["LSMTool.Steps", step, "OutDir"]), '' )
-    skyModel2 = parset.getString('.'.join(["LSMTool.Steps", step, "Skymodel2"]), '' )
+    skyModel2 = parset.getString('.'.join(["LSMTool.Steps", step, "SkyModel2"]), '' )
     radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '10 arcsec' )
     labelBy = parset.getString('.'.join(["LSMTool.Steps", step, "LabelBy"]), '' )
     excludeMultiple = parset.getBool('.'.join(["LSMTool.Steps", step, "ExcludeMultiple"]), True )
