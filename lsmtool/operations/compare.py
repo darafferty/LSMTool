@@ -102,11 +102,12 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     """
     from astropy.table import vstack, Column
     from ..operations_lib import matchSky, radec2xy
+    from ..skymodel import SkyModel
     import numpy as np
     import os
 
     if type(LSM2) is str:
-        LSM2 = skymodel.SkyModel(LSM2)
+        LSM2 = SkyModel(LSM2)
 
     if len(LSM1) == 0:
         log.info('Parent sky model is empty. No comparison possible.')
