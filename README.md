@@ -47,7 +47,7 @@ and CEP3 should run the following commands before using LSMTool:
 
 If you want to install LSMTool yourself, follow the instructions below.
 
-### Requirements
+### Dependencies
 
 * [Numpy](http://www.numpy.org)
 * [Matplotlib](http://www.matplotlib.org)

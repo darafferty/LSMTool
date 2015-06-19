@@ -23,10 +23,10 @@ log = logging.getLogger('LSMTool.PLOT')
 log.debug('Loading PLOT module.')
 
 
-def run( step, parset, LSM ):
+def run(step, parset, LSM):
 
-    outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
-    labelBy = parset.getString('.'.join(["LSMTool.Steps", step, "LabelBy"]), '' )
+    outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '')
+    labelBy = parset.getString('.'.join(["LSMTool.Steps", step, "LabelBy"]), '')
 
     if outFile == '':
         outFile = None
