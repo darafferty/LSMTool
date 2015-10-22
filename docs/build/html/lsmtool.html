@@ -8,7 +8,7 @@
     
     <title>LSMTool Module Documentation &mdash; LSMTool 1.0.0 documentation</title>
     
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
@@ -23,12 +23,12 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="LSMTool 1.0.0 documentation" href="index.html" />
     <link rel="prev" title="LSMTool: the LOFAR Local Sky Model Tool" href="overview.html" /> 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -40,14 +40,14 @@
         <li class="right" >
           <a href="overview.html" title="LSMTool: the LOFAR Local Sky Model Tool"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">LSMTool 1.0.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">LSMTool 1.0.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="lsmtool-module-documentation">
 <h1>LSMTool Module Documentation<a class="headerlink" href="#lsmtool-module-documentation" title="Permalink to this headline">¶</a></h1>
@@ -61,21 +61,33 @@
 SkyModel object.</p>
 <dl class="function">
 <dt id="lsmtool.load">
-<tt class="descclassname">lsmtool.</tt><tt class="descname">load</tt><big>(</big><em>fileName</em>, <em>beamMS=None</em><big>)</big><a class="headerlink" href="#lsmtool.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads a sky model from a file and returns a SkyModel object.</p>
+<code class="descclassname">lsmtool.</code><code class="descname">load</code><span class="sig-paren">(</span><em>fileName</em>, <em>beamMS=None</em>, <em>VOPosition=None</em>, <em>VORadius=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a sky model from a file or VO service and returns a SkyModel object.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>fileName</strong> : str</p>
 <blockquote>
-<div><p>Input ASCII file from which the sky model is read. Must
-respect the makesourcedb format</p>
+<div><p>Name of input ASCII file from which the sky model is read (must respect
+the makesourcedb format) or name of VO service to query (must be one of
+&#8216;WENSS&#8217;, &#8216;NVSS&#8217;, or &#8216;GSM&#8217;), or dict (single source only)</p>
 </div></blockquote>
 <p><strong>beamMS</strong> : str, optional</p>
 <blockquote>
 <div><p>Measurement set from which the primary beam will be estimated. A
-column of attenuated Stokes I fluxes will be added to the table.</p>
+column of attenuated Stokes I fluxes will be added to the table</p>
+</div></blockquote>
+<p><strong>VOPosition</strong> : list of floats</p>
+<blockquote>
+<div><p>A list specifying a new position as [RA, Dec] in either makesourcedb
+format (e.g., [&#8216;12:23:43.21&#8217;, &#8216;+22.34.21.2&#8217;]) or in degrees (e.g.,
+[123.2312, 23.3422]) for a cone search</p>
+</div></blockquote>
+<p><strong>VORadius</strong> : float or str, optional</p>
+<blockquote>
+<div><p>Radius in degrees (if float) or &#8216;value unit&#8217; (if str; e.g.,
+&#8216;30 arcsec&#8217;) for cone search region in degrees</p>
 </div></blockquote>
 </td>
 </tr>
@@ -89,7 +101,7 @@ accessing it.</p>
 </tbody>
 </table>
 <p class="rubric">Examples</p>
-<p>Load a sky model into a SkyModel object:</p>
+<p>Load a sky model from a makesourcedb-formated file:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lsmtool</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">lsmtool</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&#39;sky.model&#39;</span><span class="p">)</span>
 </pre></div>
@@ -99,6 +111,18 @@ be available (in addition to intrinsic fluxes):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">lsmtool</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&#39;sky.model&#39;</span><span class="p">,</span> <span class="s">&#39;SB100.MS&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Load a sky model from the WENSS using all sources within 5 degrees of the
+position RA = 212.8352792, Dec = 52.202644:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">lsmtool</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&#39;WENSS&#39;</span><span class="p">,</span> <span class="n">VOPosition</span><span class="o">=</span><span class="p">[</span><span class="mf">212.8352792</span><span class="p">,</span> <span class="mf">52.202644</span><span class="p">],</span>
+<span class="go">    VOradius=5.0)</span>
+</pre></div>
+</div>
+<p>Load a sky model from a dictionary defining the source:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">source</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;Name&#39;</span><span class="p">:</span><span class="s">&#39;src1&#39;</span><span class="p">,</span> <span class="s">&#39;Type&#39;</span><span class="p">:</span><span class="s">&#39;POINT&#39;</span><span class="p">,</span> <span class="s">&#39;Ra&#39;</span><span class="p">:</span><span class="s">&#39;12:32:10.1&#39;</span><span class="p">,</span>
+<span class="go">    &#39;Dec&#39;:&#39;23.43.21.21&#39;, &#39;I&#39;:2.134}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">lsmtool</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </div>
@@ -106,7 +130,7 @@ be available (in addition to intrinsic fluxes):</p>
 <span id="lsmtool-operations-lib-module"></span><h2>lsmtool.operations_lib module<a class="headerlink" href="#module-lsmtool.operations_lib" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="lsmtool.operations_lib.attenuate">
-<tt class="descclassname">lsmtool.operations_lib.</tt><tt class="descname">attenuate</tt><big>(</big><em>beamMS</em>, <em>fluxes</em>, <em>RADeg</em>, <em>DecDeg</em><big>)</big><a class="headerlink" href="#lsmtool.operations_lib.attenuate" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lsmtool.operations_lib.</code><code class="descname">attenuate</code><span class="sig-paren">(</span><em>beamMS</em>, <em>fluxes</em>, <em>RADeg</em>, <em>DecDeg</em>, <em>timeIndx=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.operations_lib.attenuate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns flux attenuated by primary beam.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -128,6 +152,11 @@ be available (in addition to intrinsic fluxes):</p>
 <blockquote>
 <div><p>List of Dec values in degrees</p>
 </div></blockquote>
+<p><strong>timeIndx</strong> : float (between 0 and 1), optional</p>
+<blockquote>
+<div><p>Time as fraction of that covered by the beamMS for which the beam is
+calculated</p>
+</div></blockquote>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>attFluxes</strong> : numpy array</p>
@@ -138,8 +167,119 @@ be available (in addition to intrinsic fluxes):</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="lsmtool.operations_lib.calculateSeparation">
+<code class="descclassname">lsmtool.operations_lib.</code><code class="descname">calculateSeparation</code><span class="sig-paren">(</span><em>ra1</em>, <em>dec1</em>, <em>ra2</em>, <em>dec2</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.operations_lib.calculateSeparation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns angular separation between two coordinates (all in degrees).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>ra1</strong> : float or numpy array</p>
+<blockquote>
+<div><p>RA of coordinate 1 in degrees</p>
+</div></blockquote>
+<p><strong>dec1</strong> : float or numpy array</p>
+<blockquote>
+<div><p>Dec of coordinate 1 in degrees</p>
+</div></blockquote>
+<p><strong>ra2</strong> : float</p>
+<blockquote>
+<div><p>RA of coordinate 2 in degrees</p>
+</div></blockquote>
+<p><strong>dec2</strong> : float</p>
+<blockquote>
+<div><p>Dec of coordinate 2 in degrees</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>separation</strong> : astropy Angle or numpy array</p>
+<blockquote class="last">
+<div><p>Angular separation in degrees</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="lsmtool.operations_lib.makeWCS">
+<code class="descclassname">lsmtool.operations_lib.</code><code class="descname">makeWCS</code><span class="sig-paren">(</span><em>refRA</em>, <em>refDec</em>, <em>crdelt=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.operations_lib.makeWCS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes simple WCS object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>refRA</strong> : float</p>
+<blockquote>
+<div><p>Reference RA in degrees</p>
+</div></blockquote>
+<p><strong>refDec</strong> : float</p>
+<blockquote>
+<div><p>Reference Dec in degrees</p>
+</div></blockquote>
+<p><strong>crdelt: float, optional</strong></p>
+<blockquote>
+<div><p>Delta in degrees for sky grid</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>w</strong> : astropy.wcs.WCS object</p>
+<blockquote class="last">
+<div><p>A simple TAN-projection WCS object for specified reference position</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="lsmtool.operations_lib.matchSky">
+<code class="descclassname">lsmtool.operations_lib.</code><code class="descname">matchSky</code><span class="sig-paren">(</span><em>LSM1</em>, <em>LSM2</em>, <em>radius=0.1</em>, <em>byPatch=False</em>, <em>nearestOnly=False</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.operations_lib.matchSky" title="Permalink to this definition">¶</a></dt>
+<dd><p>Matches two sky models by position.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>LSM1</strong> : SkyModel object</p>
+<blockquote>
+<div><p>Sky model for which match indices are desired</p>
+</div></blockquote>
+<p><strong>LSM2</strong> : SkyModel object</p>
+<blockquote>
+<div><p>Sky model to match against</p>
+</div></blockquote>
+<p><strong>radius</strong> : float or str, optional</p>
+<blockquote>
+<div><p>Radius in degrees (if float) or &#8216;value unit&#8217; (if str; e.g., &#8216;30 arcsec&#8217;)
+for matching when matchBy=&#8217;position&#8217;</p>
+</div></blockquote>
+<p><strong>byPatch</strong> : bool, optional</p>
+<blockquote>
+<div><p>If True, matching is done by patches</p>
+</div></blockquote>
+<p><strong>nearestOnly</strong> : bool, optional</p>
+<blockquote>
+<div><p>If True, only the nearest of multiple matches is returned</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>matches1, matches2</strong> : np.array, np.array</p>
+<blockquote class="last">
+<div><p>matches1 is the array of indices of LSM1 that have matches in LSM2
+within the specified radius. matches2 is the array of indices of LSM2
+for the same sources.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="lsmtool.operations_lib.radec2xy">
-<tt class="descclassname">lsmtool.operations_lib.</tt><tt class="descname">radec2xy</tt><big>(</big><em>RA</em>, <em>Dec</em>, <em>refRA=None</em>, <em>refDec=None</em><big>)</big><a class="headerlink" href="#lsmtool.operations_lib.radec2xy" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lsmtool.operations_lib.</code><code class="descname">radec2xy</code><span class="sig-paren">(</span><em>RA</em>, <em>Dec</em>, <em>refRA=None</em>, <em>refDec=None</em>, <em>crdelt=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.operations_lib.radec2xy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns x, y for input ra, dec.</p>
 <p>Note that the reference RA and Dec must be the same in calls to both
 radec2xy() and xy2radec() if matched pairs of (x, y) &lt;=&gt; (RA, Dec) are
@@ -164,6 +304,10 @@ desired.</p>
 <blockquote>
 <div><p>Reference Dec in degrees</p>
 </div></blockquote>
+<p><strong>crdelt: float, optional</strong></p>
+<blockquote>
+<div><p>Delta in degrees for sky grid</p>
+</div></blockquote>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>x, y</strong> : list, list</p>
@@ -179,7 +323,7 @@ values</p>
 
 <dl class="function">
 <dt id="lsmtool.operations_lib.xy2radec">
-<tt class="descclassname">lsmtool.operations_lib.</tt><tt class="descname">xy2radec</tt><big>(</big><em>x</em>, <em>y</em>, <em>refRA=0.0</em>, <em>refDec=0.0</em><big>)</big><a class="headerlink" href="#lsmtool.operations_lib.xy2radec" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lsmtool.operations_lib.</code><code class="descname">xy2radec</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>refRA=0.0</em>, <em>refDec=0.0</em>, <em>crdelt=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.operations_lib.xy2radec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns x, y for input ra, dec.</p>
 <p>Note that the reference RA and Dec must be the same in calls to both
 radec2xy() and xy2radec() if matched pairs of (x, y) &lt;=&gt; (RA, Dec) are
@@ -204,6 +348,10 @@ desired.</p>
 <blockquote>
 <div><p>Reference Dec in degrees</p>
 </div></blockquote>
+<p><strong>crdelt: float, optional</strong></p>
+<blockquote>
+<div><p>Delta in degrees for sky grid</p>
+</div></blockquote>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>RA, Dec</strong> : list, list</p>
@@ -222,13 +370,13 @@ values</p>
 <span id="lsmtool-skymodel-module"></span><h2>lsmtool.skymodel module<a class="headerlink" href="#module-lsmtool.skymodel" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="lsmtool.skymodel.SkyModel">
-<em class="property">class </em><tt class="descclassname">lsmtool.skymodel.</tt><tt class="descname">SkyModel</tt><big>(</big><em>fileName</em>, <em>beamMS=None</em>, <em>checkDup=False</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<em class="property">class </em><code class="descclassname">lsmtool.skymodel.</code><code class="descname">SkyModel</code><span class="sig-paren">(</span><em>fileName</em>, <em>beamMS=None</em>, <em>checkDup=False</em>, <em>VOPosition=None</em>, <em>VORadius=None</em>, <em>assocTheta='10 arcsec'</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">object</span></code></a></p>
 <p>Object that stores the sky model and provides methods for accessing it.</p>
 <p class="rubric">Methods</p>
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.add">
-<tt class="descname">add</tt><big>(</big><em>colNamesVals</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.add" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add</code><span class="sig-paren">(</span><em>colNamesVals</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.add" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a source to the sky model.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -236,7 +384,8 @@ values</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>colNamesVals</strong> : dict</p>
 <blockquote class="last">
-<div><p>A dictionary that specifies the row values for the source to be added.</p>
+<div><p>A dictionary that specifies the column values for the source to be
+added</p>
 </div></blockquote>
 </td>
 </tr>
@@ -245,16 +394,126 @@ values</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="lsmtool.skymodel.SkyModel.concatenate">
-<tt class="descname">concatenate</tt><big>(</big><em>LSM2</em>, <em>matchBy='name'</em>, <em>radius=0.1</em>, <em>keep='all'</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.concatenate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Concatenate two sky models.</p>
+<dt id="lsmtool.skymodel.SkyModel.broadcast">
+<code class="descname">broadcast</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.broadcast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends the model to another application using SAMP.</p>
+<p>Both the SAMP hub and the receiving application must be running before
+the table is broadcasted. Examples of SMAP-aware applications are
+TOPCAT, Aladin, and ds9.</p>
+<p class="rubric">Examples</p>
+<p>Send the model to TOPCAT. First, start TOPCAT, then run the command:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">broadcast</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>TOPCAT should then load the table.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lsmtool.skymodel.SkyModel.compare">
+<code class="descname">compare</code><span class="sig-paren">(</span><em>LSM2</em>, <em>radius='10 arcsec'</em>, <em>outDir='.'</em>, <em>labelBy=None</em>, <em>ignoreSpec=None</em>, <em>excludeMultiple=True</em>, <em>excludeByFlux=False</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.compare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare two sky models.</p>
+<p>Comparison plots and a text file with statistics are written out to the
+an output directory. Plots are made for:</p>
+<blockquote>
+<div><ul class="simple">
+<li>flux ratio vs. radius from sky model center</li>
+<li>flux ratio vs. sky position</li>
+<li>flux ratio vs flux</li>
+<li>position offsets</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt>The following statistics are saved to &#8216;stats.txt&#8217; in the output directory:</dt>
+<dd><ul class="first last simple">
+<li>mean and standard deviation of flux ratio</li>
+<li>mean and standard deviation of RA offsets</li>
+<li>mean and standard deviation of Dec offsets</li>
+</ul>
+</dd>
+</dl>
+<p>These statistics are also returned as a dictionary.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>LSM2</strong> : SkyModel object</p>
 <blockquote>
-<div><p>Sky model to concatenate with the parent sky model</p>
+<div><p>Secondary sky model to compare to the parent sky model</p>
+</div></blockquote>
+<p><strong>radius</strong> : float or str, optional</p>
+<blockquote>
+<div><p>Radius in degrees (if float) or &#8216;value unit&#8217; (if str; e.g., &#8216;30 arcsec&#8217;)
+for matching</p>
+</div></blockquote>
+<p><strong>outDir</strong> : str, optional</p>
+<blockquote>
+<div><p>Plots are saved to this directory</p>
+</div></blockquote>
+<p><strong>labelBy</strong> : str, optional</p>
+<blockquote>
+<div><p>One of &#8216;source&#8217; or &#8216;patch&#8217;: label points using source names (&#8216;source&#8217;) or
+patch names (&#8216;patch&#8217;)</p>
+</div></blockquote>
+<p><strong>ignoreSpec</strong> : float, optional</p>
+<blockquote>
+<div><p>Ignore sources with this spectral index</p>
+</div></blockquote>
+<p><strong>excludeMultiple</strong> : bool, optional</p>
+<blockquote>
+<div><p>If True, sources with multiple matches are excluded. If False, the
+nearest of the multiple matches will be used for comparison</p>
+</div></blockquote>
+<p><strong>excludeByFlux</strong> : bool, optional</p>
+<blockquote>
+<div><p>If True, matches whose predicted fluxes differ from the parent model
+fluxes by 25% are excluded from the positional offset plot.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>stats</strong> : dict</p>
+<blockquote class="last">
+<div><p>Dict of statistics with the following keys (where the clipped values
+are after 3-sigma clipping):</p>
+<blockquote>
+<div><ul class="simple">
+<li>&#8216;meanRatio&#8217;</li>
+<li>&#8216;stdRatio&#8217;</li>
+<li>&#8216;meanRAOffsetDeg&#8217;</li>
+<li>&#8216;stdRAOffsetDeg&#8217;</li>
+<li>&#8216;meanDecOffsetDeg&#8217;</li>
+<li>&#8216;stdDecOffsetDeg&#8217;</li>
+<li>&#8216;meanClippedRatio&#8217;</li>
+<li>&#8216;stdClippedRatio&#8217;</li>
+<li>&#8216;meanClippedRAOffsetDeg&#8217;</li>
+<li>&#8216;stdClippedRAOffsetDeg&#8217;</li>
+<li>&#8216;meanClippedDecOffsetDeg&#8217;</li>
+<li>&#8216;stdClippedDecOffsetDeg&#8217;</li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>Compare two sky models and save plots:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">LSM2</span> <span class="o">=</span> <span class="n">lsmtool</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&#39;sky2.model&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">compare</span><span class="p">(</span><span class="n">LSM2</span><span class="p">,</span> <span class="n">outDir</span><span class="o">=</span><span class="s">&#39;comparison_results/&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="lsmtool.skymodel.SkyModel.concatenate">
+<code class="descname">concatenate</code><span class="sig-paren">(</span><em>LSM2</em>, <em>matchBy='name'</em>, <em>radius=0.1</em>, <em>keep='all'</em>, <em>inheritPatches=False</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.concatenate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concatenate two sky models.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>LSM2</strong> : str or SkyModel object</p>
+<blockquote>
+<div><p>Secondary sky model to concatenate with the parent sky model</p>
 </div></blockquote>
 <p><strong>matchBy</strong> : str, optional</p>
 <blockquote>
@@ -265,12 +524,13 @@ values</p>
 <div><p>radius specified by the radius parameter are considered duplicates</p>
 </div></blockquote>
 </div></blockquote>
-<p><strong>radius</strong> : float, optional</p>
+<p><strong>radius</strong> : float or str, optional</p>
 <blockquote>
-<div><p>Radius in degrees for matching when matchBy=&#8217;position&#8217;</p>
+<div><p>Radius in degrees (if float) or &#8216;value unit&#8217; (if str; e.g., &#8216;30 arcsec&#8217;)
+for matching when matchBy=&#8217;position&#8217;</p>
 </div></blockquote>
 <p><strong>keep</strong> : str, optional</p>
-<blockquote class="last">
+<blockquote>
 <div><p>Determines how duplicates are treated:
 - &#8216;all&#8217; =&gt; all duplicates are kept; those with identical names are re-</p>
 <blockquote>
@@ -278,8 +538,13 @@ values</p>
 </div></blockquote>
 <ul class="simple">
 <li>&#8216;from1&#8217; =&gt; duplicates kept are those from sky model 1 (the parent)</li>
-<li>&#8216;from2&#8217; =&gt; duplicates kept are those from sky model 2 (LSM2)</li>
+<li>&#8216;from2&#8217; =&gt; duplicates kept are those from sky model 2 (the secondary)</li>
 </ul>
+</div></blockquote>
+<p><strong>inheritPatches</strong> : bool, optional</p>
+<blockquote class="last">
+<div><p>If True, duplicates inherit the patch name from the parent sky model. If
+False, duplicates keep their own patch names.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -288,7 +553,7 @@ values</p>
 <p class="rubric">Examples</p>
 <p>Concatenate two sky models, identifying duplicates by matching to the source
 names. When duplicates are found, keep the source from the parent sky model
-and discard the duplicate from second sky model (this might be useful when
+and discard the duplicate from secondary sky model (this might be useful when
 merging two gsm.py sky models that have some overlap):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">LSM2</span> <span class="o">=</span> <span class="n">lsmtool</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&#39;gsm_sky2.model&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">LSM2</span><span class="p">,</span> <span class="n">matchBy</span><span class="o">=</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="n">keep</span><span class="o">=</span><span class="s">&#39;from1&#39;</span><span class="p">)</span>
@@ -296,7 +561,7 @@ merging two gsm.py sky models that have some overlap):</p>
 </div>
 <p>Concatenate two sky models, identifying duplicates by matching to the source
 positions within a radius of 10 arcsec. When duplicates are found, keep the
-source from the second sky model and discard the duplicate from the parent
+source from the secondary sky model and discard the duplicate from the parent
 sky model (this might be useful when replacing parts of a low-resolution
 sky model with a high-resolution one):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">LSM2</span> <span class="o">=</span> <span class="n">lsmtool</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s">&#39;high_res_sky.model&#39;</span><span class="p">)</span>
@@ -308,14 +573,26 @@ sky model with a high-resolution one):</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.copy">
-<tt class="descname">copy</tt><big>(</big><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.copy" title="Permalink to this definition">¶</a></dt>
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a copy of the sky model.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.getColNames">
-<tt class="descname">getColNames</tt><big>(</big><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getColNames" title="Permalink to this definition">¶</a></dt>
+<code class="descname">getColNames</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getColNames" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list of all available column names.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>colNames</strong> : list</p>
+<blockquote class="last">
+<div><p>List of all column names</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Examples</p>
 <p>Get column names:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">getColNames</span><span class="p">()</span>
@@ -325,7 +602,7 @@ sky model with a high-resolution one):</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.getColValues">
-<tt class="descname">getColValues</tt><big>(</big><em>colName</em>, <em>units=None</em>, <em>aggregate=None</em>, <em>applyBeam=False</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getColValues" title="Permalink to this definition">¶</a></dt>
+<code class="descname">getColValues</code><span class="sig-paren">(</span><em>colName</em>, <em>units=None</em>, <em>aggregate=None</em>, <em>applyBeam=False</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getColValues" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a numpy array of column values.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -338,8 +615,8 @@ sky model with a high-resolution one):</p>
 <p><strong>units</strong> : str, optional</p>
 <blockquote>
 <div><p>Output units (the values are converted as needed). By default, the
-units are those used by makesourcedb, with the exception of Ra and
-Dec which have default units of degrees.</p>
+units are those used by makesourcedb, with the exception of RA and
+Dec which have default output units of degrees.</p>
 </div></blockquote>
 <p><strong>aggregate</strong> : {&#8216;sum&#8217;, &#8216;mean&#8217;, &#8216;wmean&#8217;, &#8216;min&#8217;, max&#8217;}, optional</p>
 <blockquote>
@@ -350,12 +627,12 @@ available:</p>
 <div><ul class="simple">
 <li>&#8216;sum&#8217;: sum of patch values</li>
 <li>&#8216;mean&#8217;: mean of patch values</li>
-<li>&#8216;wmean&#8217;: Stokes I weighted mean of patch values</li>
+<li>&#8216;wmean&#8217;: Stokes-I-weighted mean of patch values</li>
 <li>&#8216;min&#8217;: minimum of patch values</li>
 <li>&#8216;max&#8217;: maximum of patch values</li>
 </ul>
 </div></blockquote>
-<p>Note that, in certain cases, certain aggregation functions will not
+<p>Note that, in some cases, certain aggregation functions will not
 produce meaningful results. For example, asking for the sum of
 the MajorAxis values per patch will not give a good indication of
 the size of the patch (to get the sizes, use the getPatchSizes()
@@ -366,9 +643,15 @@ getPatchPositions() method instead which projects the sources onto
 the image plane before aggregation.</p>
 </div></blockquote>
 <p><strong>applyBeam</strong> : bool, optional</p>
-<blockquote class="last">
+<blockquote>
 <div><p>If True, fluxes will be attenuated by the beam. This attenuation
 also applies to fluxes used in aggregation functions.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>colValues</strong> : numpy array</p>
+<blockquote class="last">
+<div><p>Array of column values. None is returned if column is not found.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -399,20 +682,97 @@ we must use getPatchPositions() instead:</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="lsmtool.skymodel.SkyModel.getDefaltValues">
-<tt class="descname">getDefaltValues</tt><big>(</big><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getDefaltValues" title="Permalink to this definition">¶</a></dt>
+<dt id="lsmtool.skymodel.SkyModel.getDefaultValues">
+<code class="descname">getDefaultValues</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getDefaultValues" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns dict of {colName:default} values for all columns with defaults.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>defaultDict</strong> : dict</p>
+<blockquote class="last">
+<div><p>Dict of {colName:default} values</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="lsmtool.skymodel.SkyModel.getDistance">
+<code class="descname">getDistance</code><span class="sig-paren">(</span><em>RA</em>, <em>Dec</em>, <em>byPatch=False</em>, <em>units=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getDistance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns angular distance for each source or patch to specified position</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>RA</strong> : float or str</p>
+<blockquote>
+<div><p>RA of position to which the distance is desired (in degrees or
+makesourcedb format)</p>
+</div></blockquote>
+<p><strong>Dec</strong> : float or str</p>
+<blockquote>
+<div><p>Dec of position to which the distance is desired (in degrees or
+makesourcedb format)</p>
+</div></blockquote>
+<p><strong>byPatch</strong> : bool, optional</p>
+<blockquote>
+<div><p>Calculate distance by patches instead of by sources</p>
+</div></blockquote>
+<p><strong>units</strong> : str, optional</p>
+<blockquote>
+<div><p>Units for resulting distance. If None, units are degrees</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>dist</strong> : array</p>
+<blockquote class="last">
+<div><p>Array of distances</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>Find distance in degrees to a position for all sources:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">getDistance</span><span class="p">(</span><span class="mf">94.0</span><span class="p">,</span> <span class="mf">42.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Find distance in arcmin:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">getDistance</span><span class="p">(</span><span class="mf">94.0</span><span class="p">,</span> <span class="mf">42.0</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&#39;arcmin&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Find distance to patch centers:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">setPatchPositions</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s">&#39;mid&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">getDistance</span><span class="p">(</span><span class="mf">94.0</span><span class="p">,</span> <span class="mf">42.0</span><span class="p">,</span> <span class="n">byPatch</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.getPatchNames">
-<tt class="descname">getPatchNames</tt><big>(</big><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getPatchNames" title="Permalink to this definition">¶</a></dt>
+<code class="descname">getPatchNames</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getPatchNames" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns array of all patch names in the sky model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>names</strong> : numpy array</p>
+<blockquote class="last">
+<div><p>Array of patch names. None is returned if the sky model
+does not have patches</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.getPatchPositions">
-<tt class="descname">getPatchPositions</tt><big>(</big><em>patchName=None</em>, <em>asArray=False</em>, <em>method=None</em>, <em>applyBeam=False</em>, <em>perPatchProjection=True</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getPatchPositions" title="Permalink to this definition">¶</a></dt>
+<code class="descname">getPatchPositions</code><span class="sig-paren">(</span><em>patchName=None</em>, <em>asArray=False</em>, <em>method=None</em>, <em>applyBeam=False</em>, <em>perPatchProjection=True</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getPatchPositions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns arrays or a dict of patch positions (as {&#8216;patchName&#8217;:(RA, Dec)}).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -443,9 +803,16 @@ projected values.</p>
 <div><p>If True, fluxes used as weights will be attenuated by the beam.</p>
 </div></blockquote>
 <p><strong>perPatchProjection</strong> : bool, optional</p>
-<blockquote class="last">
+<blockquote>
 <div><p>If True, a different projection center is used per patch. If False,
 a single projection center is used for all patches.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>positions</strong> : numpy array or dict</p>
+<blockquote class="last">
+<div><p>(RA, Dec) arrays (if asArray is False) of patch positions or a
+dictionary of {&#8216;patchName&#8217;:(RA, Dec)}.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -473,7 +840,7 @@ a single projection center is used for all patches.</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.getPatchSizes">
-<tt class="descname">getPatchSizes</tt><big>(</big><em>units=None</em>, <em>weight=False</em>, <em>applyBeam=False</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getPatchSizes" title="Permalink to this definition">¶</a></dt>
+<code class="descname">getPatchSizes</code><span class="sig-paren">(</span><em>units=None</em>, <em>weight=False</em>, <em>applyBeam=False</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getPatchSizes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns array of patch sizes.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -488,9 +855,16 @@ a single projection center is used for all patches.</p>
 <div><p>If True, weight the source positions inside the patch by flux</p>
 </div></blockquote>
 <p><strong>applyBeam</strong> : bool, optional</p>
-<blockquote class="last">
+<blockquote>
 <div><p>If True and weight is True, attenuate the fluxes used for weighting
 by the beam</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>data</strong> : numpy array</p>
+<blockquote class="last">
+<div><p>Array of patch sizes. None is returned if the sky model
+does not have patches</p>
 </div></blockquote>
 </td>
 </tr>
@@ -500,15 +874,21 @@ by the beam</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.getRowIndex">
-<tt class="descname">getRowIndex</tt><big>(</big><em>rowName</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getRowIndex" title="Permalink to this definition">¶</a></dt>
+<code class="descname">getRowIndex</code><span class="sig-paren">(</span><em>rowName</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getRowIndex" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns index or indices for specified source or patch as a list.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>rowName</strong> : str</p>
-<blockquote class="last">
+<blockquote>
 <div><p>Name of the source or patch</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>indices</strong> : list</p>
+<blockquote class="last">
+<div><p>List of indices. ValueError is raised if the source is not found.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -522,15 +902,15 @@ by the beam</p>
 </div>
 <p>Get row indices for the patch &#8216;bin1&#8217; and verify the patch name:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ind</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">getRowIndex</span><span class="p">(</span><span class="s">&#39;bin1&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">getPatchNames</span><span class="p">()[</span><span class="n">ind</span><span class="p">])</span>
-<span class="go">[&#39;bin1&#39; &#39;bin1&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">getColValues</span><span class="p">(</span><span class="s">&#39;patch&#39;</span><span class="p">)[</span><span class="n">ind</span><span class="p">])</span>
+<span class="go">[&#39;bin1&#39;, &#39;bin1&#39;, &#39;bin1&#39;]</span>
 </pre></div>
 </div>
 </dd></dl>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.getRowValues">
-<tt class="descname">getRowValues</tt><big>(</big><em>rowName</em>, <em>colName=None</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getRowValues" title="Permalink to this definition">¶</a></dt>
+<code class="descname">getRowValues</code><span class="sig-paren">(</span><em>rowName</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.getRowValues" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an astropy table or table row for specified source or patch.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -540,10 +920,12 @@ by the beam</p>
 <blockquote>
 <div><p>Name of the source or patch</p>
 </div></blockquote>
-<p><strong>colName</strong> : str, optional</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>rowValues</strong> : astropy table or row</p>
 <blockquote class="last">
-<div><p>Column name. If given, returns row values for specified
-column only.</p>
+<div><p>Table (if more than one source) or row (if one source). None is
+returned if source is not found.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -551,20 +933,19 @@ column only.</p>
 </table>
 <p class="rubric">Examples</p>
 <p>Get row values for the source &#8216;src1&#8217;:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">getRowValues</span><span class="p">(</span><span class="s">&#39;src1&#39;</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">rows</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">getRowValues</span><span class="p">(</span><span class="s">&#39;src1&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Sum over the fluxes of sources in the &#8216;bin1&#8217; patch:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">rows</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">getRowValues</span><span class="p">(</span><span class="s">&#39;bin1&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">tot</span> <span class="o">=</span> <span class="mf">0.0</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span> <span class="n">tot</span> <span class="o">+=</span> <span class="n">r</span><span class="p">[</span><span class="s">&#39;I&#39;</span><span class="p">]</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">tot</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">s</span><span class="o">.</span><span class="n">getRowValues</span><span class="p">(</span><span class="s">&#39;bin1&#39;</span><span class="p">):</span> <span class="n">tot</span> <span class="o">+=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;I&#39;</span><span class="p">]</span>
 </pre></div>
 </div>
 </dd></dl>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.group">
-<tt class="descname">group</tt><big>(</big><em>algorithm</em>, <em>targetFlux=None</em>, <em>numClusters=100</em>, <em>applyBeam=False</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.group" title="Permalink to this definition">¶</a></dt>
+<code class="descname">group</code><span class="sig-paren">(</span><em>algorithm</em>, <em>targetFlux=None</em>, <em>numClusters=100</em>, <em>FWHM=None</em>, <em>threshold=0.1</em>, <em>applyBeam=False</em>, <em>root='Patch'</em>, <em>method='mid'</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.group" title="Permalink to this definition">¶</a></dt>
 <dd><p>Groups sources into patches.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -591,6 +972,13 @@ column only.</p>
 </dl>
 </li>
 <li><dl class="first docutils">
+<dt>&#8216;threshold&#8217; =&gt; group by convolving the sky model with a Gaussian beam</dt>
+<dd><p class="first last">and then thresholding to find islands of emission (NOTE: all sources
+are currently considered to be point sources of flux unity)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
 <dt>the filename of a mask image =&gt; group by masked regions (where mask =</dt>
 <dd><p class="first last">True). Source outside of masked regions are given patches of their
 own.</p>
@@ -610,9 +998,35 @@ or as a string with units (e.g., &#8216;25.0 mJy&#8217;).</p>
 <div><p>Number of clusters for clustering. Sources are grouped around the
 numClusters brightest sources.</p>
 </div></blockquote>
+<p><strong>FWHM</strong> : str or float, optional</p>
+<blockquote>
+<div><p>FWHM of convolving Gaussian used for thresholding. The FWHM can
+be specified as either a float in degrees or as a string with units
+(e.g., &#8216;25.0 arcsec&#8217;)</p>
+</div></blockquote>
+<p><strong>threshold</strong> : float, optional</p>
+<blockquote>
+<div><p>Value between 0 and 1 above which emission is considered for thresholding</p>
+</div></blockquote>
 <p><strong>applyBeam</strong> : bool, optional</p>
-<blockquote class="last">
+<blockquote>
 <div><p>If True, fluxes will be attenuated by the beam.</p>
+</div></blockquote>
+<p><strong>root</strong> : str, optional</p>
+<blockquote>
+<div><p>Root string from which patch names are constructed. For &#8216;single&#8217;, the
+patch name will be set to root; for the other grouping algorithms, the
+patch names will be &#8216;root_INDX&#8217;, where INDX is an integer ranging from
+(0:nPatches).</p>
+</div></blockquote>
+<p><strong>method</strong> : None or str, optional</p>
+<blockquote class="last">
+<div><p>This parameter specifies the method used to set the patch positions:
+- &#8216;mid&#8217; =&gt; the position is set to the midpoint of the patch
+- &#8216;mean&#8217; =&gt; the positions is set to the mean RA and Dec of the patch
+- &#8216;wmean&#8217; =&gt; the position is set to the flux-weighted mean RA and
+Dec of the patch
+- &#8216;zero&#8217; =&gt; set all positions to [0.0, 0.0]</p>
 </div></blockquote>
 </td>
 </tr>
@@ -628,13 +1042,13 @@ flux:</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.info">
-<tt class="descname">info</tt><big>(</big><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.info" title="Permalink to this definition">¶</a></dt>
+<code class="descname">info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.info" title="Permalink to this definition">¶</a></dt>
 <dd><p>Prints information about the sky model.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.merge">
-<tt class="descname">merge</tt><big>(</big><em>patches</em>, <em>name=None</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.merge" title="Permalink to this definition">¶</a></dt>
+<code class="descname">merge</code><span class="sig-paren">(</span><em>patches</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.merge" title="Permalink to this definition">¶</a></dt>
 <dd><p>Merge two or more patches together.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -642,18 +1056,19 @@ flux:</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>patches</strong> : list of str</p>
 <blockquote>
-<div><p>List of patches to merge</p>
+<div><p>List of patch names to merge</p>
 </div></blockquote>
 <p><strong>name</strong> : str, optional</p>
 <blockquote class="last">
-<div><p>Name of resulting merged patch</p>
+<div><p>Name of resulting merged patch. If None, the merged patch uses the
+name of the first patch in the input patches list</p>
 </div></blockquote>
 </td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Examples</p>
-<p>Merge three patches into one:</p>
+<p>Merge three patches into one named &#8216;binmerged&#8217;:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">merge</span><span class="p">([</span><span class="s">&#39;bin0&#39;</span><span class="p">,</span> <span class="s">&#39;bin1&#39;</span><span class="p">,</span> <span class="s">&#39;bin2&#39;</span><span class="p">],</span> <span class="s">&#39;binmerged&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -661,7 +1076,7 @@ flux:</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.more">
-<tt class="descname">more</tt><big>(</big><em>colName=None</em>, <em>patchName=None</em>, <em>sourceName=None</em>, <em>sortBy=None</em>, <em>lowToHigh=False</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.more" title="Permalink to this definition">¶</a></dt>
+<code class="descname">more</code><span class="sig-paren">(</span><em>colName=None</em>, <em>patchName=None</em>, <em>sourceName=None</em>, <em>sortBy=None</em>, <em>lowToHigh=False</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.more" title="Permalink to this definition">¶</a></dt>
 <dd><p>Prints the sky model table to the screen with more-like commands.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -705,28 +1120,48 @@ a list is given, sorting is done on the columns in the order given</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.move">
-<tt class="descname">move</tt><big>(</big><em>name</em>, <em>position=None</em>, <em>shift=None</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.move" title="Permalink to this definition">¶</a></dt>
-<dd><p>Move or shift a source.</p>
-<p>If both a position and a shift are specified, the source is moved to the
-new position and then shifted.</p>
+<code class="descname">move</code><span class="sig-paren">(</span><em>name</em>, <em>position=None</em>, <em>shift=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.move" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move or shift a source or sources.</p>
+<p>If both a position and a shift are specified, a source is moved to the
+new position and then shifted. Note that only a single source can be
+moved to a new position. However, multiple sources can be shifted.</p>
+<p>If an xyshift is specified, a FITS file must also be specified to define
+the WCS system. If a position, a shift, and an xyshift are all specified,
+a source is moved to the new position, shifted in RA and Dec, and then
+shifted in x and y.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>name</strong> : str</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>LSM</strong> : SkyModel object</p>
 <blockquote>
-<div><p>Source name.</p>
+<div><p>Input sky model</p>
+</div></blockquote>
+<p><strong>name</strong> : str or list</p>
+<blockquote>
+<div><p>Source name or list of names (can include wildcards)</p>
 </div></blockquote>
 <p><strong>position</strong> : list, optional</p>
 <blockquote>
 <div><p>A list specifying a new position as [RA, Dec] in either makesourcedb
 format (e.g., [&#8216;12:23:43.21&#8217;, &#8216;+22.34.21.2&#8217;]) or in degrees (e.g.,
-[123.2312, 23.3422]).</p>
+[123.2312, 23.3422])</p>
 </div></blockquote>
 <p><strong>shift</strong> : list, optional</p>
+<blockquote>
+<div><p>A list specifying the shift as [RAShift, DecShift] in degrees (e.g.,
+[0.02312, 0.00342])</p>
+</div></blockquote>
+<p><strong>xyshift</strong> : list, optional</p>
+<blockquote>
+<div><p>A list specifying the shift as [xShift, yShift] in pixels. A FITS file
+must be specified with the fitsFILE argument</p>
+</div></blockquote>
+<p><strong>fitsFile</strong> : str, optional</p>
 <blockquote class="last">
-<div><p>A list specifying the shift as [RAShift, DecShift] in
-in degrees (e.g., [0.02312, 0.00342]).</p>
+<div><p>A FITS file from which to take WCS information to transform the pixel
+coordinates to RA and Dec values. The xyshift argument must be specfied
+for this to be useful</p>
 </div></blockquote>
 </td>
 </tr>
@@ -741,11 +1176,15 @@ in degrees (e.g., [0.02312, 0.00342]).</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="s">&#39;1609.6+6556&#39;</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="o">/</span><span class="mf">3600.0</span><span class="p">])</span>
 </pre></div>
 </div>
+<p>Shift all sources by 10 pixels in x:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="s">&#39;*&#39;</span><span class="p">,</span> <span class="n">xyshift</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">fitsFile</span><span class="o">=</span><span class="s">&#39;image.fits&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.plot">
-<tt class="descname">plot</tt><big>(</big><em>fileName=None</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.plot" title="Permalink to this definition">¶</a></dt>
+<code class="descname">plot</code><span class="sig-paren">(</span><em>fileName=None</em>, <em>labelBy=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Shows a simple plot of the sky model.</p>
 <p>The circles in the plot are scaled with flux. If the sky model is grouped
 into patches, sources are colored by patch and the patch positions are
@@ -755,8 +1194,13 @@ indicated with stars.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>fileName</strong> : str, optional</p>
-<blockquote class="last">
+<blockquote>
 <div><p>If given, the plot is saved to a file instead of displayed.</p>
+</div></blockquote>
+<p><strong>labelBy</strong> : str, optional</p>
+<blockquote class="last">
+<div><p>One of &#8216;source&#8217; or &#8216;patch&#8217;: label points using source names (&#8216;source&#8217;)
+or patch names (&#8216;patch&#8217;)</p>
 </div></blockquote>
 </td>
 </tr>
@@ -766,7 +1210,7 @@ indicated with stars.</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.remove">
-<tt class="descname">remove</tt><big>(</big><em>filterExpression</em>, <em>aggregate=None</em>, <em>applyBeam=None</em>, <em>useRegEx=False</em>, <em>force=False</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.remove" title="Permalink to this definition">¶</a></dt>
+<code class="descname">remove</code><span class="sig-paren">(</span><em>filterExpression</em>, <em>aggregate=None</em>, <em>applyBeam=None</em>, <em>useRegEx=False</em>, <em>force=True</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.remove" title="Permalink to this definition">¶</a></dt>
 <dd><p>Filters the sky model, removing all sources that meet the given expression.</p>
 <p>After filtering, the sky model contains only those sources for which the
 given filter expression is false.</p>
@@ -774,41 +1218,70 @@ given filter expression is false.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>filterExpression</strong> : str or dict</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>filterExpression</strong> : str, dict, list, or numpy array</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>A string specifying the filter expression in the form:</dt>
-<dd><p class="first last">&#8216;&lt;property&gt; &lt;operator&gt; &lt;value&gt; [&lt;units&gt;]&#8217;</p>
+<div><ul>
+<li><dl class="first docutils">
+<dt>If string:</dt>
+<dd><p class="first last">A string specifying the filter expression in the form:
+&#8216;&lt;property&gt; &lt;operator&gt; &lt;value&gt; [&lt;units&gt;]&#8217;
+(e.g., &#8216;I &lt;= 10.5 Jy&#8217;).</p>
 </dd>
 </dl>
-<p>(e.g., &#8216;I &lt;= 10.5 Jy&#8217;). These elements can also be given as a
-dictionary in the form:</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>{&#8216;filterProp&#8217;:property, &#8216;filterOper&#8217;:operator,</dt>
-<dd><p class="first last">&#8216;filterVal&#8217;:value, &#8216;filterUnits&#8217;:units}</p>
-</dd>
-</dl>
+</li>
+<li><dl class="first docutils">
+<dt>If dict:</dt>
+<dd><p class="first">The filter can also be given as a dictionary in the form:
+{&#8216;filterProp&#8217;:property, &#8216;filterOper&#8217;:operator,</p>
+<blockquote class="last">
+<div><p>&#8216;filterVal&#8217;:value, &#8216;filterUnits&#8217;:units}</p>
 </div></blockquote>
-<dl class="docutils">
-<dt>or as a list:</dt>
-<dd><p class="first last">[property, operator, value, value]</p>
 </dd>
 </dl>
-<p>The property to filter on must be a valid column name or the filename
-of a mask image.</p>
-<p>Supported operators are:
-- !=
-- &lt;=
-- &gt;=
-- &gt;
-- &lt;
-- = (or &#8216;==&#8217;)</p>
+</li>
+<li><dl class="first docutils">
+<dt>If list:</dt>
+<dd><p class="first last">The filter can also be given as a list of:
+[property, operator, value] or
+[property, operator, value, units]</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>If numpy array:</dt>
+<dd><p class="first">The indices to filter on can be specified directly as a numpy array
+of row or patch indices such as:
+array([ 0,  2, 19, 20, 31, 37])</p>
+<p>or as a numpy array of bools with the same length as the sky model.</p>
+<p class="last">If a numpy array is given and the indices correspond to patches, then
+set aggregate=True.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="docutils">
+<dt>The property to filter on must be one of the following:</dt>
+<dd><ul class="first last simple">
+<li>a valid column name</li>
+<li>the filename of a mask image</li>
+</ul>
+</dd>
+<dt>Supported operators are:</dt>
+<dd><ul class="first last simple">
+<li>!=</li>
+<li>&lt;=</li>
+<li>&gt;=</li>
+<li>&gt;</li>
+<li>&lt;</li>
+<li>= (or &#8216;==&#8217;)</li>
+</ul>
+</dd>
+</dl>
 <p>Units are optional and must be specified as required by astropy.units.</p>
 </div></blockquote>
 <p><strong>aggregate</strong> : str, optional</p>
 <blockquote>
-<div><p>If set, the array returned will be of values aggregated
+<div><p>If set, the selection will be done on values aggregated
 over the patch members. The following aggregation functions are
 available:
 - &#8216;sum&#8217;: sum of patch values
@@ -825,9 +1298,14 @@ sources.</p>
 <div><p>If True, apparent fluxes will be used.</p>
 </div></blockquote>
 <p><strong>useRegEx</strong> : bool, optional</p>
-<blockquote class="last">
+<blockquote>
 <div><p>If True, string matching will use regular expression matching. If
 False, string matching uses Unix filename matching.</p>
+</div></blockquote>
+<p><strong>force</strong> : bool, optional</p>
+<blockquote class="last">
+<div><p>If True, filters that result in empty sky models are allowed. If
+False, such filters are not applied and the sky model is unaffected.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -841,16 +1319,23 @@ with Stokes I flux greater than 1.5 Jy:</p>
 </pre></div>
 </div>
 <p>If the sky model has patches and the filter is desired per patch, use
-<tt class="docutils literal"><span class="pre">aggregate</span> <span class="pre">=</span> <span class="pre">function</span></tt>. For example, to select on the sum of the patch
+<code class="docutils literal"><span class="pre">aggregate</span> <span class="pre">=</span> <span class="pre">function</span></code>. For example, to filter on the sum of the patch
 fluxes:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s">&#39;I &gt; 1.5 Jy&#39;</span><span class="p">,</span> <span class="n">aggregate</span><span class="o">=</span><span class="s">&#39;sum&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Filter on source names, removing those that match &#8220;src*_1?&#8221;:</p>
+<p>Or, to filter on patches smaller than 5 arcmin in size:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">sizes</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">getPatchSizes</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;arcmin&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">sizes</span> <span class="o">&lt;</span> <span class="mf">5.0</span><span class="p">,</span> <span class="n">aggregate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Filter on source names, removing those that match &#8220;src*_1?&#8221; (e.g.,
+&#8216;src2345_15&#8217;, &#8216;srcB2_1a&#8217;, etc.):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s">&#39;Name == src*_1?&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Use a CASA clean mask image to remove sources that lie in masked regions:</p>
+<p>Use a CASA clean mask image named &#8216;clean_mask.mask&#8217; to remove sources
+that lie in masked regions:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s">&#39;clean_mask.mask == True&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -858,7 +1343,7 @@ fluxes:</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.select">
-<tt class="descname">select</tt><big>(</big><em>filterExpression</em>, <em>aggregate=None</em>, <em>applyBeam=False</em>, <em>useRegEx=False</em>, <em>force=False</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.select" title="Permalink to this definition">¶</a></dt>
+<code class="descname">select</code><span class="sig-paren">(</span><em>filterExpression</em>, <em>aggregate=None</em>, <em>applyBeam=False</em>, <em>useRegEx=False</em>, <em>force=True</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.select" title="Permalink to this definition">¶</a></dt>
 <dd><p>Filters the sky model, keeping all sources that meet the given expression.</p>
 <p>After filtering, the sky model contains only those sources for which the
 given filter expression is true.</p>
@@ -866,19 +1351,54 @@ given filter expression is true.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>filterExpression</strong> : str or dict</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>filterExpression</strong> : str, dict, list, or numpy array</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>The filter expression specified as:</dt>
-<dd><ul class="first last simple">
-<li>a string of <tt class="docutils literal"><span class="pre">'&lt;property&gt;</span> <span class="pre">&lt;operator&gt;</span> <span class="pre">&lt;value&gt;</span> <span class="pre">[&lt;units&gt;]'</span></tt></li>
-<li>a list of <tt class="docutils literal"><span class="pre">[property,</span> <span class="pre">operator,</span> <span class="pre">value,</span> <span class="pre">unit]</span></tt></li>
-</ul>
+<div><ul>
+<li><dl class="first docutils">
+<dt>If string:</dt>
+<dd><p class="first last">A string specifying the filter expression in the form:
+&#8216;&lt;property&gt; &lt;operator&gt; &lt;value&gt; [&lt;units&gt;]&#8217;
+(e.g., &#8216;I &lt;= 10.5 Jy&#8217;).</p>
 </dd>
 </dl>
-<p>The property to filter on must be a valid column name or the filename
-of a mask image.</p>
+</li>
+<li><dl class="first docutils">
+<dt>If dict:</dt>
+<dd><p class="first">The filter can also be given as a dictionary in the form:
+{&#8216;filterProp&#8217;:property, &#8216;filterOper&#8217;:operator,</p>
+<blockquote class="last">
+<div><p>&#8216;filterVal&#8217;:value, &#8216;filterUnits&#8217;:units}</p>
+</div></blockquote>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>If list:</dt>
+<dd><p class="first last">The filter can also be given as a list of:
+[property, operator, value] or
+[property, operator, value, units]</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>If numpy array:</dt>
+<dd><p class="first">The indices to filter on can be specified directly as a numpy array
+of row or patch indices such as:
+array([ 0,  2, 19, 20, 31, 37])</p>
+<p>or as a numpy array of bools with the same length as the sky model.</p>
+<p class="last">If a numpy array is given and the indices correspond to patches, then
+set aggregate=True.</p>
+</dd>
+</dl>
+</li>
+</ul>
 <dl class="docutils">
+<dt>The property to filter on must be one of the following:</dt>
+<dd><ul class="first last simple">
+<li>a valid column name</li>
+<li>the filename of a mask image</li>
+</ul>
+</dd>
 <dt>Supported operators are:</dt>
 <dd><ul class="first last simple">
 <li>!=</li>
@@ -894,7 +1414,7 @@ of a mask image.</p>
 </div></blockquote>
 <p><strong>aggregate</strong> : str, optional</p>
 <blockquote>
-<div><p>If set, the array returned will be of values aggregated
+<div><p>If set, the selection will be done on values aggregated
 over the patch members. The following aggregation functions are
 available:</p>
 <blockquote>
@@ -904,8 +1424,10 @@ available:</p>
 <li>&#8216;wmean&#8217;: Stokes I weighted mean of patch values</li>
 <li>&#8216;min&#8217;: minimum of patch values</li>
 <li>&#8216;max&#8217;: maximum of patch values</li>
-<li>True: only valid when the filter indices are specify directly as a numpy array. If True, filtering is done on patches instead of sources.</li>
+<li>True: only valid when the filter indices are specified directly</li>
 </ul>
+<p>as a numpy array. If True, filtering is done on patches instead
+of sources.</p>
 </div></blockquote>
 </div></blockquote>
 <p><strong>applyBeam</strong> : bool, optional</p>
@@ -913,9 +1435,14 @@ available:</p>
 <div><p>If True, apparent fluxes will be used.</p>
 </div></blockquote>
 <p><strong>useRegEx</strong> : bool, optional</p>
-<blockquote class="last">
+<blockquote>
 <div><p>If True, string matching will use regular expression matching. If
 False, string matching uses Unix filename matching.</p>
+</div></blockquote>
+<p><strong>force</strong> : bool, optional</p>
+<blockquote class="last">
+<div><p>If True, selections that result in empty sky models are allowed. If
+False, such selections are not applied and the sky model is unaffected.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -929,16 +1456,22 @@ with Stokes I flux greater than 1.5 Jy:</p>
 </pre></div>
 </div>
 <p>If the sky model has patches and the filter is desired per patch, use
-<tt class="docutils literal"><span class="pre">aggregate</span> <span class="pre">=</span> <span class="pre">function</span></tt>. For example, to select on the sum of the patch
+<code class="docutils literal"><span class="pre">aggregate</span> <span class="pre">=</span> <span class="pre">function</span></code>. For example, to select on the sum of the patch
 fluxes:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s">&#39;I &gt; 1.5 Jy&#39;</span><span class="p">,</span> <span class="n">aggregate</span><span class="o">=</span><span class="s">&#39;sum&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Or, to filter on patches smaller than 5 arcmin in size:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">sizes</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">getPatchSizes</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s">&#39;arcmin&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">sizes</span> <span class="o">&lt;</span> <span class="mf">5.0</span><span class="p">,</span> <span class="n">aggregate</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Filter on source names, keeping those that match &#8220;src*_1?&#8221;:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s">&#39;Name == src*_1?&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Use a CASA clean mask image to keep sources that lie in masked regions:</p>
+<p>Use a CASA clean mask image named &#8216;clean_mask.mask&#8217; to remove sources
+that lie in masked regions:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;clean_mask.mask == True&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -946,7 +1479,7 @@ fluxes:</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.setColValues">
-<tt class="descname">setColValues</tt><big>(</big><em>colName</em>, <em>values</em>, <em>mask=None</em>, <em>index=None</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.setColValues" title="Permalink to this definition">¶</a></dt>
+<code class="descname">setColValues</code><span class="sig-paren">(</span><em>colName</em>, <em>values</em>, <em>mask=None</em>, <em>index=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.setColValues" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets column values.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -972,7 +1505,7 @@ the value is masked).</p>
 <p><strong>index</strong> : int, optional</p>
 <blockquote class="last">
 <div><p>Index that specifies the column position in the table, if column is
-not already present in the table</p>
+not already present in the table.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -987,8 +1520,8 @@ not already present in the table</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="lsmtool.skymodel.SkyModel.setDefaltValues">
-<tt class="descname">setDefaltValues</tt><big>(</big><em>colDict</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.setDefaltValues" title="Permalink to this definition">¶</a></dt>
+<dt id="lsmtool.skymodel.SkyModel.setDefaultValues">
+<code class="descname">setDefaultValues</code><span class="sig-paren">(</span><em>colDict</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.setDefaultValues" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets default column values.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -998,7 +1531,7 @@ not already present in the table</p>
 <blockquote class="last">
 <div><p>Dict specifying column names and default values as
 {&#8216;colName&#8217;:value} where the value is in the units accepted by
-makesourcedb (e.g., Hz for ReferenceFrequency).</p>
+makesourcedb (e.g., Hz for &#8216;ReferenceFrequency&#8217;).</p>
 </div></blockquote>
 </td>
 </tr>
@@ -1013,23 +1546,25 @@ makesourcedb (e.g., Hz for ReferenceFrequency).</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.setPatchPositions">
-<tt class="descname">setPatchPositions</tt><big>(</big><em>patchDict=None</em>, <em>method='mid'</em>, <em>applyBeam=False</em>, <em>perPatchProjection=True</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.setPatchPositions" title="Permalink to this definition">¶</a></dt>
+<code class="descname">setPatchPositions</code><span class="sig-paren">(</span><em>patchDict=None</em>, <em>method='mid'</em>, <em>applyBeam=False</em>, <em>perPatchProjection=True</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.setPatchPositions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the patch positions.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>patchDict</strong> : dict</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>patchDict</strong> : dict, optional</p>
 <blockquote>
 <div><p>Dict specifying patch names and positions as {&#8216;patchName&#8217;:[RA, Dec]}
-where both RA and Dec are degrees J2000 or in makesourcedb format.</p>
+where both RA and Dec are degrees J2000 or in makesourcedb format.
+If None, positions are set for all patches using the method given
+by the &#8216;method&#8217; parameter.</p>
 </div></blockquote>
 <p><strong>method</strong> : None or str, optional</p>
 <blockquote>
 <div><p>If no patchDict is given, this parameter specifies the method used
 to set the patch positions:
 - &#8216;mid&#8217; =&gt; the position is set to the midpoint of the patch
-- &#8216;mean&#8217; =&gt; the positions is set to the mean RA and Dec of the patch
+- &#8216;mean&#8217; =&gt; the position is set to the mean RA and Dec of the patch
 - &#8216;wmean&#8217; =&gt; the position is set to the flux-weighted mean RA and
 Dec of the patch
 - &#8216;zero&#8217; =&gt; set all positions to [0.0, 0.0]</p>
@@ -1067,8 +1602,10 @@ positions:</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.setRowValues">
-<tt class="descname">setRowValues</tt><big>(</big><em>values</em>, <em>mask=None</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.setRowValues" title="Permalink to this definition">¶</a></dt>
+<code class="descname">setRowValues</code><span class="sig-paren">(</span><em>values</em>, <em>mask=None</em>, <em>returnVerified=False</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.setRowValues" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets values for a single row.</p>
+<p>If a row with the given name already exists, its values are
+updated. If not, a new row is made and appended to the table.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1081,50 +1618,72 @@ the table. If dict, missing values will be masked unless already
 present.</p>
 </div></blockquote>
 <p><strong>mask</strong> : list or array of bools, optional</p>
-<blockquote class="last">
+<blockquote>
 <div><p>If values is a list or array, a mask can be specified (True means
 the value is masked).</p>
+</div></blockquote>
+<p><strong>returnVerified</strong> : bool, optional</p>
+<blockquote class="last">
+<div><p>If True, the values are verified and returned, allowing them to be
+passed to table.add_row().</p>
 </div></blockquote>
 </td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Examples</p>
-<p>Set row values for the source &#8216;src1&#8217;:</p>
+<p>Set row values for the source &#8216;src1&#8217; (which can be a new source or an
+existing source):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">setRowValues</span><span class="p">({</span><span class="s">&#39;Name&#39;</span><span class="p">:</span><span class="s">&#39;src1&#39;</span><span class="p">,</span> <span class="s">&#39;Ra&#39;</span><span class="p">:</span><span class="mf">213.123</span><span class="p">,</span> <span class="s">&#39;Dec&#39;</span><span class="p">:</span><span class="mf">23.1232</span><span class="p">,</span>
-<span class="go">    &#39;I&#39;:23.2, &#39;Type&#39;:&#39;POINT&#39;}</span>
+<span class="go">    &#39;I&#39;:23.2, &#39;Type&#39;:&#39;POINT&#39;})</span>
 </pre></div>
 </div>
 <p>The RA and Dec values can be in degrees (as above) or in makesourcedb
 format. E.g.:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">setRowValues</span><span class="p">({</span><span class="s">&#39;Name&#39;</span><span class="p">:</span><span class="s">&#39;src1&#39;</span><span class="p">,</span> <span class="s">&#39;Ra&#39;</span><span class="p">:</span><span class="s">&#39;12:22:21.1&#39;</span><span class="p">,</span>
-<span class="go">    &#39;Dec&#39;:&#39;+14.46.31.5&#39;, &#39;I&#39;:23.2, &#39;Type&#39;:&#39;POINT&#39;}</span>
+<span class="go">    &#39;Dec&#39;:&#39;+14.46.31.5&#39;, &#39;I&#39;:23.2, &#39;Type&#39;:&#39;POINT&#39;})</span>
 </pre></div>
 </div>
 </dd></dl>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.transfer">
-<tt class="descname">transfer</tt><big>(</big><em>patchFile</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.transfer" title="Permalink to this definition">¶</a></dt>
+<code class="descname">transfer</code><span class="sig-paren">(</span><em>patchSkyModel</em>, <em>matchBy='name'</em>, <em>radius=0.1</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.transfer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transfer patches from the input sky model.</p>
-<p>Sources with the same name as those in patchFile will be grouped into
-the patches defined in patchFile. Sources that do not appear in patchFile
-will be placed into separate patches (one per source). Patch positions are
-not transferred.</p>
+<p>Sources matching those in patchSkyModel will be grouped into
+the patches defined in patchSkyModel. Sources that do not appear in
+patchSkyModel will be placed into separate patches (one per source).
+Patch positions are not transferred (as they may no longer be appropriate
+after transfer).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>patchFile</strong> : str</p>
-<blockquote class="last">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>patchSkyModel</strong> : str or SkyModel object</p>
+<blockquote>
 <div><p>Input sky model from which to transfer patches.</p>
+</div></blockquote>
+<p><strong>matchBy</strong> : str, optional</p>
+<blockquote>
+<div><p>Determines how matching sources are determined:
+- &#8216;name&#8217; =&gt; matches are identified by name
+- &#8216;position&#8217; =&gt; matches are identified by radius. Sources within the</p>
+<blockquote>
+<div><p>radius specified by the radius parameter are considered matches</p>
+</div></blockquote>
+</div></blockquote>
+<p><strong>radius</strong> : float or str, optional</p>
+<blockquote class="last">
+<div><p>Radius in degrees (if float) or &#8216;value unit&#8217; (if str; e.g., &#8216;30 arcsec&#8217;)
+for matching when matchBy=&#8217;position&#8217;</p>
 </div></blockquote>
 </td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Examples</p>
-<p>Transfer patches from one sky model to another and set their positions:</p>
+<p>Transfer patches from one sky model to another and set their positions
+(matching sources are identified by name):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">transfer</span><span class="p">(</span><span class="s">&#39;master_sky.model&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">setPatchPositions</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s">&#39;mid&#39;</span><span class="p">)</span>
 </pre></div>
@@ -1133,7 +1692,7 @@ not transferred.</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.ungroup">
-<tt class="descname">ungroup</tt><big>(</big><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.ungroup" title="Permalink to this definition">¶</a></dt>
+<code class="descname">ungroup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.ungroup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Removes all patches from the sky model.</p>
 <p class="rubric">Examples</p>
 <p>Remove all patches:</p>
@@ -1144,7 +1703,7 @@ not transferred.</p>
 
 <dl class="method">
 <dt id="lsmtool.skymodel.SkyModel.write">
-<tt class="descname">write</tt><big>(</big><em>fileName=None</em>, <em>format='makesourcedb'</em>, <em>clobber=False</em>, <em>sortBy=None</em>, <em>lowToHigh=False</em><big>)</big><a class="headerlink" href="#lsmtool.skymodel.SkyModel.write" title="Permalink to this definition">¶</a></dt>
+<code class="descname">write</code><span class="sig-paren">(</span><em>fileName=None</em>, <em>format='makesourcedb'</em>, <em>clobber=False</em>, <em>sortBy=None</em>, <em>lowToHigh=False</em>, <em>addHistory=True</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.skymodel.SkyModel.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes the sky model to a file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1165,6 +1724,8 @@ not transferred.</p>
 <li>&#8216;hdf5&#8217;</li>
 <li>&#8216;ds9&#8217;</li>
 <li>&#8216;kvis&#8217;</li>
+<li>&#8216;casa&#8217;</li>
+<li>&#8216;factor&#8217;</li>
 <li>plus all other formats supported by the astropy.table package</li>
 </ul>
 </dd>
@@ -1180,8 +1741,13 @@ not transferred.</p>
 a list is given, sorting is done on the columns in the order given</p>
 </div></blockquote>
 <p><strong>lowToHigh</strong> : bool, optional</p>
-<blockquote class="last">
+<blockquote>
 <div><p>If True, sort values from low to high instead of high to low</p>
+</div></blockquote>
+<p><strong>addHistory</strong> : bool, optional</p>
+<blockquote class="last">
+<div><p>If True, the history of operations is written to the sky model
+header</p>
 </div></blockquote>
 </td>
 </tr>
@@ -1210,7 +1776,7 @@ BBS:</p>
 <span id="lsmtool-tableio-module"></span><h2>lsmtool.tableio module<a class="headerlink" href="#module-lsmtool.tableio" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="lsmtool.tableio.Dec2Angle">
-<tt class="descclassname">lsmtool.tableio.</tt><tt class="descname">Dec2Angle</tt><big>(</big><em>Dec</em><big>)</big><a class="headerlink" href="#lsmtool.tableio.Dec2Angle" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">Dec2Angle</code><span class="sig-paren">(</span><em>Dec</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.Dec2Angle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns Angle objects for input Dec values.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1219,7 +1785,7 @@ BBS:</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Dec</strong> : str, float or list of str, float</p>
 <blockquote>
 <div><p>Values of Dec to convert. Can be strings in makesourcedb format or floats
-in degrees.</p>
+in degrees</p>
 </div></blockquote>
 </td>
 </tr>
@@ -1232,7 +1798,7 @@ in degrees.</p>
 
 <dl class="function">
 <dt id="lsmtool.tableio.RA2Angle">
-<tt class="descclassname">lsmtool.tableio.</tt><tt class="descname">RA2Angle</tt><big>(</big><em>RA</em><big>)</big><a class="headerlink" href="#lsmtool.tableio.RA2Angle" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">RA2Angle</code><span class="sig-paren">(</span><em>RA</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.RA2Angle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns Angle objects for input RA values.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1253,8 +1819,110 @@ in degrees.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="lsmtool.tableio.broadcastTable">
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">broadcastTable</code><span class="sig-paren">(</span><em>fileName</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.broadcastTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends a table via SAMP.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>fileName</strong> : str</p>
+<blockquote class="last">
+<div><p>Name of sky model file to broadcast</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="lsmtool.tableio.casaRegionWriter">
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">casaRegionWriter</code><span class="sig-paren">(</span><em>table</em>, <em>fileName</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.casaRegionWriter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes model to a casa region file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>table</strong> : astropy.table.Table object</p>
+<blockquote>
+<div><p>Input sky model table</p>
+</div></blockquote>
+<p><strong>fileName</strong> : str</p>
+<blockquote class="last">
+<div><p>Output file to which the sky model is written</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="lsmtool.tableio.coneSearch">
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">coneSearch</code><span class="sig-paren">(</span><em>VOService</em>, <em>position</em>, <em>radius</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.coneSearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns table from a VO cone search.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>VOService</strong> : str</p>
+<blockquote>
+<div><p>Name of VO service to query (must be one of &#8216;WENSS&#8217; or &#8216;NVSS&#8217;)</p>
+</div></blockquote>
+<p><strong>position</strong> : list of floats</p>
+<blockquote>
+<div><p>A list specifying a new position as [RA, Dec] in either makesourcedb
+format (e.g., [&#8216;12:23:43.21&#8217;, &#8216;+22.34.21.2&#8217;]) or in degrees (e.g.,
+[123.2312, 23.3422])</p>
+</div></blockquote>
+<p><strong>radius</strong> : float or str, optional</p>
+<blockquote class="last">
+<div><p>Radius in degrees (if float) or &#8216;value unit&#8217; (if str; e.g.,
+&#8216;30 arcsec&#8217;) for cone search region in degrees</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="lsmtool.tableio.createTable">
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">createTable</code><span class="sig-paren">(</span><em>outlines</em>, <em>metaDict</em>, <em>colNames</em>, <em>colDefaults</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.createTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an astropy table from inputs.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>outlines</strong> : list of str</p>
+<blockquote>
+<div><p>Input lines</p>
+</div></blockquote>
+<p><strong>metaDict</strong> : dict</p>
+<blockquote>
+<div><p>Input meta data</p>
+</div></blockquote>
+<p><strong>colNames</strong> : list of str</p>
+<blockquote>
+<div><p>Input column names</p>
+</div></blockquote>
+<p><strong>colDefaults</strong> : list</p>
+<blockquote>
+<div><p>Input column default values</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>table</strong> : astropy.table.Table object</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="lsmtool.tableio.ds9RegionWriter">
-<tt class="descclassname">lsmtool.tableio.</tt><tt class="descname">ds9RegionWriter</tt><big>(</big><em>table</em>, <em>fileName</em><big>)</big><a class="headerlink" href="#lsmtool.tableio.ds9RegionWriter" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">ds9RegionWriter</code><span class="sig-paren">(</span><em>table</em>, <em>fileName</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.ds9RegionWriter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes table to a ds9 region file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1266,7 +1934,62 @@ in degrees.</p>
 </div></blockquote>
 <p><strong>fileName</strong> : str</p>
 <blockquote class="last">
-<div><p>Output ASCII file to which the sky model is written.</p>
+<div><p>Output file to which the sky model is written</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="lsmtool.tableio.factorDirectionsWriter">
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">factorDirectionsWriter</code><span class="sig-paren">(</span><em>table</em>, <em>fileName</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.factorDirectionsWriter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes patches to a Factor directions file.</p>
+<p>Note that Factor respects the order of patches and they are sorted here by
+apparent flux from brightest to faintest. Default phase and amplitude
+solution intervals are scaled by the sqrt(flux).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>table</strong> : astropy.table.Table object</p>
+<blockquote>
+<div><p>Input sky model table; must have patches defined</p>
+</div></blockquote>
+<p><strong>fileName</strong> : str</p>
+<blockquote class="last">
+<div><p>Output file to which the sky model is written</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="lsmtool.tableio.getGSM">
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">getGSM</code><span class="sig-paren">(</span><em>position</em>, <em>radius</em>, <em>assocTheta</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.getGSM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the file name from a gsm.py search.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>position</strong> : list of floats</p>
+<blockquote>
+<div><p>A list specifying a new position as [RA, Dec] in either makesourcedb
+format (e.g., [&#8216;12:23:43.21&#8217;, &#8216;+22.34.21.2&#8217;]) or in degrees (e.g.,
+[123.2312, 23.3422])</p>
+</div></blockquote>
+<p><strong>radius</strong> : float or str, optional</p>
+<blockquote>
+<div><p>Radius in degrees (if float) or &#8216;value unit&#8217; (if str; e.g.,
+&#8216;30 arcsec&#8217;) for cone search region in degrees</p>
+</div></blockquote>
+<p><strong>assocTheta</strong> : float or str, optional</p>
+<blockquote class="last">
+<div><p>Radius in degrees (if float) or &#8216;value unit&#8217; (if str; e.g.,
+&#8216;30 arcsec&#8217;) for GSM source association</p>
 </div></blockquote>
 </td>
 </tr>
@@ -1276,7 +1999,7 @@ in degrees.</p>
 
 <dl class="function">
 <dt id="lsmtool.tableio.kvisAnnWriter">
-<tt class="descclassname">lsmtool.tableio.</tt><tt class="descname">kvisAnnWriter</tt><big>(</big><em>table</em>, <em>fileName</em><big>)</big><a class="headerlink" href="#lsmtool.tableio.kvisAnnWriter" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">kvisAnnWriter</code><span class="sig-paren">(</span><em>table</em>, <em>fileName</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.kvisAnnWriter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes table to a kvis annotation file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1288,7 +2011,85 @@ in degrees.</p>
 </div></blockquote>
 <p><strong>fileName</strong> : str</p>
 <blockquote class="last">
-<div><p>Output ASCII file to which the sky model is written.</p>
+<div><p>Output file to which the sky model is written</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="lsmtool.tableio.makeEmptyTable">
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">makeEmptyTable</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.makeEmptyTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an empty sky model table.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="lsmtool.tableio.processFormatString">
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">processFormatString</code><span class="sig-paren">(</span><em>formatString</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.processFormatString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Proccesses the header string.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>formatString</strong> : str</p>
+<blockquote>
+<div><p>Header line</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>colNames</strong> : list of str</p>
+<blockquote>
+<div><p>Output column names</p>
+</div></blockquote>
+<p><strong>hasPatches</strong> : bool</p>
+<blockquote>
+<div><p>Flag for patches</p>
+</div></blockquote>
+<p><strong>colDefaults</strong> : dict</p>
+<blockquote>
+<div><p>Default values</p>
+</div></blockquote>
+<p><strong>metaDict</strong> : dict</p>
+<blockquote class="last">
+<div><p>Output meta data</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="lsmtool.tableio.processLine">
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">processLine</code><span class="sig-paren">(</span><em>line</em>, <em>metaDict</em>, <em>colNames</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.processLine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes a makesourcedb line.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>line</strong> : str</p>
+<blockquote>
+<div><p>Data line</p>
+</div></blockquote>
+<p><strong>metaDict</strong> : dict</p>
+<blockquote>
+<div><p>Input meta data</p>
+</div></blockquote>
+<p><strong>colNames</strong> : list of str</p>
+<blockquote>
+<div><p>Input column names</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>line</strong> : str</p>
+<blockquote>
+<div><p>Processed line</p>
+</div></blockquote>
+<p><strong>metaDict</strong> : dict</p>
+<blockquote class="last">
+<div><p>Output meta data</p>
 </div></blockquote>
 </td>
 </tr>
@@ -1298,13 +2099,20 @@ in degrees.</p>
 
 <dl class="function">
 <dt id="lsmtool.tableio.rowStr">
-<tt class="descclassname">lsmtool.tableio.</tt><tt class="descname">rowStr</tt><big>(</big><em>row</em><big>)</big><a class="headerlink" href="#lsmtool.tableio.rowStr" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">rowStr</code><span class="sig-paren">(</span><em>row</em>, <em>metaDict</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.rowStr" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns makesourcedb representation of a row.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>row</strong> : astropy.table.Row object</p>
+<blockquote>
+<div><p>Row to process</p>
+</div></blockquote>
+<p><strong>metaDict</strong> : dict</p>
+<blockquote>
+<div><p>Table meta dictionary</p>
+</div></blockquote>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>line</strong> : str</p>
@@ -1319,14 +2127,17 @@ in degrees.</p>
 
 <dl class="function">
 <dt id="lsmtool.tableio.skyModelIdentify">
-<tt class="descclassname">lsmtool.tableio.</tt><tt class="descname">skyModelIdentify</tt><big>(</big><em>origin</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#lsmtool.tableio.skyModelIdentify" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">skyModelIdentify</code><span class="sig-paren">(</span><em>origin</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.skyModelIdentify" title="Permalink to this definition">¶</a></dt>
 <dd><p>Identifies valid makesourcedb sky model files.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="lsmtool.tableio.skyModelReader">
-<tt class="descclassname">lsmtool.tableio.</tt><tt class="descname">skyModelReader</tt><big>(</big><em>fileName</em><big>)</big><a class="headerlink" href="#lsmtool.tableio.skyModelReader" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">skyModelReader</code><span class="sig-paren">(</span><em>fileName</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.skyModelReader" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reads a makesourcedb sky model file into an astropy table.</p>
+<p>See <a class="reference external" href="http://www.lofar.org/operations/doku.php?id=engineering:software:tools:makesourcedb#format_string">http://www.lofar.org/operations/doku.php?id=engineering:software:tools:makesourcedb#format_string</a>
+for details. Note that source names, types, and patch names are limited to
+a length of 100 characters.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1347,7 +2158,7 @@ respect the makesourcedb format</p>
 
 <dl class="function">
 <dt id="lsmtool.tableio.skyModelWriter">
-<tt class="descclassname">lsmtool.tableio.</tt><tt class="descname">skyModelWriter</tt><big>(</big><em>table</em>, <em>fileName</em><big>)</big><a class="headerlink" href="#lsmtool.tableio.skyModelWriter" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">lsmtool.tableio.</code><code class="descname">skyModelWriter</code><span class="sig-paren">(</span><em>table</em>, <em>fileName</em><span class="sig-paren">)</span><a class="headerlink" href="#lsmtool.tableio.skyModelWriter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes table to a makesourcedb sky model file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1355,7 +2166,7 @@ respect the makesourcedb format</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>fileName</strong> : str</p>
 <blockquote class="last">
-<div><p>Output ASCII file to which the sky model is written.</p>
+<div><p>Output ASCII file to which the sky model is written</p>
 </div></blockquote>
 </td>
 </tr>
@@ -1370,7 +2181,7 @@ respect the makesourcedb format</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
@@ -1385,13 +2196,15 @@ respect the makesourcedb format</p>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="overview.html"
-                        title="previous chapter">LSMTool: the LOFAR Local Sky Model Tool </a></p>
-  <h3>This Page</h3>
-  <ul class="this-page-menu">
-    <li><a href="_sources/lsmtool.txt"
-           rel="nofollow">Show Source</a></li>
-  </ul>
-<div id="searchbox" style="display: none">
+                        title="previous chapter">LSMTool: the LOFAR Local Sky Model Tool</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/lsmtool.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
       <input type="text" name="q" />
@@ -1408,7 +2221,7 @@ respect the makesourcedb format</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -1420,12 +2233,12 @@ respect the makesourcedb format</p>
         <li class="right" >
           <a href="overview.html" title="LSMTool: the LOFAR Local Sky Model Tool"
              >previous</a> |</li>
-        <li><a href="index.html">LSMTool 1.0.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">LSMTool 1.0.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer">
+    <div class="footer" role="contentinfo">
         &copy; Copyright 2014, David Rafferty.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>
 </html>

@@ -8,7 +8,7 @@
     
     <title>LSMTool: the LOFAR Local Sky Model Tool &mdash; LSMTool 1.0.0 documentation</title>
     
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
@@ -23,13 +23,13 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="LSMTool 1.0.0 documentation" href="index.html" />
     <link rel="next" title="LSMTool Module Documentation" href="lsmtool.html" />
     <link rel="prev" title="Welcome to LSMTool’s documentation!" href="index.html" /> 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -44,19 +44,19 @@
         <li class="right" >
           <a href="index.html" title="Welcome to LSMTool’s documentation!"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">LSMTool 1.0.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">LSMTool 1.0.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="lsmtool-the-lofar-local-sky-model-tool">
 <h1>LSMTool: the LOFAR Local Sky Model Tool<a class="headerlink" href="#lsmtool-the-lofar-local-sky-model-tool" title="Permalink to this headline">¶</a></h1>
 <p>LSMTool is a Python package which allows for the manipulation of sky
-models in the <tt class="docutils literal"><span class="pre">makesourcedb</span></tt> format (understood by BBS and NDPPP).
+models in the <code class="docutils literal"><span class="pre">makesourcedb</span></code> format (understood by BBS and NDPPP).
 Note that LSMTool is still in beta. Please report bugs to
 <a class="reference external" href="mailto:drafferty&#37;&#52;&#48;hs&#46;uni-hamburg&#46;de">drafferty<span>&#64;</span>hs<span>&#46;</span>uni-hamburg<span>&#46;</span>de</a>. To initialize your environment for LSMTool,
 users on CEP1 and CEP2 should run the following commands:</p>
@@ -67,10 +67,12 @@ source ~rafferty/init_lsmtool
 <p>Note that the Pythonlibs LOFAR package includes an older version of
 astropy that conflicts with LSMTool and cannot be used in conjunction
 with it.</p>
+<p>To install LSMTool elsewhere (e.g., on your laptop), please see the README at
+<a class="reference external" href="https://github.com/darafferty/LSMTool">https://github.com/darafferty/LSMTool</a> for instructions.</p>
 <div class="section" id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
 <p>The command-line version of LSMTool can be run as follows:</p>
-<div class="highlight-python"><div class="highlight"><pre>Usage: lsmtool.py &lt;skymodel&gt; &lt;parset&gt; [&lt;beam MS&gt;]
+<div class="highlight-python"><div class="highlight"><pre>Usage: lsmtool &lt;skymodel&gt; &lt;parset&gt; [&lt;beam MS&gt;]
 Options:
   --version   show program&#39;s version number and exit
   -h, --help  show this help message and exit
@@ -107,6 +109,8 @@ These are described in the next sections.</p>
 <dd>: Calculate and set patch positions</dd>
 <dt>PLOT</dt>
 <dd>: Plot a simple representation of the sky model</dd>
+<dt>COMPARE</dt>
+<dd>: Compare source fluxes and positions of two sky models</dd>
 </dl>
 </div>
 <div class="section" id="example-parset">
@@ -117,7 +121,7 @@ then groups the sources into patches:</p>
 
 # Select only sources above 1 mJy
 LSMTool.Steps.selectbright.Operation = SELECT
-LSMTool.Steps.selectbright.FilterExpression = I &gt; 1.0 mJy
+LSMTool.Steps.selectbright.FilterExpression = &quot;I &gt; 1.0 mJy&quot;
 
 # Add a source
 LSMTool.Steps.addsrc.Name = new_source
@@ -130,11 +134,14 @@ LSMTool.Steps.addsrc.I = 0.69
 LSMTool.Steps.grp.Operation = GROUP
 LSMTool.Steps.grp.Algorithm = tessellate
 LSMTool.Steps.grp.TargetFlux = 50.0 Jy
-LSMTool.Steps.grp.Method = mid
+
+# Select only sources in &#39;Patch_1&#39;
+LSMTool.Steps.selectbright.Operation = SELECT
+LSMTool.Steps.selectbright.FilterExpression = &quot;Patch = Patch_1&quot;
 
 # Set the patch positions to their midpoint and write final skymodel
 LSMTool.Steps.setpos.Method = mid
-LSMTool.Steps.setpos.Outfile = grouped.sky
+LSMTool.Steps.setpos.OutFile = grouped.sky
 </pre></div>
 </div>
 <p>In the first line of this parset the step names are defined. In the next
@@ -160,7 +167,7 @@ Table&nbsp;[lsmtool:tab:local<sub>v</sub>al].</p>
 <tr class="row-even"><td>Operation</td>
 <td>string</td>
 <td>SELECT</td>
-<td>An operation name (see <a class="reference internal" href="#operations-defined"><em>Operations</em></a>)</td>
+<td>An operation name (see <a class="reference internal" href="#operations-defined"><span>Operations</span></a>)</td>
 </tr>
 <tr class="row-odd"><td>OutFile</td>
 <td>string</td>
@@ -196,7 +203,7 @@ Table&nbsp;[lsmtool:tab:local<sub>v</sub>al].</p>
 <tr class="row-odd"><td>Algorithm</td>
 <td>string</td>
 <td>tessellate</td>
-<td>One of tessellate, cluster, single, every</td>
+<td>One of tessellate, cluster, single, every, or a CASA mask file</td>
 </tr>
 <tr class="row-even"><td>TargetFlux</td>
 <td>string</td>
@@ -273,44 +280,86 @@ Table&nbsp;[lsmtool:tab:local<sub>v</sub>al].</p>
 <td>all</td>
 <td>If two sources match, keep: all, from1, or from2</td>
 </tr>
-<tr class="row-even"><td colspan="4"><strong>ADD</strong></td>
+<tr class="row-even"><td>InheritPatches</td>
+<td>bool</td>
+<td>False</td>
+<td>Matches inherit patches from parent sky model</td>
 </tr>
-<tr class="row-odd"><td>Name</td>
+<tr class="row-odd"><td colspan="4"><strong>ADD</strong></td>
+</tr>
+<tr class="row-even"><td>Name</td>
 <td>string</td>
 <td>src1</td>
 <td>Name of source; required</td>
 </tr>
-<tr class="row-even"><td>Type</td>
+<tr class="row-odd"><td>Type</td>
 <td>string</td>
 <td>POINT</td>
 <td>Type; required</td>
 </tr>
-<tr class="row-odd"><td>Patch</td>
+<tr class="row-even"><td>Patch</td>
 <td>string</td>
 <td>new_patch</td>
 <td>Patch name; required if sky model has patches</td>
 </tr>
-<tr class="row-even"><td>RA</td>
+<tr class="row-odd"><td>RA</td>
 <td>float or string</td>
 <td>12:45:30.4</td>
 <td>RA; required</td>
 </tr>
-<tr class="row-odd"><td>Dec</td>
+<tr class="row-even"><td>Dec</td>
 <td>float or string</td>
 <td>+76.45.02.48</td>
 <td>Dec; required</td>
 </tr>
-<tr class="row-even"><td>I</td>
+<tr class="row-odd"><td>I</td>
 <td>float</td>
 <td>0.69</td>
 <td>Flux in Jy; required</td>
 </tr>
-<tr class="row-odd"><td>AnyValidColumnName</td>
+<tr class="row-even"><td>AnyValidColumnName</td>
 <td>&nbsp;</td>
 <td>value</td>
 <td>Any valid column name can be specified</td>
 </tr>
-<tr class="row-even"><td colspan="4"><strong>PLOT</strong></td>
+<tr class="row-odd"><td colspan="4"><strong>PLOT</strong></td>
+</tr>
+<tr class="row-even"><td>LabelBy</td>
+<td>string</td>
+<td>patch</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td colspan="4"><strong>COMPARE</strong></td>
+</tr>
+<tr class="row-even"><td>OutDir</td>
+<td>string</td>
+<td>comp_plots/</td>
+<td>Output directory for plots</td>
+</tr>
+<tr class="row-odd"><td>SkyModel2</td>
+<td>string</td>
+<td>in2.sky</td>
+<td>Name of second sky model</td>
+</tr>
+<tr class="row-even"><td>Radius</td>
+<td>string</td>
+<td>10 arcsec</td>
+<td>Radius within which matches are identified</td>
+</tr>
+<tr class="row-odd"><td>LabelBy</td>
+<td>patch</td>
+<td>string</td>
+<td>Label plot points by source or patch</td>
+</tr>
+<tr class="row-even"><td>ExcludeMultiple</td>
+<td>bool</td>
+<td>True</td>
+<td>Exclude sources with multiple matches</td>
+</tr>
+<tr class="row-odd"><td>IgnoreSpec</td>
+<td>float</td>
+<td>-0.7</td>
+<td>Ignore any source in SkyModel2 with this spectral index</td>
 </tr>
 </tbody>
 </table>
@@ -335,6 +384,7 @@ Section&nbsp;[lsmtool:parset]:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s">&#39;I &gt; 1.0 mJy&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">add</span><span class="p">({</span><span class="s">&#39;Name&#39;</span><span class="p">:</span><span class="s">&#39;new_source&#39;</span><span class="p">,</span> <span class="s">&#39;Type&#39;</span><span class="p">:</span><span class="s">&#39;POINT&#39;</span><span class="p">,</span> <span class="s">&#39;Ra&#39;</span><span class="p">:</span><span class="mf">277.4232</span><span class="p">,</span> <span class="s">&#39;Dec&#39;</span><span class="p">:</span><span class="mf">48.3689</span><span class="p">,</span> <span class="s">&#39;I&#39;</span><span class="p">:</span><span class="mf">0.69</span><span class="p">})</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">algorithm</span><span class="o">=</span><span class="s">&#39;tesselate&#39;</span><span class="p">,</span> <span class="n">targetFlux</span><span class="o">=</span><span class="s">&#39;10.0 Jy&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s">&quot;Patch = &#39;Patch_1&#39;&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">LSM</span><span class="o">.</span><span class="n">setPatchPositions</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s">&#39;mid&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -363,6 +413,8 @@ are available:</p>
 <dd>: Print information about the sky model</dd>
 <dt>LSM.more()</dt>
 <dd>: Print the sky model to the screen, using more-like controls</dd>
+<dt>LSM.broadcast()</dt>
+<dd>: Send the sky model to other applications using SAMP</dd>
 <dt>LSM.getColNames()</dt>
 <dd>: Returns a list of the column names in the sky model</dd>
 <dt>LSM.getColValues()</dt>
@@ -392,7 +444,7 @@ are available:</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
@@ -411,12 +463,14 @@ are available:</p>
   <h4>Next topic</h4>
   <p class="topless"><a href="lsmtool.html"
                         title="next chapter">LSMTool Module Documentation</a></p>
-  <h3>This Page</h3>
-  <ul class="this-page-menu">
-    <li><a href="_sources/overview.txt"
-           rel="nofollow">Show Source</a></li>
-  </ul>
-<div id="searchbox" style="display: none">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/overview.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
       <input type="text" name="q" />
@@ -433,7 +487,7 @@ are available:</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -448,12 +502,12 @@ are available:</p>
         <li class="right" >
           <a href="index.html" title="Welcome to LSMTool’s documentation!"
              >previous</a> |</li>
-        <li><a href="index.html">LSMTool 1.0.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">LSMTool 1.0.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer">
+    <div class="footer" role="contentinfo">
         &copy; Copyright 2014, David Rafferty.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>
 </html>

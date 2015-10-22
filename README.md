@@ -97,4 +97,4 @@ LSMTool can also be used in Python scripts by importing the lsmtool module. E.g.
     >>> skymod.select('I > 1.0 Jy')
     >>> skymod.write('out_model.sky')
 
-For further details, please see the [full documentation](docs/build/html/index.html).
+For further details, please see the [full documentation](http://www.astron.nl/citt/lsmtool/).
