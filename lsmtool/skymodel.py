@@ -118,6 +118,8 @@ class SkyModel(object):
             self.log.debug("Successfully created model from input dict")
             self._fileName = None
             self._addHistory("LOAD (from input dict)")
+        else:
+            raise ValueError("Filename not understood. Exiting...")
 
         if beamMS is not None:
             self.beamMS = beamMS
