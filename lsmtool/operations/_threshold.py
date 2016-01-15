@@ -2,9 +2,7 @@
 #
 # Defines threshold functions used by the group operation
 #
-# Copyright (C) 2013 - Reinout van Weeren
-# Copyright (C) 2013 - Francesco de Gasperin
-# Modified by David Rafferty as required for integration into LSMTool
+# Copyright (C) 2013 -  David Rafferty
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +26,9 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold'):
     import numpy as np
 
     LSM.ungroup()
-    x, y, midRA, midDec  = LSM._getXY(crdelt=fwhmArcsec/2.0/3600.0)
+
+    # Generate image grid with 1 pix = FWHM / 4
+    x, y, midRA, midDec  = LSM._getXY(crdelt=fwhmArcsec/4.0/3600.0)
     sizeX = int(1.2 * (max(x) - min(x)))
     sizeY = int(1.2 * (max(y) - min(y)))
     image = np.zeros((sizeX, sizeY))
@@ -36,8 +36,12 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold'):
     xint += -1 * min(xint) + 1
     yint = np.array(y, dtype=int)
     yint += -1 * min(yint) + 1
+
+    # Set pixels with sources to one
     image[xint, yint] = 1.0
-    image = blur_image(image, fwhmArcsec/240.0)
+
+    # Convolve with Gaussian of FWHM = 4 pixels
+    image = blur_image(image, 4.0/2.35482)
 
     mask = image / threshold >= 1.0
     patchCol = getPatchNamesFromMask(mask, xint, yint, root=root)
@@ -46,9 +50,10 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold'):
 
 
 def blur_image(im, n, ny=None) :
-    """ blurs the image by convolving with a gaussian kernel of typical
-        size n. The optional keyword argument ny allows for a different
-        size in the y direction.
+    """
+    Blurs the image by convolving with a gaussian kernel of typical
+    size n. The optional keyword argument ny allows for a different
+    size in the y direction.
     """
     from scipy.ndimage import gaussian_filter
 
