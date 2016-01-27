@@ -849,8 +849,8 @@ def factorDirectionsWriter(table, fileName):
         outLines.append('{0} {1},{2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} '
             '{13} {14} {15}\n'.format(patchName,
             gRA.to_string(unit='hourangle', sep='hms'), gDec.to_string(sep='dms'),
-            False, False, max(512, int(size*1.5*3600.0)), 1, 60, 2048, 'LD',
-            'empty', 'empty', 'empty', False, size, flux))
+            False, False, 0, 0, 0, 0, 'LD', 'empty', 'empty', 'empty', False,
+            size, flux))
 
     regionFile.writelines(outLines)
     regionFile.close()
