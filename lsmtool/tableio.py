@@ -812,7 +812,7 @@ def factorDirectionsWriter(table, fileName):
 
     outLines = []
     outLines.append('# name position atrous_do mscale_field_do cal_imsize '
-        'solint_ph solint_amp field_imsize dynamic_range region_selfcal '
+        'solint_ph solint_amp dynamic_range region_selfcal '
         'region_field peel_skymodel outlier_source cal_radius_deg cal_flux\n')
     if 'History' in table.meta:
         outLines.append('\n# LSMTool history:\n# ')
@@ -847,9 +847,9 @@ def factorDirectionsWriter(table, fileName):
             gRA = Angle(0.0)
             gDec = Angle(0.0)
         outLines.append('{0} {1},{2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} '
-            '{13} {14} {15}\n'.format(patchName,
+            '{13} {14}\n'.format(patchName,
             gRA.to_string(unit='hourangle', sep='hms'), gDec.to_string(sep='dms'),
-            False, False, 0, 0, 0, 0, 'LD', 'empty', 'empty', 'empty', False,
+            'empty', 'empty', 0, 0, 0, 'LD', 'empty', 'empty', 'empty', False,
             size, flux))
 
     regionFile.writelines(outLines)
