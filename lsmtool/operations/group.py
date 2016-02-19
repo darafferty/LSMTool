@@ -101,8 +101,9 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         - 'mean' => the positions is set to the mean RA and Dec of the patch
         - 'wmean' => the position is set to the flux-weighted mean RA and
         Dec of the patch
+        - 'zero' => set all positions to [0.0, 0.0]
     facet : str, optional
-        Facet fits file used with the algorithm 'facet'    - 'zero' => set all positions to [0.0, 0.0]
+        Facet fits file used with the algorithm 'facet'
 
     Examples
     --------
