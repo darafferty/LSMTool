@@ -1954,7 +1954,7 @@ class SkyModel(object):
 
 
     def group(self, algorithm, targetFlux=None, numClusters=100, FWHM=None,
-        threshold=0.1, applyBeam=False, root='Patch', method='mid'):
+        threshold=0.1, applyBeam=False, root='Patch', method='mid', facet=""):
         """
         Groups sources into patches.
 
@@ -1973,6 +1973,9 @@ class SkyModel(object):
             - 'threshold' => group by convolving the sky model with a Gaussian beam
                 and then thresholding to find islands of emission (NOTE: all sources
                 are currently considered to be point sources of flux unity)
+            - 'facet' => group by facets using as an input a fits file. It requires
+                the use of the additional parameter 'facet' to enter the name of the 
+                fits file (NOTE: This method is experimental).
             - the filename of a mask image => group by masked regions (where mask =
                 True). Source outside of masked regions are given patches of their
                 own.
@@ -2003,6 +2006,8 @@ class SkyModel(object):
             - 'wmean' => the position is set to the flux-weighted mean RA and
             Dec of the patch
             - 'zero' => set all positions to [0.0, 0.0]
+        facet : str, optional
+            Facet fits file used with the algorithm 'facet'
 
         Examples
         --------
@@ -2014,7 +2019,7 @@ class SkyModel(object):
         """
         operations.group.group(self, algorithm, targetFlux=targetFlux,
             numClusters=numClusters, FWHM=FWHM, threshold=threshold,
-            applyBeam=applyBeam, root=root, method=method)
+            applyBeam=applyBeam, root=root, method=method, facet=facet)
 
 
     def transfer(self, patchSkyModel, matchBy='name', radius=0.1):
