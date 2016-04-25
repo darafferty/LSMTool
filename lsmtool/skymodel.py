@@ -1140,7 +1140,7 @@ class SkyModel(object):
             for n in name:
                 badNames = []
                 nindx = [i for i, item in enumerate(names) if fnmatch.fnmatch(item, n)]
-                if len(indx) == 0:
+                if len(nindx) == 0:
                     badNames.append(n)
                 else:
                     indx += nindx
@@ -1974,7 +1974,7 @@ class SkyModel(object):
                 and then thresholding to find islands of emission (NOTE: all sources
                 are currently considered to be point sources of flux unity)
             - 'facet' => group by facets using as an input a fits file. It requires
-                the use of the additional parameter 'facet' to enter the name of the 
+                the use of the additional parameter 'facet' to enter the name of the
                 fits file (NOTE: This method is experimental).
             - the filename of a mask image => group by masked regions (where mask =
                 True). Source outside of masked regions are given patches of their
