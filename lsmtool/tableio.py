@@ -794,8 +794,7 @@ def factorDirectionsWriter(table, fileName):
     Writes patches to a Factor directions file.
 
     Note that Factor respects the order of patches and they are sorted here by
-    apparent flux from brightest to faintest. Default phase and amplitude
-    solution intervals are scaled by the sqrt(flux).
+    apparent flux from brightest to faintest.
 
     Parameters
     ----------
