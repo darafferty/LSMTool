@@ -19,7 +19,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from astropy.table import Table, Column
+from astropy.table import Table, Column, MaskedColumn
 from astropy.coordinates import Angle
 from astropy.io import registry
 import astropy.io.ascii as ascii
@@ -195,7 +195,7 @@ def createTable(outlines, metaDict, colNames, colDefaults):
             except:
                 specVec.append([0.0]*maxLen)
                 maskVec.append([True]*maxLen)
-        specCol = Column(name='SpectralIndex', data=np.array(specVec, dtype=np.float))
+        specCol = MaskedColumn(name='SpectralIndex', data=np.array(specVec, dtype=np.float))
         specCol.mask = maskVec
         specIndx = table.keys().index('SpectralIndex')
         table.remove_column('SpectralIndex')
