@@ -209,12 +209,16 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
                 LSM1.table.remove_rows(toRemove)
 
     # Rename any duplicates
-    names = LSM1.getColValues('Name')
-    for name in set(names):
-        indx = np.where(names == name)[0]
-        if len(indx) > 1:
-            LSM1.table['Name'][indx[0]] = name + '_1'
-            LSM1.table['Name'][indx[1]] = name + '_2'
+    check_duplicates = True
+    while check_duplicates:
+        names = LSM1.getColValues('Name')
+        check_duplicates = False
+        for name in set(names):
+            indx = np.where(names == name)[0]
+            if len(indx) > 1:
+                check_duplicates = True
+                LSM1.table['Name'][indx[0]] = name + '_1'
+                LSM1.table['Name'][indx[1]] = name + '_2'
 
     if matchBy.lower() == 'position':
         LSM1.table.remove_column('match')
