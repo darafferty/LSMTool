@@ -39,8 +39,8 @@ For details, please see the [full documentation](http://www.astron.nl/citt/lsmto
 Installation
 ------------
 
-LSMTool is already installed on the LOFAR CEP2 and CEP3 clusters. Users on CEP2
-and CEP3 should run the following commands before using LSMTool:
+LSMTool is already installed on the LOFAR CEP3 cluster. Users on CEP3
+should run the following commands before using LSMTool:
 
     use LofIm
     source ~rafferty/init_lsmtool
