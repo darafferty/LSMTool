@@ -70,8 +70,10 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
             and then thresholding to find islands of emission (NOTE: all sources
             are currently considered to be point sources of flux unity)
         - 'facet' => group by facets using as an input a fits file. It requires
-            the use of the additional parameter 'facet' to enter the name of the 
+            the use of the additional parameter 'facet' to enter the name of the
             fits file (NOTE: This method is experimental).
+        - 'voronoi' => given a previously grouped sky model, voronoi tesselate
+            using the patch positions
         - the filename of a mask image => group by masked regions (where mask =
             True). Source outside of masked regions are given patches of their
             own
@@ -190,11 +192,26 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
             root=root)
         LSM.setColValues('Patch', patchCol, index=2)
 
+    elif algorithm.lower() == 'voronoi':
+        from astropy.coordinates import SkyCoord
+
+        dirs = LSM.getPatchPositions()
+        dirs_ras = [d[0] for name, d in dirs.iteritems()]
+        dirs_decs = [d[1] for name, d in dirs.iteritems()]
+        dirs_names = [name for name, d in dirs.iteritems()]
+        RADeg = LSM.getColValues('Ra', units='degree')
+        DecDeg = LSM.getColValues('Dec', units='degree')
+        patchNames = []
+        for r, d in zip(RADeg, DecDeg):
+            dists = SkyCoord(r, d).separation(SkyCoord(dirs_ras*u.degree,dirs_decs*u.degree))
+            patchNames.append(dirs_names[np.argmin(dists)])
+        LSM.setColValues('Patch', patchNames, index=2)
+
     elif algorithm.lower() == 'facet':
         if os.path.exists(facet):
-            RARad = LSM.getColValues('Ra', units='degree')
-            DecRad = LSM.getColValues('Dec', units='degree')
-            facet_col = get_facet_values(facet, RARad, DecRad, root=root)
+            RADeg = LSM.getColValues('Ra', units='degree')
+            DecDeg = LSM.getColValues('Dec', units='degree')
+            facet_col = get_facet_values(facet, RADeg, DecDeg, root=root)
             LSM.setColValues('Patch', facet_col, index=2)
         else:
             raise ValueError('Please enter the facet filename in the facet parameter.')
@@ -285,39 +302,38 @@ def getPatchNamesFromMask(mask, RARad, DecRad, root='mask'):
 
 def get_facet_values(facet, ra, dec, root="facet", default=0):
     """
-    Extract the value from a fits facet file 
+    Extract the value from a fits facet file
     """
     import numpy as np
     from astropy.io import fits
     from astropy.wcs import WCS
-    
+
     # TODO: Check astropy version
     # TODO: Check facet is a fits file
 
     with fits.open(facet) as f:
         shape = f[0].data.shape
-        
+
         w = WCS(f[0].header)
         freq = w.wcs.crval[2]
         stokes = w.wcs.crval[3]
-        
+
         xe, ye, _1, _2 = w.all_world2pix(ra, dec, freq, stokes, 1)
         x, y = np.round(xe).astype(int), np.round(ye).astype(int)
-        
+
         # Dummy value for points out of the fits area
         x[(x < 0) | (x >= shape[-1])] = -1
         y[(y < 0) | (y >= shape[-2])] = -1
 
         data = f[0].data[0,0,:,:]
-        
+
         values = data[y, x]
-        
+
         # Assign the default value to NaNs and points out of the fits area
         values[(x == -1) | (y == -1)] = default
         values[np.isnan(values)] = default
-        
+
         #TODO: Flexible format for other data types ?
         return np.array(["{}_{:.0f}".format(root, val) for val in values])
-        
-                
-    
+
+

@@ -1976,6 +1976,8 @@ class SkyModel(object):
             - 'facet' => group by facets using as an input a fits file. It requires
                 the use of the additional parameter 'facet' to enter the name of the
                 fits file (NOTE: This method is experimental).
+            - 'voronoi' => given a previously grouped sky model, voronoi tesselate
+                using the patch positions
             - the filename of a mask image => group by masked regions (where mask =
                 True). Source outside of masked regions are given patches of their
                 own.
