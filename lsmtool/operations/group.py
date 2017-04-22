@@ -194,8 +194,9 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
 
     elif algorithm.lower() == 'voronoi':
         from astropy.coordinates import SkyCoord
+        import astropy.units as u
 
-        if not 'Patch' in self.table.keys():
+        if not 'Patch' in LSM.table.keys():
             raise ValueError('Sky model must be grouped before "voronoi" can be used.')
         else:
             dirs = LSM.getPatchPositions()
@@ -206,7 +207,8 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         DecDeg = LSM.getColValues('Dec', units='degree')
         patchNames = []
         for r, d in zip(RADeg, DecDeg):
-            dists = SkyCoord(r, d).separation(SkyCoord(dirs_ras*u.degree,dirs_decs*u.degree))
+            dists = SkyCoord(r*u.degree, d*u.degree).separation(
+                SkyCoord(dirs_ras*u.degree,dirs_decs*u.degree))
             patchNames.append(dirs_names[np.argmin(dists)])
         LSM.setColValues('Patch', patchNames, index=2)
 
