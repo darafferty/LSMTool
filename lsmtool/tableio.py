@@ -37,7 +37,7 @@ allowedColumnNames = {'name':'Name', 'type':'Type', 'patch':'Patch',
     'ra':'Ra', 'dec':'Dec', 'i':'I', 'q':'Q', 'u':'U', 'v':'V',
     'majoraxis':'MajorAxis', 'minoraxis':'MinorAxis', 'orientation':'Orientation',
     'ishapelet':'IShapelet', 'qshapelet':'QShapelet', 'ushapelet':'UShapelet',
-    'vshapelet':'VShapelet', 'category':'Category',
+    'vshapelet':'VShapelet', 'category':'Category', 'logarithmicsi':'LogarithmicSI',
     'rotationmeasure':'RotationMeasure', 'polarizationangle':'PolarizationAngle',
     'polarizedfraction':'PolarizedFraction', 'referencewavelength':'ReferenceWavelength',
     'referencefrequency':'ReferenceFrequency', 'spectralindex':'SpectralIndex'}
@@ -46,7 +46,7 @@ allowedColumnUnits = {'name':None, 'type':None, 'patch':None, 'ra':'degree',
     'dec':'degree', 'i':'Jy', 'i-apparent':'Jy', 'q':'Jy', 'u':'Jy', 'v':'Jy',
     'majoraxis':'arcsec', 'minoraxis':'arcsec', 'orientation':'degree',
     'ishapelet':None, 'qshapelet':None, 'ushapelet':None,
-    'vshapelet':None, 'category':None,
+    'vshapelet':None, 'category':None, 'logarithmicsi':None,
     'rotationmeasure':'rad/m^2', 'polarizationangle':'rad',
     'polarizedfraction':'PolarizedFraction', 'referencewavelength':'ReferenceWavelength',
     'referencefrequency':'Hz', 'spectralindex':None}
@@ -55,7 +55,7 @@ allowedColumnDefaults = {'name':'N/A', 'type':'N/A', 'patch':'N/A', 'ra':0.0,
     'dec':0.0, 'i':0.0, 'q':0.0, 'u':0.0, 'v':0.0, 'majoraxis':0.0,
     'minoraxis':0.0, 'orientation':0.0,
     'ishapelet':'N/A', 'qshapelet':'N/A', 'ushapelet':'N/A',
-    'vshapelet':'N/A', 'category':2,
+    'vshapelet':'N/A', 'category':2, 'logarithmicsi': True,
     'rotationmeasure':0.0, 'polarizationangle':0.0,
     'polarizedfraction':0.0, 'referencewavelength':'N/A',
     'referencefrequency':0.0, 'spectralindex':[0.0]}
@@ -333,6 +333,10 @@ def processFormatString(formatString):
                     defaultVal = []
                     for p in defParts:
                         defaultVal.append(float(p.strip()))
+                elif 'true' in parts[1].lower():
+                    defaultVal = True
+                elif 'false' in parts[1].lower():
+                    defaultVal = False
                 else:
                     defaultVal = float(parts[1].strip("'"))
             except ValueError:

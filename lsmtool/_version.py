@@ -10,6 +10,13 @@ def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+    2017/04/21
+
+        Add support for LogarithmicSI column
+
+        Add a "voronoi" option to lsm.group() to allow a previously grouped sky
+        model to be regrouped using Voronoi tessellation
+
     2016/01/28 - Version 1.1.0
 
         Add support for FACTOR-formatted output

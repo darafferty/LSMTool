@@ -29,7 +29,7 @@
 \section[LSMTool: the LOFAR Local Sky Model Tool]{LSMTool: the LOFAR Local Sky Model Tool\footnote{This section is maintained by David Rafferty ({\tt drafferty@hs.uni-hamburg.de}).}}
 \label{lsmtool}
 
-LSMTool is a Python package which allows for the manipulation of sky models in the \texttt{makesourcedb} format (understood by BBS and NDPPP). Note that LSMTool is still in beta. Please report bugs to drafferty@hs.uni-hamburg.de. To initialize your environment for LSMTool, users on CEP1 and CEP2 should run the following commands:
+LSMTool is a Python package which allows for the manipulation of sky models in the \texttt{makesourcedb} format (understood by BBS and NDPPP). Please report bugs to drafferty@hs.uni-hamburg.de. To initialize your environment for LSMTool, users on CEP3 should run the following commands:
 \begin{verbatim}
 use LofIm
 source ~rafferty/init_lsmtool
@@ -122,7 +122,7 @@ ApplyBeam & bool & True & If true, apparent fluxes will be used \\
 PatchFile & string & sky\_model\_with\_patches.sky & File with patches that will be transferred\\
 \hline
 \multicolumn{4}{l}{\textbf{GROUP}}\\
-Algorithm & string & tessellate & One of tessellate, cluster, single, every, or a CASA mask filename\\
+Algorithm & string & tessellate & One of tessellate, cluster, single, every, voronoi, or a CASA mask filename\\
 TargetFlux & string & 10.0 Jy & Target total flux of patches (tessellate only)\\
 NumClusters & int & 100 & Number of clusters (cluster only)\\
 Threshold & float & 0.1 & Island threshold from 0 to 1 (threshold only)\\
