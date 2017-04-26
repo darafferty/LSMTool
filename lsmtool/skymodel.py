@@ -17,9 +17,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
-import _logging
-import tableio
-import operations
+from . import _logging
+from . import tableio
+from . import operations
 
 
 class SkyModel(object):
@@ -72,7 +72,7 @@ class SkyModel(object):
 
         """
         from astropy.table import Table, Column
-        from tableio import requiredColumnNames, processFormatString, processLine, createTable
+        from .tableio import requiredColumnNames, processFormatString, processLine, createTable
 
         self.log = logging.getLogger('LSMTool')
         self.history = []
@@ -436,9 +436,9 @@ class SkyModel(object):
 
         """
         import numpy as np
-        from operations_lib import radec2xy, xy2radec
+        from .operations_lib import radec2xy, xy2radec
         from astropy.table import Column
-        from tableio import RA2Angle, Dec2Angle
+        from .tableio import RA2Angle, Dec2Angle
 
         if self.hasPatches:
             if patchName is None:
@@ -571,7 +571,7 @@ class SkyModel(object):
             >>> s.setPatchPositions({'bin0': [123.231, 23.4321]})
 
         """
-        from tableio import RA2Angle, Dec2Angle
+        from .tableio import RA2Angle, Dec2Angle
 
         if self.hasPatches:
             if method not in ['mid', 'mean', 'wmean', 'zero']:
@@ -620,7 +620,7 @@ class SkyModel(object):
             Dec values
 
         """
-        from operations_lib import radec2xy, xy2radec
+        from .operations_lib import radec2xy, xy2radec
         import numpy as np
 
         if len(self.table) == 0:
@@ -861,7 +861,7 @@ class SkyModel(object):
 
         """
         from astropy.table import Column
-        from tableio import RA2Angle, Dec2Angle
+        from .tableio import RA2Angle, Dec2Angle
         import numpy as np
 
         colName = self._verifyColName(colName, onlyExisting=False)
@@ -1251,7 +1251,7 @@ class SkyModel(object):
             Column object with flux values attenuated by the beam
 
         """
-        from operations_lib import attenuate
+        from .operations_lib import attenuate
 
         if not self._hasBeam:
             self.log.warn('No beam MS has been specified. No beam attenuation applied.')
@@ -1539,7 +1539,7 @@ class SkyModel(object):
             Angular separation in degrees
 
         """
-        from operations_lib import calculateSeparation
+        from .operations_lib import calculateSeparation
 
         return calculateSeparation(ra1, dec1, ra2, dec2)
 
@@ -1582,7 +1582,7 @@ class SkyModel(object):
             >>> s.getDistance(94.0, 42.0, byPatch=True)
 
         """
-        from tableio import RA2Angle, Dec2Angle
+        from .tableio import RA2Angle, Dec2Angle
 
         if byPatch and self.hasPatches:
             # Get patch positions
