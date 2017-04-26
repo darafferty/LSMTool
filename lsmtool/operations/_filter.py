@@ -18,6 +18,20 @@
 
 import logging
 log = logging.getLogger('LSMTool.Filter')
+try:
+    dict.iteritems
+except AttributeError:
+    # Python 3
+    def itervalues(d):
+        return iter(d.values())
+    def iteritems(d):
+        return iter(d.items())
+else:
+    # Python 2
+    def itervalues(d):
+        return d.itervalues()
+    def iteritems(d):
+        return d.iteritems()
 
 
 def filter(LSM, filterExpression, exclusive=False, aggregate=None,
@@ -391,7 +405,7 @@ def convertOperStr(operStr):
                     # Pick longer match
                     filterOperStr = op
     else:
-        for k, v in ops.iteritems():
+        for k, v in iteritems(ops):
             if v == operStr:
                 filterOperStr = k
     if filterOperStr is None:

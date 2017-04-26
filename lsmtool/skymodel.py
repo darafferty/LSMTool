@@ -21,6 +21,21 @@ from . import _logging
 from . import tableio
 from . import operations
 
+try:
+    dict.iteritems
+except AttributeError:
+    # Python 3
+    def itervalues(d):
+        return iter(d.values())
+    def iteritems(d):
+        return iter(d.items())
+else:
+    # Python 2
+    def itervalues(d):
+        return d.itervalues()
+    def iteritems(d):
+        return d.iteritems()
+
 
 class SkyModel(object):
     """
@@ -591,7 +606,7 @@ class SkyModel(object):
                     patchDict = self.getPatchPositions(method=method, applyBeam=
                         applyBeam, perPatchProjection=perPatchProjection)
 
-            for patch, pos in patchDict.iteritems():
+            for patch, pos in iteritems(patchDict):
                 if type(pos[0]) is str or type(pos[0]) is float:
                     pos[0] = RA2Angle(pos[0])
                 if type(pos[1]) is str or type(pos[1]) is float:
@@ -692,7 +707,7 @@ class SkyModel(object):
             >>> s.setDefaultValues({'ReferenceFrequency': 140e6})
 
         """
-        for colName, default in colDict.iteritems():
+        for colName, default in iteritems(colDict):
             self.table.meta[colName] = default
 
 
@@ -880,7 +895,7 @@ class SkyModel(object):
             else:
                 data = [0] * len(self.table)
                 mask = [True] * len(self.table)
-            for sourceName, value in values.iteritems():
+            for sourceName, value in iteritems(values):
                 indx = self._getNameIndx(sourceName)
                 if colName == 'Ra':
                     val = RA2Angle(value)[0]
