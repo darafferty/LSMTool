@@ -21,6 +21,7 @@ from . import _logging
 from . import tableio
 from . import operations
 
+# Python 3 compatibility
 try:
     dict.iteritems
 except AttributeError:
@@ -29,13 +30,14 @@ except AttributeError:
         return iter(d.values())
     def iteritems(d):
         return iter(d.items())
+    numpy_type = "U"
 else:
     # Python 2
     def itervalues(d):
         return d.itervalues()
     def iteritems(d):
         return d.iteritems()
-
+    numpy_type = "S"
 
 class SkyModel(object):
     """
@@ -926,7 +928,7 @@ class SkyModel(object):
         else:
             if colName == 'Patch':
                 # Specify length of 50 characters
-                newCol = Column(name=colName, data=data, dtype='S50')
+                newCol = Column(name=colName, data=data, dtype='{}50'.format(numpy_type))
             else:
                 newCol = Column(name=colName, data=data)
             self.table.add_column(newCol, index=index)

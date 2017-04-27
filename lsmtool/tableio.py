@@ -28,6 +28,24 @@ import re
 import logging
 import os
 
+# Python 3 compatibility
+try:
+    dict.iteritems
+except AttributeError:
+    # Python 3
+    def itervalues(d):
+        return iter(d.values())
+    def iteritems(d):
+        return iter(d.items())
+    numpy_type = "U"
+else:
+    # Python 2
+    def itervalues(d):
+        return d.itervalues()
+    def iteritems(d):
+        return d.iteritems()
+    numpy_type = "S"
+    
 
 # Define the valid columns here as dictionaries. The entry key is the lower-case
 # name of the column, the entry value is the key used in the astropy table of the
@@ -150,12 +168,12 @@ def createTable(outlines, metaDict, colNames, colDefaults):
 
     converters = {}
     nameCol = 'col{0}'.format(colNames.index('Name')+1)
-    converters[nameCol] = [ascii.convert_numpy('S100')]
+    converters[nameCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
     typeCol = 'col{0}'.format(colNames.index('Type')+1)
-    converters[typeCol] = [ascii.convert_numpy('S100')]
+    converters[typeCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
     if 'Patch' in colNames:
         patchCol = 'col{0}'.format(colNames.index('Patch')+1)
-        converters[patchCol] = [ascii.convert_numpy('S100')]
+        converters[patchCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
 
     log.debug('Creating table...')
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
@@ -985,7 +1003,7 @@ def coneSearch(VOService, position, radius):
 
     # Make sure Name is a str column
     NameRaw = table['Name'].data.tolist()
-    NameCol = Column(name='Name', data=NameRaw, dtype='S100')
+    NameCol = Column(name='Name', data=NameRaw, dtype='{}100'.format(numpy_type))
     table.remove_column('Name')
     table.add_column(NameCol, index=0)
 
@@ -1005,7 +1023,7 @@ def coneSearch(VOService, position, radius):
         for i, maj in enumerate(table[allowedColumnNames['majoraxis']]):
             if maj > 0.0:
                 types[i] = 'GAUSSIAN'
-    col = Column(name='Type', data=types, dtype='S100')
+    col = Column(name='Type', data=types, dtype='{}100'.format(numpy_type))
     table.add_column(col, index=1)
 
     # Add reference-frequency column
@@ -1089,9 +1107,9 @@ def makeEmptyTable():
     colNames = ['Name', 'Type', 'Ra', 'Dec', 'I']
     converters = {}
     nameCol = 'col{0}'.format(colNames.index('Name')+1)
-    converters[nameCol] = [ascii.convert_numpy('S100')]
+    converters[nameCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
     typeCol = 'col{0}'.format(colNames.index('Type')+1)
-    converters[typeCol] = [ascii.convert_numpy('S100')]
+    converters[typeCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
     table = Table.read(outlines, guess=False, format='ascii.no_header', delimiter=',',
         names=colNames, comment='#', data_start=0, converters=converters)
     table.remove_rows(0)
