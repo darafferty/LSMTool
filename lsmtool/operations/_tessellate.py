@@ -14,6 +14,7 @@
 # the file. All other rights are reserved.
 
 
+from __future__ import print_function
 import numpy as np
 from numpy import sum, sqrt, min, max, any
 from numpy import argmax, argmin, mean, abs
@@ -173,7 +174,8 @@ class bin2D:
         for ind in range(1,self.npix+1):  ## Running over the index of the Voronoi BIN
             ## Only one pixel at this stage
             current_flux = sum(self.data[currentBin])
-            if verbose : print "Bin %d"%(ind)
+            if verbose : 
+                print("Bin %d"%(ind)) # TODO: Change to logging
 
             self.status[currentBin] = ind   # only one pixel at this stage
             ## Barycentric centroid for 1 pixel...
@@ -309,7 +311,7 @@ class bin2D:
             minind = argmin(dist2(self.xin[i], self.yin[i], self.xnode, self.ynode, scale=self.scale))
             self.status[i] = self.statusnode[minind]
             if verbose :
-                print "Pixel ",  self.status[i], self.xin[i], self.yin[i], self.xnode[minind], self.ynode[minind]
+                print("Pixel ",  self.status[i], self.xin[i], self.yin[i], self.xnode[minind], self.ynode[minind]) # TODO: Change to logging
 
         ## reDerive the centroid
         self.bin2d_centroid()

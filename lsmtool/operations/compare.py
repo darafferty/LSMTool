@@ -403,6 +403,7 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
         if matplotlib.get_backend() is not 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
+        import matplotlib.colors as colors
         from matplotlib.ticker import FuncFormatter
     except Exception as e:
         raise ImportError('PyPlot could not be imported. Plotting is not '
@@ -428,7 +429,7 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
     vmin = np.min(ratio) - 0.1
     vmax = np.max(ratio) + 0.1
     sm = plt.cm.ScalarMappable(cmap=plt.cm.jet,
-        norm=plt.normalize(vmin=vmin, vmax=vmax))
+        norm=colors.Normalize(vmin=vmin, vmax=vmax))
     sm.set_array(ratio)
     sm._A = []
     c = []
