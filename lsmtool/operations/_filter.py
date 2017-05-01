@@ -323,6 +323,7 @@ def parseFilter(filterExpression):
     if filterProp not in allowedColumnNames:
         log.warn('"{0}" is not a valid column. Trying it as a mask '
             'filename instead...'.format(filterProp))
+        filterProp = filterParts[0].strip() # don't use lower-case version if filename
         filterVal = filterParts[1].strip()
         return (filterProp, filterOper, bool(filterVal), None)
 
