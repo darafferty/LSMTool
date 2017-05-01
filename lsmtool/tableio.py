@@ -403,7 +403,7 @@ def processLine(line, metaDict, colNames):
         Output meta data
 
     """
-    if line.startswith("FORMAT") or line.startswith("format") or line.startswith("#"):
+    if line.lower().startswith("format") or line.startswith("#"):
         return None, metaDict
 
     # Check for SpectralIndex entries, which are unreadable as they use
