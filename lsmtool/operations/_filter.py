@@ -325,7 +325,7 @@ def parseFilter(filterExpression):
             'filename instead...'.format(filterProp))
         filterProp = filterParts[0].strip() # don't use lower-case version if filename
         filterVal = filterParts[1].strip()
-        return (filterProp, filterOper, bool(filterVal), None)
+        return (filterProp, filterOper, input2bool(filterVal), None)
 
     # Get the filter value(s)
     filterValAndUnits = filterParts[1].strip()
@@ -385,6 +385,22 @@ def parseFilter(filterExpression):
             filterUnits = None
 
     return (filterProp, filterOper, filterVal, filterUnits)
+
+
+def input2bool(invar):
+    if isinstance(invar, bool):
+        return invar
+    elif isinstance(invar, str):
+        if invar.upper() == 'TRUE' or invar == '1':
+            return True
+        elif invar.upper() == 'FALSE' or invar == '0':
+            return False
+        else:
+            raise ValueError('Cannot convert string "'+invar+'" to boolean!')
+    elif isinstance(invar, int) or isinstance(invar, float):
+        return bool(invar)
+    else:
+        raise TypeError('Unsupported data type:'+str(type(invar)))
 
 
 def convertOperStr(operStr):
