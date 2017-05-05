@@ -174,7 +174,7 @@ class bin2D:
         for ind in range(1,self.npix+1):  ## Running over the index of the Voronoi BIN
             ## Only one pixel at this stage
             current_flux = sum(self.data[currentBin])
-            if verbose : 
+            if verbose :
                 print("Bin %d"%(ind)) # TODO: Change to logging
 
             self.status[currentBin] = ind   # only one pixel at this stage
@@ -212,10 +212,14 @@ class bin2D:
                 current_flux = sum(self.data[possibleBin])
 
                 ## Test if getting better for flux
-                if (abs(current_flux-self.target_flux) > abs(old_flux - self.target_flux)):
-                    if (old_flux > 0.8 * self.target_flux):
-                        self.good[currentBin] = 1
-                    break
+                if (current_flux > 0.8 * self.target_flux):
+                    if (current_flux < 1.2 * self.target_flux):
+                        self.good[possibleBin] = 1
+                        break
+                    elif (abs(current_flux-self.target_flux) > abs(old_flux-self.target_flux)):
+                        if (old_flux > 0.8 * self.target_flux):
+                            self.good[currentBin] = 1
+                        break
                 ##++++++++++++++++++++++++++++++++++++++++++
 
                 ## If the new Bin is ok we associate the number of the bin to that one
