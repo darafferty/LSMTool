@@ -50,7 +50,8 @@ def run(step, parset, LSM):
 
 
 def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
-    threshold=0.1, applyBeam=False, root='Patch', method='mid', facet=""):
+    threshold=0.1, applyBeam=False, root='Patch', pad_index=False, method='mid',
+    facet=""):
     """
     Groups sources into patches.
 
@@ -96,7 +97,10 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         Root string from which patch names are constructed. For 'single', the
         patch name will be set to root; for the other grouping algorithms, the
         patch names will be 'root_INDX', where INDX is an integer ranging from
-        (0:nPatches).
+        (0:nPatches)
+    pad_index : bool, optional
+        If True, pad the INDX used in the patch names. E.g., facet_patch_001
+        instead of facet_patch_1
     method : None or str, optional
         This parameter specifies the method used to set the patch positions:
         - 'mid' => the position is set to the midpoint of the patch
@@ -139,7 +143,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         LSM.ungroup()
         patches = _cluster.compute_patch_center(LSM, applyBeam=applyBeam)
         patchCol = _cluster.create_clusters(LSM, patches, numClusters,
-            applyBeam=applyBeam, root=root)
+            applyBeam=applyBeam, root=root, pad_index=pad_index)
         LSM.setColValues('Patch', patchCol, index=2)
 
     elif algorithm.lower() == 'tessellate':
@@ -160,7 +164,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
             target_flux=targetFlux)
         try:
             vobin.bin_voronoi()
-            patchCol = _tessellate.bins2Patches(vobin, root=root)
+            patchCol = _tessellate.bins2Patches(vobin, root=root, pad_index=pad_index)
             LSM.setColValues('Patch', patchCol, index=2)
         except ValueError:
             # Catch error in some cases with high target flux relative to
@@ -189,7 +193,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
             fwhmArcsec = Angle(FWHM, unit=units).to('arcsec').value
 
         patchCol = _threshold.getPatchNamesByThreshold(LSM, fwhmArcsec, threshold,
-            root=root)
+            root=root, pad_index=pad_index)
         LSM.setColValues('Patch', patchCol, index=2)
 
     elif algorithm.lower() == 'voronoi':
@@ -298,7 +302,11 @@ def getPatchNamesFromMask(mask, RARad, DecRad, root='mask'):
     for p in patchNums:
         if p != 0:
             in_patch = np.where(patchNums == p)
-            patchNames.append('{0}_patch_'.format(root)+str(p))
+            if pad_index:
+                patchNames.append('{0}_patch_'.format(root)+
+                    str(p).zfill(int(np.ceil(np.log10(len(patchNums))))))
+            else:
+                patchNames.append('{0}_patch_'.format(root)+str(p))
         else:
             patchNames.append('patch_'+str(n))
             n += 1

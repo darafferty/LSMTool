@@ -1,5 +1,5 @@
-LSMTool: the LOFAR Local Sky Model Tool
-=======================================
+LSMTool: the LOFAR Sky Model Tool
+=================================
 
 LSMTool allows the manipulation of LOFAR sky models (in the makesourcedb format).
 
@@ -42,7 +42,6 @@ Installation
 LSMTool is already installed on the LOFAR CEP3 cluster. Users on CEP3
 should run the following commands before using LSMTool:
 
-    use LofIm
     source ~rafferty/init_lsmtool
 
 If you want to install LSMTool yourself, follow the instructions below.

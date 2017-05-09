@@ -1971,7 +1971,8 @@ class SkyModel(object):
 
 
     def group(self, algorithm, targetFlux=None, numClusters=100, FWHM=None,
-        threshold=0.1, applyBeam=False, root='Patch', method='mid', facet=""):
+        threshold=0.1, applyBeam=False, root='Patch', pad_index=False,
+        method='mid', facet=""):
         """
         Groups sources into patches.
 
@@ -2018,6 +2019,9 @@ class SkyModel(object):
             patch name will be set to root; for the other grouping algorithms, the
             patch names will be 'root_INDX', where INDX is an integer ranging from
             (0:nPatches).
+        pad_index : bool, optional
+            If True, pad the INDX used in the patch names. E.g., facet_patch_001
+            instead of facet_patch_1
         method : None or str, optional
             This parameter specifies the method used to set the patch positions:
             - 'mid' => the position is set to the midpoint of the patch
@@ -2038,7 +2042,8 @@ class SkyModel(object):
         """
         operations.group.group(self, algorithm, targetFlux=targetFlux,
             numClusters=numClusters, FWHM=FWHM, threshold=threshold,
-            applyBeam=applyBeam, root=root, method=method, facet=facet)
+            applyBeam=applyBeam, root=root, pad_index=pad_index, method=method,
+            facet=facet)
 
 
     def transfer(self, patchSkyModel, matchBy='name', radius=0.1):

@@ -1,5 +1,5 @@
-Welcome to LSMTool's documentation!
-===================================
+LSMTool: the LOFAR Sky Model Tool
+=================================
 
 LSMTool is a Python package which allows for the manipulation of LOFAR sky models in the ``makesourcedb`` format.
 

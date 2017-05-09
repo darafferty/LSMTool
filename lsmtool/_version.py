@@ -10,6 +10,17 @@ def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2017/05/09
+
+        Add a "pad_index" option to lsm.group() to allow the patch index to be
+        padded with leading zeros
+
+    2017/05/05
+
+        Improve the "tessellate" grouping algorithm when negative fluxes are
+        present
+
     2017/04/21
 
         Add support for LogarithmicSI column

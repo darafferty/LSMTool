@@ -137,7 +137,7 @@ def angsep2(ra1, dec1, ra2, dec2):
     return coord1.separation(coord2)
 
 
-def create_clusters(LSM, patches_orig, Q, applyBeam=False, root='Patch'):
+def create_clusters(LSM, patches_orig, Q, applyBeam=False, root='Patch', pad_index=False):
     """
     Clusterize all the patches of the skymodel iteratively around the brightest patches
     """
@@ -160,7 +160,10 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False, root='Patch'):
     # initialize clusters with the brightest patches
     clusters = []
     for i, patch in enumerate(patches[0:Q]):
-        clusters.append(Cluster(root+'_'+str(i), patch))
+        if pad_index:
+            clusters.append(Cluster(root+'_'+str(i).zfill(int(np.ceil(np.log10(Q)))), patch))
+        else:
+            clusters.append(Cluster(root+'_'+str(i), patch))
 
     # Iterate until no changes in which patch belongs to which cluster
     count = 1

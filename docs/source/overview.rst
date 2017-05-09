@@ -5,18 +5,11 @@ LSMTool is a Python package which allows for the manipulation of sky
 models in the ``makesourcedb`` format (understood by BBS and NDPPP).
 Note that LSMTool is still in beta. Please report bugs to
 drafferty@hs.uni-hamburg.de. To initialize your environment for LSMTool,
-users on CEP1 and CEP2 should run the following commands:
+users on CEP3 should run the following command::
 
-::
+    $ source ~rafferty/init_lsmtool
 
-    use LofIm
-    source ~rafferty/init_lsmtool
-
-Note that the Pythonlibs LOFAR package includes an older version of
-astropy that conflicts with LSMTool and cannot be used in conjunction
-with it.
-
-To install LSMTool elsewhere (e.g., on your laptop), please see the README at
+To install LSMTool elsewhere, please see the README at
 https://github.com/darafferty/LSMTool for instructions.
 
 Usage
