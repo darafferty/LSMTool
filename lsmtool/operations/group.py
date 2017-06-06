@@ -291,7 +291,7 @@ def getPatchNamesFromMask(mask, RARad, DecRad, root='mask'):
         (_, _, pixY, pixX) = maskdata.topixel([a, b, decRad, raRad])
         try:
             # != is a XOR for booleans
-            patchNums.append(mask_labels[pixY, pixX])
+            patchNums.append(mask_labels[int(pixY), int(pixX)])
         except:
             patchNums.append(0)
 
