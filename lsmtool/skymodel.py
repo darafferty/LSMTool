@@ -924,7 +924,9 @@ class SkyModel(object):
         else:
             data = np.array(data)
         if colName in self.table.keys():
+            units = self.table.columns[colName].unit
             self.table[colName] = data
+            self.table.columns[colName].unit = units
         else:
             if colName == 'Patch':
                 # Specify length of 50 characters
