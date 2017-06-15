@@ -85,8 +85,12 @@ def plot(LSM, fileName=None, labelBy=None):
         raise ImportError('PyPlot could not be imported. Plotting is not '
             'available: {0}'.format(e.message))
     try:
-        from wcsaxes import WCSAxes
-        hasWCSaxes = True
+        try:
+            from astropy.visualization.wcsaxes import WCSAxes
+            hasWCSaxes = True
+        except:
+            from wcsaxes import WCSAxes
+            hasWCSaxes = True
     except:
         hasWCSaxes = False
     import numpy as np
