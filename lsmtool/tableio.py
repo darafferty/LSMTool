@@ -834,7 +834,7 @@ def factorDirectionsWriter(table, fileName):
     outLines = []
     outLines.append('# name position atrous_do mscale_field_do cal_imsize '
         'solint_ph solint_amp dynamic_range region_selfcal '
-        'region_field peel_skymodel outlier_source cal_radius_deg cal_flux\n')
+        'region_facet peel_skymodel outlier_source cal_size_deg cal_flux_mJy\n')
     if 'History' in table.meta:
         outLines.append('\n# LSMTool history:\n# ')
         outLines.append('\n# '.join(table.meta['History']))
