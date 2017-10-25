@@ -70,13 +70,13 @@ def test_move():
 def test_merge():
     print('Merge patches Patch_0 and Patch_2')
     s.merge(['Patch_0', 'Patch_2'], name = 'merged_patch')
-    assert len(s.getPatchNames()) == 102
+    assert len(s.getPatchNames()) == 139
 
 
 def test_setPatchPositions():
     print('Set patch positions to midpoint of patch')
     s.setPatchPositions(method='mid')
-    assert round(s.getPatchPositions()['merged_patch'][0].value, 4) == 277.7663
+    assert round(s.getPatchPositions()['merged_patch'][0].value, 4) == 274.2124
 
 
 def test_write():
