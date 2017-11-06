@@ -619,7 +619,7 @@ class SkyModel(object):
             raise RuntimeError('Sky model does not have patches.')
 
 
-    def _getXY(self, patchName=None, crdelt=None):
+    def _getXY(self, patchName=None, crdelt=None, byPatch=False):
         """
         Returns lists of projected x and y values for all sources.
 
@@ -629,6 +629,8 @@ class SkyModel(object):
             If given, return x and y for specified patch only
         crdelt: float, optional
             Delta in degrees for sky grid
+        byPatch : bool, optional
+            Use patches instead of by sources
 
         Returns
         -------
@@ -643,12 +645,18 @@ class SkyModel(object):
         if len(self.table) == 0:
             return [0], [0], 0, 0
 
-        RA = self.getColValues('Ra')
-        Dec = self.getColValues('Dec')
-        if patchName is not None:
-            ind = self.getRowIndex(patchName)
-            RA = RA[ind]
-            Dec = Dec[ind]
+        if byPatch:
+            if not 'Patch' in self.table.keys():
+                raise ValueError('Sky model must be grouped before "byPatch" can be used.')
+            RA = self.getColValues('Ra', aggregate='wmean')
+            Dec = self.getColValues('Dec', aggregate='wmean')
+        else:
+            RA = self.getColValues('Ra')
+            Dec = self.getColValues('Dec')
+            if patchName is not None:
+                ind = self.getRowIndex(patchName)
+                RA = RA[ind]
+                Dec = Dec[ind]
         x, y  = radec2xy(RA, Dec, crdelt=crdelt)
 
         # Refine x and y using midpoint
@@ -1974,7 +1982,7 @@ class SkyModel(object):
 
     def group(self, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         threshold=0.1, applyBeam=False, root='Patch', pad_index=False,
-        method='mid', facet=""):
+        method='mid', facet="", byPatch=False):
         """
         Groups sources into patches.
 
@@ -2033,6 +2041,8 @@ class SkyModel(object):
             - 'zero' => set all positions to [0.0, 0.0]
         facet : str, optional
             Facet fits file used with the algorithm 'facet'
+        byPatch : bool, optional
+            For the 'tessellate' algorithm, use patches instead of by sources
 
         Examples
         --------
@@ -2045,7 +2055,7 @@ class SkyModel(object):
         operations.group.group(self, algorithm, targetFlux=targetFlux,
             numClusters=numClusters, FWHM=FWHM, threshold=threshold,
             applyBeam=applyBeam, root=root, pad_index=pad_index, method=method,
-            facet=facet)
+            facet=facet, byPatch=byPatch)
 
 
     def transfer(self, patchSkyModel, matchBy='name', radius=0.1):

@@ -51,7 +51,7 @@ def run(step, parset, LSM):
 
 def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
     threshold=0.1, applyBeam=False, root='Patch', pad_index=False, method='mid',
-    facet=""):
+    facet="", byPatch=False):
     """
     Groups sources into patches.
 
@@ -110,6 +110,9 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         - 'zero' => set all positions to [0.0, 0.0]
     facet : str, optional
         Facet fits file used with the algorithm 'facet'
+    byPatch : bool, optional
+        For the 'tessellate' algorithm, use patches instead of by sources
+
 
     Examples
     --------
@@ -157,15 +160,30 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
                 targetFlux = float(parts[0])
                 if len(parts) == 2:
                     units = parts[1]
-        LSM.ungroup()
-        x, y, midRA, midDec  = LSM._getXY()
-        f = LSM.getColValues('I', units=units, applyBeam=applyBeam)
+        if byPatch:
+            if not 'Patch' in LSM.table.keys():
+                raise ValueError('Sky model must be grouped before "byPatch" can be used.')
+            x, y, midRA, midDec  = LSM._getXY(byPatch=True)
+            f = LSM.getColValues('I', units=units, applyBeam=applyBeam, aggregate='sum')
+        else:
+            LSM.ungroup()
+            x, y, midRA, midDec  = LSM._getXY()
+            f = LSM.getColValues('I', units=units, applyBeam=applyBeam)
         vobin = _tessellate.bin2D(np.array(x), np.array(y), f,
             target_flux=targetFlux)
         try:
             vobin.bin_voronoi()
             patchCol = _tessellate.bins2Patches(vobin, root=root, pad_index=pad_index)
-            LSM.setColValues('Patch', patchCol, index=2)
+            if byPatch:
+                newPatchNames = patchCol.copy()
+                origPatchNames = LSM.getPatchNames()
+                patchCol = np.zeros(len(LSM), dtype='S100')
+                for newPatchName, origPatchName in zip(newPatchNames, origPatchNames):
+                    ind = np.array(LSM.getRowIndex(origPatchName))
+                    patchCol[ind] = newPatchName
+                LSM.setColValues('Patch', patchCol, index=2)
+            else:
+                LSM.setColValues('Patch', patchCol, index=2)
         except ValueError:
             # Catch error in some cases with high target flux relative to
             # total model flux
