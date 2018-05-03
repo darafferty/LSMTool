@@ -58,6 +58,14 @@ tests/test_big.sky
 
 tests/final.sky
 
+tests/final2.sky
+
+tests/liner_poly.sky
+
+tests/test12.sky
+
+tests/test_lin.sky
+
 tests/plot.pdf
 
 tests/flux_ratio_sky.pdf
