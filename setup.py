@@ -46,5 +46,6 @@ setup(
     install_requires=['numpy','astropy >= 0.4'],
     scripts = ['bin/lsmtool'],
     packages=['lsmtool','lsmtool.operations'],
-    cmdclass = {'test': PyTest},
+    setup_requires = ['pytest-runner'],
+    tests_require = ['pytest']
     )

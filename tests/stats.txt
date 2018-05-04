@@ -10,27 +10,27 @@ Model contains 2165 sources in 0 patches of which:
       Total flux: 5345.7507 Jy
 
       History:
-      2017-05-09 14:47:24: LOAD (from file 'tests/no_patches.sky')
-      2017-05-09 14:47:24: FILTER (I > 1.0 Jy)
-      2017-05-09 14:47:25: GROUP (algorithm = 'every')
-      2017-05-09 14:47:31: SETPATCHPOSITIONS (method = 'mid')
-      2017-05-09 14:47:33: TRANSFER
-      2017-05-09 14:47:33: FILTER (I < 2.0 Jy)
-      2017-05-09 14:47:33: UNGROUP
-      2017-05-09 14:47:35: CONCATENATE (matchBy = 'position', radius = 30 arcsec keep = 'from2')
+      2018-05-04 09:28:05: LOAD (from file 'tests/no_patches.sky')
+      2018-05-04 09:28:05: FILTER (I > 1.0 Jy)
+      2018-05-04 09:28:06: GROUP (algorithm = 'every')
+      2018-05-04 09:28:08: SETPATCHPOSITIONS (method = 'mid')
+      2018-05-04 09:28:09: TRANSFER
+      2018-05-04 09:28:09: FILTER (I < 2.0 Jy)
+      2018-05-04 09:28:09: UNGROUP
+      2018-05-04 09:28:10: CONCATENATE (matchBy = 'position', radius = 30 arcsec keep = 'from2')
 
 Sky model 2:
 Model contains 94 sources in 0 patches of which:
       41 are type POINT
       53 are type GAUSSIAN
       Associated beam MS: None
-      Approximate RA, Dec of center: 224.78504, 69.45906
-      Total flux: 1084.3945 Jy
+      Approximate RA, Dec of center: 224.78503999999995, 69.45906000000001
+      Total flux: 1084.3944999999999 Jy
 
       History:
-      2017-05-09 14:47:37: LOAD (from file 'tests/concat.sky')
-      2017-05-09 14:47:37: UNGROUP
-      2017-05-09 14:47:37: FILTER (I > 5.0 Jy)
+      2018-05-04 09:28:11: LOAD (from file 'tests/concat.sky')
+      2018-05-04 09:28:11: UNGROUP
+      2018-05-04 09:28:11: FILTER (I > 5.0 Jy)
 
 Used radius = 10 arcsec, ignoreSpec = None, and excludeMultiple = True
 Number of matches found for comparison: 94
@@ -40,13 +40,13 @@ Std. dev. flux ratio (1 / 2): 0.0
 Mean 3-sigma-clipped flux ratio (1 / 2): 1.0
 Std. dev. 3-sigma-clipped flux ratio (1 / 2): 0.0
 
-Mean RA offset (1 - 2): 1.02333958036e-14 degrees
-Std. dev. RA offset (1 - 2): 1.04638108421e-14 degrees
-Mean 3-sigma-clipped RA offset (1 - 2): 1.02333958036e-14 degrees
-Std. dev. 3-sigma-clipped RA offset (1 - 2): 1.04638108421e-14 degrees
+Mean RA offset (1 - 2): 0.0 degrees
+Std. dev. RA offset (1 - 2): 0.0 degrees
+Mean 3-sigma-clipped RA offset (1 - 2): 0.0 degrees
+Std. dev. 3-sigma-clipped RA offset (1 - 2): 0.0 degrees
 
-Mean Dec offset (1 - 2): 1.02333958036e-14 degrees
-Std. dev. Dec offset (1 - 2): 1.04638108421e-14 degrees
-Mean 3-sigma-clipped Dec offset (1 - 2): 1.02333958036e-14 degrees
-Std. dev. 3-sigma-clipped Dec offset (1 - 2): 1.04638108421e-14 degrees
+Mean Dec offset (1 - 2): 0.0 degrees
+Std. dev. Dec offset (1 - 2): 0.0 degrees
+Mean 3-sigma-clipped Dec offset (1 - 2): 0.0 degrees
+Std. dev. 3-sigma-clipped Dec offset (1 - 2): 0.0 degrees
 
