@@ -170,7 +170,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
 
     # Now concatenate the tables
     if matchBy.lower() == 'name':
-        LSM1.table = vstack([table1, table2])
+        LSM1.table = vstack([table1, table2], metadata_conflicts='silent')
     elif matchBy.lower() == 'position':
         matches1, matches2 = matchSky(LSM1, LSM2, radius=radius)
         matchCol1 = np.array(range(len(LSM1)))
@@ -184,7 +184,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
         col2 = Column(name='match', data=matchCol2)
         table1.add_column(col1)
         table2.add_column(col2)
-        LSM1.table = vstack([table1, table2])
+        LSM1.table = vstack([table1, table2], metadata_conflicts='silent')
 
     if keep == 'from1' or keep == 'from2':
         # Remove any duplicates
