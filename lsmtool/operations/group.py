@@ -31,12 +31,16 @@ def run(step, parset, LSM):
     targetFlux = parset.getString('.'.join(["LSMTool.Steps", step, "TargetFlux"]), '1.0 Jy' )
     numClusters = parset.getInt('.'.join(["LSMTool.Steps", step, "NumClusters"]), 100 )
     threshold = parset.getString('.'.join(["LSMTool.Steps", step, "Threshold"]), '1.0 Jy' )
-    FWHM = parset.getString('.'.join(["LSMTool.Steps", step, "FWHM"]), '1.0 Jy' )
+    FWHM = parset.getString('.'.join(["LSMTool.Steps", step, "FWHM"]), None )
     applyBeam = parset.getBool('.'.join(["LSMTool.Steps", step, "ApplyBeam"]), False )
     method = parset.getString('.'.join(["LSMTool.Steps", step, "Method"]), 'mid' )
+    pad_index = parset.getBool('.'.join(["LSMTool.Steps", step, "PadIndex"]), False )
+    byPatch = parset.getBool('.'.join(["LSMTool.Steps", step, "ByPatch"]), False )
+    facet = parset.getString('.'.join(["LSMTool.Steps", step, "Facet"]), '' )
 
     try:
-        group(LSM, algorithm, targetFlux, numClusters, applyBeam, root, method)
+        group(LSM, algorithm, targetFlux, numClusters, FWHM, threshold, applyBeam, root,
+              pad_index, method, facet, byPatch)
         result = 0
     except Exception as e:
         log.error(e.message)
@@ -248,7 +252,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         mask = algorithm
         RARad = LSM.getColValues('Ra', units='radian')
         DecRad = LSM.getColValues('Dec', units='radian')
-        patchCol = getPatchNamesFromMask(mask, RARad, DecRad, root=root)
+        patchCol = getPatchNamesFromMask(mask, RARad, DecRad, root=root, pad_index=pad_index)
         LSM.setColValues('Patch', patchCol, index=2)
 
     else:
@@ -277,19 +281,16 @@ def addSingle(LSM, patchName):
 
 def addEvery(LSM):
     """Add a Patch column with a different name for each source"""
-    import numpy as np
-
     names = LSM.getColValues('Name').copy()
     for i, name in enumerate(names):
         names[i] = name + '_patch'
     LSM.setColValues('Patch', names, index=2)
 
 
-def getPatchNamesFromMask(mask, RARad, DecRad, root='mask'):
+def getPatchNamesFromMask(mask, RARad, DecRad, root='mask', pad_index=False):
     """
     Returns an array of patch names for each (RA, Dec) pair in radians
     """
-    import math
     import pyrap.images as pim
     import scipy.ndimage as nd
     import numpy as np
@@ -319,7 +320,6 @@ def getPatchNamesFromMask(mask, RARad, DecRad, root='mask'):
     n = 0
     for p in patchNums:
         if p != 0:
-            in_patch = np.where(patchNums == p)
             if pad_index:
                 patchNames.append('{0}_patch_'.format(root)+
                     str(p).zfill(int(np.ceil(np.log10(len(patchNums))))))
@@ -346,17 +346,24 @@ def get_facet_values(facet, ra, dec, root="facet", default=0):
         shape = f[0].data.shape
 
         w = WCS(f[0].header)
-        freq = w.wcs.crval[2]
-        stokes = w.wcs.crval[3]
-
-        xe, ye, _1, _2 = w.all_world2pix(ra, dec, freq, stokes, 1)
+        if len(w.wcs.crval) == 4:
+            freq = w.wcs.crval[2]
+            stokes = w.wcs.crval[3]
+            xe, ye, _1, _2 = w.all_world2pix(ra, dec, freq, stokes, 1)
+        elif len(w.wcs.crval) == 2:
+            xe, ye = w.all_world2pix(ra, dec, 1)
+        else:
+            raise ValueError('Input mask must have 2 axes (x, y) or 4 axes (x, y, freq, stokes).')
         x, y = np.round(xe).astype(int), np.round(ye).astype(int)
 
         # Dummy value for points out of the fits area
         x[(x < 0) | (x >= shape[-1])] = -1
         y[(y < 0) | (y >= shape[-2])] = -1
 
-        data = f[0].data[0,0,:,:]
+        if len(w.wcs.crval) == 4:
+            data = f[0].data[0, 0, :, :]
+        else:
+            data = f[0].data[:, :]
 
         values = data[y, x]
 
@@ -366,5 +373,3 @@ def get_facet_values(facet, ra, dec, root="facet", default=0):
 
         #TODO: Flexible format for other data types ?
         return np.array(["{}_{:.0f}".format(root, val) for val in values])
-
-
