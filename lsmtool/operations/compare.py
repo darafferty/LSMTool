@@ -153,7 +153,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
 
     # Get spectral indices
     try:
-        alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate).squeeze()
+        alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate).squeeze(axis=0)
     except (IndexError, ValueError):
         alphas2 = np.array([-0.8]*len(LSM2))
     try:
