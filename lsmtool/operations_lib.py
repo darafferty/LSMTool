@@ -262,9 +262,9 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
         catalog2 = SkyCoord(RA, Dec, unit=(u.degree, u.degree), frame='fk5')
     else:
         catalog1 = SkyCoord(LSM1.getColValues('Ra'), LSM1.getColValues('Dec'),
-            unit=(u.degree, u.degree), frame='fk5')
+            unit=(u.degree, u.degree))
         catalog2 = SkyCoord(LSM2.getColValues('Ra'), LSM2.getColValues('Dec'),
-            unit=(u.degree, u.degree), frame='fk5')
+            unit=(u.degree, u.degree))
     idx, d2d, d3d = match_coordinates_sky(catalog1, catalog2)
 
     try:

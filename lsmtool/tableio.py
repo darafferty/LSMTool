@@ -45,7 +45,21 @@ else:
     def iteritems(d):
         return d.iteritems()
     numpy_type = "S"
-    
+try:
+    unicode = unicode
+except NameError:
+    # Python 3
+    basestring = (str,bytes)
+else:
+    # Python 2
+    basestring = basestring
+import io
+try:
+    # Python 2
+    file_types = (file, io.IOBase)
+except NameError:
+    # Python 3
+    file_types = (io.IOBase,)
 
 # Define the valid columns here as dictionaries. The entry key is the lower-case
 # name of the column, the entry value is the key used in the astropy table of the
@@ -516,7 +530,7 @@ def skyModelIdentify(origin, *args, **kwargs):
     # Search for a format line. If found, assume file is valid
     if isinstance(args[0], basestring):
         f = open(args[0])
-    elif isinstance(args[0], file):
+    elif isinstance(args[0], file_types):
         f = args[0]
     else:
         return False
@@ -1056,9 +1070,9 @@ def coneSearch(VOService, position, radius):
     return table
 
 
-def getGSM(position, radius, assocTheta):
+def getGSM(position, radius):
     """
-    Returns the file name from a gsm.py search.
+    Returns the file name from a GSM search.
 
     Parameters
     ----------
@@ -1069,14 +1083,10 @@ def getGSM(position, radius, assocTheta):
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
         '30 arcsec') for cone search region in degrees
-    assocTheta : float or str, optional
-        Radius in degrees (if float) or 'value unit' (if str; e.g.,
-        '30 arcsec') for GSM source association
 
     """
     import tempfile
     import subprocess
-    import lofar.gsm.gsmutils as gsm
 
     log = logging.getLogger('LSMTool.Load')
 
@@ -1087,13 +1097,10 @@ def getGSM(position, radius, assocTheta):
         radius = Angle(radius, unit='degree').value
     except TypeError:
         raise ValueError('GSM query radius not understood.')
-    try:
-        assocTheta = Angle(assocTheta, unit='degree').value
-    except TypeError:
-        raise ValueError('GSM association radius not understood.')
 
-    cmd = ['gsm.py', outFile.name, '{0}'.format(RA), '{0}'.format(Dec),
-        '{0}'.format(radius), '{0}'.format(assocTheta)]
+    url = 'http://172.104.228.177/cgi-bin/gsmv1.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
+          RA, Dec, radius)
+    cmd = ['wget', '-O', outFile.name, url]
     subprocess.call(cmd)
 
     return outFile

@@ -44,7 +44,7 @@ class SkyModel(object):
     Object that stores the sky model and provides methods for accessing it.
     """
     def __init__(self, fileName, beamMS=None, checkDup=False, VOPosition=None,
-        VORadius=None, assocTheta='10 arcsec'):
+        VORadius=None):
         """
         Initializes SkyModel object.
 
@@ -67,9 +67,6 @@ class SkyModel(object):
         VORadius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g.,
             '30 arcsec') for cone search region in degrees
-        assocTheta : float or str, optional
-            Radius in degrees (if float) or 'value unit' (if str; e.g.,
-            '30 arcsec') for GSM source association
 
         Examples
         --------
@@ -102,7 +99,7 @@ class SkyModel(object):
                 self._addHistory("LOAD (from {0} at position {1})".format(fileName, VOPosition))
             elif fileName.lower() == 'gsm':
                 self.log.debug("Attempting to load model from GSM...")
-                fileObj = tableio.getGSM(VOPosition, VORadius, assocTheta)
+                fileObj = tableio.getGSM(VOPosition, VORadius)
                 self.table = Table.read(fileObj.name, format='makesourcedb')
                 fileObj.close()
                 self.log.debug("Successfully loaded model from GSM")
