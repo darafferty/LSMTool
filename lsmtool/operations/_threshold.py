@@ -18,6 +18,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+
 def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
     pad_index=False):
     """
@@ -29,7 +30,7 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
     LSM.ungroup()
 
     # Generate image grid with 1 pix = FWHM / 4
-    x, y, midRA, midDec  = LSM._getXY(crdelt=fwhmArcsec/4.0/3600.0)
+    x, y, midRA, midDec = LSM._getXY(crdelt=fwhmArcsec/4.0/3600.0)
     sizeX = int(1.2 * (max(x) - min(x)))
     sizeY = int(1.2 * (max(y) - min(y)))
     image = np.zeros((sizeX, sizeY))
@@ -50,7 +51,7 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
     return patchCol
 
 
-def blur_image(im, n, ny=None) :
+def blur_image(im, n, ny=None):
     """
     Blurs the image by convolving with a gaussian kernel of typical
     size n. The optional keyword argument ny allows for a different
@@ -72,7 +73,6 @@ def getPatchNamesFromMask(mask, x, y, root='mask', pad_index=False):
     """
     Returns an array of patch names for each (x, y) pair
     """
-    import math
     import scipy.ndimage as nd
     import numpy as np
 
@@ -95,10 +95,9 @@ def getPatchNamesFromMask(mask, x, y, root='mask', pad_index=False):
     n = 0
     for p in patchNums:
         if p != 0:
-            in_patch = np.where(patchNums == p)
             if pad_index:
                 patchNames.append('{0}_patch_'.format(root)+
-                    str(p).zfill(int(np.ceil(np.log10(len(patchNums))))))
+                    str(p).zfill(int(np.ceil(np.log10(len(set(patchNums))+1)))))
             else:
                 patchNames.append('{0}_patch_'.format(root)+str(p))
         else:
@@ -106,4 +105,3 @@ def getPatchNamesFromMask(mask, x, y, root='mask', pad_index=False):
             n += 1
 
     return np.array(patchNames)
-
