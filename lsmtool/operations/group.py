@@ -165,13 +165,13 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
                 if len(parts) == 2:
                     units = parts[1]
         if byPatch:
-            if not 'Patch' in LSM.table.keys():
+            if 'Patch' not in LSM.table.keys():
                 raise ValueError('Sky model must be grouped before "byPatch" can be used.')
-            x, y, midRA, midDec  = LSM._getXY(byPatch=True)
+            x, y, midRA, midDec = LSM._getXY(byPatch=True)
             f = LSM.getColValues('I', units=units, applyBeam=applyBeam, aggregate='sum')
         else:
             LSM.ungroup()
-            x, y, midRA, midDec  = LSM._getXY()
+            x, y, midRA, midDec = LSM._getXY()
             f = LSM.getColValues('I', units=units, applyBeam=applyBeam)
         vobin = _tessellate.bin2D(np.array(x), np.array(y), f,
             target_flux=targetFlux)
@@ -222,7 +222,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         from astropy.coordinates import SkyCoord
         import astropy.units as u
 
-        if not 'Patch' in LSM.table.keys():
+        if 'Patch' not in LSM.table.keys():
             raise ValueError('Sky model must be grouped before "voronoi" can be used.')
         else:
             dirs = LSM.getPatchPositions()
@@ -234,7 +234,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         patchNames = []
         for r, d in zip(RADeg, DecDeg):
             dists = SkyCoord(r*u.degree, d*u.degree).separation(
-                SkyCoord(dirs_ras*u.degree,dirs_decs*u.degree))
+                SkyCoord(dirs_ras*u.degree, dirs_decs*u.degree))
             patchNames.append(dirs_names[np.argmin(dists)])
         LSM.setColValues('Patch', patchNames, index=2)
 
@@ -242,7 +242,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
         if os.path.exists(facet):
             RADeg = LSM.getColValues('Ra', units='degree')
             DecDeg = LSM.getColValues('Dec', units='degree')
-            facet_col = get_facet_values(facet, RADeg, DecDeg, root=root)
+            facet_col = get_facet_values(facet, RADeg, DecDeg, root=root, pad_index=pad_index)
             LSM.setColValues('Patch', facet_col, index=2)
         else:
             raise ValueError('Please enter the facet filename in the facet parameter.')
@@ -321,8 +321,8 @@ def getPatchNamesFromMask(mask, RARad, DecRad, root='mask', pad_index=False):
     for p in patchNums:
         if p != 0:
             if pad_index:
-                patchNames.append('{0}_patch_'.format(root)+
-                    str(p).zfill(int(np.ceil(np.log10(len(patchNums))))))
+                patchNames.append('{0}_patch_'.format(root) +
+                    str(p).zfill(int(np.ceil(np.log10(len(set(patchNums))+1)))))
             else:
                 patchNames.append('{0}_patch_'.format(root)+str(p))
         else:
@@ -331,7 +331,8 @@ def getPatchNamesFromMask(mask, RARad, DecRad, root='mask', pad_index=False):
 
     return np.array(patchNames)
 
-def get_facet_values(facet, ra, dec, root="facet", default=0):
+
+def get_facet_values(facet, ra, dec, root="facet", default=0, pad_index=False):
     """
     Extract the value from a fits facet file
     """
@@ -371,5 +372,7 @@ def get_facet_values(facet, ra, dec, root="facet", default=0):
         values[(x == -1) | (y == -1)] = default
         values[np.isnan(values)] = default
 
-        #TODO: Flexible format for other data types ?
-        return np.array(["{}_{:.0f}".format(root, val) for val in values])
+        if pad_index:
+            return np.array(["{0}_{1}".format(root, str(int(val)).zfill(int(np.ceil(np.log10(len(set(values))+1))))) for val in values])
+        else:
+            return np.array(["{0}_{1}".format(root, int(val)) for val in values])
