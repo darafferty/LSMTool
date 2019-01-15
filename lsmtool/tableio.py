@@ -1070,6 +1070,42 @@ def coneSearch(VOService, position, radius):
     return table
 
 
+def getTGSS(position, radius):
+    """
+    Returns the file name from a TGSS search.
+
+    Parameters
+    ----------
+    position : list of floats
+        A list specifying a new position as [RA, Dec] in either makesourcedb
+        format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
+        [123.2312, 23.3422])
+    radius : float or str, optional
+        Radius in degrees (if float) or 'value unit' (if str; e.g.,
+        '30 arcsec') for cone search region in degrees
+
+    """
+    import tempfile
+    import subprocess
+
+    log = logging.getLogger('LSMTool.Load')
+
+    outFile = tempfile.NamedTemporaryFile()
+    RA = RA2Angle(position[0])[0].value
+    Dec = Dec2Angle(position[1])[0].value
+    try:
+        radius = Angle(radius, unit='degree').value
+    except TypeError:
+        raise ValueError('TGSS query radius not understood.')
+
+    url = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv3.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
+          RA, Dec, radius)
+    cmd = ['wget', '-O', outFile.name, url]
+    subprocess.call(cmd)
+
+    return outFile
+
+
 def getGSM(position, radius):
     """
     Returns the file name from a GSM search.

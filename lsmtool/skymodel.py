@@ -53,7 +53,7 @@ class SkyModel(object):
         fileName : str
             Input ASCII file from which the sky model is read (must respect the
             makesourcedb format), name of VO service to query (must be one of
-            'WENSS', 'NVSS', or 'GSM'), or dict (single source only)
+            'WENSS', 'NVSS', 'TGSS', or 'GSM'), or dict (single source only)
         beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table
@@ -97,6 +97,14 @@ class SkyModel(object):
                 self.log.debug("Successfully loaded model from VO service '{0}'".format(fileName))
                 self._fileName = None
                 self._addHistory("LOAD (from {0} at position {1})".format(fileName, VOPosition))
+            elif fileName.lower() == 'tgss':
+                self.log.debug("Attempting to load model from TGSS...")
+                fileObj = tableio.getTGSS(VOPosition, VORadius)
+                self.table = Table.read(fileObj.name, format='makesourcedb')
+                fileObj.close()
+                self.log.debug("Successfully loaded model from TGSS")
+                self._fileName = None
+                self._addHistory("LOAD (from TGSS at position {0})".format(VOPosition))
             elif fileName.lower() == 'gsm':
                 self.log.debug("Attempting to load model from GSM...")
                 fileObj = tableio.getGSM(VOPosition, VORadius)
