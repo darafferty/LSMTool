@@ -53,7 +53,7 @@ def run(step, parset, LSM):
 
 
 def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
-    ignoreSpec=None, excludeMultiple=True, excludeByFlux=True):
+    ignoreSpec=None, excludeMultiple=True, excludeByFlux=True, name1=None, name2=None):
     """
     Compare two sky models
 
@@ -90,6 +90,10 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     excludeByFlux : bool, optional
         If True, matches whose predicted fluxes differ from the parent model
         fluxes by 25% are excluded from the positional offset plot.
+    name1 : str, optional
+        Name to use in the plots for LSM1. If None, 'Model 1' is used.
+    name2 : str, optional
+        Name to use in the plots for LSM2. If None, 'Model 2' is used.
 
     Examples
     --------
@@ -262,23 +266,23 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         outDir += '/'
     if not os.path.exists(outDir):
         os.makedirs(outDir)
-    plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir)
-    plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir)
-    plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir)
+    plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir, name1, name2)
+    plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir, name1, name2)
+    plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir, name1, name2)
     retstatus = plotOffsets(RA, Dec, RA2, Dec2, x, y, refx, refy, labels,
-        outDir, predFlux, fluxes1, excludeByFlux)
+        outDir, predFlux, fluxes1, excludeByFlux, name1, name2)
     if retstatus == 1:
-        log.warn('No matches found within +/- 25% of predicted flux. Skipping offset plot.')
+        log.warn('No matches found within +/- 25% of predicted flux density. Skipping offset plot.')
     argInfo = 'Used radius = {0}, ignoreSpec = {1}, and excludeMultiple = {2}'.format(
         radius, ignoreSpec, excludeMultiple)
     stats = findStats(predFlux, fluxes1, RA, Dec, RA2, Dec2, outDir, argInfo,
-        LSM1._info(), LSM2._info())
+        LSM1._info(), LSM2._info(), name1, name2)
 
     return stats
 
 
 def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
-    outDir, clip=True):
+    outDir, name1, name2, clip=True):
     """
     Makes plot of measured-to-predicted flux ratio vs. distance from center
     """
@@ -298,6 +302,11 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
         raise ImportError('PyPlot could not be imported. Plotting is not '
             'available: {0}'.format(e.message))
 
+    if name1 is None:
+        name1 = 'Model 1'
+    if name2 is None:
+        name2 = 'Model 2'
+
     ratio = measFlux / predFlux
     separation = np.zeros(len(measFlux))
     for i in range(len(measFlux)):
@@ -307,8 +316,8 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
     ax1 = plt.subplot(1, 1, 1)
     ax1.plot(separation, ratio, 'o')
     ax1.set_ylim(0, 2)
-    plt.title('Flux Ratios (Model 1 / Model 2)')
-    plt.ylabel('Flux ratio')
+    plt.title('Flux Density Ratios ({0} / {1})'.format(name1, name2))
+    plt.ylabel('Flux density ratio')
     plt.xlabel('Distance from center (deg)')
 
     # Calculate mean ratio and std dev.
@@ -333,7 +342,7 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
     plt.savefig(outDir+'flux_ratio_vs_distance.pdf', format='pdf')
 
 
-def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, clip=True):
+def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, clip=True):
     """
     Makes plot of measured-to-predicted flux ratio vs. flux
     """
@@ -354,15 +363,21 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, clip=True):
         raise ImportError('PyPlot could not be imported. Plotting is not '
             'available: {0}'.format(e.message))
 
+    if name1 is None:
+        name1 = 'Model 1'
+    if name2 is None:
+        name2 = 'Model 2'
+
     ratio = measFlux / predFlux
 
     fig = plt.figure(figsize=(7.0, 5.0))
     ax1 = plt.subplot(1, 1, 1)
     ax1.plot(measFlux, ratio, 'o')
     ax1.set_ylim(0, 2)
-    plt.title('Flux Ratios (Model 1 / Model 2)')
-    plt.ylabel('Flux ratio')
-    plt.xlabel('Model 1 flux (Jy)')
+    ax1.set_xscale('log')
+    plt.title('Flux Desity Ratios ({0} / {1})'.format(name1, name2))
+    plt.ylabel('Flux density ratio')
+    plt.xlabel('{0} flux density (Jy)'.format(name1))
 
     # Calculate mean ratio and std dev.
     if clip:
@@ -387,7 +402,7 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, clip=True):
 
 
 def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
-    outDir):
+    outDir, name1, name2):
     """
     Makes sky plot of measured-to-predicted flux ratio
     """
@@ -414,6 +429,11 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
     except:
         hasWCSaxes = False
 
+    if name1 is None:
+        name1 = 'Model 1'
+    if name2 is None:
+        name2 = 'Model 2'
+
     ratio = measFlux / predFlux
 
     fig = plt.figure(figsize=(7.0, 5.0))
@@ -423,7 +443,7 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
         fig.add_axes(ax1)
     else:
         ax1 = plt.gca()
-    plt.title('Flux Ratios (Model 1 / Model 2)')
+    plt.title('Flux Density Ratios ({0} / {1})'.format(name1, name2))
 
     # Set symbol color by ratio
     vmin = np.min(ratio) - 0.1
@@ -464,7 +484,7 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
 
 
 def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
-    predFlux, measFlux, excludeByFlux):
+    predFlux, measFlux, excludeByFlux, name1, name2, plot_imcoords=False):
     """
     Makes plot of measured - predicted RA and DEC and x and y offsets
     """
@@ -495,6 +515,11 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
         refRA = refRA[goodInd]
         refDec = refDec[goodInd]
 
+    if name1 is None:
+        name1 = 'Model 1'
+    if name2 is None:
+        name2 = 'Model 2'
+
     RAOffsets = np.zeros(len(RA))
     DecOffsets = np.zeros(len(Dec))
     xOffsets = np.zeros(len(RA))
@@ -515,7 +540,7 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
 
     fig = plt.figure(figsize=(7.0, 5.0))
     ax1 = plt.subplot(1, 1, 1)
-    plt.title('Positional offsets (Model 1 - Model 2)')
+    plt.title('Positional offsets ({0} - {1})'.format(name1, name2))
     ax1.plot(RAOffsets, DecOffsets, 'o')
     xmin, xmax, ymin, ymax = plt.axis()
     ax1.plot([xmin, xmax], [0.0, 0.0], '--g')
@@ -531,28 +556,29 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
                 'offset points', ha='right', va='bottom')
     plt.savefig(outDir+'positional_offsets_sky.pdf', format='pdf')
 
-    fig = plt.figure(figsize=(7.0, 5.0))
-    ax1 = plt.subplot(1, 1, 1)
-    plt.title('Positional offsets (Model 1 - Model 2)')
-    ax1.plot(xOffsets, yOffsets, 'o')
-    xmin, xmax, ymin, ymax = plt.axis()
-    ax1.plot([xmin, xmax], [0.0, 0.0], '--g')
-    ax1.plot([0.0, 0.0], [ymin, ymax], '--g')
-    plt.xlabel('Image-plane X Offset (arb. units)')
-    plt.ylabel('Image-plane Y Offset (arb. units)')
+    if plot_imcoords:
+        fig = plt.figure(figsize=(7.0, 5.0))
+        ax1 = plt.subplot(1, 1, 1)
+        plt.title('Positional offsets ({0} - {1})'.format(name1, name2))
+        ax1.plot(xOffsets, yOffsets, 'o')
+        xmin, xmax, ymin, ymax = plt.axis()
+        ax1.plot([xmin, xmax], [0.0, 0.0], '--g')
+        ax1.plot([0.0, 0.0], [ymin, ymax], '--g')
+        plt.xlabel('Image-plane X Offset (arb. units)')
+        plt.ylabel('Image-plane Y Offset (arb. units)')
 
-    if labels is not None:
-        xls = RAOffsets
-        yls = DecOffsets
-        for label, xl, yl in zip(labels, xls, yls):
-            plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
-                'offset points', ha='right', va='bottom')
-    plt.savefig(outDir+'positional_offsets_im.pdf', format='pdf')
+        if labels is not None:
+            xls = RAOffsets
+            yls = DecOffsets
+            for label, xl, yl in zip(labels, xls, yls):
+                plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
+                    'offset points', ha='right', va='bottom')
+        plt.savefig(outDir+'positional_offsets_im.pdf', format='pdf')
     return 0
 
 
 def findStats(predFlux, measFlux, RA, Dec, refRA, refDec, outDir, info0, info1,
-    info2):
+    info2, name1, name2):
     """
     Calculates statistics and saves them to 'stats.txt'
     """
@@ -613,18 +639,18 @@ def findStats(predFlux, measFlux, RA, Dec, refRA, refDec, outDir, info0, info1,
     outLines = ['Statistics from sky model comparison\n']
     outLines.append('------------------------------------\n\n')
 
-    outLines.append('Sky model 1:\n')
+    outLines.append('Sky model 1 ({}):\n'.format(name1))
     outLines.append(info1+'\n\n')
-    outLines.append('Sky model 2:\n')
+    outLines.append('Sky model 2 ({}):\n'.format(name2))
     outLines.append(info2+'\n\n')
 
     outLines.append(info0+'\n')
     outLines.append('Number of matches found for comparison: {0}\n\n'.format(len(predFlux)))
 
-    outLines.append('Mean flux ratio (1 / 2): {0}\n'.format(meanRatio))
-    outLines.append('Std. dev. flux ratio (1 / 2): {0}\n'.format(stdRatio))
-    outLines.append('Mean 3-sigma-clipped flux ratio (1 / 2): {0}\n'.format(meanClippedRatio))
-    outLines.append('Std. dev. 3-sigma-clipped flux ratio (1 / 2): {0}\n\n'.format(stdClippedRatio))
+    outLines.append('Mean flux density ratio (1 / 2): {0}\n'.format(meanRatio))
+    outLines.append('Std. dev. flux density ratio (1 / 2): {0}\n'.format(stdRatio))
+    outLines.append('Mean 3-sigma-clipped flux density ratio (1 / 2): {0}\n'.format(meanClippedRatio))
+    outLines.append('Std. dev. 3-sigma-clipped flux density ratio (1 / 2): {0}\n\n'.format(stdClippedRatio))
 
     outLines.append('Mean RA offset (1 - 2): {0} degrees\n'.format(meanRAOffset))
     outLines.append('Std. dev. RA offset (1 - 2): {0} degrees\n'.format(stdRAOffset))

@@ -2250,7 +2250,8 @@ class SkyModel(object):
 
 
     def compare(self, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
-        ignoreSpec=None, excludeMultiple=True, excludeByFlux=False):
+        ignoreSpec=None, excludeMultiple=True, excludeByFlux=False, name1=None,
+        name2=None):
         """
         Compare two sky models.
 
@@ -2286,6 +2287,10 @@ class SkyModel(object):
         excludeByFlux : bool, optional
             If True, matches whose predicted fluxes differ from the parent model
             fluxes by 25% are excluded from the positional offset plot.
+        name1 : str, optional
+            Name to use in the plots for the primary sky model. If None, 'Model 1' is used.
+        name2 : str, optional
+            Name to use in the plots for LSM2. If None, 'Model 2' is used.
 
         Returns
         -------
@@ -2317,7 +2322,7 @@ class SkyModel(object):
             LSM2 = SkyModel(LSM2)
         stats = operations.compare.compare(self, LSM2, radius=radius, outDir=outDir,
             labelBy=labelBy, ignoreSpec=ignoreSpec, excludeMultiple=excludeMultiple,
-            excludeByFlux=excludeByFlux)
+            excludeByFlux=excludeByFlux, name1=name1, name2=name2)
         return stats
 
 
