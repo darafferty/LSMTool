@@ -342,7 +342,7 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    plt.savefig(outDir+'flux_ratio_vs_distance.pdf', format=format)
+    plt.savefig(outDir+'flux_ratio_vs_distance.{}'.format(format), format=format)
 
 
 def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format, clip=True):
@@ -378,7 +378,7 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
     ax1.plot(measFlux, ratio, 'o')
     ax1.set_ylim(0, 2)
     ax1.set_xscale('log')
-    plt.title('Flux Desity Ratios ({0} / {1})'.format(name1, name2))
+    plt.title('Flux Density Ratios ({0} / {1})'.format(name1, name2))
     plt.ylabel('Flux density ratio')
     plt.xlabel('{0} flux density (Jy)'.format(name1))
 
@@ -401,7 +401,7 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    plt.savefig(outDir+'flux_ratio_vs_flux.pdf', format=format)
+    plt.savefig(outDir+'flux_ratio_vs_flux.{}'.format(format), format=format)
 
 
 def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
@@ -483,7 +483,7 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    plt.savefig(outDir+'flux_ratio_sky.pdf', format=format)
+    plt.savefig(outDir+'flux_ratio_sky.{}'.format(format), format=format)
 
 
 def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
@@ -557,7 +557,7 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
         for label, xl, yl in zip(labels, xls, yls):
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
-    plt.savefig(outDir+'positional_offsets_sky.pdf', format=format)
+    plt.savefig(outDir+'positional_offsets_sky.{}'.format(format), format=format)
 
     if plot_imcoords:
         fig = plt.figure(figsize=(7.0, 5.0))
@@ -576,7 +576,7 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
             for label, xl, yl in zip(labels, xls, yls):
                 plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                     'offset points', ha='right', va='bottom')
-        plt.savefig(outDir+'positional_offsets_im.pdf', format=format)
+        plt.savefig(outDir+'positional_offsets_im.{}'.format(format), format=format)
     return 0
 
 
