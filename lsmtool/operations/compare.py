@@ -53,7 +53,8 @@ def run(step, parset, LSM):
 
 
 def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
-    ignoreSpec=None, excludeMultiple=True, excludeByFlux=True, name1=None, name2=None):
+    ignoreSpec=None, excludeMultiple=True, excludeByFlux=True, name1=None, name2=None,
+    format='pdf'):
     """
     Compare two sky models
 
@@ -94,6 +95,8 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         Name to use in the plots for LSM1. If None, 'Model 1' is used.
     name2 : str, optional
         Name to use in the plots for LSM2. If None, 'Model 2' is used.
+    format : str, optional
+        Format of plot files.
 
     Examples
     --------
@@ -266,11 +269,11 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         outDir += '/'
     if not os.path.exists(outDir):
         os.makedirs(outDir)
-    plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir, name1, name2)
-    plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir, name1, name2)
-    plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir, name1, name2)
+    plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
+    plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
+    plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir, name1, name2, format)
     retstatus = plotOffsets(RA, Dec, RA2, Dec2, x, y, refx, refy, labels,
-        outDir, predFlux, fluxes1, excludeByFlux, name1, name2)
+        outDir, predFlux, fluxes1, excludeByFlux, name1, name2, format)
     if retstatus == 1:
         log.warn('No matches found within +/- 25% of predicted flux density. Skipping offset plot.')
     argInfo = 'Used radius = {0}, ignoreSpec = {1}, and excludeMultiple = {2}'.format(
@@ -282,7 +285,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
 
 
 def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
-    outDir, name1, name2, clip=True):
+    outDir, name1, name2, format, clip=True):
     """
     Makes plot of measured-to-predicted flux ratio vs. distance from center
     """
@@ -339,10 +342,10 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    plt.savefig(outDir+'flux_ratio_vs_distance.pdf', format='pdf')
+    plt.savefig(outDir+'flux_ratio_vs_distance.pdf', format=format)
 
 
-def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, clip=True):
+def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format, clip=True):
     """
     Makes plot of measured-to-predicted flux ratio vs. flux
     """
@@ -398,11 +401,11 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, clip=Tr
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    plt.savefig(outDir+'flux_ratio_vs_flux.pdf', format='pdf')
+    plt.savefig(outDir+'flux_ratio_vs_flux.pdf', format=format)
 
 
 def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
-    outDir, name1, name2):
+    outDir, name1, name2, format):
     """
     Makes sky plot of measured-to-predicted flux ratio
     """
@@ -480,11 +483,11 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    plt.savefig(outDir+'flux_ratio_sky.pdf', format='pdf')
+    plt.savefig(outDir+'flux_ratio_sky.pdf', format=format)
 
 
 def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
-    predFlux, measFlux, excludeByFlux, name1, name2, plot_imcoords=False):
+    predFlux, measFlux, excludeByFlux, name1, name2, format, plot_imcoords=False):
     """
     Makes plot of measured - predicted RA and DEC and x and y offsets
     """
@@ -554,7 +557,7 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
         for label, xl, yl in zip(labels, xls, yls):
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
-    plt.savefig(outDir+'positional_offsets_sky.pdf', format='pdf')
+    plt.savefig(outDir+'positional_offsets_sky.pdf', format=format)
 
     if plot_imcoords:
         fig = plt.figure(figsize=(7.0, 5.0))
@@ -573,7 +576,7 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
             for label, xl, yl in zip(labels, xls, yls):
                 plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                     'offset points', ha='right', va='bottom')
-        plt.savefig(outDir+'positional_offsets_im.pdf', format='pdf')
+        plt.savefig(outDir+'positional_offsets_im.pdf', format=format)
     return 0
 
 
