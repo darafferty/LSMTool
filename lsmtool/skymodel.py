@@ -2319,6 +2319,13 @@ class SkyModel(object):
             >>> LSM2 = lsmtool.load('sky2.model')
             >>> s.compare(LSM2, outDir='comparison_results/')
 
+        Compare a LOFAR sky model to a global sky model made from VLSS+TGSS+NVSS (where
+        refRA and refDec are the approximate center of the LOFAR sky model coverage)::
+
+            >>> LSM2 = lsmtool.load('GSM', VOPosition=[refRA, refDec], VORadius='5 deg')
+            >>> s.compare(LSM2, radius='30 arcsec', excludeMultiple=True,
+                outDir='comparison_results/', name1='LOFAR', name2='GSM', format='png')
+
         """
         if type(LSM2) is str:
             LSM2 = SkyModel(LSM2)

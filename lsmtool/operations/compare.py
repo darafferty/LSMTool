@@ -106,6 +106,15 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         >>> LSM2 = lsmtool.load('sky2.model')
         >>> compare(LSM1, LSM2, outDir='comparison_results/')
 
+    Compare a LOFAR sky model to a global sky model made from VLSS+TGSS+NVSS (where
+    refRA and refDec are the approximate center of the LOFAR sky model coverage)::
+
+        >>> LSM1 = lsmtool.load('lofar_sky.model')
+        >>> LSM2 = lsmtool.load('GSM', VOPosition=[refRA, refDec], VORadius='5 deg')
+        >>> compare(LSM1, LSM2, radius='30 arcsec', excludeMultiple=True,
+            outDir='comparison_results/', name1='LOFAR', name2='GSM', format='png')
+
+
     """
     from astropy.table import vstack, Column
     from ..operations_lib import matchSky, radec2xy
