@@ -327,7 +327,6 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
     fig = plt.figure(figsize=(7.0, 5.0))
     ax1 = plt.subplot(1, 1, 1)
     ax1.plot(separation, ratio, 'o')
-    ax1.set_ylim(0, 2)
     plt.title('Flux Density Ratios ({0} / {1})'.format(name1, name2))
     plt.ylabel('Flux density ratio')
     plt.xlabel('Distance from center (deg)')
@@ -339,6 +338,7 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
     else:
         mean_ratio = np.mean(ratio)
         std = np.std(ratio)
+    ax1.set_ylim(0, 2.0*mean_ratio)
     xmin, xmax, ymin, ymax = plt.axis()
     ax1.plot([0.0, xmax], [mean_ratio, mean_ratio], '--g')
     ax1.plot([0.0, xmax], [mean_ratio+std, mean_ratio+std], '-.g')
@@ -385,7 +385,6 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
     fig = plt.figure(figsize=(7.0, 5.0))
     ax1 = plt.subplot(1, 1, 1)
     ax1.plot(measFlux, ratio, 'o')
-    ax1.set_ylim(0, 2)
     ax1.set_xscale('log')
     plt.title('Flux Density Ratios ({0} / {1})'.format(name1, name2))
     plt.ylabel('Flux density ratio')
@@ -398,6 +397,7 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
     else:
         mean_ratio = np.mean(ratio)
         std = np.std(ratio)
+    ax1.set_ylim(0, 2.0*mean_ratio)
     xmin, xmax, ymin, ymax = plt.axis()
     ax1.plot([0.0, xmax], [mean_ratio, mean_ratio], '--g')
     ax1.plot([0.0, xmax], [mean_ratio+std, mean_ratio+std], '-.g')
