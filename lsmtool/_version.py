@@ -11,6 +11,22 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
+    2019/03/21 - Version 1.3.2
+
+        Allow 2D images as masks in group operation
+
+        Add TGSS and GSM VO queries
+
+        Add option to apply beam attenuation during write
+
+    2018/05/04 - Version 1.3.1
+
+        Improve packaging support
+
+    2018/05/03 - Version 1.3.0
+
+        Add option to tessellate using patches
+
     2017/06/15 - Version 1.2.0
 
     2017/05/09
