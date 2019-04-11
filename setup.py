@@ -5,13 +5,6 @@ import sys
 import lsmtool._version
 
 
-description = 'The LOFAR Local Sky Model Tool'
-long_description = description
-if os.path.exists('README.md'):
-    with open('README.md') as f:
-        long_description=f.read()
-
-
 class PyTest(Command):
     user_options = []
     def initialize_options(self):
@@ -37,8 +30,7 @@ setup(
     url='http://github.com/darafferty/lsmtool/',
     author='David Rafferty',
     author_email='drafferty@hs.uni-hamburg.de',
-    description=description,
-    long_description=long_description,
+    description='The LOFAR Local Sky Model Tool',
     platforms='any',
     classifiers=[
         'Programming Language :: Python',
