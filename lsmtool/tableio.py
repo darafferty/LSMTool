@@ -1134,7 +1134,7 @@ def getGSM(position, radius):
     except TypeError:
         raise ValueError('GSM query radius not understood.')
 
-    url = 'http://172.104.228.177/cgi-bin/gsmv1.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
+    url = 'https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
           RA, Dec, radius)
     cmd = ['wget', '-O', outFile.name, url]
     subprocess.call(cmd)
