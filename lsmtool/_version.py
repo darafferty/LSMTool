@@ -3,13 +3,19 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.0'
+__version__ = '1.4.1'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2019/04/12 - Version 1.4.1
+
+        Fix installation on Python 3 systems
+
+        Update GSM url
 
     2019/03/21 - Version 1.4.0
 

@@ -6,7 +6,7 @@ LSMTool allows the manipulation of LOFAR sky models (in the makesourcedb format)
 Author:
 * David Rafferty
 
-Based on contributed scripts from:
+Based on contributed scripts by:
 * Björn Adebahr
 * Francesco de Gasperin
 * Reinout van Weeren
@@ -50,8 +50,7 @@ If you want to install LSMTool yourself, follow the instructions below.
 
 * [Numpy](http://www.numpy.org)
 * [Matplotlib](http://www.matplotlib.org)
-* [Astropy](http://www.astropy.org) version 0.4 or later
-* [WCSAxes](http://wcsaxes.readthedocs.org) version 0.2 or later (optional, for improved plotting)
+* [Astropy](http://www.astropy.org)
 * [PyVO](http://pyvo.readthedocs.org) (optional, for VO access)
 
 ### Downloading and Installing

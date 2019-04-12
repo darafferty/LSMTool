@@ -36,7 +36,6 @@ setup(
         'Programming Language :: Python',
         'Natural Language :: English',
         'Intended Audience :: Science/Research',
-        'Operating System :: POSIX :: Linux',
         'Topic :: Scientific/Engineering :: Astronomy',
         'Topic :: Software Development :: Libraries :: Python Modules',
         ],
