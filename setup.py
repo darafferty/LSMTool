@@ -34,7 +34,6 @@ setup(
     platforms='any',
     classifiers=[
         'Programming Language :: Python',
-        'Development Status :: 4 - Beta',
         'Natural Language :: English',
         'Intended Audience :: Science/Research',
         'Operating System :: POSIX :: Linux',
