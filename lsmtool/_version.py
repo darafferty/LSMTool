@@ -3,7 +3,7 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.3.2'
+__version__ = '1.4.0'
 
 # Change log
 def changelog():
@@ -11,7 +11,7 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
-    2019/03/21 - Version 1.3.2
+    2019/03/21 - Version 1.4.0
 
         Allow 2D images as masks in group operation
 
