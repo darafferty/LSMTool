@@ -3,7 +3,7 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.2.0'
+__version__ = '1.3.2'
 
 # Change log
 def changelog():
