@@ -456,7 +456,7 @@ class SkyModel(object):
         if self.hasPatches:
             if patchName is None:
                 patchName = self.getPatchNames()
-            if type(patchName) is str or type(patchName) is np.string_ or type(patchName) is bytes:
+            if type(patchName) is str or type(patchName) is np.string_ or type(patchName) is np.unicode_:
                 patchName = [patchName]
             if method is None:
                 patchDict = {}
