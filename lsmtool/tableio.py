@@ -434,11 +434,15 @@ def processLine(line, metaDict, colNames):
 
     # Check for patch lines as any line with an empty Name entry. If found,
     # store patch positions in the table meta data.
-    if colLines[0].strip() == '':
+    nameIndx = colNames.index('Name')
+    if colLines[nameIndx].strip() == '':
         if len(colLines) > 4:
-            patchName = colLines[2].strip()
-            patchRA = RA2Angle(colLines[3].strip())
-            patchDec = Dec2Angle(colLines[4].strip())
+            patchIndx = colNames.index('Patch')
+            patchName = colLines[patchIndx].strip()
+            RAIndx = colNames.index('Ra')
+            patchRA = RA2Angle(colLines[RAIndx].strip())
+            DecIndx = colNames.index('Dec')
+            patchDec = Dec2Angle(colLines[DecIndx].strip())
             metaDict[patchName] = [patchRA[0], patchDec[0]]
         return None, metaDict
 
