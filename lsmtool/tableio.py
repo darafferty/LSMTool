@@ -446,7 +446,7 @@ def processLine(line, metaDict, colNames):
                 patchRA = RA2Angle(colLines[RAIndx].strip())
             DecIndx = colNames.index('Dec')
             if colLines[DecIndx].strip() == '':
-                patchRA = [0.0]
+                patchDec = [0.0]
             else:
                 patchDec = Dec2Angle(colLines[DecIndx].strip())
             metaDict[patchName] = [patchRA[0], patchDec[0]]
