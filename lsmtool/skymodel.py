@@ -1127,6 +1127,7 @@ class SkyModel(object):
         -------
         indices : list
             List of indices
+
         """
         import numpy as np
         import fnmatch
@@ -1955,7 +1956,8 @@ class SkyModel(object):
 
     def group(self, algorithm, targetFlux=None, numClusters=100, FWHM=None,
               threshold=0.1, applyBeam=False, root='Patch', pad_index=False,
-              method='mid', facet="", byPatch=False):
+              method='mid', facet="", byPatch=False, kernelSize=0.1,
+              nIterations=100, lookDistance=0.2, groupingDistance=0.01):
         """
         Groups sources into patches.
 
@@ -1978,14 +1980,16 @@ class SkyModel(object):
                 the use of the additional parameter 'facet' to enter the name of the
                 fits file (NOTE: This method is experimental).
             - 'voronoi' => given a previously grouped sky model, voronoi tesselate
-                using the patch positions
+                using the patch positions for patches above the target flux (specified
+                by the targetFlux parameter)
+            - 'meanshift' => use the meanshift clustering algorithm
             - the filename of a mask image => group by masked regions (where mask =
-                True). Source outside of masked regions are given patches of their
-                own.
+                True). Sources outside of masked regions are given patches of their
+                own
         targetFlux : str or float, optional
             Target flux for tessellation (the total flux of each tile will be close
             to this value). The target flux can be specified as either a float in Jy
-            or as a string with units (e.g., '25.0 mJy').
+            or as a string with units (e.g., '25.0 mJy')
         numClusters : int, optional
             Number of clusters for clustering. Sources are grouped around the
             numClusters brightest sources.
@@ -2003,7 +2007,7 @@ class SkyModel(object):
             patch names will be 'root_INDX', where INDX is an integer ranging from
             (0:nPatches).
         pad_index : bool, optional
-            If True, pad the INDX used in the patch names. E.g., facet_patch_001
+            If True, pad the INDX is used in the patch names. E.g., facet_patch_001
             instead of facet_patch_1
         method : None or str, optional
             This parameter specifies the method used to set the patch positions:
@@ -2015,7 +2019,16 @@ class SkyModel(object):
         facet : str, optional
             Facet fits file used with the algorithm 'facet'
         byPatch : bool, optional
-            For the 'tessellate' algorithm, use patches instead of by sources
+            For the 'tessellate' or 'meanshift' algorithms, use patches instead of
+            sources
+        kernelSize : float, optional
+            Kernel size in degrees for 'meanshift' grouping
+        nIterations : int, optional
+            Number of iterations for 'meanshift' grouping
+        lookDistance : float, optional
+            Look distance in degrees for 'meanshift' grouping
+        groupingDistance : float, optional
+            Grouping distance in degrees for 'meanshift' grouping
 
         Examples
         --------
@@ -2028,7 +2041,10 @@ class SkyModel(object):
         operations.group.group(self, algorithm, targetFlux=targetFlux,
                                numClusters=numClusters, FWHM=FWHM, threshold=threshold,
                                applyBeam=applyBeam, root=root, pad_index=pad_index,
-                               method=method, facet=facet, byPatch=byPatch)
+                               method=method, facet=facet, byPatch=byPatch,
+                               kernelSize=kernelSize, nIterations=nIterations,
+                               lookDistance=lookDistance,
+                               groupingDistance=groupingDistance)
 
     def transfer(self, patchSkyModel, matchBy='name', radius=0.1):
         """
