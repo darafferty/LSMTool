@@ -1636,7 +1636,9 @@ class SkyModel(object):
             If True, the beam correction is inverted (i.e., from apparent sky to
             true sky).
         adjustSI : bool, optional
-            If True, adjust the spectral index column for the beam
+            If True, adjust the spectral index column for the beam (only works if
+            the spectral index in non-logarithmic. I.e., the 'LogarithmicSI' column
+            entries are all False)
 
         Examples
         --------
