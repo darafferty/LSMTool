@@ -1600,7 +1600,8 @@ class SkyModel(object):
             return dist.value
 
     def write(self, fileName=None, format='makesourcedb', clobber=False,
-              sortBy=None, lowToHigh=False, addHistory=True, applyBeam=False):
+              sortBy=None, lowToHigh=False, addHistory=True, applyBeam=False,
+              invertBeam=False, adjustSI=False):
         """
         Writes the sky model to a file.
 
@@ -1630,7 +1631,12 @@ class SkyModel(object):
             If True, the history of operations is written to the sky model
             header.
         applyBeam : bool, optional
-            If True, apparent fluxes will be written.
+            If True, fluxes will be adjusted for the beam before being written.
+        invertBeam : bool, optional
+            If True, the beam correction is inverted (i.e., from apparent sky to
+            true sky).
+        adjustSI : bool, optional
+            If True, adjust the spectral index column for the beam
 
         Examples
         --------
@@ -1650,6 +1656,7 @@ class SkyModel(object):
         """
         import os
         import numpy as np
+        from .operations_lib import attenuate
 
         if fileName is None:
             if self._fileName is None:
@@ -1666,12 +1673,22 @@ class SkyModel(object):
 
         table = self.table.copy()
 
-        # Apply beam attenuation to I column if desired
+        # Apply beam attenuation
         if applyBeam:
-            I_apparent = self.getColValues('I', applyBeam=True)
+            spectralIndex = self.getColValues('SpectralIndex')
+            referenceFrequency = self.getColValues('ReferenceFrequency')
+            I_orig = self.getColValues('I')
+            RADeg = self.getColValues('Ra')
+            DecDeg = self.getColValues('Dec')
+            I_adj, SI_adj = attenuate(self.beamMS, I_orig, RADeg, DecDeg,
+                                      timeIndx=self.beamTime, invert=invertBeam,
+                                      spectralIndex=spectralIndex,
+                                      referenceFrequency=referenceFrequency)
             units = self.table.columns['I'].unit
-            table['I'] = I_apparent
+            table['I'] = I_adj
             table.columns['I'].unit = units
+            if adjustSI:
+                table['SpectralIndex'] = SI_adj
 
         # Sort if desired. For 'factor' output, save the order of patches in the
         # table meta

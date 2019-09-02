@@ -17,11 +17,10 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
-import sys
-import os
 
 
-def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
+def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFrequency=None,
+              timeIndx=0.5, invert=False):
     """
     Returns flux attenuated by primary beam.
 
@@ -35,20 +34,27 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
         List of RA values in degrees
     DecDeg : list
         List of Dec values in degrees
+    spectralIndex : list, optional
+        List of spectral indices to adjust
+    referenceFrequency : list, optional
+        List of reference frequency of polynomial fit
     timeIndx : float (between 0 and 1), optional
         Time as fraction of that covered by the beamMS for which the beam is
         calculated
+    invert : bool, optional
 
     Returns
     -------
     attFluxes : numpy array
+        Attenuated fluxes
+    adjSpectralIndex : numpy array
+        Adjusted spectral indices. Returned only if spectralIndex is not None
 
     """
     import numpy as np
     import pyrap.tables as pt
     import lofar.stationresponse as lsr
 
-    log = logging.getLogger('LSMTool')
     t = pt.table(beamMS, ack=False)
     time = None
     ant1 = -1
@@ -63,29 +69,70 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5):
         timeIndx = 0.0
     if timeIndx > 1.0:
         timeIndx = 1.0
-    time = min(time) + ( max(time) - min(time) ) * timeIndx
-    log.debug('Applying beam attenuation using beam at time of {0}% point of '
-        'observation.'.format(int(timeIndx*100.0)))
+    time = min(time) + (max(time) - min(time)) * timeIndx
+    sw = pt.table(beamMS+'::SPECTRAL_WINDOW', ack=False)
+    numchannels = sw.col('NUM_CHAN')[0]
+    startfreq = np.min(sw.col('CHAN_FREQ')[0])
+    channelwidth = sw.col('CHAN_WIDTH')[0][0]
+    sw.close()
 
     attFluxes = []
-    sr = lsr.stationresponse(beamMS, inverse=False, useElementResponse=False,
-        useArrayFactor=True, useChanFreq=False)
+    adjSpectralIndex = []
+    sr = lsr.stationresponse(beamMS, inverse=invert, useElementResponse=False,
+                             useArrayFactor=True, useChanFreq=False)
     if type(fluxes) is not list:
         fluxes = list(fluxes)
     if type(RADeg) is not list:
-        RADeg= list(RADeg)
+        RADeg = list(RADeg)
     if type(DecDeg) is not list:
         DecDeg = list(DecDeg)
 
-    for flux, RA, Dec in zip(fluxes, RADeg, DecDeg):
-        # Use ant1, mid time, and mid channel to compute the beam
+    for i, (flux, RA, Dec) in enumerate(zip(fluxes, RADeg, DecDeg)):
+        # Use ant1, times, and n channel to compute the beam, where n is determined by
+        # the order of the spectral index polynomial
         sr.setDirection(RA*np.pi/180., Dec*np.pi/180.)
         beam = sr.evaluateStation(time, ant1)
-        r = abs(beam[int(len(beam)/2.)])
-        beam = ( r[0][0] + r[1][1] ) / 2.
-        attFluxes.append(flux * beam)
 
-    return np.array(attFluxes)
+        # Correct the source spectrum if needed
+        if spectralIndex is not None:
+            nspec = len(spectralIndex[i])
+            s = max(1, int(numchannels/nspec))
+            ch_indices = list(range(0, numchannels, s))
+            ch_indices.append(numchannels)
+        else:
+            ch_indices = [int(numchannels/2)]
+        freqs_new = []
+        fluxes_new = []
+        for ind in ch_indices:
+            beam = abs(sr.evaluateChannel(time, ant1, ind))
+            beam = beam[0][0]  # take XX only (XX and YY should be equal)
+            if spectralIndex is not None:
+                nu = (startfreq + ind*channelwidth) / referenceFrequency[i] - 1
+                freqs_new.append(nu)
+                fluxes_new.append(polynomial(flux, spectralIndex[i], nu) * beam)
+            else:
+                fluxes_new.append(flux * beam)
+        if spectralIndex is not None:
+            fit = np.polyfit(freqs_new, fluxes_new, len(spectralIndex[i]-1)).tolist()
+            fit.reverse()
+            attFluxes.append(fit[0])
+            adjSpectralIndex.append(fit[1:])
+        else:
+            attFluxes.append(fluxes_new[0])
+            adjSpectralIndex.append(None)
+
+    if spectralIndex is not None:
+        return np.array(attFluxes), np.array(adjSpectralIndex)
+    else:
+        return np.array(attFluxes)
+
+
+def polynomial(stokesI, coeff, nu):
+    result = stokesI
+    for i in range(len(coeff)):
+        result += coeff[i] * nu**(i+1)
+
+    return result
 
 
 def radec2xy(RA, Dec, refRA=None, refDec=None, crdelt=None):
@@ -205,7 +252,7 @@ def makeWCS(refRA, refDec, crdelt=None):
     w = WCS(naxis=2)
     w.wcs.crpix = [1000, 1000]
     if crdelt is None:
-        crdelt = 0.066667 # 4 arcmin
+        crdelt = 0.066667  # 4 arcmin
     w.wcs.cdelt = np.array([-crdelt, crdelt])
     w.wcs.crval = [refRA, refDec]
     w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
@@ -250,7 +297,7 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
     log = logging.getLogger('LSMTool')
     if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
         log.debug('The installed version of SciPy contains a bug that affects catalog matching. '
-            'Falling back on (slower) matching script.')
+                  'Falling back on (slower) matching script.')
         from operations._matching import match_coordinates_sky
     else:
         from astropy.coordinates.matching import match_coordinates_sky
@@ -262,9 +309,9 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
         catalog2 = SkyCoord(RA, Dec, unit=(u.degree, u.degree), frame='fk5')
     else:
         catalog1 = SkyCoord(LSM1.getColValues('Ra'), LSM1.getColValues('Dec'),
-            unit=(u.degree, u.degree))
+                            unit=(u.degree, u.degree))
         catalog2 = SkyCoord(LSM2.getColValues('Ra'), LSM2.getColValues('Dec'),
-            unit=(u.degree, u.degree))
+                            unit=(u.degree, u.degree))
     idx, d2d, d3d = match_coordinates_sky(catalog1, catalog2)
 
     try:
@@ -322,4 +369,3 @@ def calculateSeparation(ra1, dec1, ra2, dec2):
     coord2 = SkyCoord(ra2, dec2, unit=(u.degree, u.degree), frame='fk5')
 
     return coord1.separation(coord2)
-
