@@ -19,6 +19,53 @@
 import logging
 
 
+def apply_beam_star(inputs):
+    """
+    Simple multiprocessing helper function for apply_beam()
+    """
+    return apply_beam(*inputs)
+
+
+def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, ant1,
+               numchannels, startfreq, channelwidth, invert):
+    import numpy as np
+    import lofar.stationresponse as lsr
+
+    # Use ant1, times, and n channel to compute the beam, where n is determined by
+    # the order of the spectral index polynomial
+    sr = lsr.stationresponse(beamMS, inverse=invert, useElementResponse=False,
+                             useArrayFactor=True, useChanFreq=False)
+
+    sr.setDirection(RA*np.pi/180., Dec*np.pi/180.)
+    beam = sr.evaluateStation(time, ant1)
+
+    # Correct the source spectrum if needed
+    if spectralIndex is not None:
+        nspec = len(spectralIndex)
+        s = max(1, int(numchannels/nspec))
+        ch_indices = list(range(0, numchannels, s))
+        ch_indices.append(numchannels)
+    else:
+        ch_indices = [int(numchannels/2)]
+    freqs_new = []
+    fluxes_new = []
+    for ind in ch_indices:
+        beam = abs(sr.evaluateChannel(time, ant1, ind))
+        beam = beam[0][0]  # take XX only (XX and YY should be equal)
+        if spectralIndex is not None:
+            nu = (startfreq + ind*channelwidth) / referenceFrequency - 1
+            freqs_new.append(nu)
+            fluxes_new.append(polynomial(flux, spectralIndex, nu) * beam)
+        else:
+            fluxes_new.append(flux * beam)
+    if spectralIndex is not None:
+        fit = np.polyfit(freqs_new, fluxes_new, len(spectralIndex-1)).tolist()
+        fit.reverse()
+        return fit[0], fit[1:]
+    else:
+        return fluxes_new[0], None
+
+
 def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFrequency=None,
               timeIndx=0.5, invert=False):
     """
@@ -53,7 +100,9 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFreque
     """
     import numpy as np
     import pyrap.tables as pt
-    import lofar.stationresponse as lsr
+    import multiprocessing
+    import itertools
+    import sys
 
     t = pt.table(beamMS, ack=False)
     time = None
@@ -78,48 +127,31 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFreque
 
     attFluxes = []
     adjSpectralIndex = []
-    sr = lsr.stationresponse(beamMS, inverse=invert, useElementResponse=False,
-                             useArrayFactor=True, useChanFreq=False)
     if type(fluxes) is not list:
         fluxes = list(fluxes)
     if type(RADeg) is not list:
         RADeg = list(RADeg)
     if type(DecDeg) is not list:
         DecDeg = list(DecDeg)
+    if spectralIndex is not None:
+        spectralIndex_list = spectralIndex
+    else:
+        spectralIndex_list = [None] * len(fluxes)
+    if referenceFrequency is not None:
+        referenceFrequency_list = referenceFrequency
+    else:
+        referenceFrequency_list = [None] * len(fluxes)
 
-    for i, (flux, RA, Dec) in enumerate(zip(fluxes, RADeg, DecDeg)):
-        # Use ant1, times, and n channel to compute the beam, where n is determined by
-        # the order of the spectral index polynomial
-        sr.setDirection(RA*np.pi/180., Dec*np.pi/180.)
-        beam = sr.evaluateStation(time, ant1)
-
-        # Correct the source spectrum if needed
-        if spectralIndex is not None:
-            nspec = len(spectralIndex[i])
-            s = max(1, int(numchannels/nspec))
-            ch_indices = list(range(0, numchannels, s))
-            ch_indices.append(numchannels)
-        else:
-            ch_indices = [int(numchannels/2)]
-        freqs_new = []
-        fluxes_new = []
-        for ind in ch_indices:
-            beam = abs(sr.evaluateChannel(time, ant1, ind))
-            beam = beam[0][0]  # take XX only (XX and YY should be equal)
-            if spectralIndex is not None:
-                nu = (startfreq + ind*channelwidth) / referenceFrequency[i] - 1
-                freqs_new.append(nu)
-                fluxes_new.append(polynomial(flux, spectralIndex[i], nu) * beam)
-            else:
-                fluxes_new.append(flux * beam)
-        if spectralIndex is not None:
-            fit = np.polyfit(freqs_new, fluxes_new, len(spectralIndex[i]-1)).tolist()
-            fit.reverse()
-            attFluxes.append(fit[0])
-            adjSpectralIndex.append(fit[1:])
-        else:
-            attFluxes.append(fluxes_new[0])
-            adjSpectralIndex.append(None)
+    pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    args_list = list(zip(RADeg, DecDeg, spectralIndex_list, fluxes, referenceFrequency_list, itertools.repeat(beamMS),
+                         itertools.repeat(time), itertools.repeat(ant1), itertools.repeat(numchannels),
+                         itertools.repeat(startfreq), itertools.repeat(channelwidth), itertools.repeat(invert)))
+    results = pool.map(apply_beam_star, args_list)
+    pool.close()
+    pool.join()
+    for fl, si in results:
+        attFluxes.append(fl)
+        adjSpectralIndex.append(si)
 
     if spectralIndex is not None:
         return np.array(attFluxes), np.array(adjSpectralIndex)
