@@ -1677,8 +1677,18 @@ class SkyModel(object):
 
         # Apply beam attenuation
         if applyBeam:
-            spectralIndex = self.getColValues('SpectralIndex')
-            referenceFrequency = self.getColValues('ReferenceFrequency')
+            if 'LogarithmicSI' in self.getColNames():
+                if np.any(self.getColValues('LogarithmicSI') == "true"):
+                    adjustSI = False
+            else:
+                # Default is LogarithmicSI=true
+                adjustSI = False
+            if adjustSI:
+                spectralIndex = self.getColValues('SpectralIndex')
+                referenceFrequency = self.getColValues('ReferenceFrequency')
+            else:
+                spectralIndex = None
+                referenceFrequency = None
             I_orig = self.getColValues('I')
             RADeg = self.getColValues('Ra')
             DecDeg = self.getColValues('Dec')
