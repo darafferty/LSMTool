@@ -1683,19 +1683,19 @@ class SkyModel(object):
             else:
                 # Default is LogarithmicSI=true
                 adjustSI = False
-            if adjustSI:
-                spectralIndex = self.getColValues('SpectralIndex')
-                referenceFrequency = self.getColValues('ReferenceFrequency')
-            else:
-                spectralIndex = None
-                referenceFrequency = None
             I_orig = self.getColValues('I')
             RADeg = self.getColValues('Ra')
             DecDeg = self.getColValues('Dec')
-            I_adj, SI_adj = attenuate(self.beamMS, I_orig, RADeg, DecDeg,
-                                      timeIndx=self.beamTime, invert=invertBeam,
-                                      spectralIndex=spectralIndex,
-                                      referenceFrequency=referenceFrequency)
+            if adjustSI:
+                spectralIndex = self.getColValues('SpectralIndex')
+                referenceFrequency = self.getColValues('ReferenceFrequency')
+                I_adj, SI_adj = attenuate(self.beamMS, I_orig, RADeg, DecDeg,
+                                          timeIndx=self.beamTime, invert=invertBeam,
+                                          spectralIndex=spectralIndex,
+                                          referenceFrequency=referenceFrequency)
+            else:
+                I_adj = attenuate(self.beamMS, I_orig, RADeg, DecDeg,
+                                  timeIndx=self.beamTime, invert=invertBeam)
             units = self.table.columns['I'].unit
             table['I'] = I_adj
             table.columns['I'].unit = units
