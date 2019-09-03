@@ -251,7 +251,7 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
                     units = parts[1]
             dirs_names = []
             names = LSM.getPatchNames()
-            fluxes = LSM.getColValues('I', aggregate='sum', units=units)
+            fluxes = LSM.getColValues('I', aggregate='sum', units=units, applyBeam=applyBeam)
             for name, flux in zip(names, fluxes):
                 if flux >= targetFlux:
                     dirs_names.append(name)
@@ -307,7 +307,6 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
                 table['Patch'][indices] = name
         LSM.table = table
         LSM._updateGroups()
-#         LSM.merge(patches.tolist())
 
     elif algorithm.lower() == 'facet':
         if os.path.exists(facet):
