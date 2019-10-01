@@ -579,7 +579,7 @@ def skyModelWriter(table, fileName):
             continue
         colName = allowedColumnNames[colKey.lower()]
 
-        if colName in table.meta:
+        if colName in table.meta and colName != 'Patch':
             colHeader = "{0}='{1}'".format(colName, table.meta[colName])
         elif colName == 'SpectralIndex':
             colHeader = "{0}='[]'".format(colName)
