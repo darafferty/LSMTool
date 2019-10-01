@@ -1091,7 +1091,10 @@ class SkyModel(object):
 
     def getPatchNames(self):
         """
-        Returns array of all patch names in the sky model.
+        Returns array of all patch names in the sky model, with duplicates removed.
+
+        Note: use getColValues('Patch') if you want the patch names for each source
+        in the sky model.
 
         Returns
         -------
