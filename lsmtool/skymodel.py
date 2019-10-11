@@ -2075,7 +2075,7 @@ class SkyModel(object):
             >>> s.group('tessellate', targetFlux=30.0)
 
         """
-        operations.group.group(self, algorithm, targetFlux=targetFlux, weightBySize=weightBySize
+        operations.group.group(self, algorithm, targetFlux=targetFlux, weightBySize=weightBySize,
                                numClusters=numClusters, FWHM=FWHM, threshold=threshold,
                                applyBeam=applyBeam, root=root, pad_index=pad_index,
                                method=method, facet=facet, byPatch=byPatch,
