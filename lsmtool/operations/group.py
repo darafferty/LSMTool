@@ -258,9 +258,12 @@ def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, 
             names = LSM.getPatchNames()
             fluxes = LSM.getColValues('I', aggregate='sum', units=units, applyBeam=applyBeam)
             if weightBySize:
-                sizes = LSM.getPatchSizes(weight=True, applyBeam=applyBeam)
+                sizes = LSM.getPatchSizes(units='arcsec', weight=True, applyBeam=applyBeam)
+                sizes[sizes < 1.0] = 1.0
                 meanSize = np.mean(sizes)
                 weights = meanSize / sizes
+                weights[weights > 2.0] = 2.0
+                weights[weights < 0.5] = 0.5
                 fluxes *= weights
             for name, flux in zip(names, fluxes):
                 if flux >= targetFlux:
