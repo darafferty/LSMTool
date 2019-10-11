@@ -1986,7 +1986,7 @@ class SkyModel(object):
         operations.remove.remove(self, filterExpression, aggregate=aggregate,
                                  applyBeam=applyBeam, useRegEx=useRegEx, force=force)
 
-    def group(self, algorithm, targetFlux=None, numClusters=100, FWHM=None,
+    def group(self, algorithm, targetFlux=None, weightBySize=False, numClusters=100, FWHM=None,
               threshold=0.1, applyBeam=False, root='Patch', pad_index=False,
               method='mid', facet="", byPatch=False, kernelSize=0.1,
               nIterations=100, lookDistance=0.2, groupingDistance=0.01):
@@ -2000,17 +2000,17 @@ class SkyModel(object):
         algorithm : str
             Algorithm to use for grouping:
             - 'single' => all sources are grouped into a single patch
-            - 'every' => every source gets a separate patch
+            - 'every' => every source gets a separate patch named 'source_patch'
             - 'cluster' => SAGECAL clustering algorithm that groups sources into
-                specified number of clusters (specified by the numClusters parameter).
+                specified number of clusters (specified by the numClusters parameter)
             - 'tessellate' => group into tiles whose total flux approximates
-                the target flux (specified by the targetFlux parameter).
+                the target flux (specified by the targetFlux parameter)
             - 'threshold' => group by convolving the sky model with a Gaussian beam
                 and then thresholding to find islands of emission (NOTE: all sources
                 are currently considered to be point sources of flux unity)
             - 'facet' => group by facets using as an input a fits file. It requires
                 the use of the additional parameter 'facet' to enter the name of the
-                fits file (NOTE: This method is experimental).
+                fits file.
             - 'voronoi' => given a previously grouped sky model, voronoi tesselate
                 using the patch positions for patches above the target flux (specified
                 by the targetFlux parameter)
@@ -2020,8 +2020,13 @@ class SkyModel(object):
                 own
         targetFlux : str or float, optional
             Target flux for tessellation (the total flux of each tile will be close
-            to this value). The target flux can be specified as either a float in Jy
-            or as a string with units (e.g., '25.0 mJy')
+            to this value) and voronoi algorithms. The target flux can be specified
+            as either a float in Jy or as a string with units (e.g., '25.0 mJy')
+        weightBySize : bool, optional
+            If True, fluxes are weighted by patch size (as mean size / size) when
+            the targetFlux criterion is applied. Patches with sizes below the mean
+            (flux-weighted) size are upweighted and those above the mean are
+            downweighted
         numClusters : int, optional
             Number of clusters for clustering. Sources are grouped around the
             numClusters brightest sources.
@@ -2070,7 +2075,7 @@ class SkyModel(object):
             >>> s.group('tessellate', targetFlux=30.0)
 
         """
-        operations.group.group(self, algorithm, targetFlux=targetFlux,
+        operations.group.group(self, algorithm, targetFlux=targetFlux, weightBySize=weightBySize
                                numClusters=numClusters, FWHM=FWHM, threshold=threshold,
                                applyBeam=applyBeam, root=root, pad_index=pad_index,
                                method=method, facet=facet, byPatch=byPatch,

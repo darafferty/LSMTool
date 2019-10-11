@@ -58,7 +58,7 @@ def run(step, parset, LSM):
     return result
 
 
-def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
+def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, FWHM=None,
           threshold=0.1, applyBeam=False, root='Patch', pad_index=False, method='mid',
           facet="", byPatch=False, kernelSize=0.1, nIterations=100, lookDistance=0.2,
           groupingDistance=0.01):
@@ -92,8 +92,13 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
             own
     targetFlux : str or float, optional
         Target flux for tessellation (the total flux of each tile will be close
-        to this value). The target flux can be specified as either a float in Jy
-        or as a string with units (e.g., '25.0 mJy')
+        to this value) and voronoi algorithms. The target flux can be specified
+        as either a float in Jy or as a string with units (e.g., '25.0 mJy')
+    weightBySize : bool, optional
+        If True, fluxes are weighted by patch size (as mean size / size) when
+        the targetFlux criterion is applied. Patches with sizes below the mean
+        (flux-weighted) size are upweighted and those above the mean are
+        downweighted
     numClusters : int, optional
         Number of clusters for clustering. Sources are grouped around the
         numClusters brightest sources
@@ -252,6 +257,11 @@ def group(LSM, algorithm, targetFlux=None, numClusters=100, FWHM=None,
             dirs_names = []
             names = LSM.getPatchNames()
             fluxes = LSM.getColValues('I', aggregate='sum', units=units, applyBeam=applyBeam)
+            if weightBySize:
+                sizes = LSM.getPatchSizes(weight=True, applyBeam=applyBeam)
+                meanSize = np.mean(sizes)
+                weights = meanSize / sizes
+                fluxes *= weights
             for name, flux in zip(names, fluxes):
                 if flux >= targetFlux:
                     dirs_names.append(name)
