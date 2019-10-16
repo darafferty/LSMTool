@@ -95,9 +95,9 @@ def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, 
         to this value) and voronoi algorithms. The target flux can be specified
         as either a float in Jy or as a string with units (e.g., '25.0 mJy')
     weightBySize : bool, optional
-        If True, fluxes are weighted by patch size (as mean size / size) when
-        the targetFlux criterion is applied. Patches with sizes below the mean
-        (flux-weighted) size are upweighted and those above the mean are
+        If True, fluxes are weighted by patch size (as median_size / size) when
+        the targetFlux criterion is applied. Patches with sizes below the median
+        (flux-weighted) size are upweighted and those above the median are
         downweighted
     numClusters : int, optional
         Number of clusters for clustering. Sources are grouped around the
@@ -260,8 +260,8 @@ def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, 
             if weightBySize:
                 sizes = LSM.getPatchSizes(units='arcsec', weight=True, applyBeam=applyBeam)
                 sizes[sizes < 1.0] = 1.0
-                meanSize = np.mean(sizes)
-                weights = meanSize / sizes
+                medianSize = np.median(sizes)
+                weights = medianSize / sizes
                 weights[weights > 2.0] = 2.0
                 weights[weights < 0.5] = 0.5
                 fluxes *= weights

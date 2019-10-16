@@ -2023,8 +2023,8 @@ class SkyModel(object):
             to this value) and voronoi algorithms. The target flux can be specified
             as either a float in Jy or as a string with units (e.g., '25.0 mJy')
         weightBySize : bool, optional
-            If True, fluxes are weighted by patch size (as mean size / size) when
-            the targetFlux criterion is applied. Patches with sizes below the mean
+            If True, fluxes are weighted by patch size (as median_size / size) when
+            the targetFlux criterion is applied. Patches with sizes below the median
             (flux-weighted) size are upweighted and those above the mean are
             downweighted
         numClusters : int, optional
