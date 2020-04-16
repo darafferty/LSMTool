@@ -35,9 +35,7 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
     # the order of the spectral index polynomial
     sr = lsr.stationresponse(beamMS, inverse=invert, useElementResponse=False,
                              useArrayFactor=True, useChanFreq=False)
-
     sr.setDirection(RA*np.pi/180., Dec*np.pi/180.)
-    beam = sr.evaluateStation(time, ant1)
 
     # Correct the source spectrum if needed
     if spectralIndex is not None:
@@ -50,8 +48,9 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
     freqs_new = []
     fluxes_new = []
     for ind in ch_indices:
+        # Evaluate beam and take XX only (XX and YY should be equal) and square
         beam = abs(sr.evaluateChannel(time, ant1, ind))
-        beam = beam[0][0]  # take XX only (XX and YY should be equal)
+        beam = beam[0][0]**2
         if spectralIndex is not None:
             nu = (startfreq + ind*channelwidth) / referenceFrequency - 1
             freqs_new.append(nu)
@@ -102,7 +101,6 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFreque
     import pyrap.tables as pt
     import multiprocessing
     import itertools
-    import sys
 
     t = pt.table(beamMS, ack=False)
     time = None
@@ -401,3 +399,255 @@ def calculateSeparation(ra1, dec1, ra2, dec2):
     coord2 = SkyCoord(ra2, dec2, unit=(u.degree, u.degree), frame='fk5')
 
     return coord1.separation(coord2)
+
+
+def getFluxAtSingleFrequency(LSM, targetFreq=None, aggregate=None):
+    """
+    Returns flux density at given target frequency, adjusted according to the
+    spectral index.
+
+    Parameters
+    ----------
+    LSM : sky model object
+        RA of coordinate 1 in degrees
+    targetFreq : float, optional
+        Frequency in Hz. If None, the median is used
+    aggregate : str, optional
+        Aggregation to use
+
+    Returns
+    -------
+    fluxes : numpy array
+        Flux densities in Jy
+
+    """
+    import numpy as np
+
+    # Calculate flux densities
+    if targetFreq is None:
+        if 'ReferenceFrequency' in LSM.getColNames():
+            refFreq = LSM.getColValues('ReferenceFrequency', aggregate=aggregate)
+        else:
+            refFreq = np.array([LSM.table.meta['ReferenceFrequency']]*len(LSM))
+        targetFreq = np.median(refFreq)
+    fluxes = LSM.getColValues('I', aggregate=aggregate)
+
+    try:
+        alphas = LSM.getColValues('SpectralIndex', aggregate=aggregate).squeeze(axis=0)
+    except (IndexError, ValueError):
+        alphas = np.array([-0.8]*len(fluxes))
+    nterms = alphas.shape[1]
+
+    if 'LogarithmicSI' in LSM.table.meta:
+        logSI = LSM.table.meta['LogarithmicSI']
+    else:
+        logSI = True
+
+    if nterms > 1:
+        for i in range(nterms):
+            if logSI:
+                fluxes *= 10.0**(alphas[:, i] * (np.log10(refFreq / targetFreq))**(i+1))
+            else:
+                # stokesI + term0 (nu/refnu - 1) + term1 (nu/refnu - 1)^2 + ...
+                fluxes += alphas[:, i] * ((refFreq / targetFreq) - 1.0)**(i+1)
+    else:
+        if logSI:
+            fluxes *= 10.0**(alphas * np.log10(refFreq / targetFreq))
+        else:
+            fluxes += alphas * ((refFreq / targetFreq) - 1.0)
+
+    return fluxes
+
+
+def make_template_image(image_name, reference_ra_deg, reference_dec_deg, reference_freq,
+                        ximsize=512, yimsize=512, cellsize_deg=0.000417, fill_val=0):
+    """
+    Make a blank image and save it to disk
+
+    Parameters
+    ----------
+    image_name : str
+        Filename of output image
+    reference_ra_deg : float
+        RA for center of output image
+    reference_dec_deg : float
+        Dec for center of output image
+    reference_freq  : float
+        Ref freq of output image
+    ximsize : int, optional
+        Size of output image
+    yimsize : int, optional
+        Size of output image
+    cellsize_deg : float, optional
+        Size of a pixel in degrees
+    fill_val : int, optional
+        Value with which to fill the image
+    """
+    import numpy as np
+    from astropy.io import fits as pyfits
+
+    # Make fits hdu
+    # Axis order is [STOKES, FREQ, DEC, RA]
+    shape_out = [1, 1, yimsize, ximsize]
+    hdu = pyfits.PrimaryHDU(np.ones(shape_out, dtype=np.float32)*fill_val)
+    hdulist = pyfits.HDUList([hdu])
+    header = hdulist[0].header
+
+    # Add RA, Dec info
+    i = 1
+    header['CRVAL{}'.format(i)] = reference_ra_deg
+    header['CDELT{}'.format(i)] = -cellsize_deg
+    header['CRPIX{}'.format(i)] = ximsize / 2.0
+    header['CUNIT{}'.format(i)] = 'deg'
+    header['CTYPE{}'.format(i)] = 'RA---SIN'
+    i += 1
+    header['CRVAL{}'.format(i)] = reference_dec_deg
+    header['CDELT{}'.format(i)] = cellsize_deg
+    header['CRPIX{}'.format(i)] = yimsize / 2.0
+    header['CUNIT{}'.format(i)] = 'deg'
+    header['CTYPE{}'.format(i)] = 'DEC--SIN'
+    i += 1
+
+    # Add STOKES info
+    header['CRVAL{}'.format(i)] = 1.0
+    header['CDELT{}'.format(i)] = 1.0
+    header['CRPIX{}'.format(i)] = 1.0
+    header['CUNIT{}'.format(i)] = ''
+    header['CTYPE{}'.format(i)] = 'STOKES'
+    i += 1
+
+    # Add frequency info
+    del_freq = 1e8
+    header['RESTFRQ'] = reference_freq
+    header['CRVAL{}'.format(i)] = reference_freq
+    header['CDELT{}'.format(i)] = del_freq
+    header['CRPIX{}'.format(i)] = 1.0
+    header['CUNIT{}'.format(i)] = 'Hz'
+    header['CTYPE{}'.format(i)] = 'FREQ'
+    i += 1
+
+    # Add equinox
+    header['EQUINOX'] = 2000.0
+
+    # Add telescope
+    header['TELESCOP'] = 'LOFAR'
+
+    hdulist[0].header = header
+    hdulist.writeto(image_name, overwrite=True)
+    hdulist.close()
+
+
+def gaussian_fcn(g, x1, x2, const=False):
+    """
+    Evaluate a Gaussian on the given grid.
+
+    Parameters
+    ----------
+    g: list
+        List of Gaussian parameters:
+        [peak_flux, xcen, ycen, FWHMmaj, FWHMmin, PA_E_of_N]
+    x1, x2: grid (as produced by numpy.mgrid)
+        Grid coordinates on which to evaluate the Gaussian
+    const : bool, optional
+        If True, all values are set to the peak_flux
+
+    Returns
+    -------
+    img : array
+        Image of Gaussian
+    """
+    from math import radians, sin, cos
+    import numpy as np
+
+    A, C1, C2, S1, S2, Th = g
+    fwsig = 2.35482  # FWHM = fwsig * sigma
+    S1 = S1 / fwsig
+    S2 = S2 / fwsig
+    Th = 360.0 - Th  # theta is angle E of N (ccw from +y axis)
+    th = radians(Th)
+    cs = cos(th)
+    sn = sin(th)
+    f1 = ((x1-C1)*cs + (x2-C2)*sn)/S1
+    f2 = (-(x1-C1)*sn + (x2-C2)*cs)/S2
+    gimg = A * np.exp(-(f1*f1 + f2*f2)/2)
+
+    if const:
+        mask = np.where(gimg/A > 1e-5)
+        cimg = np.zeros(x1.shape)
+        cimg[mask] = A
+        return cimg
+    else:
+        return gimg
+
+
+def tessellate(x_pix, y_pix, w, dist_pix):
+    """
+    Returns Voronoi tessellation vertices
+
+    Parameters
+    ----------
+    x_pix : array
+        Array of x pixel values for tessellation centers
+    y_pix : array
+        Array of y pixel values for tessellation centers
+    w : WCS object
+        WCS for transformation from pix to world coordinates
+    dist_pix : float
+        Distance in pixels from center to outer boundary of facets
+
+    Returns
+    -------
+    verts : list
+        List of facet vertices in (RA, Dec)
+    """
+    import numpy as np
+    from scipy.spatial import Voronoi
+    import shapely.geometry
+    import shapely.ops
+
+    # Get x, y coords for directions in pixels. We use the input calibration sky
+    # model for this, as the patch positions written to the h5parm file by DPPP may
+    # be different
+    xy = []
+    for RAvert, Decvert in zip(x_pix, y_pix):
+        xy.append((RAvert, Decvert))
+
+    # Generate array of outer points used to constrain the facets
+    nouter = 64
+    means = np.ones((nouter, 2)) * np.array(xy).mean(axis=0)
+    offsets = []
+    angles = [np.pi/(nouter/2.0)*i for i in range(0, nouter)]
+    for ang in angles:
+        offsets.append([np.cos(ang), np.sin(ang)])
+    scale_offsets = dist_pix * np.array(offsets)
+    outer_box = means + scale_offsets
+
+    # Tessellate and clip
+    points_all = np.vstack([xy, outer_box])
+    vor = Voronoi(points_all)
+    lines = [
+        shapely.geometry.LineString(vor.vertices[line])
+        for line in vor.ridge_vertices
+        if -1 not in line
+    ]
+    polygons = [poly for poly in shapely.ops.polygonize(lines)]
+    verts = []
+    for poly in polygons:
+        verts_xy = poly.exterior.xy
+        verts_deg = []
+        for x, y in zip(verts_xy[0], verts_xy[1]):
+            x_y = np.array([[y, x, 0.0, 0.0]])
+            ra_deg, dec_deg = w.wcs_pix2world(x_y, 0)[0][0], w.wcs_pix2world(x_y, 0)[0][1]
+            verts_deg.append((ra_deg, dec_deg))
+        verts.append(verts_deg)
+
+    # Reorder to match the initial ordering
+    ind = []
+    for poly in polygons:
+        for j, (xs, ys) in enumerate(zip(x_pix, y_pix)):
+            if poly.contains(shapely.geometry.Point(xs, ys)):
+                ind.append(j)
+                break
+    verts = [verts[i] for i in ind]
+
+    return verts
