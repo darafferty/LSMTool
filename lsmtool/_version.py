@@ -3,13 +3,19 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.1'
+__version__ = '1.4.2'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2019/10/01 - Version 1.4.2
+
+        Fix to incorrect header on write
+
+        Add meanshift grouping algorithm
 
     2019/04/12 - Version 1.4.1
 
