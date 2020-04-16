@@ -346,7 +346,7 @@ def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, 
     history = "algorithm = '{0}'".format(algorithm)
     if algorithm.lower() == 'cluster':
         history += ', numClusters = {0}'.format(numClusters)
-    elif algorithm.lower() == 'tessellate':
+    elif algorithm.lower() == 'tessellate' or algorithm.lower() == 'voronoi':
         history += ', targetFlux = {0}'.format(targetFlux)
     LSM._addHistory("GROUP ({0})".format(history))
     LSM.setPatchPositions(method=method, applyBeam=applyBeam)
