@@ -482,11 +482,11 @@ def getMaskValues(mask, RARad, DecRad):
         (a, b, _, _) = maskdata.toworld([0, 0, 0, 0])
         (_, _, pixY, pixX) = maskdata.topixel([a, b, decRad, raRad])
         try:
-            if maskval[int(pixY), int(pixX)]:
+            if maskval[int(pixY), int(pixX)] and pixX >= 0 and pixY >=0:
                 vals.append(True)
             else:
                 vals.append(False)
-        except:
+        except IndexError:
             vals.append(False)
 
     return np.array(vals)
