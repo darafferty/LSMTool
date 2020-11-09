@@ -260,7 +260,8 @@ def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, 
             if weightBySize:
                 sizes = LSM.getPatchSizes(units='arcsec', weight=True, applyBeam=applyBeam)
                 sizes[sizes < 1.0] = 1.0
-                medianSize = np.median(sizes)
+                bright_ind = np.where(fluxes >= targetFlux)
+                medianSize = np.median(sizes[bright_ind])
                 weights = medianSize / sizes
                 weights[weights > 1.0] = 1.0
                 weights[weights < 0.5] = 0.5
