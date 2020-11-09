@@ -262,7 +262,7 @@ def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, 
                 sizes[sizes < 1.0] = 1.0
                 medianSize = np.median(sizes)
                 weights = medianSize / sizes
-                weights[weights > 2.0] = 2.0
+                weights[weights > 1.0] = 1.0
                 weights[weights < 0.5] = 0.5
                 fluxes *= weights
             for name, flux in zip(names, fluxes):
