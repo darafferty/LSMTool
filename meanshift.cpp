@@ -136,8 +136,13 @@ void Grouper::group(py::list l){
   ctype coords_to_check = _coordinates;
 
   while (coords_to_check.size() > 0){
-    auto idx_cluster = neighbourhood_points(coords_to_check[0], _coordinates, _groupingDistance);
-    auto idx_cluster_to_remove = neighbourhood_points(coords_to_check[0], coords_to_check, _groupingDistance);
+    std::vector<unsigned> idx_cluster;
+    std::vector<unsigned> idx_cluster_to_remove;
+#pragma omp parallel
+{
+    idx_cluster = neighbourhood_points(coords_to_check[0], _coordinates, _groupingDistance);
+    idx_cluster_to_remove = neighbourhood_points(coords_to_check[0], coords_to_check, _groupingDistance);
+}
     unsigned n = 0;
     for (auto idx : idx_cluster_to_remove){
       coords_to_check.erase(coords_to_check.begin() + idx - n);
