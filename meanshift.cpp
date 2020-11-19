@@ -58,7 +58,7 @@ void Grouper::readCoordinates(py::array_t<cdt> array, py::array_t<cdt> farray){
 
 }
 
-static double euclid_distance(std::pair<cdt, cdt> coordinate1, std::pair<cdt,cdt> coordinate2){
+static double euclid_distance(const std::pair<cdt, cdt> &coordinate1, const std::pair<cdt,cdt> &coordinate2){
 // Euclidian distance between two points
   double result = 0.0;
   double distx = coordinate1.first - coordinate2.first;
@@ -66,7 +66,7 @@ static double euclid_distance(std::pair<cdt, cdt> coordinate1, std::pair<cdt,cdt
   return sqrt(distx * distx + disty * disty);
 }
 
-static std::vector<unsigned> neighbourhood_points(std::pair<cdt,cdt> centroid, ctype coordinates, double max_distance){
+static std::vector<unsigned> neighbourhood_points(const std::pair<cdt,cdt>& centroid, const ctype& coordinates, double max_distance){
 std::vector<unsigned> result;
   for (unsigned n=0; n<coordinates.size(); ++n){
     double distance = euclid_distance(centroid, coordinates[n]);
@@ -95,8 +95,8 @@ void Grouper::run(){
   ctype newcoords = _coordinates;
 
   for (unsigned it = 0; it < _numberOfIterations; ++it){
-   py::print("starting iteration ", it); 
-#pragma omp parallel
+   py::print("starting iteration ", it);
+#pragma omp parallel 
     for (unsigned n=0; n<_coordinates.size(); ++n){
       std::vector<unsigned> idx_neighbours = neighbourhood_points(_coordinates[n], _coordinates, _lookDistance);
       double denominator = 0.0;
@@ -114,7 +114,7 @@ void Grouper::run(){
     }
     double maxdiff = 0.0;
     unsigned n=0;
-    for (auto coordinate : _coordinates){
+    for (auto &coordinate : _coordinates){
       double diff = euclid_distance(coordinate, newcoords[n]);
       if (diff > maxdiff){
         maxdiff = diff;
