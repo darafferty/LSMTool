@@ -60,7 +60,6 @@ void Grouper::readCoordinates(py::array_t<cdt> array, py::array_t<cdt> farray){
 
 static double euclid_distance(const std::pair<cdt, cdt> &coordinate1, const std::pair<cdt,cdt> &coordinate2){
 // Euclidian distance between two points
-  double result = 0.0;
   double distx = coordinate1.first - coordinate2.first;
   double disty = coordinate1.second - coordinate2.second;
   return sqrt(distx * distx + disty * disty);
@@ -94,7 +93,7 @@ void Grouper::run(){
 
   ctype newcoords = _coordinates;
 
-  for (unsigned it = 0; it < _numberOfIterations; ++it){
+  for (int it = 0; it < _numberOfIterations; ++it){
    py::print("starting iteration ", it);
 #pragma omp parallel for
     for (unsigned n=0; n<_coordinates.size(); ++n){
