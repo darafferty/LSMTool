@@ -24,6 +24,7 @@ from astropy.coordinates import Angle
 from astropy.io import registry
 import astropy.io.ascii as ascii
 import numpy as np
+import numpy.ma as ma
 import re
 import logging
 import os
@@ -255,7 +256,10 @@ def createTable(outlines, metaDict, colNames, colDefaults):
     table.add_column(DecCol, index=DecIndx)
 
     def fluxformat(val):
-        return '{0:0.3f}'.format(val)
+        if type(val) is ma.core.MaskedConstant:
+            return '{}'.format(val)
+        else:
+            return '{0:0.3f}'.format(val)
     table.columns['I'].format = fluxformat
 
     # Set column units and default values
@@ -538,16 +542,19 @@ def skyModelIdentify(origin, *args, **kwargs):
     Identifies valid makesourcedb sky model files.
     """
     # Search for a format line. If found, assume file is valid
-    if isinstance(args[0], basestring):
-        f = open(args[0])
-    elif isinstance(args[0], file_types):
-        f = args[0]
-    else:
+    try:
+        if isinstance(args[0], basestring):
+            f = open(args[0])
+        elif isinstance(args[0], file_types):
+            f = args[0]
+        else:
+            return False
+        for line in f:
+            if line.startswith("FORMAT") or line.startswith("format"):
+                return True
         return False
-    for line in f:
-        if line.startswith("FORMAT") or line.startswith("format"):
-            return True
-    return False
+    except UnicodeDecodeError:
+        return False
 
 
 def skyModelWriter(table, fileName):
