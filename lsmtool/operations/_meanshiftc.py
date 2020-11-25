@@ -18,7 +18,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 import numpy as np
-import grouper
+from . import _grouper
 import logging
 log = logging.getLogger('LSMTool.Group')
 
@@ -52,7 +52,7 @@ class Grouper(object):
         self.grouping_distance = grouping_distance
         self.past_coords = [np.copy(self.coords)]
         self.clusters = []
-        self.g = grouper.Grouper()
+        self.g = _grouper.Grouper()
         self.g.readCoordinates(self.coords, self.fluxes)
         self.g.setKernelSize(self.kernel_size)
         self.g.setNumberOfIterations(self.n_iterations)

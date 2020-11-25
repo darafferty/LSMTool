@@ -20,7 +20,7 @@ void setKernelSize(double kernelSize){_kernelSize = kernelSize;}
 void setNumberOfIterations (int numberOfIterations){_numberOfIterations = numberOfIterations;}
 void setLookDistance (double lookDistance){_lookDistance = lookDistance;}
 void setGroupingDistance (double groupingDistance){_groupingDistance = groupingDistance;}
-void readCoordinates(py::array_t<cdt> array, py::array_t<cdt> farray); 
+void readCoordinates(py::array_t<cdt> array, py::array_t<cdt> farray);
 void run();
 void group(py::list l);
 
@@ -36,7 +36,7 @@ double gaussian_kernel(double distance);
 };
 
 
-void Grouper::readCoordinates(py::array_t<cdt> array, py::array_t<cdt> farray){  
+void Grouper::readCoordinates(py::array_t<cdt> array, py::array_t<cdt> farray){
   auto arraybuf    = array.request();
   auto farraybuf = farray.request();
   cdt* coordinates = (cdt*) arraybuf.ptr;
@@ -53,7 +53,7 @@ void Grouper::readCoordinates(py::array_t<cdt> array, py::array_t<cdt> farray){
   }
   for (unsigned n=0; n<N; ++n){
     _coordinates.push_back(std::pair<cdt, cdt>(coordinates[2*n],coordinates[2*n+1]));
-    _fluxes.push_back(fluxes[n]);  
+    _fluxes.push_back(fluxes[n]);
   }
 
 }
@@ -96,7 +96,7 @@ void Grouper::run(){
 
   for (unsigned it = 0; it < _numberOfIterations; ++it){
    py::print("starting iteration ", it);
-#pragma omp parallel for 
+#pragma omp parallel for
     for (unsigned n=0; n<_coordinates.size(); ++n){
       std::vector<unsigned> idx_neighbours = neighbourhood_points(_coordinates[n], _coordinates, _lookDistance);
       double denominator = 0.0;
@@ -119,14 +119,14 @@ void Grouper::run(){
       if (diff > maxdiff){
         maxdiff = diff;
       }
-      ++n; 
+      ++n;
     }
-    _coordinates = newcoords;    
+    _coordinates = newcoords;
     if ((it > 1) && (maxdiff < _groupingDistance / 2.0)){
       break;
     }
 
-  } 
+  }
 
 
 }
@@ -158,7 +158,7 @@ void Grouper::group(py::list l){
   }
 }
 
-PYBIND11_MODULE(grouper, m)    
+PYBIND11_MODULE(_grouper, m)
 {
   py::class_<Grouper>(m, "Grouper")
     .def(py::init<>())
@@ -167,7 +167,7 @@ PYBIND11_MODULE(grouper, m)
     .def("setNumberOfIterations", &Grouper::setNumberOfIterations)
     .def("setLookDistance", &Grouper::setLookDistance)
     .def("setGroupingDistance", &Grouper::setGroupingDistance)
-    .def("readCoordinates", &Grouper::readCoordinates)  
+    .def("readCoordinates", &Grouper::readCoordinates)
     .def("group", &Grouper::group)
 ;
 }
