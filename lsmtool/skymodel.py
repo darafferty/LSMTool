@@ -2396,13 +2396,13 @@ class SkyModel(object):
 
         Parameters
         ----------
+        cellsize : float
+            The cellsize in degrees for the output image.
         fileRoot : str, optional
             Filename root for the output FITS images. The images will be named
             fileRoot_0.fits, fileRoot_1.fits, etc. (one for each spectral term in
             the sky model). If writeRegionFile is True, a ds9 region file is also
             written as fileRoot.reg.
-        cellsize : float
-            The cellsize in degrees for the output image.
         writeRegionFile : bool, optional
             If True and the sky model is grouped into contiguous patches, a ds9 region
             file defining the Voronio patches will be written (this file is required
