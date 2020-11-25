@@ -60,7 +60,7 @@ class LSMToolDistribution(Distribution):
 class BuildExt(build_ext):
 
     def build_extensions(self):
-        opts = ['-std=c++11']
+        opts = ['-fopenmp', '-std=c++11']
         if sys.platform == 'darwin':
             opts += ['-stdlib=libc++']
         for ext in self.extensions:
