@@ -60,9 +60,13 @@ class LSMToolDistribution(Distribution):
 class BuildExt(build_ext):
 
     def build_extensions(self):
-        opts = ['-fopenmp', '-std=c++11']
+        opts = ['-std=c++11']
         if sys.platform == 'darwin':
             opts += ['-stdlib=libc++']
+        else:
+            # Enable OpenMP support only on non-Darwin platforms, as clang
+            # does not support it without some work
+            opts += ['-fopenmp']
         for ext in self.extensions:
             ext.extra_compile_args = opts
         build_ext.build_extensions(self)
