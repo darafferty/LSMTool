@@ -5,6 +5,7 @@ import os
 
 
 s = lsmtool.load('tests/no_patches.sky')
+s2 = lsmtool.load('tests/apparent.sky')
 
 
 def test_select():
@@ -94,3 +95,8 @@ def test_plot():
     s.plot('tests/plot.pdf')
     assert os.path.exists('tests/plot.pdf')
 
+
+def test_meanshift():
+    print('Group the model with the meanshift algorithm')
+    s2.group('meanshift', byPatch=True, lookDistance=0.075, groupingDistance=0.01)
+    assert len(s2.getPatchPositions()) == 67
