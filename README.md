@@ -64,6 +64,16 @@ Then install with:
     cd LSMTool
     python setup.py install
 
+If you have a C++11-compliant compiler, you can build a faster
+version of the mean shift grouping algorithm with:
+
+    cd LSMTool
+    python setup.py install --build_c_extentions
+
+Note that the C++ version will give slightly different results compared to the
+Python version, but such differences are not expected to be important
+in practice.
+
 ### Testing
 
 You can test that the installation worked with:

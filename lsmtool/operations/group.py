@@ -150,7 +150,10 @@ def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, 
     from . import _tessellate
     from . import _cluster
     from . import _threshold
-    from . import _meanshift
+    try:
+        from . import _meanshiftc as _meanshift
+    except ImportError:
+        from . import _meanshift
     import numpy as np
     import os
     from itertools import groupby
