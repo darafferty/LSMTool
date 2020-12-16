@@ -94,7 +94,6 @@ void Grouper::run(){
   ctype newcoords = _coordinates;
 
   for (int it = 0; it < _numberOfIterations; ++it){
-   py::print("starting iteration ", it);
 #pragma omp parallel for
     for (unsigned n=0; n<_coordinates.size(); ++n){
       std::vector<unsigned> idx_neighbours = neighbourhood_points(_coordinates[n], _coordinates, _lookDistance);
