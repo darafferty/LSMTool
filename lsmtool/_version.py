@@ -3,13 +3,17 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.2'
+__version__ = '1.4.2.post1'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2021/04/02 - Version 1.4.2.post1
+
+        Publish on PyPI
 
     2019/10/01 - Version 1.4.2
 

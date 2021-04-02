@@ -1,8 +1,28 @@
 from __future__ import print_function
 from setuptools import setup, Command, Extension, Distribution
 from setuptools.command.build_ext import build_ext
+import os
 import sys
-import lsmtool._version
+
+
+# Functions read() and get_version() were copied from Pip package.
+# Purpose is to get version info from current package without it
+# being installed (which is usually the case when setup.py is run).
+def read(rel_path):
+    here = os.path.abspath(os.path.dirname(__file__))
+    # intentionally *not* adding an encoding option to open, See:
+    #   https://github.com/pypa/virtualenv/issues/201#issuecomment-3145690
+    with open(os.path.join(here, rel_path), 'r') as fp:
+        return fp.read()
+
+
+def get_version(rel_path):
+    for line in read(rel_path).splitlines():
+        if line.startswith('__version__'):
+            # __version__ = "0.9"
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    raise RuntimeError("Unable to find version string.")
 
 
 # Flag that determines whether to build the optional (but faster) C++
@@ -39,7 +59,6 @@ class PyTest(Command):
         pass
 
     def run(self):
-        import sys
         import subprocess
         errno = subprocess.call([sys.executable, 'runtests.py'])
         raise SystemExit(errno)
@@ -48,8 +67,7 @@ class PyTest(Command):
 class LSMToolDistribution(Distribution):
 
     def is_pure(self):
-        if self.pure:
-            return True
+        return self.pure
 
     def has_ext_modules(self):
         return not self.pure
@@ -73,22 +91,29 @@ class BuildExt(build_ext):
             ext.extra_compile_args = opts
         build_ext.build_extensions(self)
 
-
 setup(
     name='lsmtool',
-    version=lsmtool._version.__version__,
-    url='http://github.com/darafferty/lsmtool/',
+    version=get_version("lsmtool/_version.py"),
+    url='https://github.com/darafferty/LSMTool',
+    project_urls={
+        "Documentation": "https://www.astron.nl/citt/lsmtool/",
+        "Source": "https://github.com/darafferty/LSMTool"
+    },
     author='David Rafferty',
     author_email='drafferty@hs.uni-hamburg.de',
     description='The LOFAR Local Sky Model Tool',
+    long_description=read("README.md"),
+    long_description_content_type='text/markdown',
+    license="GPL",
     platforms='any',
     classifiers=[
+        'Development Status :: 5 - Production/Stable',
         'Programming Language :: Python',
         'Natural Language :: English',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Astronomy',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        ],
+    ],
     install_requires=reqlist,
     scripts=['bin/lsmtool'],
     ext_modules=ext_modules,
@@ -97,4 +122,4 @@ setup(
     packages=['lsmtool', 'lsmtool.operations'],
     setup_requires=['pytest-runner'],
     tests_require=['pytest']
-    )
+)
