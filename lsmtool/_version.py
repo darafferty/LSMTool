@@ -3,13 +3,23 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.2'
+__version__ = '1.4.3'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2021/04/07 - Version 1.4.3
+
+        Publish on PyPI
+
+        Add faster version of meanshift algorithm
+
+        Fix to incorrect filtering with mask images
+
+        Fix to Astropy registry check
 
     2019/10/01 - Version 1.4.2
 
