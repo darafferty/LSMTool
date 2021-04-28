@@ -35,10 +35,10 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
     ----------
     RA : float
         RA value in degrees
-    Dec : list
+    Dec : float
         Dec value in degrees
-    spectralIndex : list, optional
-        List of spectral indices to adjust
+    spectralIndex : float
+        Spectral index to adjust
     flux : list
         Flux to attenuate
     referenceFrequency : float
@@ -55,15 +55,15 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
         Start frequency in Hz
     channelwidth : float
         Channel with in Hz
-    invert : bool, optional
-        If True, invert the beam (i.e. to attenuate the flux)
+    invert : bool
+        If True, invert the beam (i.e. to un-attenuate the flux)
 
     Returns
     -------
-    attFluxes : numpy array
-        Attenuated fluxes
-    adjSpectralIndex : numpy array
-        Adjusted spectral indices. Returned only if spectralIndex is not None
+    attFlux : float
+        Attenuated flux
+    adjSpectralIndex : float
+        Adjusted spectral index. Returned only if spectralIndex is not None
 
     """
     import numpy as np
@@ -148,6 +148,7 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFreque
         Time as fraction of that covered by the beamMS for which the beam is
         calculated
     invert : bool, optional
+        If True, invert the beam (i.e. to un-attenuate the flux)
 
     Returns
     -------
