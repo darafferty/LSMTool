@@ -28,6 +28,44 @@ def apply_beam_star(inputs):
 
 def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, ant1,
                numchannels, startfreq, channelwidth, invert):
+    """
+    Worker function for attenuate() that applies the beam to a single flux
+
+    Parameters
+    ----------
+    RA : float
+        RA value in degrees
+    Dec : list
+        Dec value in degrees
+    spectralIndex : list, optional
+        List of spectral indices to adjust
+    flux : list
+        Flux to attenuate
+    referenceFrequency : float
+        Reference frequency of polynomial fit
+    beamMS : str
+        Measurement set for which the beam model is made
+    time : float
+        Time to calculate beam (in MJD seconds)
+    ant1 : int
+        Station index
+    numchannels : int
+        Number of channels
+    startfreq : float
+        Start frequency in Hz
+    channelwidth : float
+        Channel with in Hz
+    invert : bool, optional
+        If True, invert the beam (i.e. to attenuate the flux)
+
+    Returns
+    -------
+    attFluxes : numpy array
+        Attenuated fluxes
+    adjSpectralIndex : numpy array
+        Adjusted spectral indices. Returned only if spectralIndex is not None
+
+    """
     import numpy as np
     has_eb = False
     try:
