@@ -7,7 +7,7 @@ Author:
 * David Rafferty
 
 Based on contributed scripts by:
-* Björn Adebahr
+* Bjoern Adebahr
 * Francesco de Gasperin
 * Reinout van Weeren
 
