@@ -25,17 +25,17 @@ log.debug('Loading UNGROUP module.')
 
 def run(step, parset, LSM):
 
-    outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '' )
+    outFile = parset.getString('.'.join(["LSMTool.Steps", step, "OutFile"]), '')
 
     try:
         LSM.ungroup()
         result = 0
     except Exception as e:
-        log.error(e.message)
+        log.error(e)
         result = 1
 
     # Write to outFile
-    if outFile != '':
+    if outFile != '' and result == 0:
         LSM.write(outFile, clobber=True)
 
-    return 0
+    return result

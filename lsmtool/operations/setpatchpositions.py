@@ -31,7 +31,7 @@ def run(step, parset, LSM):
         LSM.setPatchPositions(method=method, applyBeam=applyBeam)
         result = 0
     except Exception as e:
-        log.error(e.message)
+        log.error(e)
         result = 1
 
     # Write to outFile

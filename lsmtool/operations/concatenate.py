@@ -36,7 +36,7 @@ def run(step, parset, LSM):
         concatenate(LSM, skyModel2, matchBy, radius, keep, inheritPatches)
         result = 0
     except Exception as e:
-        log.error(e.message)
+        log.error(e)
         result = 1
 
     # Write to outFile

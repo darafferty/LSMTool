@@ -489,7 +489,7 @@ def RA2Angle(RA):
             raise
         except Exception as e:
             raise ValueError('RA not understood (must be string in '
-                'makesourcedb format or float in degrees): {0}'.format(e.message))
+                'makesourcedb format or float in degrees): {0}'.format(e))
     else:
         RAAngle = Angle(RA, unit=u.deg)
 
@@ -527,10 +527,10 @@ def Dec2Angle(Dec):
                 DecAngle = Angle(DecSex, unit=u.deg)
             except Exception as e:
                 raise ValueError('Dec not understood (must be string in '
-                    'makesourcedb format or float in degrees): {0}'.format(e.message))
+                    'makesourcedb format or float in degrees): {0}'.format(e))
         except Exception as e:
             raise ValueError('Dec not understood (must be string in '
-                'makesourcedb format or float in degrees): {0}'.format(e.message))
+                'makesourcedb format or float in degrees): {0}'.format(e))
     else:
         DecAngle = Angle(Dec, unit=u.deg)
 
