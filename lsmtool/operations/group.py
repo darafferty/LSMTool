@@ -48,7 +48,7 @@ def run(step, parset, LSM):
               float(lookDistance), float(groupingDistance))
         result = 0
     except Exception as e:
-        log.error(e.message)
+        log.error(e)
         result = 1
 
     # Write to outFile

@@ -43,7 +43,7 @@ def run(step, parset, LSM):
         add(LSM, colNamesVals)
         result = 0
     except Exception as e:
-        log.error(e.message)
+        log.error(e)
         result = 1
 
     if outFile != '' and result == 0:

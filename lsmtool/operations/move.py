@@ -39,7 +39,7 @@ def run(step, parset, LSM):
         move(LSM, name, position, shift)
         result = 0
     except Exception as e:
-        log.error(e.message)
+        log.error(e)
         result = 1
 
     # Write to outFile
@@ -128,7 +128,7 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
                 table['Ra'][indx] = tableio.RA2Angle(position[0])[0]
                 table['Dec'][indx] = tableio.Dec2Angle(position[1])[0]
             except Exception as e:
-                raise ValueError('Could not parse position: {0}'.format(e.message))
+                raise ValueError('Could not parse position: {0}'.format(e))
         if shift is not None:
             for ind in indx:
                 RA = LSM.table['Ra'][ind] + tableio.RA2Angle(shift[0])
@@ -156,7 +156,7 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
                     position[0] = tableio.RA2Angle(position[0])[0]
                     position[1] = tableio.Dec2Angle(position[1])[0]
                 except Exception as e:
-                    raise ValueError('Could not parse position: {0}'.format(e.message))
+                    raise ValueError('Could not parse position: {0}'.format(e))
                 table.meta[name] = position
             if shift is not None:
                 for ind in indx:
