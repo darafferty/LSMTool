@@ -29,13 +29,28 @@ def apply_beam_star(inputs):
 def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, ant1,
                numchannels, startfreq, channelwidth, invert):
     import numpy as np
-    import lofar.stationresponse as lsr
+    has_eb = False
+    try:
+        import everybeam as eb
+        has_eb = True
+    except ImportError:
+        import lofar.stationresponse as lsr
+    import casacore.tables as pt
 
     # Use ant1, times, and n channel to compute the beam, where n is determined by
     # the order of the spectral index polynomial
-    sr = lsr.stationresponse(beamMS, inverse=invert, useElementResponse=False,
-                             useArrayFactor=True, useChanFreq=False)
-    sr.setDirection(RA*np.pi/180., Dec*np.pi/180.)
+    if has_eb:
+        source_xyz = eb.thetaphi2cart(RA*np.pi/180., Dec*np.pi/180.)
+        obs = pt.table(beamMS+'::FIELD', ack=False)
+        pointing_ra = float(obs.col('REFERENCE_DIR')[0][0][0])  # rad
+        pointing_dec = float(obs.col('REFERENCE_DIR')[0][0][1])  # rad
+        obs.close()
+        pointing_xyz = eb.thetaphi2cart(pointing_ra, pointing_dec)
+        freqs = np.arange(startfreq, startfreq+numchannels*channelwidth, channelwidth)
+    else:
+        sr = lsr.stationresponse(beamMS, inverse=invert, useElementResponse=False,
+                                 useArrayFactor=True, useChanFreq=False)
+        sr.setDirection(RA*np.pi/180., Dec*np.pi/180.)
 
     # Correct the source spectrum if needed
     if spectralIndex is not None:
@@ -49,7 +64,13 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
     fluxes_new = []
     for ind in ch_indices:
         # Evaluate beam and take XX only (XX and YY should be equal) and square
-        beam = abs(sr.evaluateChannel(time, ant1, ind))
+        if has_eb:
+            freq = freqs[ind]
+            beam = abs(sr.array_factor(time['m0']['value'], ant1, freq, source_xyz, pointing_xyz))
+            if invert:
+                beam = 1 / beam
+        else:
+            beam = abs(sr.evaluateChannel(time, ant1, ind))
         beam = beam[0][0]**2
         if spectralIndex is not None:
             nu = (startfreq + ind*channelwidth) / referenceFrequency - 1
