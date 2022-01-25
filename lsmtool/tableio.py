@@ -656,17 +656,30 @@ def rowStr(row, metaDict):
             colName = allowedColumnNames[colKey.lower()]
         except KeyError:
             continue
-        d = row[colKey]
-        if np.all(d == -9999):
-            dstr = ' '
+
+        # Determine whether the header (metaDict) defined a fill value and,
+        # if so, use that for blank entries. If not, use the default value
+        defaultVal = allowedColumnDefaults[colName.lower()]
+        if colName in metaDict:
+            fillVal = metaDict[colName]
+            hasfillVal = True
         else:
-            defaultVal = allowedColumnDefaults[colName.lower()]
-            if colName in metaDict:
-                fillVal = metaDict[colName]
-                hasfillVal = True
+            fillVal = defaultVal
+            hasfillVal = False
+
+        d = row[colKey]
+        if type(d) is np.ndarray:
+            if np.all(d == -9999):
+                if hasfillVal:
+                    dstr = ' '
+                else:
+                    dstr = fillVal
+        elif str(d) == '-9999':
+            if hasfillVal:
+                dstr = ' '
             else:
-                fillVal = defaultVal
-                hasfillVal = False
+                dstr = fillVal
+        else:
             if type(d) is np.ndarray:
                 dlist = d.tolist()
                 # Blank the value if it's equal to fill values
