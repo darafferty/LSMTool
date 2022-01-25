@@ -75,7 +75,7 @@ if __name__=='__main__':
     try:
         LSM = skymodel.SkyModel(skyModelFile, beamMS=beamMS)
     except Exception as e:
-        logging.error(e.message)
+        logging.error(e)
         sys.exit(1)
 
     # from ~vdtol/Expion-2011-05-03/src
