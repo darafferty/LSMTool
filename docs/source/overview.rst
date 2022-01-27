@@ -2,10 +2,9 @@ LSMTool: the LOFAR Local Sky Model Tool
 =======================================
 
 LSMTool is a Python package which allows for the manipulation of sky
-models in the ``makesourcedb`` format (understood by BBS and NDPPP).
-Note that LSMTool is still in beta. Please report bugs on the issues
-page at https://github.com/darafferty/LSMTool. To initialize your environment for LSMTool,
-users on CEP3 should run the following command::
+models in the ``makesourcedb`` format (used by DP3). To initialize
+your environment for LSMTool, users on CEP3 should run the following
+command::
 
     $ module load lsmtool
 

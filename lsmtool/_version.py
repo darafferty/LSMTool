@@ -3,13 +3,19 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.3'
+__version__ = '1.4.4'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2022/01/27 - Version 1.4.4
+
+        Fix improper handling of blank values
+
+        Add support for EveryBeam
 
     2021/04/07 - Version 1.4.3
 
