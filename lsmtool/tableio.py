@@ -674,7 +674,7 @@ def rowStr(row, metaDict):
                     dstr = ' '
                 else:
                     dstr = fillVal
-        elif str(d) == '-9999':
+        elif str(d).startswith('-9999'):
             if hasfillVal:
                 dstr = ' '
             else:
