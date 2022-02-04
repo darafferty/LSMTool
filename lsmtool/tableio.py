@@ -614,8 +614,8 @@ def skyModelWriter(table, fileName):
             else:
                 gRA = 0.0
                 gDec = 0.0
-            gRAStr = Angle(gRA, unit='degree').to_string(unit='hourangle', sep=':')
-            gDecStr = Angle(gDec, unit='degree').to_string(unit='degree', sep='.')
+            gRAStr = Angle(gRA, unit='degree').to_string(unit='hourangle', sep=':', precision=4)
+            gDecStr = Angle(gDec, unit='degree').to_string(unit='degree', sep='.', precision=4)
 
             outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRAStr,
                 gDecStr))
@@ -668,30 +668,30 @@ def rowStr(row, metaDict):
             hasfillVal = False
 
         d = row[colKey]
-        if type(d) is np.ndarray:
-            if np.all(d == -9999):
-                if hasfillVal:
-                    dstr = ' '
-                else:
-                    dstr = fillVal
-        elif str(d).startswith('-9999'):
+        if str(d).startswith('-9999'):
             if hasfillVal:
                 dstr = ' '
             else:
-                dstr = fillVal
+                dstr = str(fillVal)
         else:
             if type(d) is np.ndarray:
-                dlist = d.tolist()
-                # Blank the value if it's equal to fill values
-                if hasfillVal and dlist == fillVal:
-                    dlist = []
-                # Remove blanked values
-                if len(dlist) > 0:
-                    while dlist[-1] == -9999:
-                        dlist.pop()
-                        if len(dlist) == 0:
-                            break
-                dstr = str(dlist)
+                if np.all(d == -9999):
+                    if hasfillVal:
+                        dstr = ' '
+                    else:
+                        dstr = str(fillVal)
+                else:
+                    dlist = d.tolist()
+                    # Blank the value if it's equal to fill values
+                    if hasfillVal and dlist == fillVal:
+                        dlist = []
+                    # Remove blanked values
+                    if len(dlist) > 0:
+                        while dlist[-1] == -9999:
+                            dlist.pop()
+                            if len(dlist) == 0:
+                                break
+                    dstr = str(dlist)
             else:
                 if colKey == 'Ra':
                     dstr = Angle(d, unit='degree').to_string(unit='hourangle', sep=':')
