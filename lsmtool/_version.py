@@ -3,13 +3,17 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.4'
+__version__ = '1.4.5'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2022/02/04 - Version 1.4.5
+
+        Fix regression in handling of blank values introduced in v1.4.4
 
     2022/01/27 - Version 1.4.4
 
