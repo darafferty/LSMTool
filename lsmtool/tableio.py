@@ -18,11 +18,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
+import astropy
 from astropy.table import Table, Column, MaskedColumn
 from astropy.coordinates import Angle
 from astropy.io import registry
 import astropy.io.ascii as ascii
+from distutils.version import LooseVersion
 import numpy as np
 import numpy.ma as ma
 import re
@@ -177,17 +178,26 @@ def createTable(outlines, metaDict, colNames, colDefaults):
     table : astropy.table.Table object
 
     """
-    # Before loading table into an astropy Table object, set lengths of Name,
-    # Patch, and Type columns to 100 characters
     log = logging.getLogger('LSMTool.Load')
 
+    # Before loading table into an astropy Table object, set lengths of Name,
+    # Patch, and Type columns to 100 characters. Due to a change in the astropy
+    # table API with v4.1, we have to check the version and use the appropriate
+    # column names
+    if LooseVersion(astropy.__version__) < LooseVersion('4.1'):
+        # Use the input column names for the converters
+        nameCol = 'col{0}'.format(colNames.index('Name')+1)
+        typeCol = 'col{0}'.format(colNames.index('Type')+1)
+        patchCol = 'col{0}'.format(colNames.index('Patch')+1)
+    else:
+        # Use the output column names for the converters
+        nameCol = 'Name'
+        typeCol = 'Type'
+        patchCol = 'Patch'
     converters = {}
-    nameCol = 'col{0}'.format(colNames.index('Name')+1)
     converters[nameCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
-    typeCol = 'col{0}'.format(colNames.index('Type')+1)
     converters[typeCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
     if 'Patch' in colNames:
-        patchCol = 'col{0}'.format(colNames.index('Patch')+1)
         converters[patchCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
 
     log.debug('Creating table...')

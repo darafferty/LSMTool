@@ -306,7 +306,7 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
         from astropy.stats import sigma_clip
     try:
         import matplotlib
-        if matplotlib.get_backend() is not 'Agg':
+        if matplotlib.get_backend() != 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FuncFormatter
@@ -367,7 +367,7 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
         from astropy.stats import sigma_clip
     try:
         import matplotlib
-        if matplotlib.get_backend() is not 'Agg':
+        if matplotlib.get_backend() != 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FuncFormatter
@@ -427,7 +427,7 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
         from astropy.stats import sigma_clip
     try:
         import matplotlib
-        if matplotlib.get_backend() is not 'Agg':
+        if matplotlib.get_backend() != 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import matplotlib.colors as colors
@@ -509,7 +509,7 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
         from astropy.stats import sigma_clip
     try:
         import matplotlib
-        if matplotlib.get_backend() is not 'Agg':
+        if matplotlib.get_backend() != 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FuncFormatter
