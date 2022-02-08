@@ -77,7 +77,7 @@ def plot(LSM, fileName=None, labelBy=None):
         import os
         if 'DISPLAY' not in os.environ:
             import matplotlib
-            if matplotlib.get_backend() is not 'Agg':
+            if matplotlib.get_backend() != 'Agg':
                 matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FuncFormatter
