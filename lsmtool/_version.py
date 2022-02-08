@@ -3,13 +3,17 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.5'
+__version__ = '1.4.6'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2022/02/08 - Version 1.4.6
+
+        Fix table column converters for astropy versions >= 4.1
 
     2022/02/04 - Version 1.4.5
 
