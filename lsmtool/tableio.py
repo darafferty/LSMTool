@@ -188,7 +188,8 @@ def createTable(outlines, metaDict, colNames, colDefaults):
         # Use the input column names for the converters
         nameCol = 'col{0}'.format(colNames.index('Name')+1)
         typeCol = 'col{0}'.format(colNames.index('Type')+1)
-        patchCol = 'col{0}'.format(colNames.index('Patch')+1)
+        if 'Patch' in colNames:
+            patchCol = 'col{0}'.format(colNames.index('Patch')+1)
     else:
         # Use the output column names for the converters
         nameCol = 'Name'
