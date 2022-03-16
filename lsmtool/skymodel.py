@@ -116,6 +116,12 @@ class SkyModel(object):
                 self.log.debug("Successfully loaded model from GSM")
                 self._fileName = None
                 self._addHistory("LOAD (from GSM at position {0})".format(VOPosition))
+            elif fileName.lower() == 'lotss':
+                self.log.debug("Attempting to load model from LoTSS...")
+                self.table = tableio.getLoTSS(VOPosition, VORadius)
+                self.log.debug("Successfully loaded model from LoTSS")
+                self._fileName = None
+                self._addHistory("LOAD (from LoTSS at position {0})".format(VOPosition))
             else:
                 self.log.debug("Attempting to load model from file '{0}'...".format(fileName))
                 self.table = Table.read(fileName, format='makesourcedb')
