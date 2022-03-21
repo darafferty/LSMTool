@@ -1161,6 +1161,7 @@ def getTGSS(position, radius):
     except TypeError:
         raise ValueError('TGSS query radius not understood.')
 
+    log.debug('Querying TGSS...')
     url = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv3.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
           RA, Dec, radius)
     cmd = ['wget', '-O', outFile.name, url]
@@ -1197,6 +1198,7 @@ def getGSM(position, radius):
     except TypeError:
         raise ValueError('GSM query radius not understood.')
 
+    log.debug('Querying GSM...')
     url = 'https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
           RA, Dec, radius)
     cmd = ['wget', '-O', outFile.name, url]
@@ -1207,7 +1209,7 @@ def getGSM(position, radius):
 
 def getLoTSS(position, radius):
     """
-    Returns the file name from a LoTSS search.
+    Returns table from a LoTSS search.
 
     Parameters
     ----------
@@ -1237,10 +1239,10 @@ def getLoTSS(position, radius):
     except TypeError:
         raise ValueError('LoTSS query radius not understood.')
 
-    log.debug('Querying VO service...')
+    log.debug('Querying LoTSS...')
     url = ('https://vo.astron.nl/lotss_dr2/q/src_cone/form?__nevow_form__=genForm&'
-           'hscs_pos={0}%2C%20{1}&hscs_sr={2}&_DBOPTIONS_ORDER='
-           '&_DBOPTIONS_DIR=ASC&MAXREC=100000&_FORMAT=CSV&submit=Go'.format(RA, Dec, radius))
+           'hscs_pos={0}%2C%20{1}&hscs_sr={2}&_DBOPTIONS_ORDER=&'
+           '_DBOPTIONS_DIR=ASC&MAXREC=100000&_FORMAT=CSV&submit=Go'.format(RA, Dec, radius))
     cmd = ['wget', '-O', outFile.name, url]
     subprocess.call(cmd)
 
