@@ -66,7 +66,7 @@ except NameError:
 # Define the valid columns here as dictionaries. The entry key is the lower-case
 # name of the column, the entry value is the key used in the astropy table of the
 # SkyModel object. For details, see:
-# http://www.lofar.org/operations/doku.php?id=engineering:software:tools:makesourcedb#format_string
+# https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb
 allowedColumnNames = {'name':'Name', 'type':'Type', 'patch':'Patch',
     'ra':'Ra', 'dec':'Dec', 'i':'I', 'q':'Q', 'u':'U', 'v':'V',
     'majoraxis':'MajorAxis', 'minoraxis':'MinorAxis', 'orientation':'Orientation',
@@ -105,7 +105,7 @@ def skyModelReader(fileName):
     """
     Reads a makesourcedb sky model file into an astropy table.
 
-    See http://www.lofar.org/operations/doku.php?id=engineering:software:tools:makesourcedb#format_string
+    See https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb
     for details. Note that source names, types, and patch names are limited to
     a length of 100 characters.
 
@@ -971,12 +971,13 @@ def coneSearch(VOService, position, radius):
     VOService : str
         Name of VO service to query (must be one of 'WENSS' or 'NVSS')
     position : list of floats
-        A list specifying a new position as [RA, Dec] in either makesourcedb
+        A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
         [123.2312, 23.3422])
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
-        '30 arcsec') for cone search region in degrees
+        '30 arcsec') for cone search region
+
     """
     import pyvo as vo
 
@@ -1034,7 +1035,8 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
     columnMapping : dict
         Dict that defines the column name mapping from external table
     fluxUnits : str, optional
-        Units of flux in external table
+        Units of flux density in external table
+
     """
     log = logging.getLogger('LSMTool.Load')
 
@@ -1140,12 +1142,12 @@ def getTGSS(position, radius):
     Parameters
     ----------
     position : list of floats
-        A list specifying a new position as [RA, Dec] in either makesourcedb
+        A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
         [123.2312, 23.3422])
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
-        '30 arcsec') for cone search region in degrees
+        '30 arcsec') for cone search region
 
     """
     import tempfile
@@ -1159,7 +1161,7 @@ def getTGSS(position, radius):
     try:
         radius = Angle(radius, unit='degree').value
     except TypeError:
-        raise ValueError('TGSS query radius not understood.')
+        raise ValueError('TGSS query radius "{}" not understood.'.format(radius))
 
     log.debug('Querying TGSS...')
     url = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv3.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
@@ -1177,12 +1179,12 @@ def getGSM(position, radius):
     Parameters
     ----------
     position : list of floats
-        A list specifying a new position as [RA, Dec] in either makesourcedb
+        A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
         [123.2312, 23.3422])
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
-        '30 arcsec') for cone search region in degrees
+        '30 arcsec') for cone search region
 
     """
     import tempfile
@@ -1196,7 +1198,7 @@ def getGSM(position, radius):
     try:
         radius = Angle(radius, unit='degree').value
     except TypeError:
-        raise ValueError('GSM query radius not understood.')
+        raise ValueError('GSM query radius "{}" not understood.'.format(radius))
 
     log.debug('Querying GSM...')
     url = 'https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
@@ -1214,12 +1216,12 @@ def getLoTSS(position, radius):
     Parameters
     ----------
     position : list of floats
-        A list specifying a new position as [RA, Dec] in either makesourcedb
+        A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
         [123.2312, 23.3422])
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
-        '30 arcsec') for cone search region in degrees
+        '30 arcsec') for cone search region
 
     """
     import tempfile
@@ -1237,7 +1239,7 @@ def getLoTSS(position, radius):
     try:
         radius = Angle(radius, unit='degree').value * 60.0  # arcmin
     except TypeError:
-        raise ValueError('LoTSS query radius not understood.')
+        raise ValueError('LoTSS query radius "{}" not understood.'.format(radius))
 
     log.debug('Querying LoTSS...')
     url = ('https://vo.astron.nl/lotss_dr2/q/src_cone/form?__nevow_form__=genForm&'
