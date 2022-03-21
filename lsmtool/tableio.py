@@ -66,7 +66,7 @@ except NameError:
 # Define the valid columns here as dictionaries. The entry key is the lower-case
 # name of the column, the entry value is the key used in the astropy table of the
 # SkyModel object. For details, see:
-# http://www.lofar.org/operations/doku.php?id=engineering:software:tools:makesourcedb#format_string
+# https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb
 allowedColumnNames = {'name':'Name', 'type':'Type', 'patch':'Patch',
     'ra':'Ra', 'dec':'Dec', 'i':'I', 'q':'Q', 'u':'U', 'v':'V',
     'majoraxis':'MajorAxis', 'minoraxis':'MinorAxis', 'orientation':'Orientation',
@@ -105,7 +105,7 @@ def skyModelReader(fileName):
     """
     Reads a makesourcedb sky model file into an astropy table.
 
-    See http://www.lofar.org/operations/doku.php?id=engineering:software:tools:makesourcedb#format_string
+    See https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb
     for details. Note that source names, types, and patch names are limited to
     a length of 100 characters.
 
@@ -971,12 +971,13 @@ def coneSearch(VOService, position, radius):
     VOService : str
         Name of VO service to query (must be one of 'WENSS' or 'NVSS')
     position : list of floats
-        A list specifying a new position as [RA, Dec] in either makesourcedb
+        A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
         [123.2312, 23.3422])
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
-        '30 arcsec') for cone search region in degrees
+        '30 arcsec') for cone search region
+
     """
     import pyvo as vo
 
@@ -1018,22 +1019,41 @@ def coneSearch(VOService, position, radius):
         log.error('No sources found. Sky model is empty.')
         table = makeEmptyTable()
         return table
+    table = convertExternalTable(table, columnMapping[VOService.lower()])
+
+    return table
+
+
+def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
+    """
+    Converts an external table.
+
+    Parameters
+    ----------
+    table : Table
+        External table to convert
+    columnMapping : dict
+        Dict that defines the column name mapping from external table
+    fluxUnits : str, optional
+        Units of flux density in external table
+
+    """
+    log = logging.getLogger('LSMTool.Load')
 
     # Remove unneeded columns
     colsToRemove = []
     for colName in table.colnames:
-        if colName not in columnMapping[VOService.lower()]:
+        if colName not in columnMapping:
             colsToRemove.append(colName)
-        elif columnMapping[VOService.lower()][colName] not in allowedColumnNames:
+        elif columnMapping[colName] not in allowedColumnNames:
             colsToRemove.append(colName)
     for colName in colsToRemove:
         table.remove_column(colName)
 
     # Rename columns to match makesourcedb conventions
     for colName in table.colnames:
-        if colName != allowedColumnNames[columnMapping[VOService.lower()][colName]]:
-            table.rename_column(colName, allowedColumnNames[columnMapping[
-                VOService.lower()][colName]])
+        if colName != allowedColumnNames[columnMapping[colName]]:
+            table.rename_column(colName, allowedColumnNames[columnMapping[colName]])
 
     # Convert RA and Dec to Angle objects
     log.debug('Converting RA...')
@@ -1071,18 +1091,22 @@ def coneSearch(VOService, position, radius):
             table.remove_column(name)
             table.add_column(floatCol, index=indx)
 
-
     # Add source-type column
     types = ['POINT'] * len(table)
-    if 'majoraxis' in columnMapping[VOService.lower()].values():
-        for i, maj in enumerate(table[allowedColumnNames['majoraxis']]):
-            if maj > 0.0:
+    if 'minoraxis' in columnMapping.values() and 'majoraxis' in columnMapping.values():
+        for i, minor in enumerate(table[allowedColumnNames['minoraxis']]):
+            if minor > 0.0:
                 types[i] = 'GAUSSIAN'
+            else:
+                # Make sure semimajor axis and orientation are also 0 for POINT type
+                table[allowedColumnNames['majoraxis']][i] = 0.0
+                if 'orientation' in columnMapping.values():
+                    table[allowedColumnNames['orientation']][i] = 0.0
     col = Column(name='Type', data=types, dtype='{}100'.format(numpy_type))
     table.add_column(col, index=1)
 
     # Add reference-frequency column
-    refFreq = columnMapping[VOService.lower()]['referencefrequency']
+    refFreq = columnMapping['referencefrequency']
     col = Column(name='ReferenceFrequency', data=np.array([refFreq]*len(table), dtype=np.float))
     table.add_column(col)
 
@@ -1093,7 +1117,7 @@ def coneSearch(VOService, position, radius):
         log.debug("Setting units for column '{0}' to {1}".format(
             colName, allowedColumnUnits[colName.lower()]))
         if colName == 'I':
-            table.columns[colName].unit = 'mJy'
+            table.columns[colName].unit = fluxUnits
             table.columns[colName].convert_unit_to('Jy')
             table.columns[colName].format = fluxformat
         else:
@@ -1118,12 +1142,12 @@ def getTGSS(position, radius):
     Parameters
     ----------
     position : list of floats
-        A list specifying a new position as [RA, Dec] in either makesourcedb
+        A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
         [123.2312, 23.3422])
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
-        '30 arcsec') for cone search region in degrees
+        '30 arcsec') for cone search region
 
     """
     import tempfile
@@ -1137,8 +1161,9 @@ def getTGSS(position, radius):
     try:
         radius = Angle(radius, unit='degree').value
     except TypeError:
-        raise ValueError('TGSS query radius not understood.')
+        raise ValueError('TGSS query radius "{}" not understood.'.format(radius))
 
+    log.debug('Querying TGSS...')
     url = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv3.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
           RA, Dec, radius)
     cmd = ['wget', '-O', outFile.name, url]
@@ -1154,12 +1179,12 @@ def getGSM(position, radius):
     Parameters
     ----------
     position : list of floats
-        A list specifying a new position as [RA, Dec] in either makesourcedb
+        A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
         [123.2312, 23.3422])
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
-        '30 arcsec') for cone search region in degrees
+        '30 arcsec') for cone search region
 
     """
     import tempfile
@@ -1173,14 +1198,61 @@ def getGSM(position, radius):
     try:
         radius = Angle(radius, unit='degree').value
     except TypeError:
-        raise ValueError('GSM query radius not understood.')
+        raise ValueError('GSM query radius "{}" not understood.'.format(radius))
 
+    log.debug('Querying GSM...')
     url = 'https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
           RA, Dec, radius)
     cmd = ['wget', '-O', outFile.name, url]
     subprocess.call(cmd)
 
     return outFile
+
+
+def getLoTSS(position, radius):
+    """
+    Returns table from a LoTSS search.
+
+    Parameters
+    ----------
+    position : list of floats
+        A list specifying a position as [RA, Dec] in either makesourcedb
+        format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
+        [123.2312, 23.3422])
+    radius : float or str, optional
+        Radius in degrees (if float) or 'value unit' (if str; e.g.,
+        '30 arcsec') for cone search region
+
+    """
+    import tempfile
+    import subprocess
+
+    log = logging.getLogger('LSMTool.Load')
+
+    columnMapping = {'Source_Name':'name', 'RA':'ra', 'DEC':'dec', 'Total_flux':'i',
+                     'DC_Maj':'majoraxis', 'DC_Min':'minoraxis', 'PA':'orientation',
+                     'referencefrequency':1.4e8}
+
+    outFile = tempfile.NamedTemporaryFile()
+    RA = RA2Angle(position[0])[0].value
+    Dec = Dec2Angle(position[1])[0].value
+    try:
+        radius = Angle(radius, unit='degree').value * 60.0  # arcmin
+    except TypeError:
+        raise ValueError('LoTSS query radius "{}" not understood.'.format(radius))
+
+    log.debug('Querying LoTSS...')
+    url = ('https://vo.astron.nl/lotss_dr2/q/src_cone/form?__nevow_form__=genForm&'
+           'hscs_pos={0}%2C%20{1}&hscs_sr={2}&_DBOPTIONS_ORDER=&'
+           '_DBOPTIONS_DIR=ASC&MAXREC=100000&_FORMAT=CSV&submit=Go'.format(RA, Dec, radius))
+    cmd = ['wget', '-O', outFile.name, url]
+    subprocess.call(cmd)
+
+    # Read in the table
+    table = Table.read(outFile.name, format='ascii.csv', header_start=0)
+    table = convertExternalTable(table, columnMapping)
+
+    return table
 
 
 def makeEmptyTable():
