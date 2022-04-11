@@ -38,7 +38,7 @@ if sys.version_info < (3, 0):
     reqlist = ['numpy', 'astropy >= 0.4, <3.0']
 else:
     # Require astropy v3.2 or later to get much faster copies
-    reqlist = ['numpy', 'astropy >= 3.2']
+    reqlist = ['numpy', 'astropy >= 3.2', 'matplotlib', 'scipy']
 if build_c_extentions:
     reqlist.append('pybind11>=2.2.0')
     ext_modules = [Extension('lsmtool.operations._grouper',

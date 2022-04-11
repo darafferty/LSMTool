@@ -1,0 +1,78 @@
+workflow:
+  rules:
+    # Don't create a pipeline if it's a commit pipeline on a branch and that branch has open merge requests
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - when: always
+
+#
+# PREPARE
+#
+
+.prepare:
+  image: python:$PYTHON_VERSION
+  before_script:
+    - python --version
+    - pip install virtualenv
+    - virtualenv venv
+    - source venv/bin/activate
+
+#
+# BUILD
+#
+
+.build:
+  stage: build
+  extends: .prepare
+  script:
+    - python setup.py install
+
+build-pyton-3.8:
+  extends: .build
+  variables:
+    PYTHON_VERSION: "3.8"
+
+build-pyton-3.9:
+  extends: .build
+  variables:
+    PYTHON_VERSION: "3.9"
+
+build-pyton-3.10:
+  extends: .build
+  variables:
+    PYTHON_VERSION: "3.10"
+
+build-pyton-latest:
+  extends: .build
+  variables:
+    PYTHON_VERSION: "latest"
+
+#
+# TEST
+#
+
+.test:
+  stage: test
+  extends: .prepare
+  script:
+    - python setup.py test
+
+test-pyton-3.8:
+  extends: .test
+  variables:
+    PYTHON_VERSION: "3.8"
+
+test-pyton-3.9:
+  extends: .test
+  variables:
+    PYTHON_VERSION: "3.9"
+
+test-pyton-3.10:
+  extends: .test
+  variables:
+    PYTHON_VERSION: "3.10"
+
+test-pyton-latest:
+  extends: .test
+  variables:
+    PYTHON_VERSION: "latest"
