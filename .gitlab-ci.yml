@@ -1,0 +1,2 @@
+include:
+  - template: Python.gitlab-ci.yml
