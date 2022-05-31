@@ -7,7 +7,6 @@ from argparse import ArgumentParser
 from astropy.coordinates import Angle
 import astropy.units as u
 from lsmtool import tableio  # Registers makesourcedb reader and writer with astropy.tables
-from astropy.table import Table
 from numpy import sin, cos, arctan2
 import logging
 
