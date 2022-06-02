@@ -74,6 +74,8 @@ if __name__ == "__main__":
         if args.skymodelfile.endswith(".skymodel") or args.skymodelfile.endswith(".txt"):
             filename_parts = args.skymodelfile.rsplit(".")
             skymodel_filename_out = filename_parts[0] + "_absolute_orientation." + filename_parts[1]
+        else:
+            skymodel_filename_out = filename + ".absolute_orientation"
     if args.ra_center.count(':') == 2:  # Handle casacore format in e.g. msoverview output
         args.ra_center = args.ra_center.replace(":", "h", 1).replace(":", "m", 1)
     if args.dec_center.count(".") == 3:
