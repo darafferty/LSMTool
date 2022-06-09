@@ -3,13 +3,18 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.7'
+__version__ = '1.4.8'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2022/06/09 - Version 1.4.8
+
+        Fix bug in concatenation of sky models when number of spectral index
+        terms differs
 
     2022/02/23 - Version 1.4.7
 
