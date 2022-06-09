@@ -29,6 +29,7 @@ import numpy.ma as ma
 import re
 import logging
 import os
+from copy import deepcopy
 
 # Python 3 compatibility
 try:
@@ -401,7 +402,9 @@ def processFormatString(formatString):
                 colDefaults[i] = defaultVal
                 metaDict[colNames[i]] = defaultVal
             elif allowedColumnDefaults[colName] is not None:
-                colDefaults[i] = allowedColumnDefaults[colName]
+                # Note: we used deepcopy() here to ensure that the original
+                # is not altered by later changes to colDefaults
+                colDefaults[i] = deepcopy(allowedColumnDefaults)[colName]
 
     # Check for required columns
     for reqCol in requiredColumnNames:
@@ -1124,7 +1127,9 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
             table.columns[colName].unit = allowedColumnUnits[colName.lower()]
 
         if hasattr(table.columns[colName], 'filled') and allowedColumnDefaults[colName.lower()] is not None:
-            fillVal = allowedColumnDefaults[colName.lower()]
+            # Note: we used deepcopy() here to ensure that the original
+            # is not altered by later changes to fillVal
+            fillVal = deepcopy(allowedColumnDefaults)[colName.lower()]
             if colName == 'SpectralIndex':
                 while len(fillVal) < 1:
                     fillVal.append(0.0)
@@ -1280,4 +1285,3 @@ registry.register_writer('ds9', Table, ds9RegionWriter)
 registry.register_writer('kvis', Table, kvisAnnWriter)
 registry.register_writer('casa', Table, casaRegionWriter)
 registry.register_writer('factor', Table, factorDirectionsWriter)
-

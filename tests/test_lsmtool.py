@@ -38,6 +38,13 @@ def test_concatenate():
     assert len(s) == 2165
 
 
+def test_concatenate_differing_spectral_index():
+    print('Concatenate with single_spectralindx.sky')
+    s4 = lsmtool.load('tests/no_patches.sky')
+    s4.concatenate('tests/single_spectralindx.sky', matchBy = 'position', radius = '30 arcsec', keep = 'from2')
+    assert len(s) == 2165
+
+
 def test_compare():
     print('Compare to concat.sky')
     if os.path.exists('tests/flux_ratio_vs_distance.sky'):
