@@ -2273,7 +2273,7 @@ class SkyModel(object):
                                            radius=radius, keep=keep,
                                            inheritPatches=inheritPatches)
 
-    def compare(self, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
+    def compare(self, LSM2, radius='10 arcsec', outDir=None, labelBy=None,
                 ignoreSpec=None, excludeMultiple=True, excludeByFlux=False, name1=None,
                 name2=None, format='pdf'):
         """
@@ -2299,7 +2299,7 @@ class SkyModel(object):
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
             for matching
         outDir : str, optional
-            Plots are saved to this directory
+            If specified, plots are saved to this directory
         labelBy : str, optional
             One of 'source' or 'patch': label points using source names ('source') or
             patch names ('patch')

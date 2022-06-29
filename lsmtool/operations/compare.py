@@ -18,6 +18,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
+import os.path
 
 log = logging.getLogger('LSMTool.COMPARE')
 log.debug('Loading COMPARE module.')
@@ -52,7 +53,7 @@ def run(step, parset, LSM):
     return result
 
 
-def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
+def compare(LSM1, LSM2, radius='10 arcsec', outDir=None, labelBy=None,
     ignoreSpec=None, excludeMultiple=True, excludeByFlux=True, name1=None, name2=None,
     format='pdf'):
     """
@@ -79,7 +80,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
         for matching
     outDir : str, optional
-        Plots are saved to this directory
+        If specified, plots are saved to this directory
     labelBy : str, optional
         One of 'source' or 'patch': label points using source names ('source') or
         patch names ('patch')
@@ -272,11 +273,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         labels = None
 
     # Make plots
-    if outDir is None:
-        outDir = '.'
-    if outDir[-1] != '/':
-        outDir += '/'
-    if not os.path.exists(outDir):
+    if outDir and not os.path.isdir(outDir):
         os.makedirs(outDir)
     plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
     plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
@@ -351,7 +348,10 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    plt.savefig(outDir+'flux_ratio_vs_distance.{}'.format(format), format=format)
+    if outDir:
+        fname = os.path.join(outDir, 'flux_ratio_vs_distance.{}'.format(format))
+        plt.savefig(fname, format=format)
+
     plt.close('all')
 
 
@@ -411,7 +411,10 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    plt.savefig(outDir+'flux_ratio_vs_flux.{}'.format(format), format=format)
+    if outDir:
+        fname = os.path.join(outDir, 'flux_ratio_vs_flux.{}'.format(format))
+        plt.savefig(fname, format=format)
+
     plt.close('all')
 
 
@@ -494,7 +497,10 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
 
-    plt.savefig(outDir+'flux_ratio_sky.{}'.format(format), format=format)
+    if outDir:
+        fname = os.path.join(outDir, 'flux_ratio_sky.{}'.format(format))
+        plt.savefig(fname, format=format)
+
     plt.close('all')
 
 
@@ -569,7 +575,10 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
         for label, xl, yl in zip(labels, xls, yls):
             plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                 'offset points', ha='right', va='bottom')
-    plt.savefig(outDir+'positional_offsets_sky.{}'.format(format), format=format)
+
+    if outDir:
+        fname = os.path.join(outDir, 'positional_offsets_sky.{}'.format(format))
+        plt.savefig(fname, format=format)
 
     if plot_imcoords:
         fig = plt.figure(figsize=(7.0, 5.0))
@@ -588,7 +597,12 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
             for label, xl, yl in zip(labels, xls, yls):
                 plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
                     'offset points', ha='right', va='bottom')
-        plt.savefig(outDir+'positional_offsets_im.{}'.format(format), format=format)
+
+        if outDir:
+            fname = os.path.join(outDir, 'positional_offsets_im.{}'.format(format))
+            plt.savefig(fname, format=format)
+
+    plt.close('all')
     return 0
 
 
@@ -677,10 +691,10 @@ def findStats(predFlux, measFlux, RA, Dec, refRA, refDec, outDir, info0, info1,
     outLines.append('Mean 3-sigma-clipped Dec offset (1 - 2): {0} degrees\n'.format(meanClippedDecOffset))
     outLines.append('Std. dev. 3-sigma-clipped Dec offset (1 - 2): {0} degrees\n\n'.format(stdClippedDecOffset))
 
-    fileName = outDir+'stats.txt'
-    statsFile = open(fileName, 'w')
-    statsFile.writelines(outLines)
-    statsFile.close()
+    if outDir:
+        fname = os.path.join(outDir, 'stats.txt')
+        with open(fname, 'w') as statsFile:
+            statsFile.writelines(outLines)
 
     return stats
 
