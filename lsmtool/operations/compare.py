@@ -352,6 +352,7 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
                 'offset points', ha='right', va='bottom')
 
     plt.savefig(outDir+'flux_ratio_vs_distance.{}'.format(format), format=format)
+    plt.close('all')
 
 
 def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format, clip=True):
@@ -411,6 +412,7 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
                 'offset points', ha='right', va='bottom')
 
     plt.savefig(outDir+'flux_ratio_vs_flux.{}'.format(format), format=format)
+    plt.close('all')
 
 
 def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
@@ -493,6 +495,7 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
                 'offset points', ha='right', va='bottom')
 
     plt.savefig(outDir+'flux_ratio_sky.{}'.format(format), format=format)
+    plt.close('all')
 
 
 def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
