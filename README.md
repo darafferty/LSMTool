@@ -34,7 +34,7 @@ The following operations are available:
 * PLOT: Plot the sky model
 * COMPARE: Compare source fluxes and positions of two sky models
 
-For details, please see the [full documentation](http://www.astron.nl/citt/lsmtool).
+For details, please see the [full documentation](https://lsmtool.readthedocs.io/en/latest/).
 
 Installation
 ------------
@@ -57,7 +57,7 @@ If you want to install LSMTool yourself, follow the instructions below.
 
 Get the latest developer version by cloning the git repository:
 
-    git clone https://github.com/darafferty/LSMTool.git
+    git clone https://git.astron.nl/RD/LSMTool.git
 
 Then install with:
 
@@ -105,4 +105,4 @@ LSMTool can also be used in Python scripts by importing the lsmtool module. E.g.
     >>> skymod.select('I > 1.0 Jy')
     >>> skymod.write('out_model.sky')
 
-For further details, please see the [full documentation](http://www.astron.nl/citt/lsmtool).
+For further details, please see the [full documentation](https://lsmtool.readthedocs.io/en/latest/).
