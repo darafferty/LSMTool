@@ -93,10 +93,10 @@ class BuildExt(build_ext):
 setup(
     name='lsmtool',
     version=get_version("lsmtool/_version.py"),
-    url='https://github.com/darafferty/LSMTool',
+    url='https://git.astron.nl/RD/LSMTool',
     project_urls={
-        "Documentation": "https://www.astron.nl/citt/lsmtool/",
-        "Source": "https://github.com/darafferty/LSMTool"
+        "Documentation": "https://lsmtool.readthedocs.io/en/latest/",
+        "Source": "https://git.astron.nl/RD/LSMTool"
     },
     author='David Rafferty',
     author_email='drafferty@hs.uni-hamburg.de',

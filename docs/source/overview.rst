@@ -9,7 +9,7 @@ command::
     $ module load lsmtool
 
 To install LSMTool elsewhere, please see the README at
-https://github.com/darafferty/LSMTool for instructions.
+https://git.astron.nl/RD/LSMTool for instructions.
 
 Usage
 -----
