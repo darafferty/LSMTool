@@ -34,11 +34,12 @@ else:
     build_c_extentions = False
 
 # Handle Python 3-only dependencies
+# Avoid newer versions of numpy since they don't work with LSMTool.
 if sys.version_info < (3, 0):
-    reqlist = ['numpy', 'astropy >= 0.4, <3.0']
+    reqlist = ['numpy<1.23.0', 'astropy >= 0.4, <3.0']
 else:
     # Require astropy v3.2 or later to get much faster copies
-    reqlist = ['numpy', 'astropy >= 3.2', 'matplotlib', 'scipy']
+    reqlist = ['numpy<1.23.0', 'astropy >= 3.2', 'matplotlib', 'scipy']
 if build_c_extentions:
     reqlist.append('pybind11>=2.2.0')
     ext_modules = [Extension('lsmtool.operations._grouper',
