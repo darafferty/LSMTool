@@ -143,10 +143,10 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False, root='Patch', pad_ind
     """
     from astropy.coordinates import SkyCoord
     from astropy import units as u
-    from distutils.version import StrictVersion
+    from distutils.version import LooseVersion
     import scipy
     log = logging.getLogger('LSMTool.Cluster')
-    if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
+    if LooseVersion(scipy.__version__) < LooseVersion('0.11.0'):
         log.debug('The installed version of SciPy contains a bug that affects catalog matching. '
             'Falling back on (slower) matching script.')
         from ._matching import match_coordinates_sky
