@@ -381,12 +381,12 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
 
     from astropy.coordinates import SkyCoord, Angle
     from astropy import units as u
-    from distutils.version import StrictVersion
+    from distutils.version import LooseVersion
     import numpy as np
     import scipy
 
     log = logging.getLogger('LSMTool')
-    if StrictVersion(scipy.__version__) < StrictVersion('0.11.0'):
+    if LooseVersion(scipy.__version__) < LooseVersion('0.11.0'):
         log.debug('The installed version of SciPy contains a bug that affects catalog matching. '
                   'Falling back on (slower) matching script.')
         from operations._matching import match_coordinates_sky
