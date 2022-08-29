@@ -21,7 +21,9 @@ def changelog():
         Added a new script correct_gaussian_orientation.py, which computes
         the absolute Gaussian position angle for a skymodel file.
 
-        A very minor bug fixes.
+        Fixed numpy deprecation warnings.
+
+        A few minor bug fixes.
 
     2022/06/09 - Version 1.4.8
 
