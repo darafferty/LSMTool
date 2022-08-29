@@ -441,7 +441,7 @@ def processLine(line, metaDict, colNames):
     # Check for SpectralIndex entries, which are unreadable as they use
     # the same separator for multiple orders as used for the columns
     line = line.strip('\n')
-    a = re.search('\[.*\]', line)
+    a = re.search(r'\[.*\]', line)
     if a is not None:
         b = line[a.start(): a.end()]
         c = b.strip('[]')
