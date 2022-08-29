@@ -240,7 +240,7 @@ def createTable(outlines, metaDict, colNames, colDefaults):
             except:
                 specVec.append([0.0]*maxLen)
                 maskVec.append([True]*maxLen)
-        specCol = MaskedColumn(name='SpectralIndex', data=np.array(specVec, dtype=np.float))
+        specCol = MaskedColumn(name='SpectralIndex', data=np.array(specVec, dtype=float))
         specCol.mask = maskVec
         specIndx = table.keys().index('SpectralIndex')
         table.remove_column('SpectralIndex')
@@ -1110,7 +1110,7 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
 
     # Add reference-frequency column
     refFreq = columnMapping['referencefrequency']
-    col = Column(name='ReferenceFrequency', data=np.array([refFreq]*len(table), dtype=np.float))
+    col = Column(name='ReferenceFrequency', data=np.array([refFreq]*len(table), dtype=float))
     table.add_column(col)
 
     # Set column units and default values
