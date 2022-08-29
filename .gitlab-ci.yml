@@ -25,7 +25,6 @@ workflow:
   stage: build
   extends: .prepare
   script:
-#    - python setup.py install
     - pip install -e .
 
 build-pyton-3.8:
@@ -55,8 +54,9 @@ build-pyton-latest:
 .test:
   stage: test
   extends: .prepare
+  before_script:
+    - pip install pytest
   script:
-#    - python setup.py test
     - pytest
 
 test-pyton-3.8:
