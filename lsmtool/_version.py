@@ -3,13 +3,25 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.8'
+__version__ = '1.4.9'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2022/08/29 - Version 1.4.9
+
+        Documentation moved to https://lsmtool.readthedocs.io.
+
+        Repository moved to https://git.astron.nl/RD/LSMTool.git,
+        https://github.com/darafferty/LSMTool.git is now a mirror.
+
+        Added a new script correct_gaussian_orientation.py, which computes
+        the absolute Gaussian position angle for a skymodel file.
+
+        A very minor bug fixes.
 
     2022/06/09 - Version 1.4.8
 
