@@ -287,7 +287,7 @@ def createTable(outlines, metaDict, colNames, colDefaults):
                     fillVal.append(0.0)
             log.debug("Setting default value for column '{0}' to {1}".
                 format(colName, fillVal))
-            table.columns[colName].fill_value = fillVal
+            table.columns[colName].filled(fillVal)
     table.meta = metaDict
 
     return table
@@ -1135,7 +1135,7 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
                     fillVal.append(0.0)
             log.debug("Setting default value for column '{0}' to {1}".
                 format(colName, fillVal))
-            table.columns[colName].fill_value = fillVal
+            table.columns[colName].filled(fillVal)
 
     return table
 
