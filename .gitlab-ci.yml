@@ -58,6 +58,7 @@ build-pyton-latest:
   extends: .prepare
   before_script:
     - pip install pytest
+    - pip install .
   script:
     - pytest
 
