@@ -58,9 +58,10 @@ build-pyton-latest:
 
 .test:
   stage: test
-  extends: .build
+  extends: .prepare
   before_script:
     - pip install pytest
+    - pip install .
   script:
     - pytest
 
