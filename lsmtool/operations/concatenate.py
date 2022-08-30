@@ -140,7 +140,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
                 while len(speclist) < len2:
                     speclist.append(0.0)
                 newspec.append(speclist)
-            specCol = Column(name='SpectralIndex', data=np.array(newspec, dtype=np.float))
+            specCol = Column(name='SpectralIndex', data=np.array(newspec, dtype=float))
             specIndx = LSM1.table.keys().index('SpectralIndex')
             LSM1.table.remove_column('SpectralIndex')
             LSM1.table.add_column(specCol, index=specIndx)
@@ -153,7 +153,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
                 while len(speclist) < len1:
                     speclist.append(0.0)
                 newspec.append(speclist)
-            specCol = Column(name='SpectralIndex', data=np.array(newspec, dtype=np.float))
+            specCol = Column(name='SpectralIndex', data=np.array(newspec, dtype=float))
             specIndx = LSM2.table.keys().index('SpectralIndex')
             LSM2.table.remove_column('SpectralIndex')
             LSM2.table.add_column(specCol, index=specIndx)
