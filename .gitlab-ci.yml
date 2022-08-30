@@ -13,7 +13,10 @@ workflow:
   image: python:$PYTHON_VERSION
   before_script:
     - python --version
-    - pip install virtualenv
+    # Upgrade pip separately, so that the latest pip will
+    # be used to install/upgrade other packages
+    - pip install --upgrade pip
+    - pip install --upgrade wheel setuptools virtualenv
     - virtualenv venv
     - source venv/bin/activate
 
@@ -24,11 +27,6 @@ workflow:
 .build:
   stage: build
   extends: .prepare
-  before_script:
-    # Upgrade pip separately, so that the latest pip will
-    # be used to install/upgrade other packages
-    - pip install --upgrade pip
-    - pip install --upgrade wheel setuptools
   script:
     - pip install .
 
