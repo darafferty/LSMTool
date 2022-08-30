@@ -24,8 +24,10 @@ workflow:
 .build:
   stage: build
   extends: .prepare
+  before_script:
+    - pip install wheel setuptools
   script:
-    - pip install -e .
+    - pip install .
 
 build-pyton-3.8:
   extends: .build
