@@ -13,7 +13,9 @@ workflow:
   image: python:$PYTHON_VERSION
   before_script:
     - python --version
-    - pip install virtualenv
+    # Upgrade pip separately, so that the latest pip will be used to install/upgrade other packages
+    - pip install --upgrade pip
+    - pip install --upgrade wheel setuptools virtualenv
     - virtualenv venv
     - source venv/bin/activate
 
@@ -25,7 +27,7 @@ workflow:
   stage: build
   extends: .prepare
   script:
-    - python setup.py install
+    - pip install .
 
 build-pyton-3.8:
   extends: .build
@@ -54,8 +56,11 @@ build-pyton-latest:
 .test:
   stage: test
   extends: .prepare
+  before_script:
+    - pip install pytest
+    - pip install .
   script:
-    - python setup.py test
+    - pytest
 
 test-pyton-3.8:
   extends: .test
