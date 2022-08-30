@@ -25,7 +25,10 @@ workflow:
   stage: build
   extends: .prepare
   before_script:
-    - pip install wheel setuptools
+    # Upgrade pip separately, so that the latest pip will
+    # be used to install/upgrade other packages
+    - pip install --update pip
+    - pip install --update wheel setuptools
   script:
     - pip install .
 
@@ -55,10 +58,9 @@ build-pyton-latest:
 
 .test:
   stage: test
-  extends: .prepare
+  extends: .build
   before_script:
     - pip install pytest
-    - pip install .
   script:
     - pytest
 
