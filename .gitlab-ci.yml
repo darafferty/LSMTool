@@ -27,8 +27,8 @@ workflow:
   before_script:
     # Upgrade pip separately, so that the latest pip will
     # be used to install/upgrade other packages
-    - pip install --update pip
-    - pip install --update wheel setuptools
+    - pip install --upgrade pip
+    - pip install --upgrade wheel setuptools
   script:
     - pip install .
 
