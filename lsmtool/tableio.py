@@ -223,23 +223,29 @@ def createTable(outlines, metaDict, colNames, colDefaults):
                         maxLen = len(specEntry)
             except:
                 pass
+        defSpeclen = len(colDefaults[colNames.index('SpectralIndex')])
+        if defSpeclen > maxLen:
+            maxLen = defSpeclen
         log.debug('Maximum number of spectral-index terms in model: {0}'.format(maxLen))
         for l in specOld:
             try:
+                # Take existing entry and fix type
                 if type(l) is float or type(l) is int:
                     specEntry = [float(l)]
                     specMask = [False]
                 else:
                     specEntry = [float(f) for f in l.split(';')]
                     specMask = [False] * len(specEntry)
-                while len(specEntry) < maxLen:
-                    specEntry.append(0.0)
-                    specMask.append(True)
-                specVec.append(specEntry)
-                maskVec.append(specMask)
             except:
-                specVec.append([0.0]*maxLen)
-                maskVec.append([True]*maxLen)
+                # No entry in table, so use default value
+                specEntry = colDefaults[colNames.index('SpectralIndex')]
+                specMask = [False] * len(specEntry)
+            while len(specEntry) < maxLen:
+                # Add masked values to any entries that are too short
+                specEntry.append(0.0)
+                specMask.append(True)
+            specVec.append(specEntry)
+            maskVec.append(specMask)
         specCol = MaskedColumn(name='SpectralIndex', data=np.array(specVec, dtype=float))
         specCol.mask = maskVec
         specIndx = table.keys().index('SpectralIndex')
@@ -282,12 +288,12 @@ def createTable(outlines, metaDict, colNames, colDefaults):
 
         if hasattr(table.columns[colName], 'filled') and colDefaults[i] is not None:
             fillVal = colDefaults[i]
-            if colName == 'SpectralIndex':
-                while len(fillVal) < maxLen:
-                    fillVal.append(0.0)
             log.debug("Setting default value for column '{0}' to {1}".
-                format(colName, fillVal))
-            table.columns[colName].filled(fillVal)
+                      format(colName, fillVal))
+            if colName == 'SpectralIndex':
+                # We cannot set the fill value to a list/array, so just use a float
+                fillVal = 0.0
+            table.columns[colName].set_fill_value(fillVal)
     table.meta = metaDict
 
     return table
@@ -1130,12 +1136,12 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
             # Note: we used deepcopy() here to ensure that the original
             # is not altered by later changes to fillVal
             fillVal = deepcopy(allowedColumnDefaults)[colName.lower()]
-            if colName == 'SpectralIndex':
-                while len(fillVal) < 1:
-                    fillVal.append(0.0)
             log.debug("Setting default value for column '{0}' to {1}".
-                format(colName, fillVal))
-            table.columns[colName].filled(fillVal)
+                      format(colName, fillVal))
+            if colName == 'SpectralIndex':
+                # We cannot set the fill value to a list/array, so just use a float
+                fillVal = 0.0
+            table.columns[colName].set_fill_value(fillVal)
 
     return table
 
