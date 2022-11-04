@@ -120,7 +120,7 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
         source_xyz = radec_to_xyz(source_ra, source_dec, time)
         obs = pt.table(beamMS+'::FIELD', ack=False)
         pointing_ra = Angle(float(obs.col('REFERENCE_DIR')[0][0][0]), unit=u.rad)
-        pointing_dec = Angle(float(obs.col('REFERENCE_DIR')[0][0][1]), unit=u.ra)
+        pointing_dec = Angle(float(obs.col('REFERENCE_DIR')[0][0][1]), unit=u.rad)
         obs.close()
         pointing_xyz = radec_to_xyz(pointing_ra, pointing_dec, time)
         freqs = np.arange(startfreq, startfreq+numchannels*channelwidth, channelwidth)
