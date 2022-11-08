@@ -25,9 +25,9 @@ def radec_to_xyz(ra, dec, time):
 
     Parameters
     ----------
-    ra : astropy Quantity
+    ra : astropy.coordinates.Angle
         Right ascension
-    dec: astropy Quantity
+    dec: astropy.coordinates.Angle
         Declination
     time: float
         MJD time in seconds
