@@ -17,40 +17,17 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
-import numpy as np
-import multiprocessing
-import itertools
-from astropy.coordinates import SkyCoord, ITRS, EarthLocation, AltAz, Angle
-from astropy.time import Time
-import astropy.units as u
-try:
-    import everybeam as eb
-    has_eb = True
-except ImportError:
-    import lofar.stationresponse as lsr
-    has_eb = False
-import casacore.tables as pt
-from scipy.spatial import Voronoi
-import shapely.geometry
-import shapely.ops
-from math import radians, sin, cos
-from astropy.io import fits as pyfits
-from distutils.version import LooseVersion
-import scipy
-from astropy.wcs import WCS
 
 
 def radec_to_xyz(ra, dec, time):
     """
     Convert RA and Dec coordinates to ITRS coordinates for LOFAR observations.
 
-    The position of the LOFAR core is used for the calculations.
-
     Parameters
     ----------
-    ra : astropy.coordinates.Angle
+    ra : astropy Quantity
         Right ascension
-    dec: astropy.coordinates.Angle
+    dec: astropy Quantity
         Declination
     time: float
         MJD time in seconds
@@ -60,6 +37,11 @@ def radec_to_xyz(ra, dec, time):
     pointing_xyz: array
         NumPy array containing the ITRS X, Y and Z coordinates
     """
+    from astropy.coordinates import SkyCoord, ITRS, EarthLocation, AltAz
+    from astropy.time import Time
+    import astropy.units as u
+    import numpy as np
+
     obstime = Time(time/3600/24, scale='utc', format='mjd')
     loc_LOFAR = EarthLocation(lon=0.11990128407256424, lat=0.9203091252660295, height=6364618.852935438*u.m)
 
@@ -118,6 +100,17 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
         Adjusted spectral index. Returned only if spectralIndex is not None
 
     """
+    import numpy as np
+    has_eb = False
+    try:
+        import everybeam as eb
+        has_eb = True
+    except ImportError:
+        import lofar.stationresponse as lsr
+    import casacore.tables as pt
+    from astropy.coordinates import Angle
+    import astropy.units as u
+
     # Use ant1, times, and n channel to compute the beam, where n is determined by
     # the order of the spectral index polynomial
     if has_eb:
@@ -208,6 +201,11 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFreque
         Adjusted spectral indices. Returned only if spectralIndex is not None
 
     """
+    import numpy as np
+    import pyrap.tables as pt
+    import multiprocessing
+    import itertools
+
     t = pt.table(beamMS, ack=False)
     time = None
     ant1 = -1
@@ -299,6 +297,8 @@ def radec2xy(RA, Dec, refRA=None, refDec=None, crdelt=None):
         values
 
     """
+    import numpy as np
+
     x = []
     y = []
     if refRA is None:
@@ -345,6 +345,8 @@ def xy2radec(x, y, refRA=0.0, refDec=0.0, crdelt=None):
         values
 
     """
+    import numpy as np
+
     RA = []
     Dec = []
 
@@ -378,6 +380,9 @@ def makeWCS(refRA, refDec, crdelt=None):
         A simple TAN-projection WCS object for specified reference position
 
     """
+    from astropy.wcs import WCS
+    import numpy as np
+
     w = WCS(naxis=2)
     w.wcs.crpix = [1000, 1000]
     if crdelt is None:
@@ -416,6 +421,13 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
         for the same sources.
 
     """
+
+    from astropy.coordinates import SkyCoord, Angle
+    from astropy import units as u
+    from distutils.version import LooseVersion
+    import numpy as np
+    import scipy
+
     log = logging.getLogger('LSMTool')
     if LooseVersion(scipy.__version__) < LooseVersion('0.11.0'):
         log.debug('The installed version of SciPy contains a bug that affects catalog matching. '
@@ -484,6 +496,9 @@ def calculateSeparation(ra1, dec1, ra2, dec2):
         Angular separation in degrees
 
     """
+    from astropy.coordinates import SkyCoord
+    import astropy.units as u
+
     coord1 = SkyCoord(ra1, dec1, unit=(u.degree, u.degree), frame='fk5')
     coord2 = SkyCoord(ra2, dec2, unit=(u.degree, u.degree), frame='fk5')
 
@@ -510,6 +525,8 @@ def getFluxAtSingleFrequency(LSM, targetFreq=None, aggregate=None):
         Flux densities in Jy
 
     """
+    import numpy as np
+
     # Calculate flux densities
     if targetFreq is None:
         if 'ReferenceFrequency' in LSM.getColNames():
@@ -570,6 +587,9 @@ def make_template_image(image_name, reference_ra_deg, reference_dec_deg, referen
     fill_val : int, optional
         Value with which to fill the image
     """
+    import numpy as np
+    from astropy.io import fits as pyfits
+
     # Make fits hdu
     # Axis order is [STOKES, FREQ, DEC, RA]
     shape_out = [1, 1, yimsize, ximsize]
@@ -640,6 +660,9 @@ def gaussian_fcn(g, x1, x2, const=False):
     img : array
         Image of Gaussian
     """
+    from math import radians, sin, cos
+    import numpy as np
+
     A, C1, C2, S1, S2, Th = g
     fwsig = 2.35482  # FWHM = fwsig * sigma
     S1 = S1 / fwsig
@@ -681,6 +704,11 @@ def tessellate(x_pix, y_pix, w, dist_pix):
     verts : list
         List of facet vertices in (RA, Dec)
     """
+    import numpy as np
+    from scipy.spatial import Voronoi
+    import shapely.geometry
+    import shapely.ops
+
     # Get x, y coords for directions in pixels. We use the input calibration sky
     # model for this, as the patch positions written to the h5parm file by DPPP may
     # be different
