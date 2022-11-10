@@ -23,6 +23,9 @@ def radec_to_xyz(ra, dec, time):
     """
     Convert RA and Dec coordinates to ITRS coordinates for LOFAR observations.
 
+    Note: the location adopted for LOFAR is that of the core, so the returned
+    ITRS coordinates will be less accurate for stations outside of the core.
+
     Parameters
     ----------
     ra : astropy.coordinates.Angle
@@ -43,6 +46,8 @@ def radec_to_xyz(ra, dec, time):
     import numpy as np
 
     obstime = Time(time/3600/24, scale='utc', format='mjd')
+
+    # Set the location to the LOFAR core
     loc_LOFAR = EarthLocation(lon=0.11990128407256424, lat=0.9203091252660295, height=6364618.852935438*u.m)
 
     dir_pointing = SkyCoord(ra, dec)
