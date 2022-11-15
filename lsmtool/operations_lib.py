@@ -19,6 +19,45 @@
 import logging
 
 
+def radec_to_xyz(ra, dec, time):
+    """
+    Convert RA and Dec coordinates to ITRS coordinates for LOFAR observations.
+
+    Note: the location adopted for LOFAR is that of the core, so the returned
+    ITRS coordinates will be less accurate for stations outside of the core.
+
+    Parameters
+    ----------
+    ra : astropy.coordinates.Angle
+        Right ascension
+    dec: astropy.coordinates.Angle
+        Declination
+    time: float
+        MJD time in seconds
+
+    Returns
+    -------
+    pointing_xyz: array
+        NumPy array containing the ITRS X, Y and Z coordinates
+    """
+    from astropy.coordinates import SkyCoord, ITRS, EarthLocation, AltAz
+    from astropy.time import Time
+    import astropy.units as u
+    import numpy as np
+
+    obstime = Time(time/3600/24, scale='utc', format='mjd')
+
+    # Set the location to the LOFAR core
+    loc_LOFAR = EarthLocation(lon=0.11990128407256424, lat=0.9203091252660295, height=6364618.852935438*u.m)
+
+    dir_pointing = SkyCoord(ra, dec)
+    dir_pointing_altaz = dir_pointing.transform_to(AltAz(obstime=obstime, location=loc_LOFAR))
+    dir_pointing_xyz = dir_pointing_altaz.transform_to(ITRS)
+
+    pointing_xyz = np.asarray([dir_pointing_xyz.x, dir_pointing_xyz.y, dir_pointing_xyz.z])
+    return pointing_xyz
+
+
 def apply_beam_star(inputs):
     """
     Simple multiprocessing helper function for apply_beam()
@@ -74,17 +113,21 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
     except ImportError:
         import lofar.stationresponse as lsr
     import casacore.tables as pt
+    from astropy.coordinates import Angle
+    import astropy.units as u
 
     # Use ant1, times, and n channel to compute the beam, where n is determined by
     # the order of the spectral index polynomial
     if has_eb:
         sr = eb.load_telescope(beamMS)
-        source_xyz = eb.thetaphi2cart(RA*np.pi/180., Dec*np.pi/180.)
+        source_ra = Angle(RA, unit=u.deg)
+        source_dec = Angle(Dec, unit=u.deg)
+        source_xyz = radec_to_xyz(source_ra, source_dec, time)
         obs = pt.table(beamMS+'::FIELD', ack=False)
-        pointing_ra = float(obs.col('REFERENCE_DIR')[0][0][0])  # rad
-        pointing_dec = float(obs.col('REFERENCE_DIR')[0][0][1])  # rad
+        pointing_ra = Angle(float(obs.col('REFERENCE_DIR')[0][0][0]), unit=u.rad)
+        pointing_dec = Angle(float(obs.col('REFERENCE_DIR')[0][0][1]), unit=u.rad)
         obs.close()
-        pointing_xyz = eb.thetaphi2cart(pointing_ra, pointing_dec)
+        pointing_xyz = radec_to_xyz(pointing_ra, pointing_dec, time)
         freqs = np.arange(startfreq, startfreq+numchannels*channelwidth, channelwidth)
     else:
         sr = lsr.stationresponse(beamMS, inverse=invert, useElementResponse=False,
@@ -129,6 +172,11 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFreque
               timeIndx=0.5, invert=False):
     """
     Returns flux attenuated by primary beam.
+
+    Note: the attenuation is approximated using the array factor beam from the
+    first station in the beam MS only (and it is assumed that this station is at
+    LOFAR core). This approximation has been found to produce reasonable results
+    for a typical LOFAR observation but may not work well for atypical observations.
 
     Parameters
     ----------
