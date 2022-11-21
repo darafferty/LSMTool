@@ -187,10 +187,11 @@ def createTable(outlines, metaDict, colNames, colDefaults):
     log = logging.getLogger('LSMTool.Load')
 
     # Before loading table into an astropy Table object, set lengths of Name,
-    # Patch, and Type columns to 100 characters and LogarithmicSI to 5 (since
-    # true/false values are stored as strings). Due to a change in the astropy
-    # table API with v4.1, we have to check the version and use the appropriate
-    # column names
+    # Patch, and Type columns to 100 characters to ensure long names are not
+    # truncated. The LogarithmicSI and OrientationIsAbsolute columns are set
+    # to 5 characters to allow true/false values to be stored as strings without
+    # truncation. Due to a change in the astropy table API with v4.1, we have to
+    # check the version and use the appropriate column names
     if LooseVersion(astropy.__version__) < LooseVersion('4.1'):
         # Use the input column names for the converters
         nameCol = 'col{0}'.format(colNames.index('Name')+1)
@@ -199,12 +200,15 @@ def createTable(outlines, metaDict, colNames, colDefaults):
             patchCol = 'col{0}'.format(colNames.index('Patch')+1)
         if 'LogarithmicSI' in colNames:
             logSICol = 'col{0}'.format(colNames.index('LogarithmicSI')+1)
+        if 'OrientationIsAbsolute' in colNames:
+            orienCol = 'col{0}'.format(colNames.index('OrientationIsAbsolute')+1)
     else:
         # Use the output column names for the converters
         nameCol = 'Name'
         typeCol = 'Type'
         patchCol = 'Patch'
         logSICol = 'LogarithmicSI'
+        orienCol = 'OrientationIsAbsolute'
     converters = {}
     converters[nameCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
     converters[typeCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
@@ -212,6 +216,8 @@ def createTable(outlines, metaDict, colNames, colDefaults):
         converters[patchCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
     if 'LogarithmicSI' in colNames:
         converters[logSICol] = [ascii.convert_numpy('{}5'.format(numpy_type))]
+    if 'OrientationIsAbsolute' in colNames:
+        converters[orienCol] = [ascii.convert_numpy('{}5'.format(numpy_type))]
 
     log.debug('Creating table...')
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
