@@ -107,6 +107,63 @@ allowedVOServices = {
     'wenss': 'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;'}
 
 
+def raformat(val):
+    """
+    Column formatter for RA values.
+
+    Parameters
+    ----------
+    val : float
+        Input RA value in deg
+
+    Returns
+    -------
+    valstr : str
+        Formatted string as 'hh:mm:ss.s'
+
+    """
+    return Angle(val, unit='degree').to_string(unit='hourangle', sep=':')
+
+
+def decformat(val):
+    """
+    Column formatter for Dec values.
+
+    Parameters
+    ----------
+    val : float
+        Input Dec value in deg
+
+    Returns
+    -------
+    valstr : str
+        Formatted string as 'dd.mm.ss.s'
+
+    """
+    return Angle(val, unit='degree').to_string(unit='degree', sep='.')
+
+
+def fluxformat(val):
+    """
+    Column formatter for flux density values.
+
+    Parameters
+    ----------
+    val : float
+        Input flux density value in Jy
+
+    Returns
+    -------
+    valstr : str
+        Formatted string to 3 digits
+
+    """
+    if type(val) is ma.core.MaskedConstant:
+        return '{}'.format(val)
+    else:
+        return '{0:0.3f}'.format(val)
+
+
 def skyModelReader(fileName):
     """
     Reads a makesourcedb sky model file into an astropy table.
@@ -270,8 +327,6 @@ def createTable(outlines, metaDict, colNames, colDefaults):
         table.add_column(specCol, index=specIndx)
 
     # Convert RA and Dec to Angle objects
-    def raformat(val):
-        return Angle(val, unit='degree').to_string(unit='hourangle', sep=':')
     log.debug('Converting RA...')
     RARaw = table['Ra'].data.tolist()
     RACol = Column(name='Ra', data=RA2Angle(RARaw))
@@ -280,8 +335,6 @@ def createTable(outlines, metaDict, colNames, colDefaults):
     table.remove_column('Ra')
     table.add_column(RACol, index=RAIndx)
 
-    def decformat(val):
-        return Angle(val, unit='degree').to_string(unit='degree', sep='.')
     log.debug('Converting Dec...')
     DecRaw = table['Dec'].data.tolist()
     DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
@@ -290,11 +343,6 @@ def createTable(outlines, metaDict, colNames, colDefaults):
     table.remove_column('Dec')
     table.add_column(DecCol, index=DecIndx)
 
-    def fluxformat(val):
-        if type(val) is ma.core.MaskedConstant:
-            return '{}'.format(val)
-        else:
-            return '{0:0.3f}'.format(val)
     table.columns['I'].format = fluxformat
 
     # Set column units and default values
@@ -1077,8 +1125,6 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
             table.rename_column(colName, allowedColumnNames[columnMapping[colName]])
 
     # Convert RA and Dec to Angle objects
-    def raformat(val):
-        return Angle(val, unit='degree').to_string(unit='hourangle', sep=':')
     log.debug('Converting RA...')
     RARaw = table['Ra'].data.tolist()
     RACol = Column(name='Ra', data=RA2Angle(RARaw))
@@ -1087,8 +1133,6 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
     table.remove_column('Ra')
     table.add_column(RACol, index=RAIndx)
 
-    def decformat(val):
-        return Angle(val, unit='degree').to_string(unit='degree', sep='.')
     log.debug('Converting Dec...')
     DecRaw = table['Dec'].data.tolist()
     DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
@@ -1132,8 +1176,6 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
     table.add_column(col)
 
     # Set column units and default values
-    def fluxformat(val):
-        return '{0:0.3f}'.format(val)
     for i, colName in enumerate(table.colnames):
         log.debug("Setting units for column '{0}' to {1}".format(
             colName, allowedColumnUnits[colName.lower()]))
