@@ -48,25 +48,24 @@ If you want to install LSMTool yourself, follow the instructions below.
 
 ### Dependencies
 
-* [Numpy](http://www.numpy.org)
-* [Matplotlib](http://www.matplotlib.org)
-* [Astropy](http://www.astropy.org)
-* [PyVO](http://pyvo.readthedocs.org) (optional, for VO access)
+* [Numpy](https://www.numpy.org)
+* [Scipy](https://www.scipy.org)
+* [Matplotlib](https://www.matplotlib.org)
+* [Astropy](https://www.astropy.org)
+* [EveryBeam](https://everybeam.readthedocs.io)
+* [PyVO](https://pyvo.readthedocs.org) (optional, for VO access)
 
 ### Downloading and Installing
 
-Get the latest developer version by cloning the git repository:
+* Install the latest release from PyPI:
 
-    git clone https://git.astron.nl/RD/LSMTool.git
-
-Then install with:
-
-    cd LSMTool
-    python setup.py install
+    pip install lsmtool
 
 If you have a C++11-compliant compiler, you can build a faster
-version of the mean shift grouping algorithm with:
+version of the mean shift grouping algorithm by compiling it
+yourself:
 
+    git clone https://git.astron.nl/RD/LSMTool.git
     cd LSMTool
     python setup.py install --build_c_extentions
 
@@ -91,7 +90,7 @@ to be done. E.g.:
 
     $ lsmtool model.sky lsmtool.parset
 
-The parset follows the usual NDPPP/BBS format. E.g.:
+The parset follows the usual DP3 format. E.g.:
 
     # Select individual sources with Stokes I fluxes above 1 Jy
     LSMTool.Steps.select.Operation = SELECT

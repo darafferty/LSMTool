@@ -30,6 +30,7 @@ import re
 import logging
 import os
 from copy import deepcopy
+from .operations_lib import normalize_ra, normalize_dec
 
 # Python 3 compatibility
 try:
@@ -122,6 +123,7 @@ def raformat(val):
         Formatted string as 'hh:mm:ss.s'
 
     """
+    val = normalize_ra(val)
     return Angle(val, unit='degree').to_string(unit='hourangle', sep=':')
 
 
@@ -140,6 +142,7 @@ def decformat(val):
         Formatted string as 'dd.mm.ss.s'
 
     """
+    val = normalize_dec(val)
     return Angle(val, unit='degree').to_string(unit='degree', sep='.')
 
 
@@ -576,6 +579,7 @@ def RA2Angle(RA):
             raise ValueError('RA not understood (must be string in '
                              'makesourcedb format or float in degrees): {0}'.format(e))
     else:
+        RA = [normalize_ra(r) for r in RA]
         RAAngle = Angle(RA, unit=u.deg)
 
     return RAAngle
@@ -617,6 +621,7 @@ def Dec2Angle(Dec):
             raise ValueError('Dec not understood (must be string in '
                              'makesourcedb format or float in degrees): {0}'.format(e))
     else:
+        Dec = [normalize_dec(d) for d in Dec]
         DecAngle = Angle(Dec, unit=u.deg)
 
     return DecAngle
@@ -699,7 +704,9 @@ def skyModelWriter(table, fileName):
             else:
                 gRA = 0.0
                 gDec = 0.0
+            gRA = normalize_ra(gRA)
             gRAStr = Angle(gRA, unit='degree').to_string(unit='hourangle', sep=':', precision=4)
+            gDec = normalize_dec(gDec)
             gDecStr = Angle(gDec, unit='degree').to_string(unit='degree', sep='.', precision=4)
 
             outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRAStr,
@@ -779,8 +786,10 @@ def rowStr(row, metaDict):
                     dstr = str(dlist)
             else:
                 if colKey == 'Ra':
+                    d = normalize_ra(d)
                     dstr = Angle(d, unit='degree').to_string(unit='hourangle', sep=':')
                 elif colKey == 'Dec':
+                    d = normalize_dec(d)
                     dstr = Angle(d, unit='degree').to_string(unit='degree', sep='.')
                 else:
                     dstr = str(d)
@@ -1229,7 +1238,7 @@ def getTGSS(position, radius):
         raise ValueError('TGSS query radius "{}" not understood.'.format(radius))
 
     log.debug('Querying TGSS...')
-    url = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv3.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
+    url = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv4.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
           RA, Dec, radius)
     cmd = ['wget', '-O', outFile.name, url]
     subprocess.call(cmd)
