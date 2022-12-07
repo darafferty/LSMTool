@@ -581,6 +581,7 @@ def RA2Angle(RA):
     else:
         RA = [normalize_ra(r) for r in RA]
         RAAngle = Angle(RA, unit=u.deg)
+    RAAngle.wrap_at('360d', inplace=True)  # wrap to [0 - 360)
 
     return RAAngle
 

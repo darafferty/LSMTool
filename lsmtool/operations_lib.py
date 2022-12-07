@@ -17,6 +17,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
+from astropy.coordinates import Angle
 
 
 def normalize_ra(num):
@@ -37,7 +38,10 @@ def normalize_ra(num):
     """
     lower = 0.0
     upper = 360.0
-    res = num
+    if type(num) is Angle:
+        res = num.value
+    else:
+        res = num
     if num > upper or num == lower:
         num = lower + abs(num + upper) % (abs(lower) + abs(upper))
     if num < lower or num == upper:
@@ -65,7 +69,10 @@ def normalize_dec(num):
     """
     lower = -90.0
     upper = 90.0
-    res = num
+    if type(num) is Angle:
+        res = num.value
+    else:
+        res = num
     total_length = abs(lower) + abs(upper)
     if num < -total_length:
         num += ceil(num / (-2 * total_length)) * 2 * total_length
