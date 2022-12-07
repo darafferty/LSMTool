@@ -173,19 +173,33 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         # One or more sources have non-logarithmic indices, so adopt typical
         # value for alpha of -0.8 for those sources
         try:
-            alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate)[0]
+            alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate)
+            if len(alphas2.shape) > 1:
+                if alphas2.shape[1] == 1:
+                    # Remove extra axis
+                    alphas2 = alphas2.squeeze(axis=1)
+                else:
+                    # Take only the first term
+                    alphas2 = alphas2[:, 0]
             logsi = LSM2.getColValues('LogarithmicSI')
             patch_names = LSM2.getColValues('Patch')
             logsi_false_patch_names = set(patch_names[np.where(logsi == 'false')])
             for patch in logsi_false_patch_names:
-                alphas2[patch_names.index(patch)] = -0.8
+                alphas2[patch_names.tolist().index(patch)] = -0.8
         except (IndexError, ValueError):
             # No indices in table, so use typical value for alpha of -0.8 for all
             # sources
             alphas2 = np.array([-0.8]*len(LSM2))
     else:
         try:
-            alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate)[0]
+            alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate)
+            if len(alphas2.shape) > 1:
+                if alphas2.shape[1] == 1:
+                    # Remove extra axis
+                    alphas2 = alphas2.squeeze(axis=1)
+                else:
+                    # Take only the first term
+                    alphas2 = alphas2[:, 0]
         except (IndexError, ValueError):
             # No indices in table, so use typical value for alpha of -0.8 for all
             # sources

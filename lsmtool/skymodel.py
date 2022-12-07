@@ -20,6 +20,7 @@ import logging
 from . import _logging
 from . import tableio
 from . import operations
+from .operations_lib import normalize_ra, normalize_dec
 
 # Python 3 compatibility
 try:
@@ -680,7 +681,7 @@ class SkyModel(object):
             midRA = RA[0]
             midDec = Dec[0]
 
-        return np.array(x), np.array(y), midRA, midDec
+        return np.array(x), np.array(y), normalize_ra(midRA), normalize_dec(midDec)
 
     def getDefaultValues(self):
         """
