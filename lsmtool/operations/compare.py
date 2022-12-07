@@ -165,26 +165,31 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     else:
         refFreq2 = np.array([LSM2.table.meta['ReferenceFrequency']]*len(LSM2))
 
-    # Get spectral indices. For simplicity, we only consider logarithmic
-    # indices
+    # For simplicity, consider only logarithmic indices and only the first term.
+    # For sources with no or non-logarithmic indices, adopt the typical value
+    # of -0.8
     if ('LogarithmicSI' in LSM2.getColNames() and
             np.any(LSM2.getColValues('LogarithmicSI') == 'false')):
         # One or more sources have non-logarithmic indices, so adopt typical
-        # value for alpha of -0.8 for all these sources
-        alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate).squeeze(axis=0)
-        nonlog = np.where(LSM2.getColValues('LogarithmicSI') == 'false')
-        alphas2[nonlog] = -0.8
-    else:
+        # value for alpha of -0.8 for those sources
         try:
-            alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate).squeeze(axis=0)
+            alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate)[0]
+            logsi = LSM2.getColValues('LogarithmicSI')
+            patch_names = LSM2.getColValues('Patch')
+            logsi_false_patch_names = set(patch_names[np.where(logsi == 'false')])
+            for patch in logsi_false_patch_names:
+                alphas2[patch_names.index(patch)] = -0.8
         except (IndexError, ValueError):
             # No indices in table, so use typical value for alpha of -0.8 for all
             # sources
             alphas2 = np.array([-0.8]*len(LSM2))
-    try:
-        nterms = alphas2.shape[1]
-    except IndexError:
-        nterms = 1
+    else:
+        try:
+            alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate)[0]
+        except (IndexError, ValueError):
+            # No indices in table, so use typical value for alpha of -0.8 for all
+            # sources
+            alphas2 = np.array([-0.8]*len(LSM2))
 
     # Select sources that match up with only a single source and filter by spectral
     # index if desired
@@ -194,10 +199,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         if nMatches == 1:
             # This source has a single match
             if ignoreSpec is not None:
-                if nterms > 1:
-                    spec = alphas2[matches21[i]][0]
-                else:
-                    spec = alphas2[matches21[i]]
+                spec = alphas2[matches21[i]]
                 if spec != ignoreSpec:
                     filter.append(i)
             else:
@@ -209,10 +211,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         if nMatches == 1:
             # This source has a single match
             if ignoreSpec is not None:
-                if nterms > 1:
-                    spec = alphas2[matches12[i]][0]
-                else:
-                    spec = alphas2[matches12[i]]
+                spec = alphas2[matches12[i]]
                 if spec != ignoreSpec:
                     filter.append(i)
             else:
@@ -249,13 +248,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
 
     # Calculate predicted LSM2 fluxes at frequencies of LSM1
     predFlux = fluxes2
-    if nterms > 1:
-        for i in range(nterms):
-            predFlux *= 10.0**(alphas2[:, i][matches2] *
-                               (np.log10(refFreq1[matches1] / refFreq2[matches2]))**(i+1))
-    else:
-        predFlux *= 10.0**(alphas2[matches2] *
-                           np.log10(refFreq1[matches1] / refFreq2[matches2]))
+    predFlux *= 10.0**(alphas2[matches2] * np.log10(refFreq1[matches1] / refFreq2[matches2]))
 
     # Find reference RA and Dec for center of LSM1
     x, y, refRA, refDec = LSM1._getXY()
