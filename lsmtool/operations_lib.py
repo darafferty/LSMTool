@@ -18,9 +18,10 @@
 
 import logging
 from astropy.coordinates import Angle
+from math import floor, ceil
 
 
-def normalize_ra(num):
+def normalize_ra(ang):
     """
     Normalize RA to be in the range [0, 360).
 
@@ -28,20 +29,21 @@ def normalize_ra(num):
 
     Parameters
     ----------
-    num : float or list of float
+    ang : float or astropy.coordinates.Angle
         The RA in degrees to be normalized.
 
     Returns
     -------
-    res : float or list of float
+    res : float
         RA in degrees in the range [0, 360).
     """
     lower = 0.0
     upper = 360.0
-    if type(num) is Angle:
-        res = num.value
+    if type(ang) is Angle:
+        num = ang.value
     else:
-        res = num
+        num = ang
+    res = num
     if num > upper or num == lower:
         num = lower + abs(num + upper) % (abs(lower) + abs(upper))
     if num < lower or num == upper:
@@ -51,7 +53,7 @@ def normalize_ra(num):
     return res
 
 
-def normalize_dec(num):
+def normalize_dec(ang):
     """
     Normalize Dec to be in the range [-90, 90].
 
@@ -59,7 +61,7 @@ def normalize_dec(num):
 
     Parameters
     ----------
-    num : float
+    ang : float or astropy.coordinates.Angle
         The Dec in degrees to be normalized.
 
     Returns
@@ -69,10 +71,11 @@ def normalize_dec(num):
     """
     lower = -90.0
     upper = 90.0
-    if type(num) is Angle:
-        res = num.value
+    if type(ang) is Angle:
+        num = ang.value
     else:
-        res = num
+        num = ang
+    res = num
     total_length = abs(lower) + abs(upper)
     if num < -total_length:
         num += ceil(num / (-2 * total_length)) * 2 * total_length
@@ -85,6 +88,7 @@ def normalize_dec(num):
     res = num
 
     return res
+
 
 def radec_to_xyz(ra, dec, time):
     """
