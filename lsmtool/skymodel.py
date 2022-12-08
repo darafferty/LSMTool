@@ -1289,13 +1289,9 @@ class SkyModel(object):
             DecDeg = self.getColValues('Dec')
 
         flux = col.data
-        try:
-            vals = attenuate(self.beamMS, flux, RADeg, DecDeg, timeIndx=self.beamTime)
-        except Exception as e:
-            self.log.warn('{0}. No beam attenuation applied.'.format(e))
-            return col
-
+        vals = attenuate(self.beamMS, flux, RADeg, DecDeg, timeIndx=self.beamTime)
         col[:] = vals
+
         return col
 
     def _getSummedColumn(self, colName, applyBeam=False):
