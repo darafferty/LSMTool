@@ -170,42 +170,32 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     # For simplicity, consider only logarithmic indices and only the first term.
     # For sources with no or non-logarithmic indices, adopt the typical value
     # of -0.8
+    try:
+        # Get the spectral indices and keep first term only
+        alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate)
+        if len(alphas2.shape) > 1:
+            if alphas2.shape[1] == 1:
+                # Remove extra axis
+                alphas2 = alphas2.squeeze(axis=1)
+            else:
+                # Take only the first term
+                alphas2 = alphas2[:, 0]
+    except (IndexError, ValueError):
+        # No indices in table, so use typical value for alpha of -0.8 for all
+        # sources
+        alphas2 = np.array([-0.8]*len(LSM2))
     if ('LogarithmicSI' in LSM2.getColNames() and
             np.any(LSM2.getColValues('LogarithmicSI') == 'false')):
         # One or more sources have non-logarithmic indices, so adopt typical
         # value for alpha of -0.8 for those sources
-        try:
-            alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate)
-            if len(alphas2.shape) > 1:
-                if alphas2.shape[1] == 1:
-                    # Remove extra axis
-                    alphas2 = alphas2.squeeze(axis=1)
-                else:
-                    # Take only the first term
-                    alphas2 = alphas2[:, 0]
-            logsi = LSM2.getColValues('LogarithmicSI')
+        logsi = LSM2.getColValues('LogarithmicSI')
+        if byPatch:
             patch_names = LSM2.getColValues('Patch')
             logsi_false_patch_names = set(patch_names[np.where(logsi == 'false')])
             for patch in logsi_false_patch_names:
                 alphas2[patch_names.tolist().index(patch)] = -0.8
-        except (IndexError, ValueError):
-            # No indices in table, so use typical value for alpha of -0.8 for all
-            # sources
-            alphas2 = np.array([-0.8]*len(LSM2))
-    else:
-        try:
-            alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate)
-            if len(alphas2.shape) > 1:
-                if alphas2.shape[1] == 1:
-                    # Remove extra axis
-                    alphas2 = alphas2.squeeze(axis=1)
-                else:
-                    # Take only the first term
-                    alphas2 = alphas2[:, 0]
-        except (IndexError, ValueError):
-            # No indices in table, so use typical value for alpha of -0.8 for all
-            # sources
-            alphas2 = np.array([-0.8]*len(LSM2))
+        else:
+            alphas2[np.where(logsi == 'flase')] = -0.8
 
     # Select sources that match up with only a single source and filter by spectral
     # index if desired
