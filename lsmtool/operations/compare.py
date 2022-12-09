@@ -54,7 +54,7 @@ def run(step, parset, LSM):
 
 def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
             ignoreSpec=None, excludeMultiple=True, excludeByFlux=True,
-            name1=None, name2=None, format='pdf'):
+            name1=None, name2=None, format='pdf', make_plots=True):
     """
     Compare two sky models
 
@@ -97,6 +97,8 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         Name to use in the plots for LSM2. If None, 'Model 2' is used.
     format : str, optional
         Format of plot files.
+    make_plots : bool, optional
+        If True, the plots described above are made.
 
     Examples
     --------
@@ -294,15 +296,16 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         outDir += '/'
     if not os.path.exists(outDir):
         os.makedirs(outDir)
-    plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
-    plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
-    plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir, name1, name2, format)
-    retstatus = plotOffsets(RA, Dec, RA2, Dec2, x, y, refx, refy, labels, outDir, predFlux,
-                            fluxes1, excludeByFlux, name1, name2, format)
-    if retstatus == 1:
-        log.warn('No matches found within +/- 25% of predicted flux density. Skipping offset plot.')
-    argInfo = 'Used radius = {0}, ignoreSpec = {1}, and excludeMultiple = {2}'.format(
-        radius, ignoreSpec, excludeMultiple)
+    if make_plots:
+        plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
+        plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
+        plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir, name1, name2, format)
+        retstatus = plotOffsets(RA, Dec, RA2, Dec2, x, y, refx, refy, labels, outDir, predFlux,
+                                fluxes1, excludeByFlux, name1, name2, format)
+        if retstatus == 1:
+            log.warn('No matches found within +/- 25% of predicted flux density. Skipping offset plot.')
+    argInfo = 'Used radius = {0}, ignoreSpec = {1}, and excludeMultiple = {2}'.format(radius, ignoreSpec,
+                                                                                      excludeMultiple)
     stats = findStats(predFlux, fluxes1, RA, Dec, RA2, Dec2, outDir, argInfo,
                       LSM1._info(), LSM2._info(), name1, name2)
 
