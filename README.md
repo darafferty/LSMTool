@@ -61,6 +61,10 @@ If you want to install LSMTool yourself, follow the instructions below.
 
     pip install lsmtool
 
+* Or install the latest developer version from the git repository:
+
+    pip install git+https://git.astron.nl/RD/LSMTool.git
+
 If you have a C++11-compliant compiler, you can build a faster
 version of the mean shift grouping algorithm by compiling it
 yourself:
