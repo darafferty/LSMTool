@@ -2272,7 +2272,7 @@ class SkyModel(object):
 
     def compare(self, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
                 ignoreSpec=None, excludeMultiple=True, excludeByFlux=False, name1=None,
-                name2=None, format='pdf'):
+                name2=None, format='pdf', make_plots=True):
         """
         Compare two sky models.
 
@@ -2314,6 +2314,8 @@ class SkyModel(object):
             Name to use in the plots for LSM2. If None, 'Model 2' is used.
         format : str, optional
             Format of plot files.
+        make_plots : bool, optional
+            If True, the plots described above are made.
 
         Returns
         -------
@@ -2353,8 +2355,8 @@ class SkyModel(object):
         stats = operations.compare.compare(self, LSM2, radius=radius, outDir=outDir,
                                            labelBy=labelBy, ignoreSpec=ignoreSpec,
                                            excludeMultiple=excludeMultiple,
-                                           excludeByFlux=excludeByFlux,
-                                           name1=name1, name2=name2, format=format)
+                                           excludeByFlux=excludeByFlux, name1=name1,
+                                           name2=name2, format=format, make_plots=make_plots)
         return stats
 
     def plot(self, fileName=None, labelBy=None):
