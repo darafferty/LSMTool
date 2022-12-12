@@ -107,6 +107,11 @@ allowedVOServices = {
     'nvss': 'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/65&amp;',
     'wenss': 'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;'}
 
+# Define the various URLs used for downloading sky models
+TGSS_URL = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv4.cgi'
+GSM_URL = 'https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi'
+LOTSS_URL = 'https://vo.astron.nl/lotss_dr2/q/src_cone/form'
+
 
 def raformat(val):
     """
@@ -1239,8 +1244,7 @@ def getTGSS(position, radius):
         raise ValueError('TGSS query radius "{}" not understood.'.format(radius))
 
     log.debug('Querying TGSS...')
-    url = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv4.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
-          RA, Dec, radius)
+    url = TGSS_URL + '?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(RA, Dec, radius)
     cmd = ['wget', '-O', outFile.name, url]
     subprocess.call(cmd)
 
@@ -1276,8 +1280,7 @@ def getGSM(position, radius):
         raise ValueError('GSM query radius "{}" not understood.'.format(radius))
 
     log.debug('Querying GSM...')
-    url = 'https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(
-          RA, Dec, radius)
+    url = GSM_URL + '?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(RA, Dec, radius)
     cmd = ['wget', '-O', outFile.name, url]
     subprocess.call(cmd)
 
@@ -1317,7 +1320,7 @@ def getLoTSS(position, radius):
         raise ValueError('LoTSS query radius "{}" not understood.'.format(radius))
 
     log.debug('Querying LoTSS...')
-    url = ('https://vo.astron.nl/lotss_dr2/q/src_cone/form?__nevow_form__=genForm&'
+    url = (LOTSS_URL + '?__nevow_form__=genForm&'
            'hscs_pos={0}%2C%20{1}&hscs_sr={2}&_DBOPTIONS_ORDER=&'
            '_DBOPTIONS_DIR=ASC&MAXREC=100000&_FORMAT=CSV&submit=Go'.format(RA, Dec, radius))
     cmd = ['wget', '-O', outFile.name, url]
