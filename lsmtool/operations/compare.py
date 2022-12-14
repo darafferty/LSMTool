@@ -25,12 +25,12 @@ log.debug('Loading COMPARE module.')
 
 def run(step, parset, LSM):
 
-    outDir = parset.getString('.'.join(["LSMTool.Steps", step, "OutDir"]), '' )
-    skyModel2 = parset.getString('.'.join(["LSMTool.Steps", step, "SkyModel2"]), '' )
-    radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '10 arcsec' )
-    labelBy = parset.getString('.'.join(["LSMTool.Steps", step, "LabelBy"]), '' )
-    excludeMultiple = parset.getBool('.'.join(["LSMTool.Steps", step, "ExcludeMultiple"]), True )
-    ignoreSpec = parset.getString('.'.join(["LSMTool.Steps", step, "IgnoreSpec"]), '' )
+    outDir = parset.getString('.'.join(["LSMTool.Steps", step, "OutDir"]), '')
+    skyModel2 = parset.getString('.'.join(["LSMTool.Steps", step, "SkyModel2"]), '')
+    radius = parset.getString('.'.join(["LSMTool.Steps", step, "Radius"]), '10 arcsec')
+    labelBy = parset.getString('.'.join(["LSMTool.Steps", step, "LabelBy"]), '')
+    excludeMultiple = parset.getBool('.'.join(["LSMTool.Steps", step, "ExcludeMultiple"]), True)
+    ignoreSpec = parset.getString('.'.join(["LSMTool.Steps", step, "IgnoreSpec"]), '')
 
     if outDir == '':
         outDir = '.'
@@ -43,7 +43,7 @@ def run(step, parset, LSM):
 
     try:
         compare(LSM, skyModel2, radius=radius, outDir=outDir, labelBy=labelBy,
-            excludeMultiple=excludeMultiple, ignoreSpec=ignoreSpec)
+                excludeMultiple=excludeMultiple, ignoreSpec=ignoreSpec)
         result = 0
     except Exception as e:
         log.error(e)
@@ -53,8 +53,8 @@ def run(step, parset, LSM):
 
 
 def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
-    ignoreSpec=None, excludeMultiple=True, excludeByFlux=True, name1=None, name2=None,
-    format='pdf'):
+            ignoreSpec=None, excludeMultiple=True, excludeByFlux=True,
+            name1=None, name2=None, format='pdf', make_plots=True):
     """
     Compare two sky models
 
@@ -97,6 +97,8 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         Name to use in the plots for LSM2. If None, 'Model 2' is used.
     format : str, optional
         Format of plot files.
+    make_plots : bool, optional
+        If True, the plots described above are made.
 
     Examples
     --------
@@ -114,9 +116,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         >>> compare(LSM1, LSM2, radius='30 arcsec', excludeMultiple=True,
             outDir='comparison_results/', name1='LOFAR', name2='GSM', format='png')
 
-
     """
-    from astropy.table import vstack, Column
     from ..operations_lib import matchSky, radec2xy
     from ..skymodel import SkyModel
     import numpy as np
@@ -134,11 +134,11 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
 
     byPatch = False
     if (LSM1.hasPatches and not LSM2.hasPatches):
-         LSM2.group('every')
+        LSM2.group('every')
     if (LSM2.hasPatches and not LSM1.hasPatches):
-         LSM1.group('every')
+        LSM1.group('every')
     if (LSM2.hasPatches and LSM1.hasPatches):
-         byPatch = True
+        byPatch = True
 
     # Cross match the tables
     if excludeMultiple:
@@ -146,9 +146,9 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     else:
         nearestOnly = True
     matches11, matches21 = matchSky(LSM1, LSM2, radius=radius, byPatch=byPatch,
-        nearestOnly=nearestOnly)
+                                    nearestOnly=nearestOnly)
     matches12, matches22 = matchSky(LSM2, LSM1, radius=radius, byPatch=byPatch,
-        nearestOnly=nearestOnly)
+                                    nearestOnly=nearestOnly)
     if len(matches11) == 0:
         log.info('No matches found.')
         return
@@ -167,15 +167,35 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     else:
         refFreq2 = np.array([LSM2.table.meta['ReferenceFrequency']]*len(LSM2))
 
-    # Get spectral indices
+    # For simplicity, consider only logarithmic indices and only the first term.
+    # For sources with no or non-logarithmic indices, adopt the typical value
+    # of -0.8
     try:
-        alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate).squeeze(axis=0)
+        # Get the spectral indices and keep first term only
+        alphas2 = LSM2.getColValues('SpectralIndex', aggregate=aggregate)
+        if len(alphas2.shape) > 1:
+            if alphas2.shape[1] == 1:
+                # Remove extra axis
+                alphas2 = alphas2.squeeze(axis=1)
+            else:
+                # Take only the first term
+                alphas2 = alphas2[:, 0]
     except (IndexError, ValueError):
+        # No indices in table, so use typical value for alpha of -0.8 for all
+        # sources
         alphas2 = np.array([-0.8]*len(LSM2))
-    try:
-        nterms = alphas2.shape[1]
-    except IndexError:
-        nterms = 1
+    if ('LogarithmicSI' in LSM2.getColNames() and
+            np.any(LSM2.getColValues('LogarithmicSI') == 'false')):
+        # One or more sources have non-logarithmic indices, so adopt typical
+        # value for alpha of -0.8 for those sources
+        logsi = LSM2.getColValues('LogarithmicSI')
+        if byPatch:
+            patch_names = LSM2.getColValues('Patch')
+            logsi_false_patch_names = set(patch_names[np.where(logsi == 'false')])
+            for patch in logsi_false_patch_names:
+                alphas2[patch_names.tolist().index(patch)] = -0.8
+        else:
+            alphas2[np.where(logsi == 'flase')] = -0.8
 
     # Select sources that match up with only a single source and filter by spectral
     # index if desired
@@ -185,10 +205,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         if nMatches == 1:
             # This source has a single match
             if ignoreSpec is not None:
-                if nterms > 1:
-                    spec = alphas2[matches21[i]][0]
-                else:
-                    spec = alphas2[matches21[i]]
+                spec = alphas2[matches21[i]]
                 if spec != ignoreSpec:
                     filter.append(i)
             else:
@@ -200,10 +217,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         if nMatches == 1:
             # This source has a single match
             if ignoreSpec is not None:
-                if nterms > 1:
-                    spec = alphas2[matches12[i]][0]
-                else:
-                    spec = alphas2[matches12[i]]
+                spec = alphas2[matches12[i]]
                 if spec != ignoreSpec:
                     filter.append(i)
             else:
@@ -222,8 +236,8 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
 
     # Apply the filters
     if byPatch:
-        fluxes1 =  LSM1.getColValues('I', aggregate='sum')[matches1]
-        fluxes2 =  LSM2.getColValues('I', aggregate='sum')[matches2]
+        fluxes1 = LSM1.getColValues('I', aggregate='sum')[matches1]
+        fluxes2 = LSM2.getColValues('I', aggregate='sum')[matches2]
         RA, Dec = LSM1.getPatchPositions(asArray=True)
         RA = RA[matches1]
         Dec = Dec[matches1]
@@ -231,8 +245,8 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         RA2 = RA2[matches2]
         Dec2 = Dec2[matches2]
     else:
-        fluxes1 =  LSM1.getColValues('I', aggregate=aggregate)[matches1]
-        fluxes2 =  LSM2.getColValues('I', aggregate=aggregate)[matches2]
+        fluxes1 = LSM1.getColValues('I', aggregate=aggregate)[matches1]
+        fluxes2 = LSM2.getColValues('I', aggregate=aggregate)[matches2]
         RA = LSM1.getColValues('Ra')[matches1]
         Dec = LSM1.getColValues('Dec')[matches1]
         RA2 = LSM2.getColValues('Ra')[matches2]
@@ -240,13 +254,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
 
     # Calculate predicted LSM2 fluxes at frequencies of LSM1
     predFlux = fluxes2
-    if nterms > 1:
-        for i in range(nterms):
-            predFlux *= 10.0**(alphas2[:, i][matches2] *
-                (np.log10(refFreq1[matches1] / refFreq2[matches2]))**(i+1))
-    else:
-        predFlux *= 10.0**(alphas2[matches2] *
-            np.log10(refFreq1[matches1] / refFreq2[matches2]))
+    predFlux *= 10.0**(alphas2[matches2] * np.log10(refFreq1[matches1] / refFreq2[matches2]))
 
     # Find reference RA and Dec for center of LSM1
     x, y, refRA, refDec = LSM1._getXY()
@@ -267,7 +275,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
                 labels = LSM1.getColValues('name')[matches1]
         else:
             raise ValueError("The lableBy parameter must be one of 'source' or "
-                "'patch'.")
+                             "'patch'.")
     else:
         labels = None
 
@@ -278,23 +286,24 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         outDir += '/'
     if not os.path.exists(outDir):
         os.makedirs(outDir)
-    plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
-    plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
-    plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir, name1, name2, format)
-    retstatus = plotOffsets(RA, Dec, RA2, Dec2, x, y, refx, refy, labels,
-        outDir, predFlux, fluxes1, excludeByFlux, name1, name2, format)
-    if retstatus == 1:
-        log.warn('No matches found within +/- 25% of predicted flux density. Skipping offset plot.')
-    argInfo = 'Used radius = {0}, ignoreSpec = {1}, and excludeMultiple = {2}'.format(
-        radius, ignoreSpec, excludeMultiple)
+    if make_plots:
+        plotFluxRatiosDist(predFlux, fluxes1, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
+        plotFluxRatioSky(predFlux, fluxes1, x, y, RA, Dec, refRA, refDec, labels, outDir, name1, name2, format)
+        plotFluxRatiosFlux(predFlux, fluxes1, labels, outDir, name1, name2, format)
+        retstatus = plotOffsets(RA, Dec, RA2, Dec2, x, y, refx, refy, labels, outDir, predFlux,
+                                fluxes1, excludeByFlux, name1, name2, format)
+        if retstatus == 1:
+            log.warn('No matches found within +/- 25% of predicted flux density. Skipping offset plot.')
+    argInfo = 'Used radius = {0}, ignoreSpec = {1}, and excludeMultiple = {2}'.format(radius, ignoreSpec,
+                                                                                      excludeMultiple)
     stats = findStats(predFlux, fluxes1, RA, Dec, RA2, Dec2, outDir, argInfo,
-        LSM1._info(), LSM2._info(), name1, name2)
+                      LSM1._info(), LSM2._info(), name1, name2)
 
     return stats
 
 
-def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
-    outDir, name1, name2, format, clip=True):
+def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels, outDir,
+                       name1, name2, format, clip=True):
     """
     Makes plot of measured-to-predicted flux ratio vs. distance from center
     """
@@ -309,10 +318,9 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
         if matplotlib.get_backend() != 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        from matplotlib.ticker import FuncFormatter
     except Exception as e:
         raise ImportError('PyPlot could not be imported. Plotting is not '
-            'available: {0}'.format(e))
+                          'available: {0}'.format(e))
 
     if name1 is None:
         name1 = 'Model 1'
@@ -348,8 +356,8 @@ def plotFluxRatiosDist(predFlux, measFlux, RA, Dec, refRA, refDec, labels,
         xls = separation
         yls = ratio
         for label, xl, yl in zip(labels, xls, yls):
-            plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
-                'offset points', ha='right', va='bottom')
+            plt.annotate(label, xy=(xl, yl), xytext=(-2, 2), textcoords='offset points',
+                         ha='right', va='bottom')
 
     plt.savefig(outDir+'flux_ratio_vs_distance.{}'.format(format), format=format)
     plt.close('all')
@@ -359,9 +367,7 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
     """
     Makes plot of measured-to-predicted flux ratio vs. flux
     """
-    import os
     import numpy as np
-    from ..operations_lib import calculateSeparation
     try:
         from astropy.stats.funcs import sigma_clip
     except ImportError:
@@ -371,10 +377,9 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
         if matplotlib.get_backend() != 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        from matplotlib.ticker import FuncFormatter
     except Exception as e:
         raise ImportError('PyPlot could not be imported. Plotting is not '
-            'available: {0}'.format(e))
+                          'available: {0}'.format(e))
 
     if name1 is None:
         name1 = 'Model 1'
@@ -408,21 +413,20 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
         xls = measFlux
         yls = ratio
         for label, xl, yl in zip(labels, xls, yls):
-            plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
-                'offset points', ha='right', va='bottom')
+            plt.annotate(label, xy=(xl, yl), xytext=(-2, 2), textcoords='offset points',
+                         ha='right', va='bottom')
 
     plt.savefig(outDir+'flux_ratio_vs_flux.{}'.format(format), format=format)
     plt.close('all')
 
 
 def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
-    outDir, name1, name2, format):
+                     outDir, name1, name2, format):
     """
     Makes sky plot of measured-to-predicted flux ratio
     """
-    import os
     import numpy as np
-    from ..operations_lib import calculateSeparation, makeWCS
+    from ..operations_lib import makeWCS
     try:
         from astropy.stats.funcs import sigma_clip
     except ImportError:
@@ -433,15 +437,10 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import matplotlib.colors as colors
-        from matplotlib.ticker import FuncFormatter
     except Exception as e:
         raise ImportError('PyPlot could not be imported. Plotting is not '
-            'available: {0}'.format(e))
-    try:
-        from wcsaxes import WCSAxes
-        hasWCSaxes = True
-    except:
-        hasWCSaxes = False
+                          'available: {0}'.format(e))
+    from astropy.visualization.wcsaxes import WCSAxes
 
     if name1 is None:
         name1 = 'Model 1'
@@ -451,60 +450,51 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
     ratio = measFlux / predFlux
 
     fig = plt.figure(figsize=(7.0, 5.0))
-    if hasWCSaxes:
-        wcs = makeWCS(midRA, midDec)
-        ax1 = WCSAxes(fig, [0.12, 0.12, 0.8, 0.8], wcs=wcs)
-        fig.add_axes(ax1)
-    else:
-        ax1 = plt.gca()
+    wcs = makeWCS(midRA, midDec)
+    ax1 = WCSAxes(fig, [0.12, 0.12, 0.8, 0.8], wcs=wcs)
+    fig.add_axes(ax1)
     plt.title('Flux Density Ratios ({0} / {1})'.format(name1, name2))
 
     # Set symbol color by ratio
     vmin = np.min(ratio) - 0.1
     vmax = np.max(ratio) + 0.1
-    sm = plt.cm.ScalarMappable(cmap=plt.cm.jet,
-        norm=colors.Normalize(vmin=vmin, vmax=vmax))
+    sm = plt.cm.ScalarMappable(cmap=plt.cm.jet, norm=colors.Normalize(vmin=vmin, vmax=vmax))
     sm.set_array(ratio)
     sm._A = []
     c = []
     for r in ratio:
         c.append(sm.to_rgba(r))
 
-    if hasWCSaxes:
-        ax1.set_xlim(np.min(x)-20, np.max(x)+20)
-        ax1.set_ylim(np.min(y)-20, np.max(y)+20)
+    ax1.set_xlim(np.min(x)-20, np.max(x)+20)
+    ax1.set_ylim(np.min(y)-20, np.max(y)+20)
     plot = plt.scatter(x, y, c=c)
     cbar = plt.colorbar(sm)
 
     # Set axis labels, etc.
-    if hasWCSaxes:
-        RAAxis = ax1.coords['ra']
-        DecAxis = ax1.coords['dec']
-        RAAxis.set_axislabel('RA')
-        DecAxis.set_axislabel('Dec')
-        ax1.coords.grid(color='black', alpha=0.5, linestyle='solid')
-    else:
-        plt.xlabel("RA (arb. units)")
-        plt.ylabel("Dec (arb. units)")
+    RAAxis = ax1.coords['ra']
+    DecAxis = ax1.coords['dec']
+    RAAxis.set_axislabel('RA')
+    DecAxis.set_axislabel('Dec')
+    ax1.coords.grid(color='black', alpha=0.5, linestyle='solid')
 
     if labels is not None:
         xls = x
         yls = y
         for label, xl, yl in zip(labels, xls, yls):
-            plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
-                'offset points', ha='right', va='bottom')
+            plt.annotate(label, xy=(xl, yl), xytext=(-2, 2), textcoords='offset points',
+                         ha='right', va='bottom')
 
     plt.savefig(outDir+'flux_ratio_sky.{}'.format(format), format=format)
     plt.close('all')
 
 
 def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
-    predFlux, measFlux, excludeByFlux, name1, name2, format, plot_imcoords=False):
+                predFlux, measFlux, excludeByFlux, name1, name2, format,
+                plot_imcoords=False):
     """
     Makes plot of measured - predicted RA and DEC and x and y offsets
     """
     from ..operations_lib import calculateSeparation
-    import os
     import numpy as np
     try:
         from astropy.stats.funcs import sigma_clip
@@ -515,10 +505,9 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
         if matplotlib.get_backend() != 'Agg':
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        from matplotlib.ticker import FuncFormatter
     except Exception as e:
         raise ImportError('PyPlot could not be imported. Plotting is not '
-            'available: {0}'.format(e))
+                          'available: {0}'.format(e))
 
     if excludeByFlux:
         ratio = measFlux / predFlux
@@ -544,13 +533,13 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
             sign = 1.0
         else:
             sign = -1.0
-        RAOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], refRA[i], Dec[i]).value * 3600.0 # arcsec
+        RAOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], refRA[i], Dec[i]).value * 3600.0  # arcsec
         xOffsets[i] = x[i] - refx[i]
         if Dec[i] >= refDec[i]:
             sign = 1.0
         else:
             sign = -1.0
-        DecOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], RA[i], refDec[i]).value * 3600.0 # arcsec
+        DecOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], RA[i], refDec[i]).value * 3600.0  # arcsec
         yOffsets[i] = y[i] - refy[i]
 
     fig = plt.figure(figsize=(7.0, 5.0))
@@ -567,8 +556,8 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
         xls = RAOffsets
         yls = DecOffsets
         for label, xl, yl in zip(labels, xls, yls):
-            plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
-                'offset points', ha='right', va='bottom')
+            plt.annotate(label, xy=(xl, yl), xytext=(-2, 2), textcoords='offset points',
+                         ha='right', va='bottom')
     plt.savefig(outDir+'positional_offsets_sky.{}'.format(format), format=format)
 
     if plot_imcoords:
@@ -586,18 +575,17 @@ def plotOffsets(RA, Dec, refRA, refDec, x, y, refx, refy, labels, outDir,
             xls = RAOffsets
             yls = DecOffsets
             for label, xl, yl in zip(labels, xls, yls):
-                plt.annotate(label, xy = (xl, yl), xytext = (-2, 2), textcoords=
-                    'offset points', ha='right', va='bottom')
+                plt.annotate(label, xy=(xl, yl), xytext=(-2, 2), textcoords='offset points',
+                             ha='right', va='bottom')
         plt.savefig(outDir+'positional_offsets_im.{}'.format(format), format=format)
     return 0
 
 
 def findStats(predFlux, measFlux, RA, Dec, refRA, refDec, outDir, info0, info1,
-    info2, name1, name2):
+              info2, name1, name2):
     """
     Calculates statistics and saves them to 'stats.txt'
     """
-    import os
     import numpy as np
     from ..operations_lib import calculateSeparation
     try:
@@ -619,12 +607,12 @@ def findStats(predFlux, measFlux, RA, Dec, refRA, refDec, outDir, info0, info1,
             sign = 1.0
         else:
             sign = -1.0
-        RAOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], refRA[i], Dec[i]).value # deg
+        RAOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], refRA[i], Dec[i]).value  # deg
         if Dec[i] >= refDec[i]:
             sign = 1.0
         else:
             sign = -1.0
-        DecOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], RA[i], refDec[i]).value # deg
+        DecOffsets[i] = sign * calculateSeparation(RA[i], Dec[i], RA[i], refDec[i]).value  # deg
 
     meanRAOffset = np.mean(RAOffsets)
     stdRAOffset = np.std(RAOffsets)
@@ -638,18 +626,18 @@ def findStats(predFlux, measFlux, RA, Dec, refRA, refDec, outDir, info0, info1,
     meanClippedDecOffset = np.mean(clippedDecOffsets)
     stdClippedDecOffset = np.std(clippedDecOffsets)
 
-    stats = {'meanRatio':meanRatio,
-             'stdRatio':stdRatio,
-             'meanClippedRatio':meanClippedRatio,
-             'stdClippedRatio':stdClippedRatio,
-             'meanRAOffsetDeg':meanRAOffset,
-             'stdRAOffsetDeg':stdRAOffset,
-             'meanClippedRAOffsetDeg':meanClippedRAOffset,
-             'stdClippedRAOffsetDeg':stdClippedRAOffset,
-             'meanDecOffsetDeg':meanDecOffset,
-             'stdDecOffsetDeg':stdDecOffset,
-             'meanClippedDecOffsetDeg':meanClippedDecOffset,
-             'stdClippedDecOffsetDeg':stdClippedDecOffset}
+    stats = {'meanRatio': meanRatio,
+             'stdRatio': stdRatio,
+             'meanClippedRatio': meanClippedRatio,
+             'stdClippedRatio': stdClippedRatio,
+             'meanRAOffsetDeg': meanRAOffset,
+             'stdRAOffsetDeg': stdRAOffset,
+             'meanClippedRAOffsetDeg': meanClippedRAOffset,
+             'stdClippedRAOffsetDeg': stdClippedRAOffset,
+             'meanDecOffsetDeg': meanDecOffset,
+             'stdDecOffsetDeg': stdDecOffset,
+             'meanClippedDecOffsetDeg': meanClippedDecOffset,
+             'stdClippedDecOffsetDeg': stdClippedDecOffset}
 
     outLines = ['Statistics from sky model comparison\n']
     outLines.append('------------------------------------\n\n')
@@ -683,5 +671,3 @@ def findStats(predFlux, measFlux, RA, Dec, refRA, refDec, outDir, info0, info1,
     statsFile.close()
 
     return stats
-
-
