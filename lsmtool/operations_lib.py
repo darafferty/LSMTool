@@ -17,6 +17,77 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
+from astropy.coordinates import Angle
+from math import floor, ceil
+
+
+def normalize_ra(ang):
+    """
+    Normalize RA to be in the range [0, 360).
+
+    Based on https://github.com/phn/angles/blob/master/angles.py
+
+    Parameters
+    ----------
+    ang : float or astropy.coordinates.Angle
+        The RA in degrees to be normalized.
+
+    Returns
+    -------
+    res : float
+        RA in degrees in the range [0, 360).
+    """
+    lower = 0.0
+    upper = 360.0
+    if type(ang) is Angle:
+        num = ang.value
+    else:
+        num = ang
+    res = num
+    if num > upper or num == lower:
+        num = lower + abs(num + upper) % (abs(lower) + abs(upper))
+    if num < lower or num == upper:
+        num = upper - abs(num - lower) % (abs(lower) + abs(upper))
+    res = lower if num == upper else num
+
+    return res
+
+
+def normalize_dec(ang):
+    """
+    Normalize Dec to be in the range [-90, 90].
+
+    Based on https://github.com/phn/angles/blob/master/angles.py
+
+    Parameters
+    ----------
+    ang : float or astropy.coordinates.Angle
+        The Dec in degrees to be normalized.
+
+    Returns
+    -------
+    res : float
+        Dec in degrees in the range [-90, 90].
+    """
+    lower = -90.0
+    upper = 90.0
+    if type(ang) is Angle:
+        num = ang.value
+    else:
+        num = ang
+    res = num
+    total_length = abs(lower) + abs(upper)
+    if num < -total_length:
+        num += ceil(num / (-2 * total_length)) * 2 * total_length
+    if num > total_length:
+        num -= floor(num / (2 * total_length)) * 2 * total_length
+    if num > upper:
+        num = total_length - num
+    if num < lower:
+        num = -total_length - num
+    res = num
+
+    return res
 
 
 def radec_to_xyz(ra, dec, time):
@@ -106,33 +177,23 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
 
     """
     import numpy as np
-    has_eb = False
-    try:
-        import everybeam as eb
-        has_eb = True
-    except ImportError:
-        import lofar.stationresponse as lsr
+    import everybeam as eb
     import casacore.tables as pt
     from astropy.coordinates import Angle
     import astropy.units as u
 
     # Use ant1, times, and n channel to compute the beam, where n is determined by
     # the order of the spectral index polynomial
-    if has_eb:
-        sr = eb.load_telescope(beamMS)
-        source_ra = Angle(RA, unit=u.deg)
-        source_dec = Angle(Dec, unit=u.deg)
-        source_xyz = radec_to_xyz(source_ra, source_dec, time)
-        obs = pt.table(beamMS+'::FIELD', ack=False)
-        pointing_ra = Angle(float(obs.col('REFERENCE_DIR')[0][0][0]), unit=u.rad)
-        pointing_dec = Angle(float(obs.col('REFERENCE_DIR')[0][0][1]), unit=u.rad)
-        obs.close()
-        pointing_xyz = radec_to_xyz(pointing_ra, pointing_dec, time)
-        freqs = np.arange(startfreq, startfreq+numchannels*channelwidth, channelwidth)
-    else:
-        sr = lsr.stationresponse(beamMS, inverse=invert, useElementResponse=False,
-                                 useArrayFactor=True, useChanFreq=False)
-        sr.setDirection(RA*np.pi/180., Dec*np.pi/180.)
+    sr = eb.load_telescope(beamMS)
+    source_ra = Angle(RA, unit=u.deg)
+    source_dec = Angle(Dec, unit=u.deg)
+    source_xyz = radec_to_xyz(source_ra, source_dec, time)
+    obs = pt.table(beamMS+'::FIELD', ack=False)
+    pointing_ra = Angle(float(obs.col('REFERENCE_DIR')[0][0][0]), unit=u.rad)
+    pointing_dec = Angle(float(obs.col('REFERENCE_DIR')[0][0][1]), unit=u.rad)
+    obs.close()
+    pointing_xyz = radec_to_xyz(pointing_ra, pointing_dec, time)
+    freqs = np.arange(startfreq, startfreq+numchannels*channelwidth, channelwidth)
 
     # Correct the source spectrum if needed
     if spectralIndex is not None:
@@ -146,13 +207,10 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
     fluxes_new = []
     for ind in ch_indices:
         # Evaluate beam and take XX only (XX and YY should be equal) and square
-        if has_eb:
-            freq = freqs[ind]
-            beam = abs(sr.array_factor(time, ant1, freq, source_xyz, pointing_xyz))
-            if invert:
-                beam = 1 / beam
-        else:
-            beam = abs(sr.evaluateChannel(time, ant1, ind))
+        freq = freqs[ind]
+        beam = abs(sr.array_factor(time, ant1, freq, source_xyz, pointing_xyz))
+        if invert:
+            beam = 1 / beam
         beam = beam[0][0]**2
         if spectralIndex is not None:
             nu = (startfreq + ind*channelwidth) / referenceFrequency - 1
