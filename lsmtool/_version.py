@@ -13,7 +13,7 @@ def changelog():
 
     2023/01/09 - Version 1.4.10
 
-        Fix issues with concatenating two models
+        Fix issues with concatenating two sky models
 
         Fix beam attenuation when using EveryBeam
 
