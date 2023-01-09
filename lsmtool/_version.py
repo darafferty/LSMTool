@@ -21,6 +21,8 @@ def changelog():
 
         Fix skymodel compare operation
 
+        Replace deprecated `numpy.float` with plain `float`
+
     2022/08/29 - Version 1.4.9
 
         Documentation moved to https://lsmtool.readthedocs.io.
