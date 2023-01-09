@@ -1482,8 +1482,8 @@ class SkyModel(object):
 
             # Fill out the columns by repeating the average value over the
             # entire group
-            RAAvgFull = np.zeros(len(self.table), dtype=np.float)
-            DecAvgFull = np.zeros(len(self.table), dtype=np.float)
+            RAAvgFull = np.zeros(len(self.table), dtype=float)
+            DecAvgFull = np.zeros(len(self.table), dtype=float)
             for i, ind in enumerate(self.table.groups.indices[1:]):
                 RAAvgFull[self.table.groups.indices[i]: ind] = RAAvg[i]
                 DecAvgFull[self.table.groups.indices[i]: ind] = DecAvg[i]

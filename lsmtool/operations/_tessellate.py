@@ -59,7 +59,7 @@ def get_skymodel(skymodel_fn):
             dec_deg = float(dec_src[0]) + (float(dec_src[1])/60.0) + (float(dec_src[2]
                 + '.' + dec_src[3])/3600.0)
         flux = str(sline[4])
-        fluxes.append(np.float(flux))
+        fluxes.append(float(flux))
         ra_dec = np.array([[ra_deg, dec_deg]])
         try:
             x.append(w.wcs_world2pix(ra_dec, 1)[0][0])
