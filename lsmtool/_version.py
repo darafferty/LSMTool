@@ -3,13 +3,25 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.9'
+__version__ = '1.4.10'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2023/01/09 - Version 1.4.10
+
+        Fix issues with concatenating two sky models
+
+        Fix beam attenuation when using EveryBeam
+
+        Fix handling of LogarithmicSI and OrientationIsAbsolute columns
+
+        Fix skymodel compare operation
+
+        Replace deprecated `numpy.float` with plain `float`
 
     2022/08/29 - Version 1.4.9
 
