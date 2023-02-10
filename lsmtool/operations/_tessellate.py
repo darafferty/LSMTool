@@ -90,8 +90,8 @@ def guess_regular_grid(xnodes, ynodes, pixelsize=None) :
     xn_rav, yn_rav = xnodes.ravel(), ynodes.ravel()
     if pixelsize is None :
         pixelsize = derive_pixelsize(xnodes, ynodes)
-    minxn = np.int(np.min(xn_rav) / pixelsize) * pixelsize
-    minyn = np.int(np.min(yn_rav) / pixelsize) * pixelsize
+    minxn = int(np.min(xn_rav) / pixelsize) * pixelsize
+    minyn = int(np.min(yn_rav) / pixelsize) * pixelsize
     xunb, yunb = np.meshgrid(np.arange(minxn, np.max(xn_rav)+pixelsize, pixelsize),
                            np.arange(minyn, np.max(yn_rav)+pixelsize, pixelsize))
 
