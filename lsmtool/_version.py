@@ -3,13 +3,17 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.10'
+__version__ = '1.4.11'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2023/02/10 - Version 1.4.11
+
+        Replace all deprecated `numpy` types with their plain counterpart
 
     2023/01/09 - Version 1.4.10
 
