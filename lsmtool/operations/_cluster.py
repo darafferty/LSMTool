@@ -20,11 +20,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-import os
-import sys
 import numpy as np
-import logging
-import itertools
 
 class Patch():
     def __init__(self, name, ra, dec, flux):
@@ -142,16 +138,8 @@ def create_clusters(LSM, patches_orig, Q, applyBeam=False, root='Patch', pad_ind
     Clusterize all the patches of the skymodel iteratively around the brightest patches
     """
     from astropy.coordinates import SkyCoord
+    from astropy.coordinates.matching import match_coordinates_sky
     from astropy import units as u
-    from distutils.version import LooseVersion
-    import scipy
-    log = logging.getLogger('LSMTool.Cluster')
-    if LooseVersion(scipy.__version__) < LooseVersion('0.11.0'):
-        log.debug('The installed version of SciPy contains a bug that affects catalog matching. '
-            'Falling back on (slower) matching script.')
-        from ._matching import match_coordinates_sky
-    else:
-        from astropy.coordinates.matching import match_coordinates_sky
 
     # sort the patches by brightest first
     idx = np.argsort([patch.flux for patch in patches_orig])[::-1] # -1 to reverse sort

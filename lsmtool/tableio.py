@@ -23,7 +23,7 @@ from astropy.table import Table, Column, MaskedColumn
 from astropy.coordinates import Angle
 from astropy.io import registry
 import astropy.io.ascii as ascii
-from distutils.version import LooseVersion
+from packaging.version import Version
 import numpy as np
 import numpy.ma as ma
 import re
@@ -257,7 +257,7 @@ def createTable(outlines, metaDict, colNames, colDefaults):
     # to 5 characters to allow true/false values to be stored as strings without
     # truncation. Due to a change in the astropy table API with v4.1, we have to
     # check the version and use the appropriate column names
-    if LooseVersion(astropy.__version__) < LooseVersion('4.1'):
+    if Version(astropy.__version__) < Version('4.1'):
         # Use the input column names for the converters
         nameCol = 'col{0}'.format(colNames.index('Name')+1)
         typeCol = 'col{0}'.format(colNames.index('Type')+1)
