@@ -16,7 +16,7 @@
 
 from __future__ import print_function
 import numpy as np
-from numpy import sum, sqrt, min, max, any
+from numpy import sum, sqrt, min, max
 from numpy import argmax, argmin, mean, abs
 from numpy import int32 as Nint
 from numpy import float32 as Nfloat
@@ -388,15 +388,6 @@ class bin2D:
         shownode: default is 1 -> show the voronoi nodes, otherwise ignore (0)
         mycmap: in case datain is provide, will use that cmpa to display the bins
         """
-        from distutils import version
-        try:
-            import matplotlib
-        except ImportError:
-            raise Exception("matplotlib 0.99.0 or later is required for this routine")
-
-        if version.LooseVersion(matplotlib.__version__) < version.LooseVersion('0.99.0'):
-            raise Exception("matplotlib 0.99.0 or later is required for this routine")
-
         from matplotlib.collections import PatchCollection
         import matplotlib.patches as mpatches
         import matplotlib.pyplot as plt

@@ -16,7 +16,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-import logging
 from astropy.coordinates import Angle
 from math import floor, ceil
 
@@ -486,18 +485,9 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
     """
 
     from astropy.coordinates import SkyCoord, Angle
+    from astropy.coordinates.matching import match_coordinates_sky
     from astropy import units as u
-    from distutils.version import LooseVersion
     import numpy as np
-    import scipy
-
-    log = logging.getLogger('LSMTool')
-    if LooseVersion(scipy.__version__) < LooseVersion('0.11.0'):
-        log.debug('The installed version of SciPy contains a bug that affects catalog matching. '
-                  'Falling back on (slower) matching script.')
-        from operations._matching import match_coordinates_sky
-    else:
-        from astropy.coordinates.matching import match_coordinates_sky
 
     if byPatch:
         RA, Dec = LSM1.getPatchPositions(asArray=True)
