@@ -114,6 +114,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     install_requires=reqlist,
+    python_requires=">=3.7",
     scripts=['bin/lsmtool', 'bin/correct_gaussian_orientation.py'],
     ext_modules=ext_modules,
     cmdclass={'build_ext': BuildExt},
