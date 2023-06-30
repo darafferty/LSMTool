@@ -1245,8 +1245,10 @@ def getTGSS(position, radius):
 
     log.debug('Querying TGSS...')
     url = TGSS_URL + '?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(RA, Dec, radius)
-    cmd = ['wget', '-O', outFile.name, url]
-    subprocess.call(cmd)
+    cmd = ['wget', '-nv', '-O', outFile.name, url]
+    cp = subprocess.run(cmd, capture_output=True, text=True)
+    if cp.returncode != 0:
+        raise ConnectionError(cp.stderr)
 
     return outFile
 
@@ -1281,8 +1283,10 @@ def getGSM(position, radius):
 
     log.debug('Querying GSM...')
     url = GSM_URL + '?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(RA, Dec, radius)
-    cmd = ['wget', '-O', outFile.name, url]
-    subprocess.call(cmd)
+    cmd = ['wget', '-nv', '-O', outFile.name, url]
+    cp = subprocess.run(cmd, capture_output=True, text=True)
+    if cp.returncode != 0:
+        raise ConnectionError(cp.stderr)
 
     return outFile
 
@@ -1323,8 +1327,10 @@ def getLoTSS(position, radius):
     url = (LOTSS_URL + '?__nevow_form__=genForm&'
            'hscs_pos={0}%2C%20{1}&hscs_sr={2}&_DBOPTIONS_ORDER=&'
            '_DBOPTIONS_DIR=ASC&MAXREC=100000&_FORMAT=CSV&submit=Go'.format(RA, Dec, radius))
-    cmd = ['wget', '-O', outFile.name, url]
-    subprocess.call(cmd)
+    cmd = ['wget', '-nv', '-O', outFile.name, url]
+    cp = subprocess.run(cmd, capture_output=True, text=True)
+    if cp.returncode != 0:
+        raise ConnectionError(cp.stderr)
 
     # Read in the table
     table = Table.read(outFile.name, format='ascii.csv', header_start=0)
