@@ -58,10 +58,10 @@ def run(step, parset, LSM):
     return result
 
 
-def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, FWHM=None,
-          threshold=0.1, applyBeam=False, root='Patch', pad_index=False, method='mid',
-          facet="", byPatch=False, kernelSize=0.1, nIterations=100, lookDistance=0.2,
-          groupingDistance=0.01):
+def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
+          numClusters=100, FWHM=None, threshold=0.1, applyBeam=False, root='Patch',
+          pad_index=False, method='mid', facet="", byPatch=False, kernelSize=0.1,
+          nIterations=100, lookDistance=0.2, groupingDistance=0.01):
     """
     Groups sources into patches.
 
@@ -83,17 +83,21 @@ def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, 
         - 'facet' => group by facets using as an input a fits file. It requires
             the use of the additional parameter 'facet' to enter the name of the
             fits file.
-        - 'voronoi' => given a previously grouped sky model, voronoi tesselate
-            using the patch positions for patches above the target flux (specified
-            by the targetFlux parameter)
+        - 'voronoi' => given a previously grouped sky model, Voronoi tesselate
+            using the patch positions for patches above the target flux
+            (specified by the targetFlux parameter) or whose names match the
+            input names (specified by the patchNames parameter)
         - 'meanshift' => use the meanshift clustering algorithm
         - the filename of a mask image => group by masked regions (where mask =
             True). Sources outside of masked regions are given patches of their
             own
     targetFlux : str or float, optional
-        Target flux for tessellation (the total flux of each tile will be close
-        to this value) and voronoi algorithms. The target flux can be specified
+        Target flux for 'tessellate' (the total flux of each tile will be close
+        to this value) and 'voronoi' algorithms. The target flux can be specified
         as either a float in Jy or as a string with units (e.g., '25.0 mJy')
+    patchNames : list, optional
+        List of patch names to use for the 'voronoi' algorithm. If both patchNames
+        and targetFlux are given, the targetFlux selection is applied first
     weightBySize : bool, optional
         If True, fluxes are weighted by patch size (as median_size / size) when
         the targetFlux criterion is applied. Patches with sizes below the median
@@ -272,29 +276,35 @@ def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, 
             for name, flux in zip(names, fluxes):
                 if flux >= targetFlux:
                     dirs_names.append(name)
-            if len(dirs_names) == 0:
-                log.warn('No patches meet specified targetFlux. All sources placed in a single patch.')
-                LSM.ungroup()
-                addSingle(LSM, root)
-                return 0
         else:
             # Use all patches
             dirs_names = [name for name, d in dirs.items()]
 
-        dirs_ras = []
-        dirs_decs = []
-        for name in dirs_names:
-            d = dirs[name]
-            dirs_ras.append(d[0])
-            dirs_decs.append(d[1])
-        RADeg = LSM.getColValues('Ra', units='degree')
-        DecDeg = LSM.getColValues('Dec', units='degree')
-        patchNames = []
-        for r, d in zip(RADeg, DecDeg):
-            dists = SkyCoord(r*u.degree, d*u.degree).separation(
-                SkyCoord(dirs_ras*u.degree, dirs_decs*u.degree))
-            patchNames.append(dirs_names[np.argmin(dists)])
-        LSM.setColValues('Patch', patchNames, index=2)
+        if patchNames is not None:
+            # Select only those patches with names in patchNames
+            dirs_names = [name for name in dirs_names if name in patchNames]
+
+        # Do grouping
+        if len(dirs_names) == 0:
+            log.warn('No patches meet specified selection criteria. All sources '
+                     'placed in a single patch.')
+            LSM.ungroup()
+            addSingle(LSM, root)
+        else:
+            dirs_ras = []
+            dirs_decs = []
+            for name in dirs_names:
+                d = dirs[name]
+                dirs_ras.append(d[0])
+                dirs_decs.append(d[1])
+            RADeg = LSM.getColValues('Ra', units='degree')
+            DecDeg = LSM.getColValues('Dec', units='degree')
+            patchNames = []
+            for r, d in zip(RADeg, DecDeg):
+                dists = SkyCoord(r*u.degree, d*u.degree).separation(
+                    SkyCoord(dirs_ras*u.degree, dirs_decs*u.degree))
+                patchNames.append(dirs_names[np.argmin(dists)])
+            LSM.setColValues('Patch', patchNames, index=2)
 
     elif algorithm.lower() == 'meanshift':
         if byPatch:
