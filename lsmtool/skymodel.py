@@ -1991,9 +1991,9 @@ class SkyModel(object):
         operations.remove.remove(self, filterExpression, aggregate=aggregate,
                                  applyBeam=applyBeam, useRegEx=useRegEx, force=force)
 
-    def group(self, algorithm, targetFlux=None, weightBySize=False, numClusters=100, FWHM=None,
-              threshold=0.1, applyBeam=False, root='Patch', pad_index=False,
-              method='mid', facet="", byPatch=False, kernelSize=0.1,
+    def group(self, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
+              numClusters=100, FWHM=None, threshold=0.1, applyBeam=False, root='Patch',
+              pad_index=False, method='mid', facet="", byPatch=False, kernelSize=0.1,
               nIterations=100, lookDistance=0.2, groupingDistance=0.01):
         """
         Groups sources into patches.
@@ -2016,17 +2016,21 @@ class SkyModel(object):
             - 'facet' => group by facets using as an input a fits file. It requires
                 the use of the additional parameter 'facet' to enter the name of the
                 fits file.
-            - 'voronoi' => given a previously grouped sky model, voronoi tesselate
-                using the patch positions for patches above the target flux (specified
-                by the targetFlux parameter)
+            - 'voronoi' => given a previously grouped sky model, Voronoi tesselate
+                using the patch positions for patches above the target flux
+                (specified by the targetFlux parameter) or whose names match the
+                input names (specified by the patchNames parameter)
             - 'meanshift' => use the meanshift clustering algorithm
             - the filename of a mask image => group by masked regions (where mask =
                 True). Sources outside of masked regions are given patches of their
                 own
         targetFlux : str or float, optional
-            Target flux for tessellation (the total flux of each tile will be close
-            to this value) and voronoi algorithms. The target flux can be specified
+            Target flux for 'tessellate' (the total flux of each tile will be close
+            to this value) and 'voronoi' algorithms. The target flux can be specified
             as either a float in Jy or as a string with units (e.g., '25.0 mJy')
+        patchNames : list, optional
+            List of patch names to use for the 'voronoi' algorithm. If both patchNames
+            and targetFlux are given, the targetFlux selection is applied first
         weightBySize : bool, optional
             If True, fluxes are weighted by patch size (as median_size / size) when
             the targetFlux criterion is applied. Patches with sizes below the median
@@ -2080,12 +2084,12 @@ class SkyModel(object):
             >>> s.group('tessellate', targetFlux=30.0)
 
         """
-        operations.group.group(self, algorithm, targetFlux=targetFlux, weightBySize=weightBySize,
-                               numClusters=numClusters, FWHM=FWHM, threshold=threshold,
-                               applyBeam=applyBeam, root=root, pad_index=pad_index,
-                               method=method, facet=facet, byPatch=byPatch,
-                               kernelSize=kernelSize, nIterations=nIterations,
-                               lookDistance=lookDistance,
+        operations.group.group(self, algorithm, targetFlux=targetFlux, patchNames=patchNames,
+                               weightBySize=weightBySize, numClusters=numClusters,
+                               FWHM=FWHM, threshold=threshold, applyBeam=applyBeam,
+                               root=root, pad_index=pad_index, method=method, facet=facet,
+                               byPatch=byPatch, kernelSize=kernelSize,
+                               nIterations=nIterations, lookDistance=lookDistance,
                                groupingDistance=groupingDistance)
 
     def transfer(self, patchSkyModel, matchBy='name', radius=0.1):
@@ -2394,7 +2398,7 @@ class SkyModel(object):
 
         The resulting images can be used with DDECal in DPPP for prediction using IDG
         (if the sky model is grouped into contiguous patches, a ds9 region file defining
-        the Voronio patches can also written).
+        the Voronoi patches can also written).
 
         Note: currently, only sky models with LogarithmicSI = False are supported at
         this time.
@@ -2410,7 +2414,7 @@ class SkyModel(object):
             written as fileRoot.reg.
         writeRegionFile : bool, optional
             If True and the sky model is grouped into contiguous patches, a ds9 region
-            file defining the Voronio patches will be written (this file is required
+            file defining the Voronoi patches will be written (this file is required
             for DDECal)
         clobber : bool, optional
             If True, existing files are overwritten.
