@@ -172,7 +172,7 @@ def fluxformat(val):
         return '{0:0.3f}'.format(val)
 
 
-def skyModelReader(fileName):
+def skyModelReader(fileName, header_start=0):
     """
     Reads a makesourcedb sky model file into an astropy table.
 
@@ -185,6 +185,8 @@ def skyModelReader(fileName):
     fileName : str
         Input ASCII file from which the sky model is read. Must
         respect the makesourcedb format
+    header_start : int, optional
+        Line number at which header starts
 
     Returns
     -------
@@ -194,19 +196,15 @@ def skyModelReader(fileName):
     log = logging.getLogger('LSMTool.Load')
 
     # Open the input file
-    try:
-        modelFile = open(fileName)
+    with open(fileName) as modelFile:
         log.debug('Reading {0}'.format(fileName))
-    except IOError as e:
-        raise IOError('Could not open {0}: {1}'.format(fileName, e.strerror))
 
-    # Read format line
-    formatString = None
-    for line in modelFile:
-        if 'format' in line.lower():
-            formatString = line
-            break
-    modelFile.close()
+        # Read format line
+        formatString = None
+        for line in modelFile.readlines()[header_start:]:
+            if 'format' in line.lower():
+                formatString = line
+                break
     if formatString is None:
         raise IOError("No valid format line found in file '{0}'.".format(fileName))
 
@@ -1215,9 +1213,9 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
     return table
 
 
-def getTGSS(position, radius):
+def getQueryInputs(position, radius):
     """
-    Returns the file name from a TGSS search.
+    Returns the inputs for a non-VO-compatible catalog search.
 
     Parameters
     ----------
@@ -1225,37 +1223,96 @@ def getTGSS(position, radius):
         A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
         [123.2312, 23.3422])
-    radius : float or str, optional
+    radius : float or str
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
         '30 arcsec') for cone search region
 
+    Returns
+    -------
+    RA : float
+        RA in degrees of query position
+    Dec : float
+        Dec in degrees of query position
+    radius : float
+        Radius in degrees of query cone
+
+    Raises
+    ------
+    ValueError
+        Raised when the input radius cannot be converted to degrees,
+        usually due to improperly specified units
     """
-    import tempfile
-    import subprocess
-
-    log = logging.getLogger('LSMTool.Load')
-
-    outFile = tempfile.NamedTemporaryFile()
     RA = RA2Angle(position[0])[0].value
     Dec = Dec2Angle(position[1])[0].value
     try:
         radius = Angle(radius, unit='degree').value
     except TypeError:
-        raise ValueError('TGSS query radius "{}" not understood.'.format(radius))
+        raise ValueError('Query radius "{}" not understood.'.format(radius))
+
+    return (RA, Dec, radius)
+
+
+def queryNonVOService(url, format='makesourcedb'):
+    """
+    Returns the table from a non-VO service.
+
+    Parameters
+    ----------
+    url : str
+        URL of catalog
+    format : str, optional
+        Format to use when reading the catalog. Any format accepted by
+        Table.read() is valid
+
+    Raises
+    ------
+    ConnectionError
+        Raised when the wget call returns a nonzero return code, indicating
+        a problem with the connection to the service
+
+    """
+    import tempfile
+    import subprocess
+
+    with tempfile.NamedTemporaryFile() as outFile:
+        cmd = ['wget', '-nv', '-O', outFile.name, url]
+        cp = subprocess.run(cmd, capture_output=True, text=True)
+        if cp.returncode != 0:
+            raise ConnectionError(cp.stderr)
+
+        table = Table.read(outFile.name, format=format, header_start=0)
+
+    return table
+
+
+def getTGSS(position, radius):
+    """
+    Returns the table from a TGSS search.
+
+    Parameters
+    ----------
+    position : list of floats
+        A list specifying a position as [RA, Dec] in either makesourcedb
+        format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
+        [123.2312, 23.3422])
+    radius : float or str
+        Radius in degrees (if float) or 'value unit' (if str; e.g.,
+        '30 arcsec') for cone search region
+
+    """
+    log = logging.getLogger('LSMTool.Load')
 
     log.debug('Querying TGSS...')
+    RA, Dec, radius = getQueryInputs(position, radius)
     url = TGSS_URL + '?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(RA, Dec, radius)
-    cmd = ['wget', '-nv', '-O', outFile.name, url]
-    cp = subprocess.run(cmd, capture_output=True, text=True)
-    if cp.returncode != 0:
-        raise ConnectionError(cp.stderr)
+    table = queryNonVOService(url, format='makesourcedb')
 
-    return outFile
+    return table
 
 
 def getGSM(position, radius):
     """
-    Returns the file name from a GSM search.
+    Returns the table from a GSM search.
 
     Parameters
     ----------
@@ -1263,32 +1320,19 @@ def getGSM(position, radius):
         A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
         [123.2312, 23.3422])
-    radius : float or str, optional
+    radius : float or str
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
         '30 arcsec') for cone search region
 
     """
-    import tempfile
-    import subprocess
-
     log = logging.getLogger('LSMTool.Load')
 
-    outFile = tempfile.NamedTemporaryFile()
-    RA = RA2Angle(position[0])[0].value
-    Dec = Dec2Angle(position[1])[0].value
-    try:
-        radius = Angle(radius, unit='degree').value
-    except TypeError:
-        raise ValueError('GSM query radius "{}" not understood.'.format(radius))
-
     log.debug('Querying GSM...')
+    RA, Dec, radius = getQueryInputs(position, radius)
     url = GSM_URL + '?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(RA, Dec, radius)
-    cmd = ['wget', '-nv', '-O', outFile.name, url]
-    cp = subprocess.run(cmd, capture_output=True, text=True)
-    if cp.returncode != 0:
-        raise ConnectionError(cp.stderr)
+    table = queryNonVOService(url, format='makesourcedb')
 
-    return outFile
+    return table
 
 
 def getLoTSS(position, radius):
@@ -1301,39 +1345,23 @@ def getLoTSS(position, radius):
         A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
         [123.2312, 23.3422])
-    radius : float or str, optional
+    radius : float or str
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
         '30 arcsec') for cone search region
 
     """
-    import tempfile
-    import subprocess
-
     log = logging.getLogger('LSMTool.Load')
 
     columnMapping = {'Source_Name': 'name', 'RA': 'ra', 'DEC': 'dec', 'Total_flux': 'i',
                      'DC_Maj': 'majoraxis', 'DC_Min': 'minoraxis', 'PA': 'orientation',
                      'referencefrequency': 1.4e8}
 
-    outFile = tempfile.NamedTemporaryFile()
-    RA = RA2Angle(position[0])[0].value
-    Dec = Dec2Angle(position[1])[0].value
-    try:
-        radius = Angle(radius, unit='degree').value * 60.0  # arcmin
-    except TypeError:
-        raise ValueError('LoTSS query radius "{}" not understood.'.format(radius))
-
     log.debug('Querying LoTSS...')
+    RA, Dec, radius = getQueryInputs(position, radius)
     url = (LOTSS_URL + '?__nevow_form__=genForm&'
            'hscs_pos={0}%2C%20{1}&hscs_sr={2}&_DBOPTIONS_ORDER=&'
            '_DBOPTIONS_DIR=ASC&MAXREC=100000&_FORMAT=CSV&submit=Go'.format(RA, Dec, radius))
-    cmd = ['wget', '-nv', '-O', outFile.name, url]
-    cp = subprocess.run(cmd, capture_output=True, text=True)
-    if cp.returncode != 0:
-        raise ConnectionError(cp.stderr)
-
-    # Read in the table
-    table = Table.read(outFile.name, format='ascii.csv', header_start=0)
+    table = queryNonVOService(url, format='ascii.csv')
     table = convertExternalTable(table, columnMapping)
 
     return table

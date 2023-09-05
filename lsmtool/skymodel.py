@@ -90,41 +90,57 @@ class SkyModel(object):
 
         """
         from astropy.table import Table
+        from astropy.io.ascii import InconsistentTableError
         from .tableio import processFormatString, processLine, createTable
 
         self.log = logging.getLogger('LSMTool')
         self.history = []
         if type(fileName) is str:
-            if fileName.lower() in tableio.allowedVOServices:
-                self.log.debug("Attempting to load model from VO service '{0}'...".format(fileName))
-                self.table = tableio.coneSearch(fileName, VOPosition, VORadius)
-                self.log.debug("Successfully loaded model from VO service '{0}'".format(fileName))
-                self._fileName = None
-                self._addHistory("LOAD (from {0} at position {1})".format(fileName, VOPosition))
-            elif fileName.lower() == 'tgss':
-                self.log.debug("Attempting to load model from TGSS...")
-                fileObj = tableio.getTGSS(VOPosition, VORadius)
-                self.table = Table.read(fileObj.name, format='makesourcedb')
-                fileObj.close()
-                self.log.debug("Successfully loaded model from TGSS")
-                self._fileName = None
-                self._addHistory("LOAD (from TGSS at position {0})".format(VOPosition))
-            elif fileName.lower() == 'gsm':
-                self.log.debug("Attempting to load model from GSM...")
-                fileObj = tableio.getGSM(VOPosition, VORadius)
-                self.table = Table.read(fileObj.name, format='makesourcedb')
-                fileObj.close()
-                self.log.debug("Successfully loaded model from GSM")
-                self._fileName = None
-                self._addHistory("LOAD (from GSM at position {0})".format(VOPosition))
-            elif fileName.lower() == 'lotss':
-                self.log.debug("Attempting to load model from LoTSS...")
-                self.table = tableio.getLoTSS(VOPosition, VORadius)
-                self.log.debug("Successfully loaded model from LoTSS")
-                self._fileName = None
-                self._addHistory("LOAD (from LoTSS at position {0})".format(VOPosition))
+            # First check if fileName points to a VO query
+            if VOPosition is not None and VORadius is not None:
+                try:
+                    if fileName.lower() in tableio.allowedVOServices:
+                        self.log.debug("Attempting to load model from VO service '{0}'...".format(fileName))
+                        self.table = tableio.coneSearch(fileName, VOPosition, VORadius)
+                        self.log.debug("Successfully loaded model from VO service '{0}'".format(fileName))
+                        self._fileName = None
+                        self._addHistory("LOAD (from {0} at position {1})".format(fileName, VOPosition))
+                    elif fileName.lower() == 'tgss':
+                        self.log.debug("Attempting to load model from TGSS...")
+                        self.table =  tableio.getTGSS(VOPosition, VORadius)
+                        self.log.debug("Successfully loaded model from TGSS")
+                        self._fileName = None
+                        self._addHistory("LOAD (from TGSS at position {0})".format(VOPosition))
+                    elif fileName.lower() == 'gsm':
+                        self.log.debug("Attempting to load model from GSM...")
+                        self.table =  tableio.getGSM(VOPosition, VORadius)
+                        self.log.debug("Successfully loaded model from GSM")
+                        self._fileName = None
+                        self._addHistory("LOAD (from GSM at position {0})".format(VOPosition))
+                    elif fileName.lower() == 'lotss':
+                        self.log.debug("Attempting to load model from LoTSS...")
+                        self.table = tableio.getLoTSS(VOPosition, VORadius)
+                        self.log.debug("Successfully loaded model from LoTSS")
+                        self._fileName = None
+                        self._addHistory("LOAD (from LoTSS at position {0})".format(VOPosition))
+                    else:
+                        raise ValueError("VO service '{}' not understood. Must be one of "
+                                         "'WENSS', 'NVSS', 'TGSS', or 'GSM'. If you want "
+                                         "instead to load a model from a local file, do not "
+                                         "set VOPosition or VORadius.".format(fileName))
+                except (IndexError, InconsistentTableError):
+                    # Empty result due to no coverage in the catalog at the queried position
+                    self.log.warn('No sources found for the given VO query parameters '
+                                  '(VO service "{0}" with VOPosition = {1} and VORadius = {2}). '
+                                  'Sky model is empty.'.format(fileName, VOPosition, VORadius))
+                    self.table = tableio.makeEmptyTable()
             else:
+                # If fileName does not point to a VO query, assume it points to a local file
                 self.log.debug("Attempting to load model from file '{0}'...".format(fileName))
+                if fileName.lower() in ('wenss', 'nvss', 'tgss', 'gsm'):
+                    self.log.warn("It appears from the filename that you may be trying to "
+                                  "query a VO service. If so, you must provide values for "
+                                  "both VOPosition and VORadius.")
                 self.table = Table.read(fileName, format='makesourcedb')
                 self.log.debug("Successfully loaded model from file '{0}'".format(fileName))
                 self._fileName = fileName
@@ -458,7 +474,7 @@ class SkyModel(object):
 
         """
         import numpy as np
-        from .operations_lib import radec2xy, xy2radec
+        from .operations_lib import xy2radec
         from astropy.table import Column
         from .tableio import RA2Angle, Dec2Angle
 
@@ -642,7 +658,7 @@ class SkyModel(object):
             Dec values
 
         """
-        from .operations_lib import radec2xy, xy2radec
+        from .operations_lib import radec2xy
         import numpy as np
 
         if len(self.table) == 0:
@@ -1250,7 +1266,7 @@ class SkyModel(object):
         elif aggregate == 'max':
             col = self._getMaxColumn(colName, applyBeam=applyBeam)
         else:
-            raise ValueError('Aggregation function not understood.'.format(colName))
+            raise ValueError('Aggregation function not understood.')
         return col
 
     def _applyBeamToCol(self, col, patch=False):
@@ -1739,6 +1755,12 @@ class SkyModel(object):
 
         if format.lower() != 'makesourcedb' and format.lower() != 'factor':
             table.meta = {}
+        if format.lower() == 'fits':
+            # Remove custom formaters
+            table.columns['Ra'].format = None
+            table.columns['Dec'].format = None
+            table.columns['I'].format = None
+
         table.write(fileName, format=format.lower())
 
     def broadcast(self):
@@ -2422,7 +2444,7 @@ class SkyModel(object):
         import numpy as np
         from astropy.io import fits as pyfits
         from astropy import wcs
-        from .operations_lib import make_template_image, gaussian_fcn, tessellate, xy2radec, radec2xy
+        from .operations_lib import make_template_image, gaussian_fcn, tessellate, xy2radec
 
         # Make a blank image for each spectral term
         referenceFrequency = self.getColValues('ReferenceFrequency')
@@ -2543,5 +2565,3 @@ class SkyModel(object):
             outputfile = '{0}.reg'.format(fileRoot)
             with open(outputfile, 'w') as f:
                 f.writelines(lines)
-
-
