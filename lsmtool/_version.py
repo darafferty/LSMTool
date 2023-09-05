@@ -3,13 +3,26 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.4.11'
+__version__ = '1.5.0'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2023/09/05 - Version 1.5.0
+
+        Add check for empty VO query
+
+        Add option to use patch names for faceting centers
+
+        Check return status of `wget` in `tableio.py`, raise `ConnectionError`
+        if the command fails.
+
+        Drop support for Python 3.6
+
+        Replace deprecated `distutils.version` with `packaging.version`
 
     2023/02/10 - Version 1.4.11
 
