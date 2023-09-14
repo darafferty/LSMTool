@@ -3,13 +3,17 @@
 # This module stores the version and changelog
 
 # Version number
-__version__ = '1.5.0'
+__version__ = '1.5.1'
 
 # Change log
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2023/09/14 - Version 1.5.1
+
+        Fix LoTSS query radius and change url to Gaussian catalog
 
     2023/09/05 - Version 1.5.0
 
