@@ -110,7 +110,7 @@ allowedVOServices = {
 # Define the various URLs used for downloading sky models
 TGSS_URL = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv4.cgi'
 GSM_URL = 'https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi'
-LOTSS_URL = 'https://vo.astron.nl/lotss_dr2/q/src_cone/form'
+LOTSS_URL = 'https://vo.astron.nl/lotss_dr2/q/gaus_cone/form'
 
 
 def raformat(val):
@@ -1358,6 +1358,7 @@ def getLoTSS(position, radius):
 
     log.debug('Querying LoTSS...')
     RA, Dec, radius = getQueryInputs(position, radius)
+    radius *= 60  # LoTSS query requires arcmin, not degrees
     url = (LOTSS_URL + '?__nevow_form__=genForm&'
            'hscs_pos={0}%2C%20{1}&hscs_sr={2}&_DBOPTIONS_ORDER=&'
            '_DBOPTIONS_DIR=ASC&MAXREC=100000&_FORMAT=CSV&submit=Go'.format(RA, Dec, radius))

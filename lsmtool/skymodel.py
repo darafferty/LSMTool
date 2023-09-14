@@ -125,7 +125,7 @@ class SkyModel(object):
                         self._addHistory("LOAD (from LoTSS at position {0})".format(VOPosition))
                     else:
                         raise ValueError("VO service '{}' not understood. Must be one of "
-                                         "'WENSS', 'NVSS', 'TGSS', or 'GSM'. If you want "
+                                         "'WENSS', 'NVSS', 'TGSS', 'GSM', or 'LOTSS'. If you want "
                                          "instead to load a model from a local file, do not "
                                          "set VOPosition or VORadius.".format(fileName))
                 except (IndexError, InconsistentTableError):
@@ -137,7 +137,7 @@ class SkyModel(object):
             else:
                 # If fileName does not point to a VO query, assume it points to a local file
                 self.log.debug("Attempting to load model from file '{0}'...".format(fileName))
-                if fileName.lower() in ('wenss', 'nvss', 'tgss', 'gsm'):
+                if fileName.lower() in ('wenss', 'nvss', 'tgss', 'gsm', 'lotss'):
                     self.log.warn("It appears from the filename that you may be trying to "
                                   "query a VO service. If so, you must provide values for "
                                   "both VOPosition and VORadius.")
