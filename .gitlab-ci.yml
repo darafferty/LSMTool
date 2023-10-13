@@ -29,25 +29,25 @@ workflow:
   script:
     - pip install .
 
-build-pyton-3.8:
+build-python-3.8:
   extends: .build
   variables:
     PYTHON_VERSION: "3.8"
 
-build-pyton-3.9:
+build-python-3.9:
   extends: .build
   variables:
     PYTHON_VERSION: "3.9"
 
-build-pyton-3.10:
+build-python-3.10:
   extends: .build
   variables:
     PYTHON_VERSION: "3.10"
 
-build-pyton-latest:
+build-python-3.11:
   extends: .build
   variables:
-    PYTHON_VERSION: "latest"
+    PYTHON_VERSION: "3.11"
 
 #
 # TEST
@@ -62,22 +62,22 @@ build-pyton-latest:
   script:
     - pytest
 
-test-pyton-3.8:
+test-python-3.8:
   extends: .test
   variables:
     PYTHON_VERSION: "3.8"
 
-test-pyton-3.9:
+test-python-3.9:
   extends: .test
   variables:
     PYTHON_VERSION: "3.9"
 
-test-pyton-3.10:
+test-python-3.10:
   extends: .test
   variables:
     PYTHON_VERSION: "3.10"
 
-test-pyton-latest:
+test-python-3.11:
   extends: .test
   variables:
-    PYTHON_VERSION: "latest"
+    PYTHON_VERSION: "3.11"
