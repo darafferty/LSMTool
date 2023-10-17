@@ -109,7 +109,7 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
 
     if fitsFile is not None:
         if xyshift is None:
-            log.warn("A FITS file is specified, but no xyshift is specified.")
+            log.warning("A FITS file is specified, but no xyshift is specified.")
         hdr = getheader(fitsFile, 1)
         w = wcs.WCS(hdr)
     elif xyshift is not None:

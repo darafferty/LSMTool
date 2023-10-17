@@ -18,6 +18,9 @@
 
 from astropy.coordinates import Angle
 from math import floor, ceil
+import numpy as np
+import scipy as sp
+import scipy.spatial
 
 
 def normalize_ra(ang):
@@ -264,7 +267,7 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFreque
 
     """
     import numpy as np
-    import pyrap.tables as pt
+    import casacore.tables as pt
     import multiprocessing
     import itertools
 
@@ -737,74 +740,129 @@ def gaussian_fcn(g, x1, x2, const=False):
         return gimg
 
 
-def tessellate(x_pix, y_pix, w, dist_pix):
+def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
     """
-    Returns Voronoi tessellation vertices
+    Makes a Voronoi tessellation and returns the resulting facet centers
+    and polygons
 
     Parameters
     ----------
-    x_pix : array
-        Array of x pixel values for tessellation centers
-    y_pix : array
-        Array of y pixel values for tessellation centers
-    w : WCS object
-        WCS for transformation from pix to world coordinates
-    dist_pix : float
-        Distance in pixels from center to outer boundary of facets
+    ra_cal : array
+        RA values in degrees of calibration directions
+    dec_cal : array
+        Dec values in degrees of calibration directions
+    ra_mid : float
+        RA in degrees of bounding box center
+    dec_mid : float
+        Dec in degrees of bounding box center
+    width : float
+        Width of bounding box in degrees
 
     Returns
     -------
-    verts : list
-        List of facet vertices in (RA, Dec)
+    facet_points, facet_polys : list of tuples, list of arrays
+        List of facet points (centers) as (RA, Dec) tuples in degrees and
+        list of facet polygons (vertices) as [RA, Dec] arrays in degrees
+        (each of shape N x 2, where N is the number of vertices in a given
+        facet)
     """
-    import numpy as np
-    from scipy.spatial import Voronoi
-    import shapely.geometry
-    import shapely.ops
+    # Build the bounding box corner coordinates
+    if width <= 0.0:
+        raise ValueError('The width cannot be zero or less')
+    width_ra = width
+    width_dec = width
+    wcs_pixel_scale = 20.0 / 3600.0  # 20"/pixel
+    x_cal, y_cal = radec2xy(ra_cal, dec_cal, refRA=ra_mid, refDec=dec_mid, crdelt=wcs_pixel_scale)
+    x_mid, y_mid = radec2xy([ra_mid], [dec_mid], refRA=ra_mid, refDec=dec_mid, crdelt=wcs_pixel_scale)
+    width_x = width_ra / wcs_pixel_scale / 2.0
+    width_y = width_dec / wcs_pixel_scale / 2.0
+    bounding_box = np.array([x_mid[0] - width_x, x_mid[0] + width_x,
+                             y_mid[0] - width_y, y_mid[0] + width_y])
 
-    # Get x, y coords for directions in pixels. We use the input calibration sky
-    # model for this, as the patch positions written to the h5parm file by DPPP may
-    # be different
-    xy = []
-    for RAvert, Decvert in zip(x_pix, y_pix):
-        xy.append((RAvert, Decvert))
+    # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
+    vor = voronoi(np.stack((x_cal, y_cal)).T, bounding_box)
+    facet_polys = []
+    for region in vor.filtered_regions:
+        vertices = vor.vertices[region + [region[0]], :]
+        ra, dec = xy2radec(vertices[:, 0], vertices[:, 1], refRA=ra_mid, refDec=dec_mid, crdelt=wcs_pixel_scale)
+        vertices = np.stack((ra, dec)).T
+        facet_polys.append(vertices)
+    facet_points = []
+    for point in vor.filtered_points:
+        ra, dec = xy2radec([point[0]], [point[1]], refRA=ra_mid, refDec=dec_mid, crdelt=wcs_pixel_scale)
+        facet_points.append((ra[0], dec[0]))
 
-    # Generate array of outer points used to constrain the facets
-    nouter = 64
-    means = np.ones((nouter, 2)) * np.array(xy).mean(axis=0)
-    offsets = []
-    angles = [np.pi/(nouter/2.0)*i for i in range(0, nouter)]
-    for ang in angles:
-        offsets.append([np.cos(ang), np.sin(ang)])
-    scale_offsets = dist_pix * np.array(offsets)
-    outer_box = means + scale_offsets
+    return facet_points, facet_polys
 
-    # Tessellate and clip
-    points_all = np.vstack([xy, outer_box])
-    vor = Voronoi(points_all)
-    lines = [
-        shapely.geometry.LineString(vor.vertices[line])
-        for line in vor.ridge_vertices
-        if -1 not in line
-    ]
-    polygons = [poly for poly in shapely.ops.polygonize(lines)]
-    verts = []
-    for poly in polygons:
-        verts_xy = poly.exterior.xy
-        verts_deg = []
-        for x, y in zip(verts_xy[0], verts_xy[1]):
-            x_y = np.array([[y, x, 0.0, 0.0]])
-            ra_deg, dec_deg = w.wcs_pix2world(x_y, 0)[0][0], w.wcs_pix2world(x_y, 0)[0][1]
-            verts_deg.append((ra_deg, dec_deg))
-        verts.append(verts_deg)
 
-    # Reorder to match the initial ordering
-    ind = []
-    for poly in polygons:
-        for j, (xs, ys) in enumerate(zip(x_pix, y_pix)):
-            if poly.contains(shapely.geometry.Point(xs, ys)):
-                ind.append(j)
+def voronoi(cal_coords, bounding_box):
+    """
+    Produces a Voronoi tessellation for the given coordinates and bounding box
+
+    Parameters
+    ----------
+    cal_coords : array
+        Array of x, y coordinates
+    bounding_box : array
+        Array defining the bounding box as [minx, maxx, miny, maxy]
+
+    Returns
+    -------
+    vor : Voronoi object
+        The resulting Voronoi object
+    """
+    eps = 1e-6
+
+    # Select calibrators inside the bounding box
+    inside_ind = np.logical_and(np.logical_and(bounding_box[0] <= cal_coords[:, 0],
+                                               cal_coords[:, 0] <= bounding_box[1]),
+                                np.logical_and(bounding_box[2] <= cal_coords[:, 1],
+                                               cal_coords[:, 1] <= bounding_box[3]))
+    points_center = cal_coords[inside_ind, :]
+
+    # Mirror points
+    points_left = np.copy(points_center)
+    points_left[:, 0] = bounding_box[0] - (points_left[:, 0] - bounding_box[0])
+    points_right = np.copy(points_center)
+    points_right[:, 0] = bounding_box[1] + (bounding_box[1] - points_right[:, 0])
+    points_down = np.copy(points_center)
+    points_down[:, 1] = bounding_box[2] - (points_down[:, 1] - bounding_box[2])
+    points_up = np.copy(points_center)
+    points_up[:, 1] = bounding_box[3] + (bounding_box[3] - points_up[:, 1])
+    points = np.append(points_center,
+                       np.append(np.append(points_left,
+                                           points_right,
+                                           axis=0),
+                                 np.append(points_down,
+                                           points_up,
+                                           axis=0),
+                                 axis=0),
+                       axis=0)
+
+    # Compute Voronoi, sorting the output regions to match the order of the
+    # input coordinates
+    vor = sp.spatial.Voronoi(points)
+    sorted_regions = np.array(vor.regions, dtype=object)[np.array(vor.point_region)]
+    vor.regions = sorted_regions.tolist()
+
+    # Filter regions
+    regions = []
+    for region in vor.regions:
+        flag = True
+        for index in region:
+            if index == -1:
+                flag = False
                 break
-    verts = [verts[i] for i in ind]
+            else:
+                x = vor.vertices[index, 0]
+                y = vor.vertices[index, 1]
+                if not(bounding_box[0] - eps <= x and x <= bounding_box[1] + eps and
+                       bounding_box[2] - eps <= y and y <= bounding_box[3] + eps):
+                    flag = False
+                    break
+        if region and flag:
+            regions.append(region)
+    vor.filtered_points = points_center
+    vor.filtered_regions = regions
 
-    return verts
+    return vor
