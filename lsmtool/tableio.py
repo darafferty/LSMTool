@@ -30,7 +30,7 @@ import re
 import logging
 import os
 from copy import deepcopy
-from .operations_lib import normalize_ra, normalize_dec
+from .operations_lib import normalize_ra, normalize_dec, tessellate
 
 # Python 3 compatibility
 try:
@@ -1014,6 +1014,67 @@ def factorDirectionsWriter(table, fileName):
     regionFile.close()
 
 
+def facetRegionWriter(table, fileName):
+    """
+    Writes the model patches to a ds9 facet region file.
+
+    The resulting file is suitable for use with WSClean in faceting mode.
+
+    Parameters
+    ----------
+    table : astropy.table.Table object
+        Input sky model table; must have patches defined
+    fileName : str
+        Output file to which the sky model is written
+
+    """
+    log = logging.getLogger('LSMTool.Write')
+
+    # Get the positions of the calibration patches
+    table = table.group_by('Patch')
+    patchNames = table.groups.keys['Patch']
+    patchRA = []
+    patchDec = []
+    for patchName in patchNames:
+        gRA, gDec = table.meta[patchName]
+        patchRA.append(normalize_ra(gRA))
+        patchDec.append(normalize_dec(gDec))
+
+    # Do the tessellation
+    facet_points, facet_polys = tessellate(patchRA, patchDec, table.meta['refRA'],
+                                           table.meta['refDec'], table.meta['width'])
+
+    # For each facet, match the correct name (some patches in the sky model may have
+    # been filtered out if they lie outside the bounding box)
+    facet_names = []
+    for ra, dec, name in zip(patchRA, patchDec, patchNames):
+        for facet_point in facet_points:
+            if np.isclose(ra, facet_point[0]) and np.isclose(dec, facet_point[1]):
+                facet_names.append(name)
+                break
+
+    # Make the ds9 region file
+    lines = []
+    lines.append('# Region file format: DS9 version 4.0\nglobal color=green '
+                 'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
+                 'move=1 delete=1 include=1 fixed=0 source=1\nfk5\n')
+    for name, center_coord, vertices in zip(facet_names, facet_points, facet_polys):
+        radec_list = []
+        RAs = vertices.T[0]
+        Decs = vertices.T[1]
+        for ra, dec in zip(RAs, Decs):
+            radec_list.append('{0}, {1}'.format(ra, dec))
+        lines.append('polygon({0})\n'.format(', '.join(radec_list)))
+        if name is None:
+            lines.append('point({0}, {1})\n'.format(center_coord[0], center_coord[1]))
+        else:
+            lines.append('point({0}, {1}) # text={{{2}}}\n'.format(center_coord[0], center_coord[1], name))
+
+    log.debug('Writing facet region file to {0}'.format(fileName))
+    with open(fileName, 'w') as f:
+        f.writelines(lines)
+
+
 def broadcastTable(fileName):
     """
     Sends a table via SAMP.
@@ -1393,3 +1454,4 @@ registry.register_writer('ds9', Table, ds9RegionWriter)
 registry.register_writer('kvis', Table, kvisAnnWriter)
 registry.register_writer('casa', Table, casaRegionWriter)
 registry.register_writer('factor', Table, factorDirectionsWriter)
+registry.register_writer('facet', Table, facetRegionWriter)

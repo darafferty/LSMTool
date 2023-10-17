@@ -2,108 +2,120 @@
 # Runs an example of each operation
 import lsmtool
 import os
+import filecmp
 
 
-s = lsmtool.load('tests/no_patches.sky')
-s2 = lsmtool.load('tests/apparent.sky')
+sky_no_patches = lsmtool.load('tests/resources/no_patches.sky')
+sky_apparent = lsmtool.load('tests/resources/apparent.sky')
 
 
 def test_select():
     print('Select individual sources with Stokes I fluxes above 1 Jy')
-    s.select('I > 1.0 Jy')
-    assert len(s) == 965
+    sky_no_patches.select('I > 1.0 Jy')
+    assert len(sky_no_patches) == 965
 
 
 def test_transfer():
     print('Transfer patches from patches.sky')
-    s.transfer('tests/patches.sky')
-    assert s.hasPatches
+    sky_no_patches.transfer('tests/resources/patches.sky')
+    assert sky_no_patches.hasPatches
 
 
 def test_remove():
     print('Remove patches with total fluxes below 2 Jy')
-    s.remove('I < 2.0 Jy', aggregate='sum')
-    assert len(s) == 433
+    sky_no_patches.remove('I < 2.0 Jy', aggregate='sum')
+    assert len(sky_no_patches) == 433
 
 
 def test_upgroup():
     print('Ungroup the skymodel')
-    s.ungroup()
-    assert ~s.hasPatches
+    sky_no_patches.ungroup()
+    assert ~sky_no_patches.hasPatches
 
 
 def test_concatenate():
     print('Concatenate with concat.sky')
-    s.concatenate('tests/concat.sky', matchBy = 'position', radius = '30 arcsec', keep = 'from2')
-    assert len(s) == 2165
+    sky_no_patches.concatenate('tests/resources/concat.sky', matchBy='position',
+                               radius='30 arcsec', keep='from2')
+    assert len(sky_no_patches) == 2165
 
 
 def test_concatenate_differing_spectral_index():
     print('Concatenate with single_spectralindx.sky')
-    s4 = lsmtool.load('tests/no_patches.sky')
-    s4.concatenate('tests/single_spectralindx.sky', matchBy = 'position', radius = '30 arcsec', keep = 'from2')
-    assert len(s) == 2165
+    sky_no_patches_orig = lsmtool.load('tests/resources/no_patches.sky')
+    sky_no_patches_orig.concatenate('tests/resources/single_spectralindx.sky',
+                                    matchBy='position', radius='30 arcsec', keep='from2')
+    assert len(sky_no_patches_orig) == 1210
 
 
 def test_compare():
     print('Compare to concat.sky')
-    if os.path.exists('tests/flux_ratio_vs_distance.sky'):
-        os.remove('tests/flux_ratio_vs_distance.sky')
-    c = lsmtool.load('tests/concat.sky')
-    c.ungroup()
-    c.select('I > 5.0 Jy')
-    s.ungroup()
-    s.compare(c, outDir='tests/')
+    if os.path.exists('tests/flux_ratio_vs_distance.pdf'):
+        os.remove('tests/flux_ratio_vs_distance.pdf')
+    sky_concat = lsmtool.load('tests/resources/concat.sky')
+    sky_concat.ungroup()
+    sky_concat.select('I > 5.0 Jy')
+    sky_no_patches.ungroup()
+    sky_no_patches.compare(sky_concat, outDir='tests/')
     assert os.path.exists('tests/flux_ratio_vs_distance.pdf')
 
 
 def test_add():
     print('Add a source')
-    s.add({'Name': 'src1', 'Type': 'POINT', 'Ra': 277.4232, 'Dec': 48.3689, 'I': 0.69})
-    assert len(s) == 2166
+    sky_no_patches.add({'Name': 'src1', 'Type': 'POINT', 'Ra': 277.4232, 'Dec': 48.3689,
+                        'I': 0.69})
+    assert len(sky_no_patches) == 2166
 
 
 def test_group():
     print('Group using tessellation to a target flux of 50 Jy')
-    s.group('tessellate', targetFlux = '50.0 Jy')
-    assert s.hasPatches
+    sky_no_patches.group('tessellate', targetFlux='50.0 Jy')
+    assert sky_no_patches.hasPatches
 
 
 def test_move():
     print('Move patch Patch_1 to 16:04:16.2288, 58.03.06.912')
-    s.move('Patch_1', position=['16:04:16.2288', '58.03.06.912'])
-    assert round(s.getPatchPositions()['Patch_1'][0].value, 4) == 241.0676
+    sky_no_patches.move('Patch_1', position=['16:04:16.2288', '58.03.06.912'])
+    assert round(sky_no_patches.getPatchPositions()['Patch_1'][0].value, 4) == 241.0676
 
 
 def test_merge():
     print('Merge patches Patch_0 and Patch_2')
-    s.merge(['Patch_0', 'Patch_2'], name = 'merged_patch')
-    assert len(s.getPatchNames()) == 139
+    sky_no_patches.merge(['Patch_0', 'Patch_2'], name='merged_patch')
+    assert len(sky_no_patches.getPatchNames()) == 139
 
 
 def test_setPatchPositions():
     print('Set patch positions to midpoint of patch')
-    s.setPatchPositions(method='mid')
-    assert round(s.getPatchPositions()['merged_patch'][0].value, 4) == 274.2124
+    sky_no_patches.setPatchPositions(method='mid')
+    assert round(sky_no_patches.getPatchPositions()['merged_patch'][0].value, 4) == 274.2124
+
+
+def test_facet_write():
+    print('Write ds9 facet file')
+    if os.path.exists('tests/facet.reg'):
+        os.remove('tests/facet.reg')
+    sky_no_patches.write('tests/facet.reg', format='facet', clobber=True)
+    assert filecmp.cmp('tests/facet.reg', 'tests/resources/facet.reg')
 
 
 def test_write():
     print('Write final model to file')
     if os.path.exists('tests/final.sky'):
         os.remove('tests/final.sky')
-    s.write('tests/final.sky', clobber=True)
-    assert os.path.exists('tests/final.sky')
+    sky_no_patches.write('tests/final.sky', clobber=True, addHistory=False)
+    assert filecmp.cmp('tests/final.sky', 'tests/resources/final.sky')
 
 
 def test_plot():
     print('Plot the model')
     if os.path.exists('tests/plot.pdf'):
         os.remove('tests/plot.pdf')
-    s.plot('tests/plot.pdf')
+    sky_no_patches.plot('tests/plot.pdf')
     assert os.path.exists('tests/plot.pdf')
 
 
 def test_meanshift():
     print('Group the model with the meanshift algorithm')
-    s2.group('meanshift', byPatch=True, lookDistance=0.075, groupingDistance=0.01)
-    assert len(s2.getPatchPositions()) == 67
+    sky_apparent.group('meanshift', byPatch=True, lookDistance=0.075, groupingDistance=0.01)
+    assert len(sky_apparent.getPatchPositions()) == 67

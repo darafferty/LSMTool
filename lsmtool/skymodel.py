@@ -17,6 +17,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 import logging
+import os
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 from . import _logging
 from . import tableio
 from . import operations
@@ -103,25 +106,25 @@ class SkyModel(object):
                         self.log.debug("Attempting to load model from VO service '{0}'...".format(fileName))
                         self.table = tableio.coneSearch(fileName, VOPosition, VORadius)
                         self.log.debug("Successfully loaded model from VO service '{0}'".format(fileName))
-                        self._fileName = None
+                        self._fileName = fileName.lower() + "_vo"
                         self._addHistory("LOAD (from {0} at position {1})".format(fileName, VOPosition))
                     elif fileName.lower() == 'tgss':
                         self.log.debug("Attempting to load model from TGSS...")
                         self.table =  tableio.getTGSS(VOPosition, VORadius)
                         self.log.debug("Successfully loaded model from TGSS")
-                        self._fileName = None
+                        self._fileName = "tgss_vo"
                         self._addHistory("LOAD (from TGSS at position {0})".format(VOPosition))
                     elif fileName.lower() == 'gsm':
                         self.log.debug("Attempting to load model from GSM...")
                         self.table =  tableio.getGSM(VOPosition, VORadius)
                         self.log.debug("Successfully loaded model from GSM")
-                        self._fileName = None
+                        self._fileName = "gsm_vo"
                         self._addHistory("LOAD (from GSM at position {0})".format(VOPosition))
                     elif fileName.lower() == 'lotss':
                         self.log.debug("Attempting to load model from LoTSS...")
                         self.table = tableio.getLoTSS(VOPosition, VORadius)
                         self.log.debug("Successfully loaded model from LoTSS")
-                        self._fileName = None
+                        self._fileName = "lotss_vo"
                         self._addHistory("LOAD (from LoTSS at position {0})".format(VOPosition))
                     else:
                         raise ValueError("VO service '{}' not understood. Must be one of "
@@ -130,17 +133,18 @@ class SkyModel(object):
                                          "set VOPosition or VORadius.".format(fileName))
                 except (IndexError, InconsistentTableError):
                     # Empty result due to no coverage in the catalog at the queried position
-                    self.log.warn('No sources found for the given VO query parameters '
-                                  '(VO service "{0}" with VOPosition = {1} and VORadius = {2}). '
-                                  'Sky model is empty.'.format(fileName, VOPosition, VORadius))
+                    self.log.warning('No sources found for the given VO query parameters '
+                                     '(VO service "{0}" with VOPosition = {1} and VORadius = {2}). '
+                                     'Sky model is empty.'.format(fileName, VOPosition, VORadius))
                     self.table = tableio.makeEmptyTable()
+                    self._fileName = None
             else:
                 # If fileName does not point to a VO query, assume it points to a local file
                 self.log.debug("Attempting to load model from file '{0}'...".format(fileName))
                 if fileName.lower() in ('wenss', 'nvss', 'tgss', 'gsm', 'lotss'):
-                    self.log.warn("It appears from the filename that you may be trying to "
-                                  "query a VO service. If so, you must provide values for "
-                                  "both VOPosition and VORadius.")
+                    self.log.warning("It appears from the filename that you may be trying to "
+                                     "query a VO service. If so, you must provide values for "
+                                     "both VOPosition and VORadius.")
                 self.table = Table.read(fileName, format='makesourcedb')
                 self.log.debug("Successfully loaded model from file '{0}'".format(fileName))
                 self._fileName = fileName
@@ -207,6 +211,16 @@ class SkyModel(object):
         if 'Patch' in self.table.keys():
             self.table = self.table.group_by('Patch')
             self.hasPatches = True
+
+            # Check if any patches have undefined positions
+            for patchName in self.getPatchNames():
+                if patchName not in self.table.meta:
+                    self.log.warning('Patch positions are undefined for one or more '
+                                     'patches. Setting positions to the mid point of '
+                                     'each patch... (if this is not what you want, please '
+                                     'set the positions with the setPatchPositions() method).')
+                    self.setPatchPositions(method='mid')
+                    break
         else:
             self.hasPatches = False
 
@@ -409,8 +423,8 @@ class SkyModel(object):
                 else:
                     plur = 's'
                 if not quiet:
-                    self.log.warn("Column name{0} '{1}' not recognized. Ignoring.".
-                                  format(plur, ','.join(badNames)))
+                    self.log.warning("Column name{0} '{1}' not recognized. Ignoring.".
+                                     format(plur, ','.join(badNames)))
             if len(colNameLower) == 0:
                 return None
             else:
@@ -985,18 +999,19 @@ class SkyModel(object):
             >>> for row in s.getRowValues('bin1'): tot += row['I']
 
         """
-        sourceNames = self.getColValues('Name')
-        patchNames = self.getPatchNames()
-        if patchNames is None:
-            patchNames = []
-        if rowName in sourceNames:
-            indx = self._getNameIndx(rowName)
-            return self.table.filled()[indx]
-        elif rowName in patchNames:
+        # Check first for the rowName as a patch name. If no patch matches (or
+        # the model is not grouped into patches), Try it as a source name. This
+        # logic should work even if a row has the same name for the source and
+        # its patch, as in this case the patch and source row index are
+        # identical (since such a patch can have only one member source)
+        if self.hasPatches and rowName in self.getPatchNames():
             pindx = self._getNameIndx(rowName, patch=True)
             table = self.table.groups[pindx]
             table = table.group_by('Patch')  # ensure that grouping is preserved
             return table
+        elif rowName in self.getColValues('Name'):
+            indx = self._getNameIndx(rowName)
+            return self.table.filled()[indx]
         else:
             raise ValueError("Row name '{0}' not recognized.".format(rowName))
 
@@ -1030,16 +1045,15 @@ class SkyModel(object):
         """
         import numpy as np
 
-        sourceNames = self.getColValues('Name')
-        if self.hasPatches:
-            patchNames = self.getColValues('Patch')
-        else:
-            patchNames = []
-
-        if rowName in sourceNames:
+        # Check first for the rowName as a patch name. If no patch matches (or
+        # the model is not grouped into patches), Try it as a source name. This
+        # logic should work even if a row has the same name for the source and
+        # its patch, as in this case the patch and source row index are
+        # identical (since such a patch can have only one member source)
+        if self.hasPatches and rowName in self.getPatchNames():
+            return np.where(self.getColValues('Patch') == rowName)[0].tolist()
+        elif rowName in self.getColValues('Name'):
             return self._getNameIndx(rowName)
-        elif rowName in patchNames:
-            return np.where(patchNames == rowName)[0].tolist()
         else:
             raise ValueError("Row name '{0}' not recognized.".format(rowName))
 
@@ -1187,8 +1201,8 @@ class SkyModel(object):
                     plur = ''
                 else:
                     plur = 's'
-                self.log.warn("Name{0} '{1}' not recognized. Ignoring.".
-                              format(plur, ','.join(badNames)))
+                self.log.warning("Name{0} '{1}' not recognized. Ignoring.".
+                                 format(plur, ','.join(badNames)))
             if len(indx) == 0:
                 raise ValueError("None of the specified names were found.")
             return indx
@@ -1289,7 +1303,7 @@ class SkyModel(object):
         from .operations_lib import attenuate
 
         if not self._hasBeam:
-            self.log.warn('No beam MS has been specified. No beam attenuation applied.')
+            self.log.warning('No beam MS has been specified. No beam attenuation applied.')
             return col
 
         if patch:
@@ -1625,7 +1639,7 @@ class SkyModel(object):
 
     def write(self, fileName=None, format='makesourcedb', clobber=False,
               sortBy=None, lowToHigh=False, addHistory=True, applyBeam=False,
-              invertBeam=False, adjustSI=False):
+              invertBeam=False, adjustSI=False, width=None):
         """
         Writes the sky model to a file.
 
@@ -1643,6 +1657,7 @@ class SkyModel(object):
                 - 'kvis'
                 - 'casa'
                 - 'factor'
+                - 'facet' (ds9 region file of Voronoi facets; model must have patches)
                 - plus all other formats supported by the astropy.table package
         clobber : bool, optional
             If True, an existing file is overwritten.
@@ -1663,6 +1678,10 @@ class SkyModel(object):
             If True, adjust the spectral index column for the beam (only works if
             the spectral index in non-logarithmic. I.e., the 'LogarithmicSI' column
             entries are all False)
+        width : float, optional
+            The width in degrees of the total extent of the output facet regions.
+            Only used when format = 'facet'. If not given, the width will be set
+            to fully cover the extent of the model
 
         Examples
         --------
@@ -1675,9 +1694,15 @@ class SkyModel(object):
 
             >>> s.write('sky.fits', format='fits')
 
-        Write to a ds9 region file::
+        Write to a ds9 region file (point sources are indicated by points and Gaussians
+        by ellipses)::
 
             >>> s.write('sky.reg', format='ds9')
+
+        Write to a WSClean/ds9 facet region file (regions define Voronoi facets around patch
+        positions)::
+
+            >>> s.write('facets.reg', format='facet')
 
         """
         import os
@@ -1753,7 +1778,31 @@ class SkyModel(object):
             table.meta['patch_flux'] = self.getColValues('I', aggregate='sum',
                                                          units='mJy')
 
-        if format.lower() != 'makesourcedb' and format.lower() != 'factor':
+        # And reference coordinates and width in degrees
+        if format.lower() == 'facet':
+            if not self.hasPatches:
+                raise ValueError("Model must be grouped into patches when format = 'facet'.")
+
+            _, _, refRA, refDec = self._getXY()
+            table.meta['refRA'] = refRA
+            table.meta['refDec'] = refDec
+
+            if width is not None:
+                table.meta['width'] = width
+            else:
+                # Find the approximate width in RA and Dec that the model covers and
+                # add 20% padding
+                source_coord = SkyCoord(ra=table['Ra'].value*u.degree,
+                                        dec=table['Dec'].value*u.degree)
+                ref_coord = SkyCoord(ra=table.meta['refRA']*u.degree,
+                                     dec=table.meta['refDec']*u.degree)
+                separation = ref_coord.separation(source_coord)
+                max_distance = np.max(np.array([sep.value for sep in separation]))
+                table.meta['width'] = 2 * max_distance * 1.2
+
+        # Clean up as needed
+        if format.lower() not in ['makesourcedb', 'factor', 'facet']:
+            # Make sure the metadata is empty when not needed
             table.meta = {}
         if format.lower() == 'fits':
             # Remove custom formaters
@@ -2418,22 +2467,25 @@ class SkyModel(object):
         """
         Rasterize the sky model to FITS images (one image per spectral term).
 
-        The resulting images can be used with DDECal in DPPP for prediction using IDG
-        (if the sky model is grouped into contiguous patches, a ds9 region file defining
-        the Voronoi patches can also written).
+        The resulting images can be used with DDECal in DP3 for prediction using IDG.
+        If the sky model is grouped into contiguous patches, a ds9 region file defining
+        the Voronoi patches can also written (this file is required for use with IDG
+        predict).
 
-        Note: currently, only sky models with LogarithmicSI = False are supported at
-        this time.
+        Note: currently, when writing the FITS images, only sky models with
+        LogarithmicSI = False are supported.
 
         Parameters
         ----------
         cellsize : float
             The cellsize in degrees for the output image.
         fileRoot : str, optional
-            Filename root for the output FITS images. The images will be named
-            fileRoot_0.fits, fileRoot_1.fits, etc. (one for each spectral term in
-            the sky model). If writeRegionFile is True, a ds9 region file is also
-            written as fileRoot.reg.
+            Filename root for the output FITS images. The images will be named fileRoot +
+            '_0.fits', fileRoot + '_1.fits', etc. (one for each spectral term in the sky
+            model). If writeRegionFile is True, a ds9 region file is also written as
+            fileRoot + '.reg'. If not given, the root is taken from the filename of the
+            input sky model (with its extension, if any, removed), if available, and
+            otherwise is set to 'skymodel'
         writeRegionFile : bool, optional
             If True and the sky model is grouped into contiguous patches, a ds9 region
             file defining the Voronoi patches will be written (this file is required
@@ -2445,6 +2497,16 @@ class SkyModel(object):
         from astropy.io import fits as pyfits
         from astropy import wcs
         from .operations_lib import make_template_image, gaussian_fcn, tessellate, xy2radec
+
+        # Check inputs
+        if writeRegionFile and not self.hasPatches:
+            raise ValueError('writeRegionFile = True but sky model is not grouped into '
+                             'patches.')
+        if fileRoot is None:
+            if self._fileName is None:
+                fileRoot = 'skymodel'
+            else:
+                fileRoot = os.path.splitext(self._fileName)[0]
 
         # Make a blank image for each spectral term
         referenceFrequency = self.getColValues('ReferenceFrequency')
@@ -2467,6 +2529,14 @@ class SkyModel(object):
                                    'LogarithmicSI = False are supported at this time.')
 
         image_names = ['{0}_{1}.fits'.format(fileRoot, i) for i in range(nterms)]
+        for image_name in image_names:
+            if os.path.exists(image_name):
+                if clobber:
+                    os.remove(image_name)
+                else:
+                    raise IOError("The output file '{0}' exists and clobber = False.".
+                                  format(image_name))
+
         x, y, refRA, refDec = self._getXY(crdelt=cellsize)
         if 'GAUSSIAN' in types:
             fwhm = np.max(self.getColValues('MajorAxis', units='degree') * cellsize)
@@ -2548,7 +2618,7 @@ class SkyModel(object):
                 x_pix_list.append(x_pix)
                 y_pix_list.append(y_pix)
             dist_pix = np.sqrt(xsize**2 + ysize**2)
-            vertices = tessellate(x_pix_list, y_pix_list, w, dist_pix)
+            _, vertices = tessellate(RA, Dec, refRA[0], refDec[0], dist_pix * cellsize)
             lines = []
             lines.append('# Region file format: DS9 version 4.0\nglobal color=green '
                          'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
@@ -2563,5 +2633,11 @@ class SkyModel(object):
                 lines.append('polygon({0}) # text={{{1}}}\n'.format(', '.join(xylist), pname))
 
             outputfile = '{0}.reg'.format(fileRoot)
+            if os.path.exists(outputfile):
+                if clobber:
+                    os.remove(outputfile)
+                else:
+                    raise IOError("The output file '{0}' exists and clobber = False.".
+                                  format(outputfile))
             with open(outputfile, 'w') as f:
                 f.writelines(lines)

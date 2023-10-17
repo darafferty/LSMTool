@@ -286,8 +286,8 @@ def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
 
         # Do grouping
         if len(dirs_names) == 0:
-            log.warn('No patches meet specified selection criteria. All sources '
-                     'placed in a single patch.')
+            log.warning('No patches meet specified selection criteria. All sources '
+                        'placed in a single patch.')
             LSM.ungroup()
             addSingle(LSM, root)
         else:

@@ -293,7 +293,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
         retstatus = plotOffsets(RA, Dec, RA2, Dec2, x, y, refx, refy, labels, outDir, predFlux,
                                 fluxes1, excludeByFlux, name1, name2, format)
         if retstatus == 1:
-            log.warn('No matches found within +/- 25% of predicted flux density. Skipping offset plot.')
+            log.warning('No matches found within +/- 25% of predicted flux density. Skipping offset plot.')
     argInfo = 'Used radius = {0}, ignoreSpec = {1}, and excludeMultiple = {2}'.format(radius, ignoreSpec,
                                                                                       excludeMultiple)
     stats = findStats(predFlux, fluxes1, RA, Dec, RA2, Dec2, outDir, argInfo,
@@ -468,7 +468,7 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
     ax1.set_xlim(np.min(x)-20, np.max(x)+20)
     ax1.set_ylim(np.min(y)-20, np.max(y)+20)
     plot = plt.scatter(x, y, c=c)
-    cbar = plt.colorbar(sm)
+    cbar = plt.colorbar(sm, cax=ax1)
 
     # Set axis labels, etc.
     RAAxis = ax1.coords['ra']
