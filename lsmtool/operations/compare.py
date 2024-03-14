@@ -467,8 +467,8 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
 
     ax1.set_xlim(np.min(x)-20, np.max(x)+20)
     ax1.set_ylim(np.min(y)-20, np.max(y)+20)
-    plot = plt.scatter(x, y, c=c)
-    cbar = plt.colorbar(sm, cax=ax1)
+    plt.scatter(x, y, c=c)
+    plt.colorbar(sm, ax=ax1, orientation='vertical')
 
     # Set axis labels, etc.
     RAAxis = ax1.coords['ra']
