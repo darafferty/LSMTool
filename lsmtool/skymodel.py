@@ -60,7 +60,8 @@ class SkyModel(object):
         fileName : str
             Input ASCII file from which the sky model is read (must respect the
             makesourcedb format), name of VO service to query (must be one of
-            'WENSS', 'NVSS', 'TGSS', or 'GSM'), or dict (single source only)
+            'WENSS', 'NVSS', 'TGSS', 'GSM', or 'LOTSS'), or dict (single source
+            only)
         beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table
