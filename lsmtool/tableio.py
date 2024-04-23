@@ -1086,13 +1086,13 @@ def broadcastTable(fileName):
 
     """
     from astropy.vo.samp import SAMPIntegratedClient
-    import urlparse
+    import urllib.parse
 
     client = SAMPIntegratedClient()
     client.connect()
 
     params = {}
-    params["url"] = urlparse.urljoin('file:', os.path.abspath(fileName))
+    params["url"] = urllib.parse.urljoin('file:', os.path.abspath(fileName))
     params["name"] = "LSMTool sky model"
     message = {}
     message["samp.mtype"] = "table.load.votable"

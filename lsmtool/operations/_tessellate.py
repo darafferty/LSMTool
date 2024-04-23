@@ -14,7 +14,6 @@
 # the file. All other rights are reserved.
 
 
-from __future__ import print_function
 import numpy as np
 from numpy import sum, sqrt, min, max
 from numpy import argmax, argmin, mean, abs
