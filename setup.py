@@ -42,7 +42,6 @@ reqlist = [
     'python-casacore',
     'pyvo',
     'scipy >= 0.11',
-    'urlparse'
 ]
 
 if build_c_extentions:
