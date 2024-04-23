@@ -36,10 +36,10 @@ else:
 # Require astropy v3.2 or later to get much faster copies
 reqlist = [
     'astropy >= 3.2',
-    'casacore',
     'everybeam',
     'matplotlib >= 0.99',
     'numpy',
+    'python-casacore',
     'pyvo',
     'scipy >= 0.11',
     'urlparse'
