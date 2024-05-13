@@ -13,6 +13,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def compute_absolute_orientation(
     relative_orientation, ra_source, dec_source, ra_center, dec_center
 ):
@@ -55,7 +56,7 @@ def add_absolute_orientation(skymodel_filename_in, skymodel_filename_out, ra_cen
     skymodel_table.write(skymodel_filename_out, format="makesourcedb")
 
 
-if __name__ == "__main__":
+def main():
     parser = ArgumentParser(description="Add absolute Gaussian position angle to a skymodel file")
     parser.add_argument("skymodelfile", help="Skymodel file")
     parser.add_argument(

@@ -23,7 +23,7 @@ SkyModel object.
 
 """
 
-from ._version import changelog
+from ._changelog import changelog
 from . import _logging as logger
 logger.setLevel('info')
 
