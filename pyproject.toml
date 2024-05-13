@@ -1,0 +1,95 @@
+#########################
+# build-system settings #
+#########################
+
+[build-system]
+requires = [
+    "pybind11",
+    "scikit-build-core>=0.8",
+]
+build-backend = "scikit_build_core.build"
+
+
+####################
+# project settings #
+####################
+
+[project]
+name = "lsmtool"
+dynamic = ["version"]
+description = "The LOFAR Local Sky Model Tool"
+readme = "README.md"
+requires-python = ">=3.7"
+authors = [
+    { name = "David Rafferty", email = "drafferty@hs.uni-hamburg.de" },
+]
+maintainers = [
+    { name = "Marcel Loose", email = "loose@astron.nl" },
+]
+license = { file = "LICENSE" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python",
+    "Natural Language :: English",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "astropy >= 3.2",
+    "everybeam",
+    "matplotlib >= 0.99",
+    "numpy",
+    "python-casacore",
+    "pyvo",
+    "scipy >= 0.11",
+]
+
+[project.scripts]
+lsmtool = "lsmtool.lsmtool:main"
+correct_gaussian_orientation = "lsmtool.correct_gaussian_orientation:main"
+
+[project.urls]
+Documentation = "https://lsmtool.readthedocs.io/en/latest/"
+Repository = "https://git.astron.nl/RD/LSMTool"
+
+
+#########################
+# cibuildwheel settings #
+#########################
+
+# NOTE: running cibuildwheel only makes sense when `BUILD_EXTENSIONS` in
+# section `[tool.scikit-build.cmake.define]` is set to "ON" or "TRUE".
+
+[tool.cibuildwheel]
+build = "cp3{7,8,9,10,11,12}-*_x86_64"
+build-verbosity = 1
+test-command = "cd {package} && pytest"
+test-requires = "pytest"
+
+[tool.cibuildwheel.linux]
+skip = ["*-musllinux_*"]
+
+
+#########################
+# scikit-build settings #
+#########################
+
+[tool.scikit-build]
+cmake.version = ">=3.15"
+ninja.version = ">=1.5"
+cmake.verbose = true
+logging.level = "INFO"
+metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
+sdist.include = ["lsmtool/_version.py"]
+
+[tool.scikit-build.cmake.define]
+BUILD_EXTENSIONS = "OFF"
+
+
+###########################
+# setuptools_scm settings #
+###########################
+
+[tool.setuptools_scm]
+write_to = "lsmtool/_version.py"

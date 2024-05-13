@@ -30,7 +30,7 @@ from lsmtool import _version, _logging, skymodel, operations
 import lofar.parameterset
 
 
-if __name__=='__main__':
+def main():
     # Options
     import optparse
     opt = optparse.OptionParser(usage='%prog <skymodel> <parset> [<beam MS>] \n'

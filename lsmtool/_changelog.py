@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-#
-# This module stores the version and changelog
 
-# Version number
-__version__ = '1.5.1'
+"""Changelog module.
 
-# Change log
+This module records all the relevant changes made to the software.
+The change list must be kept up-to-date manually.
+"""
+
 def changelog():
     log = """
     LSMTool Changelog.
