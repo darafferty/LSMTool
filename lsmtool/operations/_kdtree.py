@@ -279,6 +279,7 @@ class KDTree(object):
         else:
             return sorted([((-d)**(1./p),i) for (d,i) in neighbors])
 
+    # eps is unused
     def query(self, x, k=1, eps=0, p=2, distance_upper_bound=np.inf):
         """
         query the kd-tree for nearest neighbors

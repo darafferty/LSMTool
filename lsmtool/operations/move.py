@@ -102,6 +102,7 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
     from .. import tableio
     from astropy.io.fits import getheader
     from astropy import wcs
+    import numpy as np
 
     if len(LSM) == 0:
         log.error('Sky model is empty.')
@@ -117,7 +118,7 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
     if position is None and shift is None and xyshift is None:
         raise ValueError("One of positon, shift, or xyshift must be specified.")
 
-    sourceNames = LSM.getColValues('Name')
+    # sourceNames = LSM.getColValues('Name')
     table = LSM.table.copy()
     indx = LSM._getNameIndx(name)
     if indx is not None:
@@ -160,13 +161,13 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
                 table.meta[name] = position
             if shift is not None:
                 for ind in indx:
-                    pname = patchNames[ind]
+                    # pname = patchNames[ind]
                     position = LSM.table.meta[name]
                     table.meta[name] = [position[0] + tableio.RA2Angle(shift[0]),
                         position[1] + tableio.Dec2Angle(shift[1])]
             if xyshift is not None:
                 for ind in indx:
-                    pname = patchNames[ind]
+                    # pname = patchNames[ind]
                     radec = np.array(LSM.table.meta[name])
                     xy = w.wcs_world2pix(radec, 1)
                     xy[0] += xyshift[0]

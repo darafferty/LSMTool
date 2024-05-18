@@ -26,7 +26,7 @@ import copy
 def get_skymodel(skymodel_fn):
     """Returns x, y, flux arrays for input skymodel
     """
-    import math as m
+    # import math as m
     from astropy import WCS
 
     y = []
@@ -47,8 +47,8 @@ def get_skymodel(skymodel_fn):
         if line.startswith("FORMAT"): continue
         if line[0] == '#': continue
         if line[0] == '\n': continue
-        name = str(sline[0])
-        srctype = str(sline[1])
+        # name = str(sline[0])
+        # srctype = str(sline[1])
         ra_src = str(sline[2]).split(':')
         ra_deg = float(ra_src[0])*15.0 + (float(ra_src[1])/60.0)*15.0 + (float(ra_src[2])
             /3600.0)*15.0
@@ -202,7 +202,7 @@ class bin2D:
                 yclosest = yunBin[indclosestBar]
 
                 ## Distance between this closest pixel and the current pixel
-                currentSqrtDist= sqrt(min(dist2(xclosest,yclosest, xcurrent,ycurrent)))
+                # currentSqrtDist= sqrt(min(dist2(xclosest,yclosest, xcurrent,ycurrent)))
 
                 ## Add new pixel
                 possibleBin = currentBin + [unBinned[indclosestBar]]
@@ -315,7 +315,7 @@ class bin2D:
             minind = argmin(dist2(self.xin[i], self.yin[i], self.xnode, self.ynode, scale=self.scale))
             self.status[i] = self.statusnode[minind]
             if verbose :
-                print("Pixel ",  self.status[i], self.xin[i], self.yin[i], self.xnode[minind], self.ynode[minind]) # TODO: Change to logging
+                print("Pixel ", self.status[i], self.xin[i], self.yin[i], self.xnode[minind], self.ynode[minind]) # TODO: Change to logging
 
         ## reDerive the centroid
         self.bin2d_centroid()
