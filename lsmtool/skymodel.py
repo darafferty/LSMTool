@@ -458,7 +458,8 @@ class SkyModel(object):
 
         """
         import numpy as np
-        from .operations_lib import radec2xy, xy2radec
+        # from .operations_lib import radec2xy, xy2radec
+        from .operations_lib import xy2radec
         from astropy.table import Column
         from .tableio import RA2Angle, Dec2Angle
 

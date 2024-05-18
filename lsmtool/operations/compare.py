@@ -404,7 +404,7 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
         mean_ratio = np.mean(ratio)
         std = np.std(ratio)
     ax1.set_ylim(0, 2.0*mean_ratio)
-    xmin, xmax, ymin, ymax = plt.axis()
+    _, xmax, _, _ = plt.axis()
     ax1.plot([0.0, xmax], [mean_ratio, mean_ratio], '--g')
     ax1.plot([0.0, xmax], [mean_ratio+std, mean_ratio+std], '-.g')
     ax1.plot([0.0, xmax], [mean_ratio-std, mean_ratio-std], '-.g')
@@ -420,6 +420,7 @@ def plotFluxRatiosFlux(predFlux, measFlux, labels, outDir, name1, name2, format,
     plt.close('all')
 
 
+# RA, Dec are unused
 def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
                      outDir, name1, name2, format):
     """

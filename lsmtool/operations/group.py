@@ -191,11 +191,11 @@ def group(LSM, algorithm, targetFlux=None, weightBySize=False, numClusters=100, 
         if byPatch:
             if 'Patch' not in LSM.table.keys():
                 raise ValueError('Sky model must be grouped before "byPatch" can be used.')
-            x, y, midRA, midDec = LSM._getXY(byPatch=True)
+            x, y, _, _ = LSM._getXY(byPatch=True)
             f = LSM.getColValues('I', units=units, applyBeam=applyBeam, aggregate='sum')
         else:
             LSM.ungroup()
-            x, y, midRA, midDec = LSM._getXY()
+            x, y, _, _ = LSM._getXY()
             f = LSM.getColValues('I', units=units, applyBeam=applyBeam)
         vobin = _tessellate.bin2D(np.array(x), np.array(y), f, target_flux=targetFlux)
         try:
@@ -388,7 +388,7 @@ def getPatchNamesFromMask(mask, RARad, DecRad, root='mask', pad_index=False):
     act_pixels = maskval
     rank = len(act_pixels.shape)
     connectivity = nd.generate_binary_structure(rank, rank)
-    mask_labels, count = nd.label(act_pixels, connectivity)
+    mask_labels, _ = nd.label(act_pixels, connectivity)
 
     patchNums = []
     patchNames = []
