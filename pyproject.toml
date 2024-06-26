@@ -39,7 +39,7 @@ dependencies = [
     "astropy >= 3.2",
     "everybeam",
     "matplotlib >= 0.99",
-    "numpy",
+    "numpy<2",
     "python-casacore",
     "pyvo",
     "scipy >= 0.11",
