@@ -108,7 +108,7 @@ allowedVOServices = {
     'wenss': 'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;'}
 
 # Define the various URLs used for downloading sky models
-TGSS_URL = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv4.cgi'
+TGSS_URL = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv5.cgi'
 GSM_URL = 'https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi'
 LOTSS_URL = 'https://vo.astron.nl/lotss_dr2/q/gaus_cone/form'
 
