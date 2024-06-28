@@ -294,6 +294,7 @@ class SkyModel(object):
         # them by hand:
         self.log = None
         LSMCopy = copy.deepcopy(self)
+        LSMCopy._updateGroups()
         LSMCopy.log = logging.getLogger('LSMTool')
         LSMCopy._addHistory('COPY')
         self.log = logging.getLogger('LSMTool')
