@@ -201,8 +201,7 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
     if spectralIndex is not None:
         nspec = len(spectralIndex)
         s = max(1, int(numchannels/nspec))
-        ch_indices = list(range(0, numchannels, s))
-        ch_indices.append(numchannels)
+        ch_indices = list(range(s//2, numchannels, s))
     else:
         ch_indices = [int(numchannels/2)]
     freqs_new = []
