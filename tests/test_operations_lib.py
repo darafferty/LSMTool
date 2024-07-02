@@ -89,10 +89,11 @@ class TestOperationsLib(unittest.TestCase):
             self.spectral_index,
             self.reference_freq,
         )
+        numpy.set_printoptions(precision=6)
         # print(result)
         with open(outfile, "w") as f:
             f.write(str(result))
-        filecmp.cmp(reffile, outfile, shallow=False)
+        assert filecmp.cmp(reffile, outfile, shallow=False)
 
     def test_attenuate_si(self):
         """
