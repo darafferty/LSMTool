@@ -68,53 +68,23 @@ class TestOperationsLib(unittest.TestCase):
         self.ra = self.skymodel.getColValues("RA")
         self.dec = self.skymodel.getColValues("Dec")
         self.flux = self.skymodel.getColValues("I")
-        self.spectral_index = self.skymodel.getColValues("SpectralIndex")
-        self.reference_freq = self.skymodel.getColValues("ReferenceFrequency")
 
-    def tearDown(self):
-        pass
-
-    def do_test_attenuate(self, name):
+    def test_attenuate(self):
         """
-        Actually execute the `attenuate` function, write the result to a (temporary)
-        output file and compare that file to a reference file.
+        Test `attenuate` function
         """
-        outfile = str((self.temp_path / name).with_suffix(".out"))
-        reffile = str((self.resource_path / name).with_suffix(".out"))
+        outfile = str(self.temp_path / "test_attenuate.out")
+        reffile = str(self.resource_path / "test_attenuate.out")
         result = attenuate(
             str(self.ms_path),
             self.flux,
             self.ra,
             self.dec,
-            self.spectral_index,
-            self.reference_freq,
         )
         numpy.set_printoptions(precision=6)
-        # print(result)
         with open(outfile, "w") as f:
             f.write(str(result))
         assert filecmp.cmp(reffile, outfile, shallow=False)
-
-    def test_attenuate_si(self):
-        """
-        Test attenuate function using spectral index data.
-        """
-        self.do_test_attenuate("test_attenuate_si")
-
-    def test_attenuate_si_zero(self):
-        """
-        Test attenuate function using zero as spectral index.
-        """
-        self.spectral_index = numpy.full(self.spectral_index.shape, 0.0)
-        self.do_test_attenuate("test_attenuate_si_zero")
-
-    def test_attenuate_no_si(self):
-        """
-        Test attenuate function without using spectral index data.
-        """
-        self.spectral_index = None
-        self.reference_freq = None
-        self.do_test_attenuate("test_attenuate_no_si")
 
 
 if __name__ == "__main__":

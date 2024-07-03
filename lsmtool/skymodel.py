@@ -1641,7 +1641,7 @@ class SkyModel(object):
 
     def write(self, fileName=None, format='makesourcedb', clobber=False,
               sortBy=None, lowToHigh=False, addHistory=True, applyBeam=False,
-              invertBeam=False, adjustSI=False, width=None):
+              invertBeam=False, width=None):
         """
         Writes the sky model to a file.
 
@@ -1676,10 +1676,6 @@ class SkyModel(object):
         invertBeam : bool, optional
             If True, the beam correction is inverted (i.e., from apparent sky to
             true sky).
-        adjustSI : bool, optional
-            If True, adjust the spectral index column for the beam (only works if
-            the spectral index in non-logarithmic. I.e., the 'LogarithmicSI' column
-            entries are all False)
         width : float, optional
             The width in degrees of the total extent of the output facet regions.
             Only used when format = 'facet'. If not given, the width will be set
@@ -1728,30 +1724,14 @@ class SkyModel(object):
 
         # Apply beam attenuation
         if applyBeam:
-            if 'LogarithmicSI' in self.getColNames():
-                if np.any(self.getColValues('LogarithmicSI') == "true"):
-                    adjustSI = False
-            else:
-                # Default is LogarithmicSI=true
-                adjustSI = False
             I_orig = self.getColValues('I')
             RADeg = self.getColValues('Ra')
             DecDeg = self.getColValues('Dec')
-            if adjustSI:
-                spectralIndex = self.getColValues('SpectralIndex')
-                referenceFrequency = self.getColValues('ReferenceFrequency')
-                I_adj, SI_adj = attenuate(self.beamMS, I_orig, RADeg, DecDeg,
-                                          timeIndx=self.beamTime, invert=invertBeam,
-                                          spectralIndex=spectralIndex,
-                                          referenceFrequency=referenceFrequency)
-            else:
-                I_adj = attenuate(self.beamMS, I_orig, RADeg, DecDeg,
-                                  timeIndx=self.beamTime, invert=invertBeam)
+            I_adj = attenuate(self.beamMS, I_orig, RADeg, DecDeg,
+                                timeIndx=self.beamTime, invert=invertBeam)
             units = self.table.columns['I'].unit
             table['I'] = I_adj
             table.columns['I'].unit = units
-            if adjustSI:
-                table['SpectralIndex'] = SI_adj
 
         # Sort if desired. For 'factor' output, save the order of patches in the
         # table meta
