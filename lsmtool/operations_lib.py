@@ -20,7 +20,6 @@ from astropy.coordinates import Angle
 from math import floor, ceil
 import numpy as np
 import scipy as sp
-import scipy.spatial
 
 
 def normalize_ra(ang):
@@ -138,7 +137,7 @@ def apply_beam_star(inputs):
     return apply_beam(*inputs)
 
 
-def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, ant1,
+def apply_beam(RA, Dec, flux, beamMS, time, ant1,
                numchannels, startfreq, channelwidth, invert):
     """
     Worker function for attenuate() that applies the beam to a single flux
@@ -149,12 +148,8 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
         RA value in degrees
     Dec : float
         Dec value in degrees
-    spectralIndex : float
-        Spectral index to adjust
     flux : list
         Flux to attenuate
-    referenceFrequency : float
-        Reference frequency of polynomial fit
     beamMS : str
         Measurement set for which the beam model is made
     time : float
@@ -174,8 +169,6 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
     -------
     attFlux : float
         Attenuated flux
-    adjSpectralIndex : float
-        Adjusted spectral index. Returned only if spectralIndex is not None
 
     """
     import numpy as np
@@ -198,13 +191,7 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
     freqs = np.arange(startfreq, startfreq+numchannels*channelwidth, channelwidth)
 
     # Correct the source spectrum if needed
-    if spectralIndex is not None:
-        nspec = len(spectralIndex)
-        s = max(1, int(numchannels/nspec))
-        ch_indices = list(range(s//2, numchannels, s))
-    else:
-        ch_indices = [int(numchannels/2)]
-    freqs_new = []
+    ch_indices = [int(numchannels/2)]
     fluxes_new = []
     for ind in ch_indices:
         # Evaluate beam and take XX only (XX and YY should be equal) and square
@@ -213,22 +200,11 @@ def apply_beam(RA, Dec, spectralIndex, flux, referenceFrequency, beamMS, time, a
         if invert:
             beam = 1 / beam
         beam = beam[0][0]**2
-        if spectralIndex is not None:
-            nu = (startfreq + ind*channelwidth) / referenceFrequency - 1
-            freqs_new.append(nu)
-            fluxes_new.append(polynomial(flux, spectralIndex, nu) * beam)
-        else:
-            fluxes_new.append(flux * beam)
-    if spectralIndex is not None:
-        fit = np.polyfit(freqs_new, fluxes_new, len(spectralIndex-1)).tolist()
-        fit.reverse()
-        return fit[0], fit[1:]
-    else:
-        return fluxes_new[0], None
+        fluxes_new.append(flux * beam)
+    return fluxes_new[0], None
 
 
-def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFrequency=None,
-              timeIndx=0.5, invert=False):
+def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
     """
     Returns flux attenuated by primary beam.
 
@@ -247,10 +223,6 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFreque
         List of RA values in degrees
     DecDeg : list
         List of Dec values in degrees
-    spectralIndex : list, optional
-        List of spectral indices to adjust
-    referenceFrequency : list, optional
-        List of reference frequency of polynomial fit
     timeIndx : float (between 0 and 1), optional
         Time as fraction of that covered by the beamMS for which the beam is
         calculated
@@ -261,8 +233,6 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFreque
     -------
     attFluxes : numpy array
         Attenuated fluxes
-    adjSpectralIndex : numpy array
-        Adjusted spectral indices. Returned only if spectralIndex is not None
 
     """
     import numpy as np
@@ -299,17 +269,9 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFreque
         RADeg = list(RADeg)
     if type(DecDeg) is not list:
         DecDeg = list(DecDeg)
-    if spectralIndex is not None:
-        spectralIndex_list = spectralIndex
-    else:
-        spectralIndex_list = [None] * len(fluxes)
-    if referenceFrequency is not None:
-        referenceFrequency_list = referenceFrequency
-    else:
-        referenceFrequency_list = [None] * len(fluxes)
 
     pool = multiprocessing.Pool(multiprocessing.cpu_count())
-    args_list = list(zip(RADeg, DecDeg, spectralIndex_list, fluxes, referenceFrequency_list, itertools.repeat(beamMS),
+    args_list = list(zip(RADeg, DecDeg, fluxes, itertools.repeat(beamMS),
                          itertools.repeat(time), itertools.repeat(ant1), itertools.repeat(numchannels),
                          itertools.repeat(startfreq), itertools.repeat(channelwidth), itertools.repeat(invert)))
     results = pool.map(apply_beam_star, args_list)
@@ -319,18 +281,7 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, spectralIndex=None, referenceFreque
         attFluxes.append(fl)
         adjSpectralIndex.append(si)
 
-    if spectralIndex is not None:
-        return np.array(attFluxes), np.array(adjSpectralIndex)
-    else:
-        return np.array(attFluxes)
-
-
-def polynomial(stokesI, coeff, nu):
-    result = stokesI
-    for i in range(len(coeff)):
-        result += coeff[i] * nu**(i+1)
-
-    return result
+    return np.array(attFluxes)
 
 
 def radec2xy(RA, Dec, refRA=None, refDec=None, crdelt=None):
