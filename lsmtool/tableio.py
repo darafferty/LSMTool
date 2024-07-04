@@ -512,6 +512,9 @@ def processLine(line, metaDict, colNames):
         Output meta data
 
     """
+    log = logging.getLogger('LSMTool.Load')
+
+    # Ignore format line and comments
     if line.lower().startswith("format") or line.startswith("#"):
         return None, metaDict
 
@@ -526,6 +529,23 @@ def processLine(line, metaDict, colNames):
             c = c.replace(',', ';')
         line = line.replace(b, c)
     colLines = line.split(',')
+
+    # Skip empty lines
+    if all([col.strip() == '' for col in colLines]):
+        return None, metaDict
+
+    # Check for 'nan' in any column except string columns (indicated by 'N/A' in
+    # the defaults dict)
+    checkColNames = [name for name in colNames if allowedColumnDefaults[name.lower()] != 'N/A']
+    for name in checkColNames:
+        try:
+            if 'nan' in colLines[colNames.index(name)]:
+                log.warning('One or more NaNs found in the sky model. Sources and '
+                            'patches with NaNs will be ignored.')
+                return None, metaDict
+        except IndexError:
+            # Line does not contain this column
+            pass
 
     # Check for patch lines as any line with an empty Name entry. If found,
     # store patch positions in the table meta data.
