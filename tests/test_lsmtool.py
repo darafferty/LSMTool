@@ -119,3 +119,10 @@ def test_meanshift():
     print('Group the model with the meanshift algorithm')
     sky_apparent.group('meanshift', byPatch=True, lookDistance=0.075, groupingDistance=0.01)
     assert len(sky_apparent.getPatchPositions()) == 67
+
+
+def test_meanshift_with_nans():
+    print('Load a model that contains NaNs and group it with the meanshift algorithm')
+    sky_nans  = lsmtool.load('tests/resources/nans.sky')
+    sky_nans.group('meanshift', byPatch=True, lookDistance=0.075, groupingDistance=0.01)
+    assert len(sky_nans.getPatchPositions()) == 7
