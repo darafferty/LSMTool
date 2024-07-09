@@ -1302,7 +1302,7 @@ class SkyModel(object):
             Column object with flux values attenuated by the beam
 
         """
-        from .operations_lib import attenuate
+        from .operations_lib import apply_beam
 
         if not self._hasBeam:
             self.log.warning('No beam MS has been specified. No beam attenuation applied.')
@@ -1321,7 +1321,7 @@ class SkyModel(object):
             DecDeg = self.getColValues('Dec')
 
         flux = col.data
-        vals = attenuate(self.beamMS, flux, RADeg, DecDeg, timeIndx=self.beamTime)
+        vals = apply_beam(self.beamMS, flux, RADeg, DecDeg, timeIndx=self.beamTime)
         col[:] = vals
 
         return col
@@ -1705,7 +1705,7 @@ class SkyModel(object):
         """
         import os
         import numpy as np
-        from .operations_lib import attenuate
+        from .operations_lib import apply_beam
 
         if fileName is None:
             if self._fileName is None:
@@ -1727,7 +1727,7 @@ class SkyModel(object):
             I_orig = self.getColValues('I')
             RADeg = self.getColValues('Ra')
             DecDeg = self.getColValues('Dec')
-            I_adj = attenuate(self.beamMS, I_orig, RADeg, DecDeg,
+            I_adj = apply_beam(self.beamMS, I_orig, RADeg, DecDeg,
                                 timeIndx=self.beamTime, invert=invertBeam)
             units = self.table.columns['I'].unit
             table['I'] = I_adj

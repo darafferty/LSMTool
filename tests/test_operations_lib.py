@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 import lsmtool
-from lsmtool.operations_lib import attenuate
+from lsmtool.operations_lib import apply_beam
 
 
 class TestOperationsLib(unittest.TestCase):
@@ -69,17 +69,36 @@ class TestOperationsLib(unittest.TestCase):
         self.dec = self.skymodel.getColValues("Dec")
         self.flux = self.skymodel.getColValues("I")
 
-    def test_attenuate(self):
+    def test_apply_beam(self):
         """
-        Test `attenuate` function
+        Test `apply_beam` function
         """
-        outfile = str(self.temp_path / "test_attenuate.out")
-        reffile = str(self.resource_path / "test_attenuate.out")
-        result = attenuate(
+        outfile = str(self.temp_path / "test_apply_beam.out")
+        reffile = str(self.resource_path / "test_apply_beam.out")
+        result = apply_beam(
             str(self.ms_path),
             self.flux,
             self.ra,
             self.dec,
+        )
+        numpy.set_printoptions(precision=6)
+        with open(outfile, "w") as f:
+            f.write(str(result))
+        assert filecmp.cmp(reffile, outfile, shallow=False)
+
+
+    def test_apply_beam_invert(self):
+        """
+        Test `apply_beam` function with inverted beam
+        """
+        outfile = str(self.temp_path / "test_apply_beam_invert.out")
+        reffile = str(self.resource_path / "test_apply_beam_invert.out")
+        result = apply_beam(
+            str(self.ms_path),
+            self.flux,
+            self.ra,
+            self.dec,
+            invert=True
         )
         numpy.set_printoptions(precision=6)
         with open(outfile, "w") as f:
