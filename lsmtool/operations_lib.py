@@ -130,81 +130,7 @@ def radec_to_xyz(ra, dec, time):
     return pointing_xyz
 
 
-def apply_beam_star(inputs):
-    """
-    Simple multiprocessing helper function for apply_beam()
-    """
-    return apply_beam(*inputs)
-
-
-def apply_beam(RA, Dec, flux, beamMS, time, ant1,
-               numchannels, startfreq, channelwidth, invert):
-    """
-    Worker function for attenuate() that applies the beam to a single flux
-
-    Parameters
-    ----------
-    RA : float
-        RA value in degrees
-    Dec : float
-        Dec value in degrees
-    flux : list
-        Flux to attenuate
-    beamMS : str
-        Measurement set for which the beam model is made
-    time : float
-        Time to calculate beam (in MJD seconds)
-    ant1 : int
-        Station index
-    numchannels : int
-        Number of channels
-    startfreq : float
-        Start frequency in Hz
-    channelwidth : float
-        Channel with in Hz
-    invert : bool
-        If True, invert the beam (i.e. to un-attenuate the flux)
-
-    Returns
-    -------
-    attFlux : float
-        Attenuated flux
-
-    """
-    import numpy as np
-    import everybeam as eb
-    import casacore.tables as pt
-    from astropy.coordinates import Angle
-    import astropy.units as u
-
-    # Use ant1, times, and n channel to compute the beam, where n is determined by
-    # the order of the spectral index polynomial
-    sr = eb.load_telescope(beamMS)
-    source_ra = Angle(RA, unit=u.deg)
-    source_dec = Angle(Dec, unit=u.deg)
-    source_xyz = radec_to_xyz(source_ra, source_dec, time)
-    obs = pt.table(beamMS+'::FIELD', ack=False)
-    pointing_ra = Angle(float(obs.col('REFERENCE_DIR')[0][0][0]), unit=u.rad)
-    pointing_dec = Angle(float(obs.col('REFERENCE_DIR')[0][0][1]), unit=u.rad)
-    obs.close()
-    pointing_xyz = radec_to_xyz(pointing_ra, pointing_dec, time)
-    freqs = np.arange(startfreq, startfreq+numchannels*channelwidth, channelwidth)
-
-    # Correct the source spectrum if needed
-    ch_indices = [int(numchannels/2)]
-    fluxes_new = []
-    for ind in ch_indices:
-        # Evaluate beam and take XX only (XX and YY should be equal) and square
-        freq = freqs[ind]
-        beam = abs(sr.array_factor(time, ant1, freq, source_xyz, pointing_xyz))
-        if invert:
-            beam = 1 / beam
-        beam = beam[0][0]**2
-        fluxes_new.append(flux * beam)
-    return fluxes_new[0], None
-
-
-def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
+def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
     """
     Returns flux attenuated by primary beam.
 
@@ -235,53 +161,59 @@ def attenuate(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
         Attenuated fluxes
 
     """
+    import everybeam as eb
     import numpy as np
     import casacore.tables as pt
-    import multiprocessing
-    import itertools
+    from astropy.coordinates import Angle
+    import astropy.units as u
 
-    t = pt.table(beamMS, ack=False)
+    # Determine a time stamp (in MJD) for later use, betweeen the start and end
+    # times of the Measurement Set, using `timeIndx` as fractional indicator.
     time = None
     ant1 = -1
     ant2 = 1
-    while time is None:
-        ant1 += 1
-        ant2 += 1
-        tt = t.query('ANTENNA1=={0} AND ANTENNA2=={1}'.format(ant1, ant2), columns='TIME')
-        time = tt.getcol("TIME")
-    t.close()
-    if timeIndx < 0.0:
-        timeIndx = 0.0
-    if timeIndx > 1.0:
-        timeIndx = 1.0
+    with pt.table(beamMS, ack=False) as t:
+        while time is None:
+            ant1 += 1
+            ant2 += 1
+            tt = t.query('ANTENNA1=={0} AND ANTENNA2=={1}'.format(ant1, ant2), columns='TIME')
+            time = tt.getcol("TIME")
+    # Constrain `timeIndx` between 0 and 1.
+    timeIndx = max(0., min(1., timeIndx))
     time = min(time) + (max(time) - min(time)) * timeIndx
-    sw = pt.table(beamMS+'::SPECTRAL_WINDOW', ack=False)
-    numchannels = sw.col('NUM_CHAN')[0]
-    startfreq = np.min(sw.col('CHAN_FREQ')[0])
-    channelwidth = sw.col('CHAN_WIDTH')[0][0]
-    sw.close()
 
-    attFluxes = []
-    adjSpectralIndex = []
-    if type(fluxes) is not list:
-        fluxes = list(fluxes)
-    if type(RADeg) is not list:
-        RADeg = list(RADeg)
-    if type(DecDeg) is not list:
-        DecDeg = list(DecDeg)
+    # Get frequency information from the Measurement Set.
+    with pt.table(beamMS+'::SPECTRAL_WINDOW', ack=False) as sw:
+        numchannels = sw.col('NUM_CHAN')[0]
+        startfreq = np.min(sw.col('CHAN_FREQ')[0])
+        channelwidth = sw.col('CHAN_WIDTH')[0][0]
 
-    pool = multiprocessing.Pool(multiprocessing.cpu_count())
-    args_list = list(zip(RADeg, DecDeg, fluxes, itertools.repeat(beamMS),
-                         itertools.repeat(time), itertools.repeat(ant1), itertools.repeat(numchannels),
-                         itertools.repeat(startfreq), itertools.repeat(channelwidth), itertools.repeat(invert)))
-    results = pool.map(apply_beam_star, args_list)
-    pool.close()
-    pool.join()
-    for fl, si in results:
-        attFluxes.append(fl)
-        adjSpectralIndex.append(si)
+    # Get the pointing direction from the Measurement Set, and convert to local
+    # xyz coordinates at the LOFAR core.
+    with pt.table(beamMS+'::FIELD', ack=False) as obs:
+        pointing_ra = Angle(float(obs.col('REFERENCE_DIR')[0][0][0]), unit=u.rad)
+        pointing_dec = Angle(float(obs.col('REFERENCE_DIR')[0][0][1]), unit=u.rad)
+    pointing_xyz = radec_to_xyz(pointing_ra, pointing_dec, time)
 
-    return np.array(attFluxes)
+    # Convert the source directions to local xyz coordinates at the LOFAR core.
+    source_ra = Angle(RADeg, unit=u.deg)
+    source_dec = Angle(DecDeg, unit=u.deg)
+    source_xyz = radec_to_xyz(source_ra, source_dec, time)
+
+    # Load the beam model.
+    sr = eb.load_telescope(beamMS)
+
+    # Evaluate beam for the center frequency only, ...
+    freq = startfreq + (numchannels // 2) * channelwidth
+    beam = abs(sr.array_factor(time, ant1, freq, source_xyz.transpose(), pointing_xyz))
+    # ...take XX only (XX and YY should be equal) and square it, ...
+    beam = beam[:,0,0] ** 2
+    # ...and invert if necessary.
+    if invert:
+        beam = 1 / beam
+
+    # Return fluxes attenuated by the beam.
+    return fluxes * beam
 
 
 def radec2xy(RA, Dec, refRA=None, refDec=None, crdelt=None):

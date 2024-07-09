@@ -37,9 +37,9 @@ classifiers = [
 ]
 dependencies = [
     "astropy >= 3.2",
-    "everybeam",
+    "everybeam >= 0.5",
     "matplotlib >= 0.99",
-    "numpy<2",
+    "numpy < 2",
     "python-casacore",
     "pyvo",
     "scipy >= 0.11",
