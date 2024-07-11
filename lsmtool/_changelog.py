@@ -11,6 +11,32 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
+    2024/07/11 - Version 1.6.0
+
+        Speed-up attenuate/apply_beam function  (RAP-690)
+        NOTE: functions `attenuate` and `apply_beam` were merged, and
+              `attenuate` was renamed to `apply_beam`.
+
+        Handle NaNs  (RD/LSMTool!67)
+        Properly handle NaNs in skymodel files.
+
+        Remove Spectral Index stuff from attenuate() function  (RAP-704)
+        Calculation of Spectral Index never really worked properly, and
+        was hardly ever used.
+
+        URL change to TGSS server  (RD/LSMTool!61)
+        Hotfix.
+
+        Use NumPy 1.x  (RD/LSMTool!62)
+        Hotfix. NumPy 2.0 causes binary compatibility issues, because
+        dependencies like `python-casacore` still use NumPy 1.x
+
+        Make LSMTool Python 3.12 compatible  (RAP-503)
+
+        Fix colorbar for flux ratio sky plot  (RD/LSMTool!57)
+
+        Add option to write facet region file  (RD/LSMTool!56)
+
     2023/09/14 - Version 1.5.1
 
         Fix LoTSS query radius and change url to Gaussian catalog
