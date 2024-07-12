@@ -10,7 +10,9 @@ workflow:
 #
 
 .prepare:
-  image: python:$PYTHON_VERSION
+  image: 
+    name: python:$PYTHON_VERSION
+    pull_policy: if-not-present
   before_script:
     - python --version
     # Upgrade pip separately, so that the latest pip will be used to install/upgrade other packages
