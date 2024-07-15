@@ -4,6 +4,8 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
     - when: always
+  tags:
+    - das6
 
 #
 # PREPARE
