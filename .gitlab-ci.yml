@@ -5,14 +5,12 @@ workflow:
       when: never
     - when: always
 
-
 #
 # PREPARE
 #
 
 .prepare:
-  image: 
-    name: python:$PYTHON_VERSION
+  image: python:$PYTHON_VERSION
   tags:
     - das6
   before_script:
