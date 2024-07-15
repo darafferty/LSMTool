@@ -13,7 +13,6 @@ workflow:
 .prepare:
   image: 
     name: python:$PYTHON_VERSION
-    pull_policy: if-not-present
   tags:
     - das6
   before_script:
