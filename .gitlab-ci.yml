@@ -4,8 +4,7 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
     - when: always
-  tags:
-    - das6
+
 
 #
 # PREPARE
@@ -15,6 +14,8 @@ workflow:
   image: 
     name: python:$PYTHON_VERSION
     pull_policy: if-not-present
+  tags:
+    - das6
   before_script:
     - python --version
     # Upgrade pip separately, so that the latest pip will be used to install/upgrade other packages
