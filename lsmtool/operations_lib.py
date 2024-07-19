@@ -93,10 +93,7 @@ def normalize_dec(ang):
 
 def radec_to_xyz(ra, dec, time):
     """
-    Convert RA and Dec coordinates to ITRS coordinates for LOFAR observations.
-
-    Note: the location adopted for LOFAR is that of the core, so the returned
-    ITRS coordinates will be less accurate for stations outside of the core.
+    Convert RA and Dec ICRS coordinates to ITRS cartesian coordinates.
 
     Parameters
     ----------
@@ -112,22 +109,16 @@ def radec_to_xyz(ra, dec, time):
     pointing_xyz: array
         NumPy array containing the ITRS X, Y and Z coordinates
     """
-    from astropy.coordinates import SkyCoord, ITRS, EarthLocation, AltAz
+    from astropy.coordinates import SkyCoord, ITRS
     from astropy.time import Time
-    import astropy.units as u
     import numpy as np
 
     obstime = Time(time/3600/24, scale='utc', format='mjd')
 
-    # Set the location to the LOFAR core
-    loc_LOFAR = EarthLocation(lon=0.11990128407256424, lat=0.9203091252660295, height=6364618.852935438*u.m)
-
     dir_pointing = SkyCoord(ra, dec)
-    dir_pointing_altaz = dir_pointing.transform_to(AltAz(obstime=obstime, location=loc_LOFAR))
-    dir_pointing_xyz = dir_pointing_altaz.transform_to(ITRS)
+    dir_pointing_itrs = dir_pointing.transform_to(ITRS(obstime=obstime))
 
-    pointing_xyz = np.asarray([dir_pointing_xyz.x, dir_pointing_xyz.y, dir_pointing_xyz.z])
-    return pointing_xyz
+    return np.asarray(dir_pointing_itrs.cartesian.xyz.transpose())
 
 
 def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
@@ -205,7 +196,7 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
 
     # Evaluate beam for the center frequency only, ...
     freq = startfreq + (numchannels // 2) * channelwidth
-    beam = abs(sr.array_factor(time, ant1, freq, source_xyz.transpose(), pointing_xyz))
+    beam = abs(sr.array_factor(time, ant1, freq, source_xyz, pointing_xyz))
     # ...take XX only (XX and YY should be equal) and square it, ...
     beam = beam[:,0,0] ** 2
     # ...and invert if necessary.
