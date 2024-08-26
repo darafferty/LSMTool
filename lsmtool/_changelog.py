@@ -11,6 +11,12 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
+    2024/08/26 - Version 1.6.1
+
+        Increase EveryBeam dependency to 0.6.1 (RD/LSMTool!73)
+        Avoid conflicts between binary Casacore libraries bundled with the
+        "everybeam" and "python-casacore" modules.
+
     2024/07/11 - Version 1.6.0
 
         Speed-up attenuate/apply_beam function  (RAP-690)
