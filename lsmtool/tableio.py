@@ -1172,7 +1172,10 @@ def coneSearch(VOService, position, radius):
         radius = Angle(radius, unit='degree').value
     except TypeError:
         raise ValueError('VO query radius not understood.')
-    VOcatalog = vo.conesearch(url, position, radius=radius)
+    try:
+        VOcatalog = vo.conesearch(url, position, radius=radius)
+    except (vo.dal.exceptions.DALQueryError, vo.dal.DALServiceError) as e:
+        raise ConnectionError('Problem communicating with the VO service: {0}'.format(e))
 
     log.debug('Creating table...')
     try:
