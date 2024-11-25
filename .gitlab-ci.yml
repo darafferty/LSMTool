@@ -8,8 +8,6 @@ workflow:
 .test:
   image: python:$PYTHON_VERSION
   needs: []
-  tags:
-    - das6
   stage: test
   before_script:
     - python --version

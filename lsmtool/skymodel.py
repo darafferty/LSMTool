@@ -60,8 +60,8 @@ class SkyModel(object):
         fileName : str
             Input ASCII file from which the sky model is read (must respect the
             makesourcedb format), name of VO service to query (must be one of
-            'WENSS', 'NVSS', 'TGSS', 'GSM', or 'LOTSS'), or dict (single source
-            only)
+            'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'), or dict
+            (single source only)
         beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table
@@ -90,7 +90,7 @@ class SkyModel(object):
         Load a WENSS catalog into a SkyModel object::
 
             >>> s = SkyModel('WENSS', VOPosition=[212.8352792, 52.202644],
-                VOradius=5.0)
+                VORadius=5.0)
 
         """
         from astropy.table import Table
@@ -111,13 +111,13 @@ class SkyModel(object):
                         self._addHistory("LOAD (from {0} at position {1})".format(fileName, VOPosition))
                     elif fileName.lower() == 'tgss':
                         self.log.debug("Attempting to load model from TGSS...")
-                        self.table =  tableio.getTGSS(VOPosition, VORadius)
+                        self.table = tableio.getTGSS(VOPosition, VORadius)
                         self.log.debug("Successfully loaded model from TGSS")
                         self._fileName = "tgss_vo"
                         self._addHistory("LOAD (from TGSS at position {0})".format(VOPosition))
                     elif fileName.lower() == 'gsm':
                         self.log.debug("Attempting to load model from GSM...")
-                        self.table =  tableio.getGSM(VOPosition, VORadius)
+                        self.table = tableio.getGSM(VOPosition, VORadius)
                         self.log.debug("Successfully loaded model from GSM")
                         self._fileName = "gsm_vo"
                         self._addHistory("LOAD (from GSM at position {0})".format(VOPosition))
@@ -142,7 +142,7 @@ class SkyModel(object):
             else:
                 # If fileName does not point to a VO query, assume it points to a local file
                 self.log.debug("Attempting to load model from file '{0}'...".format(fileName))
-                if fileName.lower() in ('wenss', 'nvss', 'tgss', 'gsm', 'lotss'):
+                if fileName.lower() in ('wenss', 'nvss', 'tgss', 'gsm', 'lotss', 'vlssr'):
                     self.log.warning("It appears from the filename that you may be trying to "
                                      "query a VO service. If so, you must provide values for "
                                      "both VOPosition and VORadius.")
@@ -282,7 +282,7 @@ class SkyModel(object):
         """
         Prints information about the sky model.
         """
-        infoStr = self._info(useLogInfo=True)
+        _ = self._info(useLogInfo=True)
 
     def copy(self):
         """
@@ -1728,7 +1728,7 @@ class SkyModel(object):
             RADeg = self.getColValues('Ra')
             DecDeg = self.getColValues('Dec')
             I_adj = apply_beam(self.beamMS, I_orig, RADeg, DecDeg,
-                                timeIndx=self.beamTime, invert=invertBeam)
+                               timeIndx=self.beamTime, invert=invertBeam)
             units = self.table.columns['I'].unit
             table['I'] = I_adj
             table.columns['I'].unit = units
