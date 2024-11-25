@@ -23,7 +23,6 @@ SkyModel object.
 
 """
 
-from ._changelog import changelog
 from . import _logging as logger
 logger.setLevel('info')
 
@@ -37,7 +36,8 @@ def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
     fileName : str
         Input ASCII file from which the sky model is read (must respect the
         makesourcedb format), name of VO service to query (must be one of
-        'WENSS', 'NVSS', 'TGSS', or 'GSM'), or dict (single source only)
+        'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'), or dict (single
+        source only)
     beamMS : str, optional
         Measurement set from which the primary beam will be estimated. A
         column of attenuated Stokes I fluxes will be added to the table
@@ -71,7 +71,7 @@ def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
     position RA = 212.8352792, Dec = 52.202644::
 
         >>> s = lsmtool.load('WENSS', VOPosition=[212.8352792, 52.202644],
-            VOradius=5.0)
+            VORadius=5.0)
 
     Load a sky model from a dictionary defining the source::
 
@@ -83,4 +83,4 @@ def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
     from .skymodel import SkyModel
 
     return SkyModel(fileName, beamMS=beamMS, VOPosition=VOPosition,
-        VORadius=VORadius)
+                    VORadius=VORadius)

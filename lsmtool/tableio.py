@@ -105,9 +105,11 @@ requiredColumnNames = ['Name', 'Type', 'Ra', 'Dec', 'I']
 
 allowedVOServices = {
     'nvss': 'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/65&amp;',
-    'wenss': 'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;'}
+    'wenss': 'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;',
+    'vlssr': 'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/97&amp;'
+}
 
-# Define the various URLs used for downloading sky models
+# Define the various non-VO URLs used for downloading sky models
 TGSS_URL = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv5.cgi'
 GSM_URL = 'https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi'
 LOTSS_URL = 'https://vo.astron.nl/lotss_dr2/q/gaus_cone/form'
@@ -1132,7 +1134,7 @@ def coneSearch(VOService, position, radius):
     Parameters
     ----------
     VOService : str
-        Name of VO service to query (must be one of 'WENSS' or 'NVSS')
+        Name of VO service to query (must be one of allowedVOServices)
     position : list of floats
         A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
@@ -1146,14 +1148,31 @@ def coneSearch(VOService, position, radius):
 
     log = logging.getLogger('LSMTool.Load')
 
-    # Define allowed cone-search databases. These are the ones we know how to
-    # convert to makesourcedb-formated sky models.
+    # Define the mapping to go from the VO catalog column names to the
+    # makesourcedb column names
     columnMapping = {
         'nvss': {'NVSS': 'name', 'RAJ2000': 'ra', 'DEJ2000': 'dec', 'S1.4': 'i',
-                 'MajAxis': 'majoraxis', 'MinAxis': 'minoraxis', 'referencefrequency': 1.4e9},
+                 'MajAxis': 'majoraxis', 'MinAxis': 'minoraxis'},
         'wenss': {'Name': 'name', 'RAJ2000': 'ra', 'DEJ2000': 'dec', 'Sint': 'i',
-                  'MajAxis': 'majoraxis', 'MinAxis': 'minoraxis', 'PA': 'orientation',
-                  'referencefrequency': 325e6}
+                  'MajAxis': 'majoraxis', 'MinAxis': 'minoraxis', 'PA': 'orientation'},
+        'vlssr': {'Name': 'name', 'RAJ2000': 'ra', 'DEJ2000': 'dec', 'Sp': 'i',
+                  'MajAx': 'majoraxis', 'MinAx': 'minoraxis', 'PA': 'orientation'}
+        }
+
+    # Define various properties of the VO catalog:
+    #   fluxtype - type of flux density: "int" for total integrated flux,
+    #              "peak" for peak flux density
+    #   fluxunits - units of flux density
+    #   deconvolved - whether the semimajor and semiminor axes are deconvolved or not
+    #   psf - the point spread function in degrees
+    #   referencefrequency - the reference frequency in Hz
+    catalogProperties = {
+        'nvss': {'fluxtype': 'int', 'fluxunits': 'mJy', 'deconvolved': True, 'psf': 0.0125,
+                 'referencefrequency': 1.4e9},
+        'wenss': {'fluxtype': 'int', 'fluxunits': 'mJy', 'deconvolved': True, 'psf': 0.015,
+                  'referencefrequency': 325e6},
+        'vlssr': {'fluxtype': 'peak', 'fluxunits': 'Jy', 'deconvolved': False, 'psf': 0.0208,
+                  'referencefrequency': 74e6}
         }
 
     if VOService.lower() in allowedVOServices:
@@ -1185,26 +1204,46 @@ def coneSearch(VOService, position, radius):
         log.error('No sources found. Sky model is empty.')
         table = makeEmptyTable()
         return table
-    table = convertExternalTable(table, columnMapping[VOService.lower()])
+    table = convertExternalTable(table, columnMapping[VOService.lower()],
+                                 catalogProperties[VOService.lower()])
 
     return table
 
 
-def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
+def convertExternalTable(table, columnMapping, catalogProperties):
     """
-    Converts an external table.
+    Converts an external table to a makesourcedb compatible one.
 
     Parameters
     ----------
     table : Table
         External table to convert
     columnMapping : dict
-        Dict that defines the column name mapping from external table
-    fluxUnits : str, optional
-        Units of flux density in external table
-
+        Dict that defines the column name mapping from external table to
+        makesourcedb columns
+    catalogProperties : dict
+        Dict that defines the catalog properties. Currently, these consist
+        of 'fluxtype', 'deconvolved', 'psf', 'referencefrequency', and
+        'fluxunits'
     """
     log = logging.getLogger('LSMTool.Load')
+
+    # Add required columns
+    for colName in requiredColumnNames:
+        for k, v in columnMapping.items():
+            if v == colName.lower():
+                tableColname = k
+                break
+        if tableColname not in table.colnames:
+            if colName.lower() == 'name':
+                # If the "name" column is missing, generate simple source names
+                col = Column(name=tableColname, data=[f'source_{indx}' for indx in range(len(table))])
+                table.add_column(col)
+            elif colName.lower() != 'type':
+                # If any other column is missing (except "type", which is set
+                # later), raise an error
+                raise ValueError(f'VO table lacks the expected column "{tableColname}". '
+                                 'Please check the VO service for problems.')
 
     # Remove unneeded columns
     colsToRemove = []
@@ -1253,14 +1292,23 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
             table.remove_column(name)
             table.add_column(floatCol, index=indx)
 
-    # Add source-type column
+    # Add source-type column and convert fluxes to integrated values if needed
     types = ['POINT'] * len(table)
     if 'minoraxis' in columnMapping.values() and 'majoraxis' in columnMapping.values():
-        for i, minor in enumerate(table[allowedColumnNames['minoraxis']]):
-            if minor > 0.0:
+        for i, (minor, major) in enumerate(zip(table[allowedColumnNames['minoraxis']],
+                                               table[allowedColumnNames['majoraxis']])):
+            if (
+                (catalogProperties['deconvolved'] and minor > 0.0) or
+                (not catalogProperties['deconvolved'] and minor > catalogProperties['psf'])
+            ):
                 types[i] = 'GAUSSIAN'
+                if catalogProperties['fluxtype'] == 'peak':
+                    # For extended sources in catalogs with peak flux, we need
+                    # to correct from peak to total flux using the source size
+                    table.columns[allowedColumnNames['i']][i] *= minor * major / catalogProperties['psf']**2
             else:
-                # Make sure semimajor axis and orientation are also 0 for POINT type
+                # Make sure semimajor and semiminor axes and orientation are 0 for POINT type
+                table[allowedColumnNames['minoraxis']][i] = 0.0
                 table[allowedColumnNames['majoraxis']][i] = 0.0
                 if 'orientation' in columnMapping.values():
                     table[allowedColumnNames['orientation']][i] = 0.0
@@ -1268,7 +1316,7 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
     table.add_column(col, index=1)
 
     # Add reference-frequency column
-    refFreq = columnMapping['referencefrequency']
+    refFreq = catalogProperties['referencefrequency']
     col = Column(name='ReferenceFrequency', data=np.array([refFreq]*len(table), dtype=float))
     table.add_column(col)
 
@@ -1277,7 +1325,7 @@ def convertExternalTable(table, columnMapping, fluxUnits='mJy'):
         log.debug("Setting units for column '{0}' to {1}".format(
             colName, allowedColumnUnits[colName.lower()]))
         if colName == 'I':
-            table.columns[colName].unit = fluxUnits
+            table.columns[colName].unit = catalogProperties['fluxunits']
             table.columns[colName].convert_unit_to('Jy')
             table.columns[colName].format = fluxformat
         else:
@@ -1437,8 +1485,9 @@ def getLoTSS(position, radius):
     log = logging.getLogger('LSMTool.Load')
 
     columnMapping = {'Source_Name': 'name', 'RA': 'ra', 'DEC': 'dec', 'Total_flux': 'i',
-                     'DC_Maj': 'majoraxis', 'DC_Min': 'minoraxis', 'PA': 'orientation',
-                     'referencefrequency': 1.4e8}
+                     'DC_Maj': 'majoraxis', 'DC_Min': 'minoraxis', 'PA': 'orientation'}
+    catalogProperties = {'fluxtype': 'int', 'fluxunits': 'Jy', 'deconvolved': True,
+                         'psf': 0.00167, 'referencefrequency': 1.4e8}
 
     log.debug('Querying LoTSS...')
     RA, Dec, radius = getQueryInputs(position, radius)
@@ -1447,7 +1496,7 @@ def getLoTSS(position, radius):
            'hscs_pos={0}%2C%20{1}&hscs_sr={2}&_DBOPTIONS_ORDER=&'
            '_DBOPTIONS_DIR=ASC&MAXREC=100000&_FORMAT=CSV&submit=Go'.format(RA, Dec, radius))
     table = queryNonVOService(url, format='ascii.csv')
-    table = convertExternalTable(table, columnMapping)
+    table = convertExternalTable(table, columnMapping, catalogProperties)
 
     return table
 
