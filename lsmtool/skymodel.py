@@ -497,7 +497,7 @@ class SkyModel(object):
         if self.hasPatches:
             if patchName is None:
                 patchName = self.getPatchNames()
-            if type(patchName) is str or type(patchName) is np.string_ or type(patchName) is np.unicode_:
+            if type(patchName) is str or type(patchName) is np.bytes_ or type(patchName) is np.unicode_:
                 patchName = [patchName]
             if method is None:
                 patchDict = {}
@@ -1184,7 +1184,7 @@ class SkyModel(object):
         else:
             names = self.getColValues('Name').tolist()
 
-        if type(name) is str or type(name) is np.string_:
+        if type(name) is str or type(name) is np.bytes_:
             indx = [i for i, item in enumerate(names) if fnmatch.fnmatch(item, name)]
             if len(indx) == 0:
                 return None
