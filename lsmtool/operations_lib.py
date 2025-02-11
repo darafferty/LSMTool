@@ -160,18 +160,11 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
 
     # Determine a time stamp (in MJD) for later use, betweeen the start and end
     # times of the Measurement Set, using `timeIndx` as fractional indicator.
-    time = None
-    ant1 = -1
-    ant2 = 1
-    with pt.table(beamMS, ack=False) as t:
-        while time is None:
-            ant1 += 1
-            ant2 += 1
-            tt = t.query('ANTENNA1=={0} AND ANTENNA2=={1}'.format(ant1, ant2), columns='TIME')
-            time = tt.getcol("TIME")
+    tmin, tmax, ant1 = pt.taql(f"select gmin(TIME), gmax(TIME), gmin(ANTENNA1) from {beamMS}")[0].values()
+
     # Constrain `timeIndx` between 0 and 1.
     timeIndx = max(0., min(1., timeIndx))
-    time = min(time) + (max(time) - min(time)) * timeIndx
+    time = tmin + (tmax - tmin) * timeIndx
 
     # Get frequency information from the Measurement Set.
     with pt.table(beamMS+'::SPECTRAL_WINDOW', ack=False) as sw:
