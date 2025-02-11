@@ -11,6 +11,12 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
+    2025/02/11 - Version 1.6.2
+
+        Add option to download VLSSr models (RD/LSMTool!75)
+        Support NumPy 2. (RD/LSMTool!76)
+        Support MSs where ANTENNA1 > ANTENNA2. (RD/LSMTool!77)
+
     2024/08/26 - Version 1.6.1
 
         Increase EveryBeam dependency to 0.6.1 (RD/LSMTool!73)
