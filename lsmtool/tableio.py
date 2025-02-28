@@ -1406,7 +1406,9 @@ def queryNonVOService(url, format='makesourcedb'):
     import tempfile
     import subprocess
 
-    with tempfile.NamedTemporaryFile() as outFile:
+    # Use a temp file in the current working directory, as typical temp
+    # directories like /tmp may be too small
+    with tempfile.NamedTemporaryFile(dir=os.getcwd()) as outFile:
         cmd = ['wget', '-nv', '-O', outFile.name, url]
         cp = subprocess.run(cmd, capture_output=True, text=True)
         if cp.returncode != 0:

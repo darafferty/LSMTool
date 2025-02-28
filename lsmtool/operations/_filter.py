@@ -321,8 +321,8 @@ def parseFilter(filterExpression):
     # Get the column to filter on
     filterProp = filterParts[0].strip().lower()
     if filterProp not in allowedColumnNames:
-        log.warning('"{0}" is not a valid column. Trying it as a mask '
-                    'filename instead...'.format(filterProp))
+        log.info('"{0}" is not a valid column. Trying it as a mask '
+                 'filename instead...'.format(filterProp))
         filterProp = filterParts[0].strip() # don't use lower-case version if filename
         filterVal = filterParts[1].strip()
         return (filterProp, filterOper, input2bool(filterVal), None)
