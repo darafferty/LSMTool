@@ -1488,7 +1488,7 @@ def getLoTSS(position, radius):
 
     columnMapping = {'Source_Name': 'name', 'RA': 'ra', 'DEC': 'dec', 'Total_flux': 'i',
                      'DC_Maj': 'majoraxis', 'DC_Min': 'minoraxis', 'PA': 'orientation'}
-    catalogProperties = {'fluxtype': 'int', 'fluxunits': 'Jy', 'deconvolved': True,
+    catalogProperties = {'fluxtype': 'int', 'fluxunits': 'mJy', 'deconvolved': True,
                          'psf': 0.00167, 'referencefrequency': 1.4e8}
 
     log.debug('Querying LoTSS...')
