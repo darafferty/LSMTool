@@ -646,7 +646,7 @@ class SkyModel(object):
                 patchNames = [patch for patch, pos in iteritems(patchDict) if pos is None]
                 patchDictNoPos = self.getPatchPositions(method=method, applyBeam=applyBeam,
                                                         patchName=patchNames,
-                                                        perPatchProjection=perPatchProjection)
+                                                        perPatchProjection=False)
                 patchDict.update(patchDictNoPos)
 
             for patch, pos in iteritems(patchDict):
