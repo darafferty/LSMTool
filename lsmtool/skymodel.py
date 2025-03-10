@@ -214,14 +214,12 @@ class SkyModel(object):
             self.hasPatches = True
 
             # Check if any patches have undefined positions
+            patchDict = {}
             for patchName in self.getPatchNames():
                 if patchName not in self.table.meta:
-                    self.log.warning('Patch positions are undefined for one or more '
-                                     'patches. Setting positions to the mid point of '
-                                     'each patch... (if this is not what you want, please '
-                                     'set the positions with the setPatchPositions() method).')
-                    self.setPatchPositions(method='mid')
-                    break
+                    patchDict.update({patchName: None})
+            if patchDict:
+                self.setPatchPositions(patchDict=patchDict, method='mid')
         else:
             self.hasPatches = False
 
@@ -643,6 +641,13 @@ class SkyModel(object):
                 else:
                     patchDict = self.getPatchPositions(method=method, applyBeam=applyBeam,
                                                        perPatchProjection=perPatchProjection)
+            else:
+                # Get positions for those patches that need them
+                patchNames = [patch for patch, pos in iteritems(patchDict) if pos is None]
+                patchDictNoPos = self.getPatchPositions(method=method, applyBeam=applyBeam,
+                                                        patchName=patchNames,
+                                                        perPatchProjection=perPatchProjection)
+                patchDict.update(patchDictNoPos)
 
             for patch, pos in iteritems(patchDict):
                 if type(pos[0]) is str or type(pos[0]) is float:
