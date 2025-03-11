@@ -96,7 +96,10 @@ def test_facet_write():
     if os.path.exists('tests/facet.reg'):
         os.remove('tests/facet.reg')
     sky_no_patches.write('tests/facet.reg', format='facet', clobber=True)
-    assert filecmp.cmp('tests/facet.reg', 'tests/resources/facet.reg')
+
+    # Note: Python 3.10+ produces a slightly different file (with insignificant
+    # differences), so we allow a match to either one
+    assert filecmp.cmp('tests/facet.reg', 'tests/resources/facet.reg') or filecmp.cmp('tests/facet.reg', 'tests/resources/facet2.reg')
 
 
 def test_write():
