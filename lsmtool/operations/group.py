@@ -379,6 +379,8 @@ def addSingle(LSM, patchName):
 
 def addEvery(LSM):
     """Add a Patch column with a different name for each source"""
+    from .. import tableio
+
     names = LSM.getColValues('Name').copy()
     for i, name in enumerate(names):
         names[i] = name + '_patch'
@@ -386,7 +388,7 @@ def addEvery(LSM):
     Decs = LSM.getColValues('Dec', units='degree')
     patchDict = {}
     for name, ra, dec in zip(names, RAs, Decs):
-        patchDict.update({name: [ra, dec]})
+        patchDict.update({name: [tableio.RA2Angle(ra)[0], tableio.Dec2Angle(dec)[0]]})
     LSM.table.meta.update(patchDict)
     LSM.setColValues('Patch', names, index=2)
 
