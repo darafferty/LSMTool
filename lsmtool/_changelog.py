@@ -11,6 +11,15 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
+    2025/03/21 - Version 1.7.0
+
+        Fix facet file test
+        Fix setting of patch positions
+        Turn off per-patch projection for missing patches
+        Improve handling of patches
+        Fix LoTSS units
+        Use temp file in cwd for download
+
     2025/02/11 - Version 1.6.2
 
         Add option to download VLSSr models (RD/LSMTool!75)
