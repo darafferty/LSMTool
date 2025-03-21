@@ -363,7 +363,8 @@ def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
     elif algorithm.lower() == 'tessellate' or algorithm.lower() == 'voronoi':
         history += ', targetFlux = {0}'.format(targetFlux)
     LSM._addHistory("GROUP ({0})".format(history))
-    LSM.setPatchPositions(method=method, applyBeam=applyBeam)
+    if algorithm.lower() != 'every':
+        LSM.setPatchPositions(method=method, applyBeam=applyBeam)
     LSM._info()
     return 0
 
@@ -378,9 +379,17 @@ def addSingle(LSM, patchName):
 
 def addEvery(LSM):
     """Add a Patch column with a different name for each source"""
+    from .. import tableio
+
     names = LSM.getColValues('Name').copy()
     for i, name in enumerate(names):
         names[i] = name + '_patch'
+    RAs = LSM.getColValues('Ra', units='degree')
+    Decs = LSM.getColValues('Dec', units='degree')
+    patchDict = {}
+    for name, ra, dec in zip(names, RAs, Decs):
+        patchDict.update({name: [tableio.RA2Angle(ra)[0], tableio.Dec2Angle(dec)[0]]})
+    LSM.table.meta.update(patchDict)
     LSM.setColValues('Patch', names, index=2)
 
 
