@@ -22,73 +22,35 @@ import numpy as np
 import scipy as sp
 
 
-def normalize_ra(ang):
+def normalize_ra_dec(ra, dec):
     """
-    Normalize RA to be in the range [0, 360).
-
-    Based on https://github.com/phn/angles/blob/master/angles.py
+    Normalize RA to be in the range [0, 360) and Dec to be in the
+    range [-90, 90].
 
     Parameters
     ----------
-    ang : float or astropy.coordinates.Angle
+    ra : float or astropy.coordinates.Angle object
         The RA in degrees to be normalized.
-
-    Returns
-    -------
-    res : float
-        RA in degrees in the range [0, 360).
-    """
-    lower = 0.0
-    upper = 360.0
-    if type(ang) is Angle:
-        num = ang.value
-    else:
-        num = ang
-    res = num
-    if num > upper or num == lower:
-        num = lower + abs(num + upper) % (abs(lower) + abs(upper))
-    if num < lower or num == upper:
-        num = upper - abs(num - lower) % (abs(lower) + abs(upper))
-    res = lower if num == upper else num
-
-    return res
-
-
-def normalize_dec(ang):
-    """
-    Normalize Dec to be in the range [-90, 90].
-
-    Based on https://github.com/phn/angles/blob/master/angles.py
-
-    Parameters
-    ----------
-    ang : float or astropy.coordinates.Angle
+    dec : float or astropy.coordinates.Angle object
         The Dec in degrees to be normalized.
 
     Returns
     -------
-    res : float
+    normalized_ra, normalized_dec : float, float
+        The normalized RA in degrees in the range [0, 360) and the
         Dec in degrees in the range [-90, 90].
     """
-    lower = -90.0
-    upper = 90.0
-    if type(ang) is Angle:
-        num = ang.value
-    else:
-        num = ang
-    res = num
-    total_length = abs(lower) + abs(upper)
-    if num < -total_length:
-        num += ceil(num / (-2 * total_length)) * 2 * total_length
-    if num > total_length:
-        num -= floor(num / (2 * total_length)) * 2 * total_length
-    if num > upper:
-        num = total_length - num
-    if num < lower:
-        num = -total_length - num
-    res = num
+    ra = ra.value if type(ra) is Angle else ra
+    dec = dec.value if type(dec) is Angle else dec
+    normalized_dec = (dec + 180) % 360 - 180
+    normalized_ra = ra % 360
+    if abs(normalized_dec) > 90:
+        normalized_dec = 180 - normalized_dec
+        normalized_ra = normalized_ra + 180
+        normalized_dec = (normalized_dec + 180) % 360 - 180
+        normalized_ra = normalized_ra % 360
 
-    return res
+    return normalized_ra, normalized_dec
 
 
 def radec_to_xyz(ra, dec, time):

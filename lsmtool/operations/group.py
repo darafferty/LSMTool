@@ -388,7 +388,8 @@ def addEvery(LSM):
     Decs = LSM.getColValues('Dec', units='degree')
     patchDict = {}
     for name, ra, dec in zip(names, RAs, Decs):
-        patchDict.update({name: [tableio.RA2Angle(ra)[0], tableio.Dec2Angle(dec)[0]]})
+        RANorm, DecNorm = tableio.RADec2Angle(ra, dec)
+        patchDict.update({name: [RANorm[0], DecNorm[0]]})
     LSM.table.meta.update(patchDict)
     LSM.setColValues('Patch', names, index=2)
 
