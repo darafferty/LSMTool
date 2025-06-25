@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 import lsmtool
-from lsmtool.operations_lib import apply_beam
+from lsmtool.operations_lib import apply_beam, normalize_ra_dec
 
 
 class TestOperationsLib(unittest.TestCase):
@@ -86,7 +86,6 @@ class TestOperationsLib(unittest.TestCase):
             f.write(str(result))
         assert filecmp.cmp(reffile, outfile, shallow=False)
 
-
     def test_apply_beam_invert(self):
         """
         Test `apply_beam` function with inverted beam
@@ -104,6 +103,15 @@ class TestOperationsLib(unittest.TestCase):
         with open(outfile, "w") as f:
             f.write(str(result))
         assert filecmp.cmp(reffile, outfile, shallow=False)
+
+    def test_normalize_ra_dec(self):
+        """
+        Test `normalize_ra_dec` function
+        """
+        ra = 450.0
+        dec = 95.0
+        result = normalize_ra_dec(ra, dec)
+        assert (result.ra == 270.0 and result.dec == 85.0)
 
 
 if __name__ == "__main__":

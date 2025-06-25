@@ -158,7 +158,7 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
     freq = startfreq + (numchannels // 2) * channelwidth
     beam = abs(sr.array_factor(time, ant1, freq, source_xyz, pointing_xyz))
     # ...take XX only (XX and YY should be equal) and square it, ...
-    beam = beam[:,0,0] ** 2
+    beam = beam[:, 0, 0] ** 2
     # ...and invert if necessary.
     if invert:
         beam = 1 / beam
@@ -689,8 +689,8 @@ def voronoi(cal_coords, bounding_box):
             else:
                 x = vor.vertices[index, 0]
                 y = vor.vertices[index, 1]
-                if not(bounding_box[0] - eps <= x and x <= bounding_box[1] + eps and
-                       bounding_box[2] - eps <= y and y <= bounding_box[3] + eps):
+                if not (bounding_box[0] - eps <= x and x <= bounding_box[1] + eps and
+                        bounding_box[2] - eps <= y and y <= bounding_box[3] + eps):
                     flag = False
                     break
         if region and flag:
