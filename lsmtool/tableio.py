@@ -631,9 +631,9 @@ def RADec2Angle(RA, Dec):
     RANorm = []
     DecNorm = []
     for RA, Dec in zip(RAAngle, DecAngle):
-        RA, Dec = normalize_ra_dec(RA, Dec)
-        RANorm.append(RA)
-        DecNorm.append(Dec)
+        RADec = normalize_ra_dec(RA, Dec)
+        RANorm.append(RADec.ra)
+        DecNorm.append(RADec.dec)
 
     return Angle(RANorm, unit=u.deg), Angle(DecNorm, unit=u.deg)
 
@@ -715,9 +715,9 @@ def skyModelWriter(table, fileName):
             else:
                 gRA = 0.0
                 gDec = 0.0
-            gRA, gDec = normalize_ra_dec(gRA, gDec)
-            gRAStr = Angle(gRA, unit='degree').to_string(unit='hourangle', sep=':', precision=4)
-            gDecStr = Angle(gDec, unit='degree').to_string(unit='degree', sep='.', precision=4)
+            gRADec = normalize_ra_dec(gRA, gDec)
+            gRAStr = Angle(gRADec.ra, unit='degree').to_string(unit='hourangle', sep=':', precision=4)
+            gDecStr = Angle(gRADec.dec, unit='degree').to_string(unit='degree', sep='.', precision=4)
 
             outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRAStr,
                                                           gDecStr))
@@ -1041,9 +1041,9 @@ def facetRegionWriter(table, fileName):
     patchDec = []
     for patchName in patchNames:
         gRA, gDec = table.meta[patchName]
-        gRA, gDec = normalize_ra_dec(gRA, gDec)
-        patchRA.append(gRA)
-        patchDec.append(gDec)
+        gRADec = normalize_ra_dec(gRA, gDec)
+        patchRA.append(gRADec.ra)
+        patchDec.append(gRADec.dec)
 
     # Do the tessellation
     facet_points, facet_polys = tessellate(patchRA, patchDec, table.meta['refRA'],

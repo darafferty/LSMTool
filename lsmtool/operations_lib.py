@@ -17,6 +17,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 from astropy.coordinates import Angle
+from collections import namedtuple
 from math import floor, ceil
 import numpy as np
 import scipy as sp
@@ -36,10 +37,14 @@ def normalize_ra_dec(ra, dec):
 
     Returns
     -------
-    normalized_ra, normalized_dec : float, float
+    NormalizedRADec : namedtuple
         The normalized RA in degrees in the range [0, 360) and the
-        Dec in degrees in the range [-90, 90].
+        Dec in degrees in the range [-90, 90], with the following
+        elements:
+            NormalizedRADec.ra - RA in degrees
+            NormalizedRADec.dec - Dec in degrees
     """
+    NormalizedRADec = namedtuple('NormalizedRADec', ['ra', 'dec'])
     ra = ra.value if type(ra) is Angle else ra
     dec = dec.value if type(dec) is Angle else dec
     normalized_dec = (dec + 180) % 360 - 180
@@ -50,7 +55,7 @@ def normalize_ra_dec(ra, dec):
         normalized_dec = (normalized_dec + 180) % 360 - 180
         normalized_ra = normalized_ra % 360
 
-    return normalized_ra, normalized_dec
+    return NormalizedRADec(normalized_ra, normalized_dec)
 
 
 def radec_to_xyz(ra, dec, time):

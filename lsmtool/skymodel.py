@@ -648,7 +648,7 @@ class SkyModel(object):
             for patch, pos in iteritems(patchDict):
                 if type(pos[0]) is str or type(pos[0]) is float:
                     pos = RADec2Angle(pos[0], pos[1])
-                self.table.meta[patch] = [pos[0], pos[1]]
+                self.table.meta[patch] = list(pos)
             self._addHistory("SETPATCHPOSITIONS (method = '{0}')".format(method))
         else:
             raise RuntimeError('Sky model does not have patches.')
@@ -711,9 +711,9 @@ class SkyModel(object):
         else:
             midRA = RA[0]
             midDec = Dec[0]
-        midRA, midDec = normalize_ra_dec(midRA, midDec)
+        midRADec = normalize_ra_dec(midRA, midDec)
 
-        return np.array(x), np.array(y), midRA, midDec
+        return np.array(x), np.array(y), midRADec.ra, midRADec.dec
 
     def getDefaultValues(self):
         """
