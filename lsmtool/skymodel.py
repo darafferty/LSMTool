@@ -18,12 +18,12 @@
 
 import logging
 import os
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import Angle, SkyCoord
 import astropy.units as u
 from . import _logging
 from . import tableio
 from . import operations
-from .operations_lib import normalize_ra, normalize_dec
+from .operations_lib import normalize_ra_dec
 
 # Python 3 compatibility
 try:
@@ -490,7 +490,7 @@ class SkyModel(object):
         import numpy as np
         from .operations_lib import xy2radec
         from astropy.table import Column
-        from .tableio import RA2Angle, Dec2Angle
+        from .tableio import RADec2Angle
 
         if self.hasPatches:
             if patchName is None:
@@ -503,7 +503,7 @@ class SkyModel(object):
                     if patch in self.table.meta:
                         patchDict[patch] = self.table.meta[patch]
                     else:
-                        patchDict[patch] = [RA2Angle(0.0)[0], Dec2Angle(0.0)[0]]
+                        patchDict[patch] = [Angle(0.0, unit=u.deg), Angle(0.0, unit=u.deg)]
             else:
                 patchDict = {}
 
@@ -541,11 +541,9 @@ class SkyModel(object):
                     midX = minX + (maxX - minX) / 2.0
                     midY = minY + (maxY - minY) / 2.0
                     for i, name in enumerate(patchName):
-                        gRA = RA2Angle(xy2radec([midX[i]], [midY[i]], midRAAll[i],
-                                       midDecAll[i])[0])[0]
-                        gDec = Dec2Angle(xy2radec([midX[i]], [midY[i]], midRAAll[i],
-                                         midDecAll[i])[1])[0]
-                        patchDict[name] = [gRA, gDec]
+                        RADec = xy2radec([midX[i]], [midY[i]], midRAAll[i], midDecAll[i])
+                        RANorm, DecNorm = RADec2Angle(RADec[0], RADec[1])
+                        patchDict[name] = [RANorm[0], DecNorm[0]]
                 elif method == 'mean' or method == 'wmean':
                     if method == 'mean':
                         weight = False
@@ -556,11 +554,9 @@ class SkyModel(object):
                     meanY = self._getAveragedColumn('Y', applyBeam=applyBeam,
                                                     weight=weight)
                     for i, name in enumerate(patchName):
-                        gRA = RA2Angle(xy2radec([meanX[i]], [meanY[i]], midRAAll[i],
-                                       midDecAll[i])[0])[0]
-                        gDec = Dec2Angle(xy2radec([meanX[i]], [meanY[i]], midRAAll[i],
-                                         midDecAll[i])[1])[0]
-                        patchDict[name] = [gRA, gDec]
+                        RADec = xy2radec([meanX[i]], [meanY[i]], midRAAll[i], midDecAll[i])
+                        RANorm, DecNorm = RADec2Angle(RADec[0], RADec[1])
+                        patchDict[name] = [RANorm[0], DecNorm[0]]
                 self.table.remove_column('X')
                 self.table.remove_column('Y')
 
@@ -622,7 +618,7 @@ class SkyModel(object):
             >>> s.setPatchPositions({'bin0': [123.231, 23.4321]})
 
         """
-        from .tableio import RA2Angle, Dec2Angle
+        from .tableio import RADec2Angle
 
         if self.hasPatches:
             if method not in ['mid', 'mean', 'wmean', 'zero']:
@@ -637,7 +633,7 @@ class SkyModel(object):
                 if method == 'zero':
                     patchDict = {}
                     for n in patchNames:
-                        patchDict[n] = [RA2Angle(0.0), Dec2Angle(0.0)]
+                        patchDict[n] = [Angle(0.0, unit=u.deg), Angle(0.0, unit=u.deg)]
                 else:
                     patchDict = self.getPatchPositions(method=method, applyBeam=applyBeam,
                                                        perPatchProjection=perPatchProjection)
@@ -651,10 +647,8 @@ class SkyModel(object):
 
             for patch, pos in iteritems(patchDict):
                 if type(pos[0]) is str or type(pos[0]) is float:
-                    pos[0] = RA2Angle(pos[0])
-                if type(pos[1]) is str or type(pos[1]) is float:
-                    pos[1] = Dec2Angle(pos[1])
-                self.table.meta[patch] = pos
+                    pos = RADec2Angle(pos[0], pos[1])
+                self.table.meta[patch] = list(pos)
             self._addHistory("SETPATCHPOSITIONS (method = '{0}')".format(method))
         else:
             raise RuntimeError('Sky model does not have patches.')
@@ -717,8 +711,9 @@ class SkyModel(object):
         else:
             midRA = RA[0]
             midDec = Dec[0]
+        midRADec = normalize_ra_dec(midRA, midDec)
 
-        return np.array(x), np.array(y), normalize_ra(midRA), normalize_dec(midDec)
+        return np.array(x), np.array(y), midRADec.ra, midRADec.dec
 
     def getDefaultValues(self):
         """
@@ -920,7 +915,6 @@ class SkyModel(object):
 
         """
         from astropy.table import Column
-        from .tableio import RA2Angle, Dec2Angle
         import numpy as np
 
         colName = self._verifyColName(colName, onlyExisting=False)
@@ -941,10 +935,8 @@ class SkyModel(object):
                 mask = [True] * len(self.table)
             for sourceName, value in iteritems(values):
                 indx = self._getNameIndx(sourceName)
-                if colName == 'Ra':
-                    val = RA2Angle(value)[0]
-                elif colName == 'Dec':
-                    val = Dec2Angle(value)[0]
+                if colName == 'Ra' or colName == 'Dec':
+                    val = Angle(value, unit=u.deg)
                 else:
                     val = value
                 data[indx] = val
@@ -953,10 +945,8 @@ class SkyModel(object):
             if len(values) != len(self.table):
                 raise ValueError('Length of input values must match length of table.')
             else:
-                if colName == 'Ra':
-                    vals = RA2Angle(values)
-                elif colName == 'Dec':
-                    vals = Dec2Angle(values)
+                if colName == 'Ra' or colName == 'Dec':
+                    vals = Angle(values, unit=u.deg)
                 else:
                     vals = values
                 data = vals
@@ -1626,7 +1616,7 @@ class SkyModel(object):
             >>> s.getDistance(94.0, 42.0, byPatch=True)
 
         """
-        from .tableio import RA2Angle, Dec2Angle
+        from .tableio import RADec2Angle
 
         if byPatch and self.hasPatches:
             # Get patch positions
@@ -1635,8 +1625,7 @@ class SkyModel(object):
             sRA = self.getColValues('RA')
             sDec = self.getColValues('Dec')
 
-        RA = RA2Angle(RA)
-        Dec = Dec2Angle(Dec)
+        RA, Dec = RADec2Angle(RA, Dec)
 
         dist = self._calculateSeparation(sRA, sDec, RA, Dec)
         if units is not None:
