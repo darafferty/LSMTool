@@ -17,78 +17,45 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 from astropy.coordinates import Angle
+from collections import namedtuple
 from math import floor, ceil
 import numpy as np
 import scipy as sp
 
 
-def normalize_ra(ang):
+def normalize_ra_dec(ra, dec):
     """
-    Normalize RA to be in the range [0, 360).
-
-    Based on https://github.com/phn/angles/blob/master/angles.py
+    Normalize RA to be in the range [0, 360) and Dec to be in the
+    range [-90, 90].
 
     Parameters
     ----------
-    ang : float or astropy.coordinates.Angle
+    ra : float or astropy.coordinates.Angle object
         The RA in degrees to be normalized.
-
-    Returns
-    -------
-    res : float
-        RA in degrees in the range [0, 360).
-    """
-    lower = 0.0
-    upper = 360.0
-    if type(ang) is Angle:
-        num = ang.value
-    else:
-        num = ang
-    res = num
-    if num > upper or num == lower:
-        num = lower + abs(num + upper) % (abs(lower) + abs(upper))
-    if num < lower or num == upper:
-        num = upper - abs(num - lower) % (abs(lower) + abs(upper))
-    res = lower if num == upper else num
-
-    return res
-
-
-def normalize_dec(ang):
-    """
-    Normalize Dec to be in the range [-90, 90].
-
-    Based on https://github.com/phn/angles/blob/master/angles.py
-
-    Parameters
-    ----------
-    ang : float or astropy.coordinates.Angle
+    dec : float or astropy.coordinates.Angle object
         The Dec in degrees to be normalized.
 
     Returns
     -------
-    res : float
-        Dec in degrees in the range [-90, 90].
+    NormalizedRADec : namedtuple
+        The normalized RA in degrees in the range [0, 360) and the
+        Dec in degrees in the range [-90, 90], with the following
+        elements:
+            NormalizedRADec.ra - RA in degrees
+            NormalizedRADec.dec - Dec in degrees
     """
-    lower = -90.0
-    upper = 90.0
-    if type(ang) is Angle:
-        num = ang.value
-    else:
-        num = ang
-    res = num
-    total_length = abs(lower) + abs(upper)
-    if num < -total_length:
-        num += ceil(num / (-2 * total_length)) * 2 * total_length
-    if num > total_length:
-        num -= floor(num / (2 * total_length)) * 2 * total_length
-    if num > upper:
-        num = total_length - num
-    if num < lower:
-        num = -total_length - num
-    res = num
+    NormalizedRADec = namedtuple('NormalizedRADec', ['ra', 'dec'])
+    ra = ra.value if type(ra) is Angle else ra
+    dec = dec.value if type(dec) is Angle else dec
+    normalized_dec = (dec + 180) % 360 - 180
+    normalized_ra = ra % 360
+    if abs(normalized_dec) > 90:
+        normalized_dec = 180 - normalized_dec
+        normalized_ra = normalized_ra + 180
+        normalized_dec = (normalized_dec + 180) % 360 - 180
+        normalized_ra = normalized_ra % 360
 
-    return res
+    return NormalizedRADec(normalized_ra, normalized_dec)
 
 
 def radec_to_xyz(ra, dec, time):
@@ -191,7 +158,7 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
     freq = startfreq + (numchannels // 2) * channelwidth
     beam = abs(sr.array_factor(time, ant1, freq, source_xyz, pointing_xyz))
     # ...take XX only (XX and YY should be equal) and square it, ...
-    beam = beam[:,0,0] ** 2
+    beam = beam[:, 0, 0] ** 2
     # ...and invert if necessary.
     if invert:
         beam = 1 / beam
@@ -722,8 +689,8 @@ def voronoi(cal_coords, bounding_box):
             else:
                 x = vor.vertices[index, 0]
                 y = vor.vertices[index, 1]
-                if not(bounding_box[0] - eps <= x and x <= bounding_box[1] + eps and
-                       bounding_box[2] - eps <= y and y <= bounding_box[3] + eps):
+                if not (bounding_box[0] - eps <= x and x <= bounding_box[1] + eps and
+                        bounding_box[2] - eps <= y and y <= bounding_box[3] + eps):
                     flag = False
                     break
         if region and flag:

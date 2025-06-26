@@ -30,7 +30,7 @@ import re
 import logging
 import os
 from copy import deepcopy
-from .operations_lib import normalize_ra, normalize_dec, tessellate
+from .operations_lib import normalize_ra_dec, tessellate
 
 # Python 3 compatibility
 try:
@@ -130,7 +130,6 @@ def raformat(val):
         Formatted string as 'hh:mm:ss.s'
 
     """
-    val = normalize_ra(val)
     return Angle(val, unit='degree').to_string(unit='hourangle', sep=':')
 
 
@@ -149,7 +148,6 @@ def decformat(val):
         Formatted string as 'dd.mm.ss.s'
 
     """
-    val = normalize_dec(val)
     return Angle(val, unit='degree').to_string(unit='degree', sep='.')
 
 
@@ -335,17 +333,18 @@ def createTable(outlines, metaDict, colNames, colDefaults):
         table.add_column(specCol, index=specIndx)
 
     # Convert RA and Dec to Angle objects
-    log.debug('Converting RA...')
+    log.debug('Converting RA and Dec...')
     RARaw = table['Ra'].data.tolist()
-    RACol = Column(name='Ra', data=RA2Angle(RARaw))
+    DecRaw = table['Dec'].data.tolist()
+    RANorm, DecNorm = RADec2Angle(RARaw, DecRaw)
+
+    RACol = Column(name='Ra', data=RANorm)
     RACol.format = raformat
     RAIndx = table.keys().index('Ra')
     table.remove_column('Ra')
     table.add_column(RACol, index=RAIndx)
 
-    log.debug('Converting Dec...')
-    DecRaw = table['Dec'].data.tolist()
-    DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
+    DecCol = Column(name='Dec', data=DecNorm)
     DecCol.format = decformat
     DecIndx = table.keys().index('Dec')
     table.remove_column('Dec')
@@ -557,15 +556,13 @@ def processLine(line, metaDict, colNames):
             patchIndx = colNames.index('Patch')
             patchName = colLines[patchIndx].strip()
             RAIndx = colNames.index('Ra')
-            if colLines[RAIndx].strip() == '':
-                patchRA = [0.0]
-            else:
-                patchRA = RA2Angle(colLines[RAIndx].strip())
             DecIndx = colNames.index('Dec')
-            if colLines[DecIndx].strip() == '':
-                patchDec = [0.0]
+            if colLines[RAIndx].strip() == '' or colLines[DecIndx].strip() == '':
+                patchRA = [Angle(0.0, unit='degree')]
+                patchDec = [Angle(0.0, unit='degree')]
             else:
-                patchDec = Dec2Angle(colLines[DecIndx].strip())
+                patchRA, patchDec = RADec2Angle(colLines[RAIndx].strip(),
+                                                colLines[DecIndx].strip())
             metaDict[patchName] = [patchRA[0], patchDec[0]]
         return None, metaDict
 
@@ -575,25 +572,32 @@ def processLine(line, metaDict, colNames):
     return ','.join(colLines), metaDict
 
 
-def RA2Angle(RA):
+def RADec2Angle(RA, Dec):
     """
-    Returns Angle objects for input RA values.
+    Returns normalized Angle objects for input RA, Dec values.
 
     Parameters
     ----------
     RA : str, float or list of str, float
         Values of RA to convert. Can be strings in makesourcedb format or floats
-        in degrees.
+        in degrees (astropy.coordinates.Angle are also supported)
+    Dec : str, float or list of str, float
+        Values of Dec to convert. Can be strings in makesourcedb format or floats
+        in degrees (astropy.coordinates.Angle are also supported)
 
     Returns
     -------
-    RAAngle : astropy.coordinates.Angle object
-
+    RAAngle : list of astropy.coordinates.Angle objects
+        The RA, normalized to [0, 360)
+    DecAngle : list of astropy.coordinates.Angle objects
+        The Dec, normalized to [-90, 90].
     """
     import astropy.units as u
 
     if type(RA) is not list:
         RA = [RA]
+    if type(Dec) is not list:
+        Dec = [Dec]
 
     if type(RA[0]) is str:
         try:
@@ -604,32 +608,7 @@ def RA2Angle(RA):
             raise ValueError('RA not understood (must be string in '
                              'makesourcedb format or float in degrees): {0}'.format(e))
     else:
-        RA = [normalize_ra(r) for r in RA]
         RAAngle = Angle(RA, unit=u.deg)
-    RAAngle.wrap_at('360d', inplace=True)  # wrap to [0 - 360)
-
-    return RAAngle
-
-
-def Dec2Angle(Dec):
-    """
-    Returns Angle objects for input Dec values.
-
-    Parameters
-    ----------
-    Dec : str, float or list of str, float
-        Values of Dec to convert. Can be strings in makesourcedb format or floats
-        in degrees
-
-    Returns
-    -------
-    DecAngle : astropy.coordinates.Angle object
-
-    """
-    import astropy.units as u
-
-    if type(Dec) is not list:
-        Dec = [Dec]
 
     if type(Dec[0]) is str:
         try:
@@ -647,10 +626,16 @@ def Dec2Angle(Dec):
             raise ValueError('Dec not understood (must be string in '
                              'makesourcedb format or float in degrees): {0}'.format(e))
     else:
-        Dec = [normalize_dec(d) for d in Dec]
         DecAngle = Angle(Dec, unit=u.deg)
 
-    return DecAngle
+    RANorm = []
+    DecNorm = []
+    for RA, Dec in zip(RAAngle, DecAngle):
+        RADec = normalize_ra_dec(RA, Dec)
+        RANorm.append(RADec.ra)
+        DecNorm.append(RADec.dec)
+
+    return Angle(RANorm, unit=u.deg), Angle(DecNorm, unit=u.deg)
 
 
 def skyModelIdentify(origin, *args, **kwargs):
@@ -730,10 +715,9 @@ def skyModelWriter(table, fileName):
             else:
                 gRA = 0.0
                 gDec = 0.0
-            gRA = normalize_ra(gRA)
-            gRAStr = Angle(gRA, unit='degree').to_string(unit='hourangle', sep=':', precision=4)
-            gDec = normalize_dec(gDec)
-            gDecStr = Angle(gDec, unit='degree').to_string(unit='degree', sep='.', precision=4)
+            gRADec = normalize_ra_dec(gRA, gDec)
+            gRAStr = Angle(gRADec.ra, unit='degree').to_string(unit='hourangle', sep=':', precision=4)
+            gDecStr = Angle(gRADec.dec, unit='degree').to_string(unit='degree', sep='.', precision=4)
 
             outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRAStr,
                                                           gDecStr))
@@ -812,10 +796,8 @@ def rowStr(row, metaDict):
                     dstr = str(dlist)
             else:
                 if colKey == 'Ra':
-                    d = normalize_ra(d)
                     dstr = Angle(d, unit='degree').to_string(unit='hourangle', sep=':')
                 elif colKey == 'Dec':
-                    d = normalize_dec(d)
                     dstr = Angle(d, unit='degree').to_string(unit='degree', sep='.')
                 else:
                     dstr = str(d)
@@ -1025,8 +1007,8 @@ def factorDirectionsWriter(table, fileName):
         if patchName in table.meta:
             gRA, gDec = table.meta[patchName]
         else:
-            gRA = Angle(0.0)
-            gDec = Angle(0.0)
+            gRA = Angle(0.0, unit='degree')
+            gDec = Angle(0.0, unit='degree')
         outLines.append('{0} {1},{2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} '
                         '{13} {14}\n'.format(patchName, gRA.to_string(unit='hourangle', sep='hms'),
                                              gDec.to_string(sep='dms'), 'empty', 'empty', 0, 0, 0,
@@ -1059,8 +1041,9 @@ def facetRegionWriter(table, fileName):
     patchDec = []
     for patchName in patchNames:
         gRA, gDec = table.meta[patchName]
-        patchRA.append(normalize_ra(gRA))
-        patchDec.append(normalize_dec(gDec))
+        gRADec = normalize_ra_dec(gRA, gDec)
+        patchRA.append(gRADec.ra)
+        patchDec.append(gRADec.dec)
 
     # Do the tessellation
     facet_points, facet_polys = tessellate(patchRA, patchDec, table.meta['refRA'],
@@ -1184,7 +1167,8 @@ def coneSearch(VOService, position, radius):
     # Get raw VO catalog
     log.debug('Querying VO service...')
     try:
-        position = [RA2Angle(position[0])[0].value, Dec2Angle(position[1])[0].value]
+        RANorm, DecNorm = RADec2Angle(position[0], position[1])
+        position = [RANorm[0].value, DecNorm[0].value]
     except TypeError:
         raise ValueError('VO query positon not understood.')
     try:
@@ -1261,17 +1245,18 @@ def convertExternalTable(table, columnMapping, catalogProperties):
             table.rename_column(colName, allowedColumnNames[columnMapping[colName]])
 
     # Convert RA and Dec to Angle objects
-    log.debug('Converting RA...')
+    log.debug('Converting RA and Dec...')
     RARaw = table['Ra'].data.tolist()
-    RACol = Column(name='Ra', data=RA2Angle(RARaw))
+    DecRaw = table['Dec'].data.tolist()
+    RANorm, DecNorm = RADec2Angle(RARaw, DecRaw)
+
+    RACol = Column(name='Ra', data=RANorm)
     RACol.format = raformat
     RAIndx = table.keys().index('Ra')
     table.remove_column('Ra')
     table.add_column(RACol, index=RAIndx)
 
-    log.debug('Converting Dec...')
-    DecRaw = table['Dec'].data.tolist()
-    DecCol = Column(name='Dec', data=Dec2Angle(DecRaw))
+    DecCol = Column(name='Dec', data=DecNorm)
     DecCol.format = decformat
     DecIndx = table.keys().index('Dec')
     table.remove_column('Dec')
@@ -1374,14 +1359,13 @@ def getQueryInputs(position, radius):
         Raised when the input radius cannot be converted to degrees,
         usually due to improperly specified units
     """
-    RA = RA2Angle(position[0])[0].value
-    Dec = Dec2Angle(position[1])[0].value
+    RANorm, DecNorm = RADec2Angle(position[0], position[1])
     try:
         radius = Angle(radius, unit='degree').value
     except TypeError:
         raise ValueError('Query radius "{}" not understood.'.format(radius))
 
-    return (RA, Dec, radius)
+    return (RANorm[0].value, DecNorm[0].value, radius)
 
 
 def queryNonVOService(url, format='makesourcedb'):

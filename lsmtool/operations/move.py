@@ -125,16 +125,18 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
             if len(indx) > 1:
                 raise ValueError('Only one source can be moved to a new position')
             try:
-                table['Ra'][indx] = tableio.RA2Angle(position[0])[0]
-                table['Dec'][indx] = tableio.Dec2Angle(position[1])[0]
+                RANorm, DecNorm = tableio.RADec2Angle(position[0], position[1])
+                table['Ra'][indx] = RANorm[0]
+                table['Dec'][indx] = DecNorm[0]
             except Exception as e:
                 raise ValueError('Could not parse position: {0}'.format(e))
         if shift is not None:
             for ind in indx:
-                RA = LSM.table['Ra'][ind] + tableio.RA2Angle(shift[0])
-                Dec = LSM.table['Dec'][ind] + tableio.Dec2Angle(shift[1])
-                table['Ra'][ind] = tableio.RA2Angle(RA)[0]
-                table['Dec'][ind] = tableio.Dec2Angle(Dec)[0]
+                RA = LSM.table['Ra'][ind] + Angle(shift[0], unit='degree')
+                Dec = LSM.table['Dec'][ind] + Angle(shift[1], unit='degree')
+                RANorm, DecNorm = tableio.RADec2Angle(RA, Dec)
+                table['Ra'][ind] = RANorm[0]
+                table['Dec'][ind] = DecNorm[0]
         if xyshift is not None:
             for ind in indx:
                 radec = np.array([LSM.table['Ra'][ind], LSM.table['Dec'][ind]])
@@ -142,8 +144,9 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
                 xy[0] += xyshift[0]
                 xy[1] += xyshift[1]
                 RADec = w.wcs_pix2world(xy, 1)
-                table['Ra'][ind] = tableio.RA2Angle(RADec[0])[0]
-                table['Dec'][ind] = tableio.Dec2Angle(RADec[1])[0]
+                RANorm, DecNorm = tableio.RADec2Angle(RADec[0], RADec[1])
+                table['Ra'][ind] = RANorm[0]
+                table['Dec'][ind] = DecNorm[0]
         LSM.table = table
     elif LSM.hasPatches:
         indx = LSM._getNameIndx(name, patch=True)
@@ -153,17 +156,18 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
                 if len(indx) > 1:
                     raise ValueError('Only one source can be moved to a new position')
                 try:
-                    position[0] = tableio.RA2Angle(position[0])[0]
-                    position[1] = tableio.Dec2Angle(position[1])[0]
+                    RANorm, DecNorm = tableio.RADec2Angle(position[0], position[1])
                 except Exception as e:
                     raise ValueError('Could not parse position: {0}'.format(e))
-                table.meta[name] = position
+                table.meta[name] = [RANorm[0], DecNorm[0]]
             if shift is not None:
                 for ind in indx:
                     pname = patchNames[ind]
                     position = LSM.table.meta[name]
-                    table.meta[name] = [position[0] + tableio.RA2Angle(shift[0]),
-                        position[1] + tableio.Dec2Angle(shift[1])]
+                    RA = position[0] + Angle(shift[0], unit='degree')
+                    Dec = position[1] + Angle(shift[1], unit='degree')
+                    RANorm, DecNorm = tableio.RADec2Angle(RA, Dec)
+                    table.meta[name] = [RANorm[0], DecNorm[0]]
             if xyshift is not None:
                 for ind in indx:
                     pname = patchNames[ind]
@@ -172,7 +176,8 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
                     xy[0] += xyshift[0]
                     xy[1] += xyshift[1]
                     RADec = w.wcs_pix2world(xy, 1)
-                    table.meta[name] = [RADec[0], RADec[1]]
+                    RANorm, DecNorm = tableio.RADec2Angle(RADec[0], RADec[1])
+                    table.meta[name] = [RANorm[0], RANorm[0]]
             LSM.table = table
         else:
             raise ValueError("Could not find patch '{0}'.".format(name))
