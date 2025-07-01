@@ -17,13 +17,12 @@ import sofia2
 from astropy.io import fits as pyfits
 from astropy.table import Table
 from astropy.wcs import WCS
+from astropy.units import Quantity
 
 from . import load
 from .correct_gaussian_orientation import compute_absolute_orientation
 from .utils import (
-    dec2ddmmss,
-    deg2asec,
-    ra2hhmmss,
+    format_coordinates,
     rasterize,
     read_vertices_ra_dec,
     rotation_matrix_2d,
@@ -485,18 +484,15 @@ def _bdsf_create_dummy_skymodel(
 
     if ra < 0.0:
         ra += 360.0
-    ra = ra2hhmmss(ra)
-    sra = f"{ra[0]:02}:{ra[1]:02}:{ra[2]:.6f}"
-    dec = dec2ddmmss(dec)
-    decsign = "-" if dec[3] < 0 else "+"
-    sdec = f"{decsign}{dec[0]:02}.{dec[1]:02}.{dec[2]:.6f}"
+
+    ra, dec = format_coordinates(ra, dec)
 
     dummy_text = (
         "Format = Name, Type, Patch, Ra, Dec, I, SpectralIndex, "
         "LogarithmicSI, ReferenceFrequency='100000000.0', MajorAxis, "
         "MinorAxis, Orientation\n"
-        f",,p1,{sra},{sdec}\n"
-        f"s0c0,POINT,p1,{sra},{sdec},0.00000001,[0.0,0.0],false,"
+        f",,p1,{ra},{dec}\n"
+        f"s0c0,POINT,p1,{ra},{dec},0.00000001,[0.0,0.0],false,"
         "100000000.0,,,\n"
     )
     for filename in (output_true_sky, output_apparent_sky):
@@ -725,7 +721,7 @@ def _sofia_get_source_parameters(image_header, catalog_table):
     fluxes = catalog_table["f_sum"]
 
     # Create arrays of strings that adheres to the BBS format:
-    ra_strings, dec_strings = _sofia_format_coordinates(
+    ra_strings, dec_strings = format_coordinates(
         catalog_table["ra"], catalog_table["dec"]
     )
 
@@ -737,42 +733,6 @@ def _sofia_get_source_parameters(image_header, catalog_table):
         "Orientation": np.degrees(orientations),
         "I": fluxes,
     }
-
-
-def _sofia_format_coordinates(ra, dec, precision=6):
-    """Format RA and Dec coordinates to strings in the BBS format.
-
-    Converts RA and Dec values (in degrees) to string representations
-    according to the BBS sky model format. The format specification can be
-    found at:
-    https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb#angle_specification
-
-    Parameters
-    ----------
-    ra : numpy.ndarray
-        Right ascension values in degrees.
-    dec : numpy.ndarray
-        Declination values in degrees.
-    precision : int, optional
-        The number of decimal places for seconds in RA and Dec strings.
-        Default is 6.
-
-    Returns
-    -------
-    tuple of numpy.ndarray
-        A tuple containing two arrays: formatted RA strings and formatted Dec
-        strings.
-    """
-    ra_hms = ra2hhmmss(np.array(ra))
-    *dec_dms, dec_sign = dec2ddmmss(np.array(dec))
-    # Convert 1 / -1 to the strings "+" / "-"
-    dec_sign = np.where(dec_sign == 1, "+", "-")
-    ra_sign = [""] * len(dec_sign)
-    format_string = "{}{:02}:{:02}:{:02.{precision}f}"
-    formatter = np.vectorize(format_string.format, "U")
-    ra_strings = formatter(ra_sign, *ra_hms, precision=precision)
-    dec_strings = formatter(dec_sign, *dec_dms, precision=precision)
-    return ra_strings, dec_strings
 
 
 def _sofia_get_source_fwhm(image_header, catalog_table, orientations):
@@ -812,8 +772,12 @@ def _sofia_get_source_fwhm(image_header, catalog_table, orientations):
         / 2
     )
     # Get pixel sizes (width, height) in arcseconds
-    pixel_size_arcsec = deg2asec(
-        np.array([[image_header["CDELT1"], image_header["CDELT2"]]])
+    pixel_size_arcsec = (
+        Quantity(
+            [[image_header["CDELT1"], image_header["CDELT2"]]], unit="deg"
+        )
+        .to("arcsec")
+        .value
     )
 
     # Check if pixels are square
