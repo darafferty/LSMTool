@@ -12,6 +12,39 @@ import numpy as np
 from PIL import Image, ImageDraw
 from shapely.geometry import Point, Polygon
 from shapely.prepared import prep
+from astropy.coordinates import SkyCoord
+
+
+def format_coordinates(ra, dec, precision=6):
+    """
+    Format RA and Dec coordinates to strings in the makesourcedb format using
+    astropy.
+
+    Converts RA and Dec values (in degrees) to string representations according
+    to the BBS makesourcedb sky model format. The format specification can be
+    found at:
+    https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb#angle_specification
+
+    Parameters
+    ----------
+    ra : numpy.ndarray
+        Right ascension values in degrees.
+    dec : numpy.ndarray
+        Declination values in degrees.
+    precision : int, optional
+        The number of decimal places for seconds in RA and Dec strings.
+        Default is 6.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        A tuple containing two arrays: formatted RA strings and formatted Dec
+        strings.
+    """
+
+    coords = SkyCoord(ra, dec)
+    return (coords.ra.to_string('hourangle', sep=':', precision=precision), 
+            coords.dec.to_string(sep='.', precision=precision, alwayssign=True))
 
 
 def read_vertices_ra_dec(filename):
@@ -61,64 +94,6 @@ def rasterize(verts, data, blank_value=0):
         data[data == 0] = blank_value
 
     return data
-
-
-def ra2hhmmss(degrees):
-    """
-    Convert RA coordinate (in degrees) to hours / minutes / seconds.
-
-    Inputs and outputs can be single values or numpy arrays.
-
-    Parameters
-    ----------
-    degrees : float or numpy.array of float
-        The RA coordinate in degrees
-
-    Returns
-    -------
-    hours : int or numpy.array of int
-        The hour (HH) part.
-    minutes : int  or numpy.array of int
-        The minute (MM) part.
-    seconds : float  or numpy.array of float
-        The second (SS) part.
-    """
-    degrees = degrees % 360
-    fraction, hours = np.modf(degrees / 15)
-    fraction, minutes = np.modf(fraction * 60)
-    seconds = fraction * 60
-
-    return (hours.astype(int), minutes.astype(int), seconds)
-
-
-def dec2ddmmss(deg):
-    """
-    Convert Dec coordinate (in degrees) to DD MM SS
-
-    Inputs and outputs can be single values or numpy arrays
-
-    Parameters
-    ----------
-    deg : float
-        The Dec coordinate in degrees
-
-    Returns
-    -------
-    dd : int
-        The degree (DD) part
-    mm : int
-        The arcminute (MM) part
-    ss : float
-        The arcsecond (SS) part
-    sign : int
-        The sign (+/-)
-    """
-    sign = np.where(deg < 0.0, -1, 1)
-    x, dd = np.modf(np.abs(deg))  # pylint: disable=C0103
-    x, mm = np.modf(x * 60)  # pylint: disable=C0103
-    ss = x * 60  # pylint: disable=C0103
-
-    return (dd.astype(int), mm.astype(int), ss, sign)
 
 
 def normalize_ra_dec(ra, dec):
