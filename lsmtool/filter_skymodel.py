@@ -817,7 +817,7 @@ def _sofia_get_source_fwhm(image_header, catalog_table, orientations):
     )
 
     # Check if pixels are square
-    if np.abs(pixel_size_arcsec).ptp():
+    if np.ptp(np.abs(pixel_size_arcsec)):
         return ellipse_fwhm_pixels * abs(pixel_size_arcsec[0])
 
     # Handle non-square pixels:
