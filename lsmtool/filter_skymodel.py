@@ -100,21 +100,21 @@ def filter_skymodel(
         Additional keyword arguments to pass to the source finder function.
 
     """
-  
+
     if source_finder == "sofia":
         runner = filter_skymodel_sofia
     else:
         runner = filter_skymodel_bdsf
-        
+
     runner(
-            flat_noise_image,
-            true_sky_image,
-            input_skymodel,
-            output_apparent_sky,
-            output_true_sky,
-            beam_ms=beam_ms,
-            **kws
-        )
+        flat_noise_image,
+        true_sky_image,
+        input_skymodel,
+        output_apparent_sky,
+        output_true_sky,
+        beam_ms=beam_ms,
+        **kws,
+    )
 
 
 def filter_skymodel_bdsf(
@@ -358,71 +358,108 @@ def _bdsf_filter_sources(
 
     """
 
-    maskfile = f"{img_true_sky.filename}.mask"
+    mask_file = f"{img_true_sky.filename}.mask"
     img_true_sky.export_image(
-        outfile=maskfile, clobber=True, img_type="island_mask"
+        outfile=mask_file, clobber=True, img_type="island_mask"
     )
 
     # Construct polygon needed to trim the mask to the sector
-    header = pyfits.getheader(maskfile, 0)
-    wcs = WCS(header)
-    ra_ind = wcs.axis_type_names.index("RA")
-    dec_ind = wcs.axis_type_names.index("DEC")
-    vertices = read_vertices_ra_dec(vertices_file)
-
-    verts = []
-    for ra_vert, dec_vert in vertices:
-        ra_dec = np.array([[0.0, 0.0, 0.0, 0.0]])
-        ra_dec[0][ra_ind] = ra_vert
-        ra_dec[0][dec_ind] = dec_vert
-        verts.append(
-            (
-                wcs.wcs_world2pix(ra_dec, 0)[0][ra_ind],
-                wcs.wcs_world2pix(ra_dec, 0)[0][dec_ind],
-            )
-        )
-
-    hdu = pyfits.open(maskfile, memmap=False)
-
-    # Rasterize the poly
-    hdu[0].data[0, 0, :, :] = rasterize(verts, data[0, 0, :, :])
-    hdu.writeto(maskfile, overwrite=True)
+    _bdsf_trim_mask(mask_file, vertices_file)
 
     # Load the sky model with the associated beam MS.
-    s_in = load(str(input_skymodel), beamMS=str(beam_ms))
+    input_skymodel = load(str(input_skymodel), beamMS=str(beam_ms))
 
     # If bright sources were peeled before imaging, add them back
     if input_bright_skymodel:
-        s_bright = load(str(input_bright_skymodel))
-
-        # Rename the bright sources, removing the '_sector_*' added
-        # previously (otherwise the '_sector_*' text will be added
-        # every iteration, eventually making for very long source
-        # names)
-        new_names = [
-            name.split("_sector")[0] for name in s_bright.getColValues("Name")
-        ]
-        s_bright.setColValues("Name", new_names)
-        s_in.concatenate(s_bright)
+        _bdsf_add_bright_sources(input_skymodel, input_bright_skymodel)
 
     # Do final filtering and write out the sky models
     if remove_negative:
         # Keep only those sources with positive flux densities
-        s_in.select("I > 0.0")
+        input_skymodel.select("I > 0.0")
 
-    if s_in and filter_by_mask:
+    if input_skymodel and filter_by_mask:
         # Keep only those sources in PyBDSF masked regions
-        s_in.select(f"{maskfile} == True")
+        input_skymodel.select(f"{mask_file} == True")
 
     # Write out apparent- and true-sky models
-    s_in.group(maskfile)  # group the sky model by mask islands
-    s_in.write(output_true_sky, clobber=True)
-    s_in.write(
+    input_skymodel.group(mask_file)  # group the sky model by mask islands
+    input_skymodel.write(output_true_sky, clobber=True)
+    input_skymodel.write(
         output_apparent_sky,
         clobber=True,
         applyBeam=bool(beam_ms),
     )
-    os.remove(maskfile)
+    os.remove(mask_file)
+
+
+def _bdsf_trim_mask(mask_file, vertices_file):
+    """Trims the mask file to the given vertices.
+
+    This function opens the mask file, creates a polygon from the vertices
+    using the file's WCS, rasterizes the polygon, and overwrites the
+    mask file with the rasterized polygon data.
+
+    Args:
+        mask_file: Path to the mask file.
+        vertices_file: Path to the file containing vertices.
+    """
+    hdu = pyfits.open(mask_file, memmap=False)
+    vertices = read_vertices_ra_dec(vertices_file)
+    verts = _bdsf_create_polygon(WCS(hdu[0].header), vertices)
+
+    # Rasterize the poly
+    data = hdu[0].data
+    data[0, 0, :, :] = rasterize(verts, data[0, 0, :, :])
+    hdu.writeto(mask_file, overwrite=True)
+
+
+def _bdsf_create_polygon(wcs, vertices):
+    """Creates a polygon from vertices in world coordinates.
+
+    This function reads vertices from a file, converts them to pixel
+    coordinates using the provided WCS, and returns them as a list of tuples.
+
+    Args:
+        wcs (astropy.wcs.WCS):
+            The WCS object for coordinate transformation.
+        vertices (list):
+            Vertices of the polygon in world coordinates.
+
+    Returns:
+        A list of (x, y) pixel coordinates representing the polygon vertices.
+    """
+
+    # Construct polygon needed to trim the mask to the sector
+    return list(_bdsf_generate_polygon(wcs, vertices))
+
+
+def _bdsf_generate_polygon(wcs, vertices):
+
+    ra_ind = wcs.axis_type_names.index("RA")
+    dec_ind = wcs.axis_type_names.index("DEC")
+
+    for ra_vert, dec_vert in vertices:
+        ra_dec = np.array([[0.0, 0.0, 0.0, 0.0]])
+        ra_dec[0][ra_ind] = ra_vert
+        ra_dec[0][dec_ind] = dec_vert
+        yield (
+            wcs.wcs_world2pix(ra_dec, 0)[0][ra_ind],
+            wcs.wcs_world2pix(ra_dec, 0)[0][dec_ind],
+        )
+
+
+def _bdsf_add_bright_sources(input_skymodel, input_bright_skymodel):
+
+    s_bright = load(str(input_bright_skymodel))
+    # Rename the bright sources, removing the '_sector_*' added previously
+    # (otherwise the '_sector_*' text will be added every iteration, eventually
+    # making for very long source names)
+    new_names = [
+        name.split("_sector")[0] for name in s_bright.getColValues("Name")
+    ]
+    s_bright.setColValues("Name", new_names)
+    input_skymodel.concatenate(s_bright)
 
 
 def _bdsf_create_dummy_skymodel(
