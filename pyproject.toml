@@ -44,7 +44,9 @@ dependencies = [
     "pyvo",
     "scipy >= 0.11",
     "shapely",
-    "Pillow"
+    "Pillow",
+    "bdsf",
+    "sofia2 @ git+https://gitlab.com/milhazes/SoFia-2.git@694646dc"
 ]
 
 [project.scripts]
