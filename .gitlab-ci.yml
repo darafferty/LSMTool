@@ -10,6 +10,8 @@ workflow:
   needs: []
   stage: test
   before_script:
+    - apt-get update -y
+    - apt install wcslib-dev -y
     - python --version
     # Upgrade pip separately, so that the latest pip will be used to install/upgrade other packages
     - pip install --upgrade pip
