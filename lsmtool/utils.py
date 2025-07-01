@@ -43,8 +43,10 @@ def format_coordinates(ra, dec, precision=6):
     """
 
     coords = SkyCoord(ra, dec)
-    return (coords.ra.to_string('hourangle', sep=':', precision=precision), 
-            coords.dec.to_string(sep='.', precision=precision, alwayssign=True))
+    return (
+        coords.ra.to_string("hourangle", sep=":", precision=precision),
+        coords.dec.to_string(sep=".", precision=precision, alwayssign=True),
+    )
 
 
 def read_vertices_ra_dec(filename):
@@ -122,22 +124,6 @@ def normalize_ra_dec(ra, dec):
         normalized_dec = (normalized_dec + 180) % 360 - 180
         normalized_ra = normalized_ra % 360
     return normalized_ra, normalized_dec
-
-
-def deg2asec(value: float = 1.0) -> float:
-    """Converts a float in degrees to arcseconds.
-
-    Parameters
-    ----------
-    value : float
-        Number in degrees.
-
-    Returns
-    -------
-    asec : float
-        Value in arcseconds.
-    """
-    return value * 3600.0
 
 
 def rotation_matrix_2d(theta):
