@@ -19,7 +19,7 @@ name = "lsmtool"
 dynamic = ["version"]
 description = "The LOFAR Local Sky Model Tool"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 authors = [
     { name = "David Rafferty", email = "drafferty@hs.uni-hamburg.de" },
 ]
@@ -38,11 +38,13 @@ classifiers = [
 dependencies = [
     "astropy >= 3.2",
     "everybeam >= 0.6.1",
-    "matplotlib >= 0.99",
+    "matplotlib",
     "numpy",
     "python-casacore",
     "pyvo",
     "scipy >= 0.11",
+    "shapely",
+    "Pillow"
 ]
 
 [dependency-groups]
