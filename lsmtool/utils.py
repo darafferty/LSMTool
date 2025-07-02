@@ -50,9 +50,20 @@ def format_coordinates(ra, dec, unit="deg", precision=6):
 
 def read_vertices_ra_dec(filename):
     """
-    Returns facet vertices stored in input file
+    Read facet vertices from a pickle file where the data are stored as
+    tuples of RA and Dec values.
+
+    Parameters
+    ----------
+    filename : str or pathlib.Path
+        The path to the pickle file.
+
+    Returns
+    -------
+    tuple of iterables
+        A tuple containing two iterables: RA vertices and Dec vertices.
     """
-    return zip(*pickle.loads(Path(filename).read_bytes()))
+    return tuple(zip(*pickle.loads(Path(filename).read_bytes())))
 
 
 def rasterize(verts, data, blank_value=0):
