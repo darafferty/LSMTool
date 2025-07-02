@@ -1,11 +1,12 @@
 """
-Test utility function.
+Test utility functions.
 """
 
 import numpy as np
 import pytest
 
-from lsmtool.utils import format_coordinates
+from lsmtool.utils import format_coordinates, read_vertices_ra_dec
+from conftest import TEST_DATA_PATH
 
 
 @pytest.mark.parametrize(
@@ -98,3 +99,26 @@ def test_format_coordinates_error_cases(ra, dec, precision, exception):
     # Act and Assert
     with pytest.raises(exception):
         format_coordinates(ra, dec, precision=precision)
+
+
+@pytest.mark.parametrize(
+    "filename",
+    [
+        pytest.param(
+            (path := TEST_DATA_PATH / "expected_sector_1_vertices.pkl"),
+            id="path_input",
+        ),
+        pytest.param(str(path), id="string_input"),
+    ],
+)
+def test_read_pickled_vertices(filename):
+    """Test reading vertices from pickle file."""
+    verts = read_vertices_ra_dec(filename)
+    expected = (
+        (265.2866140036157, 53.393467021582275),
+        (266.78226621292583, 61.02229999320357),
+        (250.90915045307418, 61.02229999320357),
+        (252.40480266238433, 53.393467021582275),
+        (265.2866140036157, 53.393467021582275),
+    )
+    assert verts == expected
