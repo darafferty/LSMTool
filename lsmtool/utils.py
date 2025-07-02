@@ -15,7 +15,7 @@ from shapely.prepared import prep
 from astropy.coordinates import SkyCoord
 
 
-def format_coordinates(ra, dec, precision=6):
+def format_coordinates(ra, dec, unit="deg", precision=6):
     """
     Format RA and Dec coordinates to strings in the makesourcedb format using
     astropy.
@@ -27,9 +27,9 @@ def format_coordinates(ra, dec, precision=6):
 
     Parameters
     ----------
-    ra : numpy.ndarray
+    ra : numbers.Real or numpy.ndarray
         Right ascension values in degrees.
-    dec : numpy.ndarray
+    dec : numbers.Real or numpy.ndarray
         Declination values in degrees.
     precision : int, optional
         The number of decimal places for seconds in RA and Dec strings.
@@ -41,8 +41,7 @@ def format_coordinates(ra, dec, precision=6):
         A tuple containing two arrays: formatted RA strings and formatted Dec
         strings.
     """
-
-    coords = SkyCoord(ra, dec)
+    coords = SkyCoord(ra, dec, unit=unit)
     return (
         coords.ra.to_string("hourangle", sep=":", precision=precision),
         coords.dec.to_string(sep=".", precision=precision, alwayssign=True),
