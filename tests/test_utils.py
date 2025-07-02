@@ -4,9 +4,14 @@ Test utility functions.
 
 import numpy as np
 import pytest
+from astropy.table import Table
 from conftest import TEST_DATA_PATH
 
-from lsmtool.utils import format_coordinates, read_vertices_ra_dec
+from lsmtool.utils import (
+    format_coordinates,
+    read_vertices_ra_dec,
+    table_to_array,
+)
 
 
 @pytest.mark.parametrize(
@@ -215,3 +220,41 @@ def test_rasterize_error_cases(verts, data_shape, blank_value, expected_error):
     # Act and Assert
     with pytest.raises(expected_error):
         rasterize(verts, data, blank_value=blank_value)
+
+
+@pytest.mark.parametrize(
+    "table_data, dtype, expected_shape, expected_dtype",
+    [
+        (  # two_rows_float
+            {"col1": [1, 2], "col2": [3, 4]},
+            int,
+            (2, 2),
+            int,
+        ),
+        (  # two_rows_int
+            {"col1": [1.0, 2.0], "col2": [3.0, 4.0]},
+            float,
+            (2, 2),
+            float,
+        ),
+        (  # one_row_float
+            {"col1": [1.0], "col2": [2.0]},
+            float,
+            (1, 2),
+            float,
+        ),
+    ],
+)
+def test_table_to_array(table_data, dtype, expected_shape, expected_dtype):
+    # Arrange
+    table = Table(table_data)
+
+    # Act
+    result = table_to_array(table, dtype=dtype)
+
+    expected_result = np.transpose(list(table_data.values()))
+
+    # Assert
+    assert result.shape == expected_shape
+    assert result.dtype == expected_dtype
+    assert np.all(result == expected_result)
