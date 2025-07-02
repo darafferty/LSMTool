@@ -4,9 +4,9 @@ Test utility functions.
 
 import numpy as np
 import pytest
+from conftest import TEST_DATA_PATH
 
 from lsmtool.utils import format_coordinates, read_vertices_ra_dec
-from conftest import TEST_DATA_PATH
 
 
 @pytest.mark.parametrize(
@@ -122,3 +122,96 @@ def test_read_pickled_vertices(filename):
         (265.2866140036157, 53.393467021582275),
     )
     assert verts == expected
+
+
+import numpy as np
+import pytest
+from shapely.geometry import Point, Polygon
+from shapely.prepared import prep
+
+from lsmtool.utils import rasterize
+
+
+@pytest.mark.parametrize(
+    "verts, data_shape, blank_value, expected_array",
+    [
+        pytest.param(
+            [(0, 0), (0, 1), (1, 1), (1, 0)],
+            (4, 4),
+            0,
+            [
+                [1.0, 1.0, 0.0, 0.0],
+                [1.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+            ],
+            id="simple_square",
+        ),
+        pytest.param(
+            [(0, 0), (0, 2), (1, 1), (2, 2), (2, 0)],
+            (4, 4),
+            -1,
+            [
+                [1.0, 1.0, 1.0, -1.0],
+                [1.0, 1.0, 1.0, -1.0],
+                [1.0, -1.0, 1.0, -1.0],
+                [-1.0, -1.0, -1.0, -1.0],
+            ],
+            id="irregular_shape",
+        ),
+        pytest.param(
+            [(0, 0), (1, 1), (2, 0)],
+            (4, 4),
+            0,
+            [
+                [1.0, 1.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+            ],
+            id="triangle",
+        ),
+    ],
+)
+def test_rasterize_nominal(verts, data_shape, blank_value, expected_array):
+    # Arrange
+    data = np.ones(data_shape)
+
+    # Act
+    result = rasterize(verts, data, blank_value=blank_value)
+
+    # Assert
+    assert np.all(result == expected_array)
+
+
+@pytest.mark.parametrize(
+    "verts, data_shape, blank_value, expected_error",
+    [
+        pytest.param(
+            [(0, 0), (0, "a")], (2, 2), 0, ValueError, id="invalid_vertex_type"
+        ),
+        pytest.param(
+            "invalid", (2, 2), 0, ValueError, id="invalid_verts_type"
+        ),
+        pytest.param(
+            [(0, 0), (0, 1)], "invalid", 0, ValueError, id="invalid_data"
+        ),
+        pytest.param(
+            [(0, 0), (0, 1)],
+            (2, 2),
+            "invalid",
+            ValueError,
+            id="invalid_blank_value_type",
+        ),
+        pytest.param(
+            [(0, 0), (0, 1)], (2,), 0, ValueError, id="invalid_data_shape"
+        ),
+    ],
+)
+def test_rasterize_error_cases(verts, data_shape, blank_value, expected_error):
+    # Arrange
+    data = np.ones(data_shape) if isinstance(data_shape, tuple) else data_shape
+
+    # Act and Assert
+    with pytest.raises(expected_error):
+        rasterize(verts, data, blank_value=blank_value)
