@@ -68,21 +68,22 @@ def read_vertices_ra_dec(filename):
 
 def rasterize(verts, data, blank_value=0):
     """
-    Rasterize a polygon into a data array
+    Rasterize a polygon into a data array.
 
     Parameters
     ----------
     verts : list of (x, y) tuples
         List of input vertices of polygon to rasterize
     data : 2-D array
-        Array into which rasterize polygon
+        Array into which to rasterize the polygon. Note, the data are updated
+        in-place.
     blank_value : int or float, optional
-        Value to use for blanking regions outside the poly
+        Value to use for blanking regions outside the polygon.
 
     Returns
     -------
     data : 2-D array
-        Array with rasterized polygon
+        Array containing the rasterized polygon.
     """
     poly = Polygon(verts)
     prepared_polygon = prep(poly)
@@ -97,6 +98,7 @@ def rasterize(verts, data, blank_value=0):
     mask = Image.new("L", (data.shape[0], data.shape[1]), 0)
     ImageDraw.Draw(mask).polygon(verts, outline=1, fill=0)
     masked_ind = np.where(np.array(mask).transpose())
+
     points = [Point(xm, ym) for xm, ym in zip(masked_ind[0], masked_ind[1])]
     outside_points = [v for v in points if prepared_polygon.disjoint(v)]
     for outside_point in outside_points:
