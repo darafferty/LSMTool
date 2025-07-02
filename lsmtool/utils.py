@@ -108,34 +108,6 @@ def rasterize(verts, data, blank_value=0):
     return data
 
 
-def normalize_ra_dec(ra, dec):
-    """
-    Normalize ra to be in the range [0, 360).
-    Normalize dec to be in the range [-90, 90].
-
-    Parameters
-    ----------
-    ra, dec : float, float
-        The ra in degrees to be normalized.
-        The dec in degrees to be normalized.
-
-    Returns
-    -------
-    normalized_ra, normalized_dec : float, float
-        normalized_ra in degrees in the range [0, 360).
-        normalized_dec in degrees in the range [-90, 90].
-    """
-
-    normalized_dec = (dec + 180) % 360 - 180
-    normalized_ra = ra % 360
-    if abs(normalized_dec) > 90:
-        normalized_dec = 180 - normalized_dec
-        normalized_ra = normalized_ra + 180
-        normalized_dec = (normalized_dec + 180) % 360 - 180
-        normalized_ra = normalized_ra % 360
-    return normalized_ra, normalized_dec
-
-
 def rotation_matrix_2d(theta):
     """Rotation matrix."""
     cos = np.cos(theta)
