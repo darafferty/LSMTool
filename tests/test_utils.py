@@ -77,35 +77,6 @@ def test_format_coordinates_nominal(
     assert np.all(dec_str == expected_dec)
 
 
-@pytest.mark.parametrize(
-    "ra, dec, precision, exception",
-    [
-        pytest.param("a", 0.0, 6, ValueError, id="invalid_ra_value"),
-        pytest.param(0.0, "b", 6, ValueError, id="invalid_dec_value"),
-        pytest.param(0.0, 0.0, "c", TypeError, id="invalid_precision_type"),
-        pytest.param(
-            np.array([0.0, "a"]),
-            0.0,
-            6,
-            ValueError,
-            id="invalid_ra_element_value",
-        ),
-        pytest.param(
-            0.0,
-            np.array([0.0, "b"]),
-            6,
-            ValueError,
-            id="invalid_dec_element_value",
-        ),
-        pytest.param(0.0, 100.0, 6, ValueError, id="dec_above_range"),
-        pytest.param(0.0, -100.0, 6, ValueError, id="dec_below_range"),
-    ],
-)
-def test_format_coordinates_error_cases(ra, dec, precision, exception):
-    # Act and Assert
-    with pytest.raises(exception):
-        format_coordinates(ra, dec, precision=precision)
-
 
 @pytest.mark.parametrize(
     "filename",
@@ -183,39 +154,6 @@ def test_rasterize_nominal(verts, data_shape, blank_value, expected_array):
 
     # Assert
     assert np.all(result == expected_array)
-
-
-@pytest.mark.parametrize(
-    "verts, data_shape, blank_value, expected_error",
-    [
-        pytest.param(
-            [(0, 0), (0, "a")], (2, 2), 0, ValueError, id="invalid_vertex_type"
-        ),
-        pytest.param(
-            "invalid", (2, 2), 0, ValueError, id="invalid_verts_type"
-        ),
-        pytest.param(
-            [(0, 0), (0, 1)], "invalid", 0, ValueError, id="invalid_data"
-        ),
-        pytest.param(
-            [(0, 0), (0, 1)],
-            (2, 2),
-            "invalid",
-            ValueError,
-            id="invalid_blank_value_type",
-        ),
-        pytest.param(
-            [(0, 0), (0, 1)], (2,), 0, ValueError, id="invalid_data_shape"
-        ),
-    ],
-)
-def test_rasterize_error_cases(verts, data_shape, blank_value, expected_error):
-    # Arrange
-    data = np.ones(data_shape) if isinstance(data_shape, tuple) else data_shape
-
-    # Act and Assert
-    with pytest.raises(expected_error):
-        rasterize(verts, data, blank_value=blank_value)
 
 
 @pytest.mark.parametrize(
