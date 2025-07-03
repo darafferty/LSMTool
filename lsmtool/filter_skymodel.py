@@ -1,10 +1,13 @@
 """
 Script to filter and group a sky model with an image.
-"""
 
-# This file was originally copied from the Rapthor repository:
-# https://git.astron.nl/RD/rapthor/-/blob/
-# 544ddf8cff8e65c5686b23479e227a12e6d1ed4f/rapthor/scripts/filter_skymodel.py
+This file was originally copied from the Rapthor repository:
+https://git.astron.nl/RD/rapthor/-/blob/544ddf/rapthor/scripts/filter_skymodel.py
+
+Also includes substantial changes introduced in the SKA self calibration
+pipeline at
+https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/filter_skymodel.py
+"""
 
 import os
 from ast import literal_eval
@@ -64,7 +67,7 @@ def filter_skymodel(
     source_finder="bdsf",
     **kws,
 ):
-    """Filters a sky model based on a source finder.
+    """Filter a sky model based on a source finder.
 
     This function filters a sky model using either SoFiA-2 or PyBDSF,
     based on the `source_finder` parameter.  It applies the chosen
@@ -140,7 +143,7 @@ def filter_skymodel_bdsf(
     ncores=8,
 ):
     """
-    Filters the input sky model using PyBDSF.
+    Filter the input sky model using PyBDSF.
 
     Note: If no islands of emission are detected in the input image, a
     blank sky model is made. If any islands are detected in the input image,
@@ -327,7 +330,7 @@ def _bdsf_filter_sources(
     output_true_sky,
     output_apparent_sky,
 ):
-    """Filters and groups sources based on a mask and other criteria.
+    """Filter and group sources based on a mask and other criteria.
 
     This function filters the input sky model based on a mask
     generated from the true sky image. It also handles adding
@@ -393,7 +396,7 @@ def _bdsf_filter_sources(
 
 
 def _bdsf_trim_mask(mask_file, vertices_file):
-    """Trims the mask file to the given vertices.
+    """Trim the mask file to the given vertices.
 
     This function opens the mask file, creates a polygon from the vertices
     using the file's WCS, rasterizes the polygon, and overwrites the
@@ -414,7 +417,7 @@ def _bdsf_trim_mask(mask_file, vertices_file):
 
 
 def _bdsf_create_polygon(wcs, vertices):
-    """Creates a polygon from vertices in world coordinates.
+    """Create a polygon from vertices in world coordinates.
 
     This function reads vertices from a file, converts them to pixel
     coordinates using the provided WCS, and returns them as a list of tuples.
@@ -512,7 +515,7 @@ def filter_skymodel_sofia(
     **kws,
 ):
     """
-    Filters the sources in a FITS image using SoFiA-2.
+    Filter the sources in a FITS image using SoFiA-2.
 
     In order to measure the source parameters (size and orientation), SoFiA
     does a spatial moment analysis of the image data. This method of obtaining
