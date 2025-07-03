@@ -11,14 +11,14 @@ https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-se
 Some functions were removed or combined when migrating the module to LSMTools.
 """
 
-from pathlib import Path
 import pickle
+from pathlib import Path
 
 import numpy as np
+from astropy.coordinates import SkyCoord
 from PIL import Image, ImageDraw
 from shapely.geometry import Point, Polygon
 from shapely.prepared import prep
-from astropy.coordinates import SkyCoord
 
 
 def format_coordinates(ra, dec, precision=6):
