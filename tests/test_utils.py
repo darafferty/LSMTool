@@ -9,6 +9,7 @@ from conftest import TEST_DATA_PATH
 
 from lsmtool.utils import (
     format_coordinates,
+    rasterize,
     read_vertices_ra_dec,
     table_to_array,
 )
@@ -127,14 +128,6 @@ def test_read_pickled_vertices(filename):
         (265.2866140036157, 53.393467021582275),
     )
     assert verts == expected
-
-
-import numpy as np
-import pytest
-from shapely.geometry import Point, Polygon
-from shapely.prepared import prep
-
-from lsmtool.utils import rasterize
 
 
 @pytest.mark.parametrize(

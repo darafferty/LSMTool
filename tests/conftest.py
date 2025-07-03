@@ -2,7 +2,6 @@
 Configuration for python tests.
 """
 
-
 from pathlib import Path
 
 #
