@@ -1,9 +1,15 @@
 """
 Module that holds miscellaneous utility functions and classes.
-"""
 
-# This file is adapted from the original in the Rapthor repository:
-# https://git.astron.nl/RD/rapthor/-/tree/master/rapthor/lib/miscellaneous.py
+This file was adapted from the original in the Rapthor repository:
+https://git.astron.nl/RD/rapthor/-/tree/master/rapthor/lib/miscellaneous.py
+
+Additional functions for supporting skymodel filtering based on SoFiA was added
+for the SKA self calibration pipeline at 
+https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/miscellaneous.py
+
+Some functions were removed or combined when migrating the module to LSMTools.
+"""
 
 from pathlib import Path
 import pickle
@@ -78,7 +84,8 @@ def rasterize(verts, data, blank_value=0):
         Array into which to rasterize the polygon. Note, the data are updated
         in-place.
     blank_value : int or float, optional
-        Value to use for blanking regions outside the polygon.
+        Value to use for filling regions outside the polygon. The data type of
+        the fill value should be compatible with the dtype of the data array.
 
     Returns
     -------
