@@ -21,7 +21,7 @@ from shapely.prepared import prep
 from astropy.coordinates import SkyCoord
 
 
-def format_coordinates(ra, dec, unit="deg", precision=6):
+def format_coordinates(ra, dec, precision=6):
     """
     Format RA and Dec coordinates to strings in the makesourcedb format using
     astropy.
@@ -33,9 +33,9 @@ def format_coordinates(ra, dec, unit="deg", precision=6):
 
     Parameters
     ----------
-    ra : numbers.Real or numpy.ndarray
+    ra : float or list of float
         Right ascension values in degrees.
-    dec : numbers.Real or numpy.ndarray
+    dec : float or list of float
         Declination values in degrees.
     precision : int, optional
         The number of decimal places for seconds in RA and Dec strings.
@@ -47,7 +47,7 @@ def format_coordinates(ra, dec, unit="deg", precision=6):
         A tuple containing two arrays: formatted RA strings and formatted Dec
         strings.
     """
-    coords = SkyCoord(ra, dec, unit=unit)
+    coords = SkyCoord(ra, dec, unit="deg")
     return (
         coords.ra.to_string("hourangle", sep=":", precision=precision),
         coords.dec.to_string(sep=".", precision=precision, alwayssign=True),
@@ -78,19 +78,20 @@ def rasterize(verts, data, blank_value=0):
 
     Parameters
     ----------
-    verts : list of (x, y) tuples
-        List of input vertices of polygon to rasterize
-    data : 2-D array
-        Array into which to rasterize the polygon. Note, the data are updated
-        in-place.
+    verts : list of tuples
+        List of input vertices of polygon to rasterize. Each item in the list
+        should be a (x, y) coordinate point, where x and y are float or int.
+    data : np.ndarray
+        2-D numpy array into which to rasterize the polygon. Note, the data are
+        updated in-place.
     blank_value : int or float, optional
         Value to use for filling regions outside the polygon. The data type of
         the fill value should be compatible with the dtype of the data array.
 
     Returns
     -------
-    data : 2-D array
-        Array containing the rasterized polygon.
+    data : np.ndarray
+        2-D array containing the rasterized polygon.
     """
     poly = Polygon(verts)
     prepared_polygon = prep(poly)
