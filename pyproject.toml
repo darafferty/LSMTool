@@ -45,6 +45,13 @@ dependencies = [
     "scipy >= 0.11",
 ]
 
+[dependency-groups]
+docs = ["sphinx"]
+tests = ["pytest", "tox"]
+dev = ["black", "isort", "pylint", 
+       {include-group = "docs"}, 
+       {include-group = "tests"}]
+
 [project.scripts]
 lsmtool = "lsmtool.lsmtool:main"
 correct_gaussian_orientation = "lsmtool.correct_gaussian_orientation:main"
