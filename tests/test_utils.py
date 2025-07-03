@@ -120,7 +120,7 @@ def test_format_coordinates_error_cases(ra, dec, precision, exception):
         ),
     ],
 )
-def test_read_pickled_vertices(filename):
+def test_read_vertices_ra_dec(filename):
     """Test reading vertices from pickle file."""
     verts = read_vertices_ra_dec(filename)
     expected = (
