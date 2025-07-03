@@ -144,7 +144,7 @@ def test_read_vertices_invalid(tmp_path):
             id="irregular_shape",
         ),
         pytest.param(
-            [(3., 0.), (2, 1), (1, 0)],
+            [(3.0, 0.0), (2, 1), (1, 0)],
             (4, 4),
             0,
             [
