@@ -5,21 +5,37 @@ workflow:
       when: never
     - when: always
 
-.test:
-  image: python:$PYTHON_VERSION
-  needs: []
-  stage: test
-  before_script:
+stages:
+  - lint
+  - test
+
+lint:
+  stage: lint
+  image: python:3.9
+  before_script: &install_script
     - python --version
     # Upgrade pip separately, so that the latest pip will be used to install/upgrade other packages
     - pip install --upgrade pip
     - pip install --upgrade wheel setuptools virtualenv
     - virtualenv venv
     - source venv/bin/activate
+    - > # check pip version > 25.1. This check can be dropped once python 3.8 support is dropped
+      if [ "`echo -e "$(pip -V | awk '{print $2}')\n25.1" | sort -V | head -n1`" = "25.1" ]; then
+        pip install . --group dev
+      else
+        pip install isort black pylint pytest .
+      fi
   script:
-    - pip install .
-    - pip install pytest
-    - pytest
+    - pylint -v lsmtool tests
+
+.test:
+  image: python:$PYTHON_VERSION
+  needs: []
+  stage: test
+  before_script:
+    - *install_script
+  script:
+    - pytest -v
 
 test-python-3.8:
   extends: .test
