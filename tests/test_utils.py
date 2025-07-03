@@ -111,10 +111,13 @@ def test_format_coordinates_error_cases(ra, dec, precision, exception):
     "filename",
     [
         pytest.param(
-            (path := TEST_DATA_PATH / "expected_sector_1_vertices.pkl"),
+            (TEST_DATA_PATH / "expected_sector_1_vertices.pkl"),
             id="path_input",
         ),
-        pytest.param(str(path), id="string_input"),
+        pytest.param(
+            str((TEST_DATA_PATH / "expected_sector_1_vertices.pkl")),
+            id="string_input",
+        ),
     ],
 )
 def test_read_pickled_vertices(filename):
@@ -143,7 +146,7 @@ def test_read_pickled_vertices(filename):
                 [0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0],
             ],
-            id="simple_square",
+            id="square",
         ),
         pytest.param(
             [(0, 0), (0, 2), (1, 1), (2, 2), (2, 0)],
