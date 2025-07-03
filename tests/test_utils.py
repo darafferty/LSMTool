@@ -2,6 +2,8 @@
 Test utility functions.
 """
 
+import pickle
+
 import numpy as np
 import pytest
 from astropy.table import Table
@@ -77,7 +79,6 @@ def test_format_coordinates_nominal(
     assert np.all(dec_str == expected_dec)
 
 
-
 @pytest.mark.parametrize(
     "filename",
     [
@@ -101,7 +102,17 @@ def test_read_vertices_ra_dec(filename):
         (252.40480266238433, 53.393467021582275),
         (265.2866140036157, 53.393467021582275),
     )
-    assert verts == expected
+    assert np.allclose(verts, expected)
+
+
+def test_read_vertices_invalid(tmp_path):
+    """Test reading vertices from pickle file."""
+    path = tmp_path / "test_read_vertives_invalid.pkl"
+    with path.open("wb") as file:
+        pickle.dump("Invalid content", file)
+
+    with pytest.raises(ValueError):
+        read_vertices_ra_dec(path)
 
 
 @pytest.mark.parametrize(
