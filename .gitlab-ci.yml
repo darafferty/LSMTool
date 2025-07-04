@@ -18,8 +18,9 @@ workflow:
     - source venv/bin/activate
   script:
     - pip install .
-    - pip install pytest
-    - pytest
+    - pip install pytest-cov
+    - pytest --cov-report=term --cov=lsmtool
+  coverage: '/TOTAL.*\s+(\d+%)$/'
 
 test-python-3.8:
   extends: .test
