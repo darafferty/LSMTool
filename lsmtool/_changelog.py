@@ -11,6 +11,10 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
+    2025/03/21 - Version 1.7.1
+
+        Fix RA, Dec normalization (RD/LSMTool!81)
+
     2025/03/21 - Version 1.7.0
 
         Fix facet file test
@@ -18,7 +22,7 @@ def changelog():
         Turn off per-patch projection for missing patches
         Improve handling of patches
         Fix LoTSS units
-        Use temp file in cwd for download
+        Use temp file in cwd for download (RD/LSMTool!79)
 
     2025/02/11 - Version 1.6.2
 
