@@ -19,13 +19,13 @@ import numpy as np
 import sofia2
 from astropy.io import fits as pyfits
 from astropy.table import Table
-from astropy.wcs import WCS
 from astropy.units import Quantity
+from astropy.wcs import WCS
 
-from . import load
 from .correct_gaussian_orientation import compute_absolute_orientation
 from .utils import (
     format_coordinates,
+    load,
     rasterize,
     read_vertices_ra_dec,
     rotation_matrix_2d,
