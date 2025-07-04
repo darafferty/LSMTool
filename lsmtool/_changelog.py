@@ -11,7 +11,7 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
-    2025/03/21 - Version 1.7.1
+    2025/07/04 - Version 1.7.1
 
         Fix RA, Dec normalization (RD/LSMTool!81)
 
