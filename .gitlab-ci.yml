@@ -19,7 +19,8 @@ workflow:
   script:
     - pip install .
     - pip install pytest-cov
-    - pytest --cov-report=term --cov=lsmtool
+    - python -m pytest --cov-report=term --cov=lsmtool
+  coverage: '/TOTAL.*\s+(\d+%)$/'
 
 test-python-3.8:
   extends: .test
@@ -45,4 +46,3 @@ test-python-3.12:
   extends: .test
   variables:
     PYTHON_VERSION: "3.12"
-  coverage: '/TOTAL.*\s+(\d+%)$/'
