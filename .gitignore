@@ -69,3 +69,5 @@ wheelhouse/
 
 # pyenv
 .python-version
+
+tests/resources/LOFAR_HBA_MOCK.ms
