@@ -32,19 +32,26 @@ def _restore_tmpdir():
 
 @ctx.contextmanager
 def temp_storage(trial_paths=TRIAL_TMP_PATHS):
+    """Context manager for setting a temporary storage path.
 
-    # Try to set the TMPDIR evn var to a short path, to ensure we do not hit
-    # limits for socket paths (used by the mulitprocessing module) in the PyBDSF
-    # calls. We try a number of standard paths (the same ones used in the
-    # tempfile Python library)
-    _set_tmpdir(trial_paths)
-    yield
-    _restore_tmpdir()
+    This context manager attempts to set the TMPDIR environment variable
+    to a short path to avoid issues with path length limitations,
+    particularly for socket paths used by the multiprocessing module in PyBDSF
+    calls.
+
+    Parameters
+    ----------
+    trial_paths : tuple of str, optional
+        A tuple of paths to try setting as the TMPDIR environment variable.
+        The first existing path in the tuple will be used. Defaults to
+        TRIAL_TMP_PATHS, which includes the same locations used in the
+        tempfile Python library.
+    """
 
 
 def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
     """
-    Loads a sky model from a file or VO service and returns a SkyModel object.
+    Load a sky model from a file or VO service and return a SkyModel object.
 
     Parameters
     ----------
@@ -103,13 +110,13 @@ def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
 
 def read_vertices_ra_dec(filename):
     """
-    Read facet vertices from a pickle file where the data are stored as
-    tuples of RA and Dec values.
+    Read facet vertices from a pickle file.
 
     Parameters
     ----------
     filename : str or pathlib.Path
-        The path to the pickle file.
+        The path to the pickle file where facet vertices are stored as
+        tuples of RA and Dec values.
 
     Returns
     -------
