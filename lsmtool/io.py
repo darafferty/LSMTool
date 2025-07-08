@@ -16,20 +16,6 @@ ORIGINAL_TMPDIR = os.environ.get("TMPDIR")
 TRIAL_TMP_PATHS = ("/tmp", "/var/tmp", "/usr/tmp")
 
 
-def _set_tmpdir(trial_paths=TRIAL_TMP_PATHS):
-    """Sets a temporary directory to avoid path length issues."""
-    for tmpdir in trial_paths:
-        if Path(tmpdir).exists():
-            os.environ["TMPDIR"] = tmpdir
-            break
-
-
-def _restore_tmpdir():
-    """Restores the original temporary directory."""
-    if ORIGINAL_TMPDIR is not None:
-        os.environ["TMPDIR"] = ORIGINAL_TMPDIR
-
-
 @ctx.contextmanager
 def temp_storage(trial_paths=TRIAL_TMP_PATHS):
     """Context manager for setting a temporary storage path.
@@ -55,6 +41,20 @@ def temp_storage(trial_paths=TRIAL_TMP_PATHS):
         yield
     finally:
         _restore_tmpdir()
+
+
+def _set_tmpdir(trial_paths=TRIAL_TMP_PATHS):
+    """Sets a temporary directory to avoid path length issues."""
+    for tmpdir in trial_paths:
+        if Path(tmpdir).exists():
+            os.environ["TMPDIR"] = tmpdir
+            break
+
+
+def _restore_tmpdir():
+    """Restores the original temporary directory."""
+    if ORIGINAL_TMPDIR is not None:
+        os.environ["TMPDIR"] = ORIGINAL_TMPDIR
 
 
 def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
