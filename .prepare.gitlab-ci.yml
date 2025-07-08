@@ -1,0 +1,23 @@
+stages:
+  - build
+
+build_ci_runner_image:
+  stage: build
+  image: docker
+  tags:
+    - dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - |
+      if docker pull $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG; then
+        docker build --cache-from $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG --tag $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG docker/ci-runner
+      else
+        docker pull $CI_REGISTRY_IMAGE/ci-build-runner:latest || true
+        docker build --cache-from $CI_REGISTRY_IMAGE/ci-build-runner:latest --tag $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG docker/ci-runner
+      fi
+    - docker push $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG  # push the image
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        docker image tag $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG $CI_REGISTRY_IMAGE/ci-build-runner:latest
+        docker push $CI_REGISTRY_IMAGE/ci-build-runner:latest
+      fi
