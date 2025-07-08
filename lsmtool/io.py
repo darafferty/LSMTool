@@ -47,6 +47,14 @@ def temp_storage(trial_paths=TRIAL_TMP_PATHS):
         TRIAL_TMP_PATHS, which includes the same locations used in the
         tempfile Python library.
     """
+    if isinstance(trial_paths, (str, Path)):
+        trial_paths = [trial_paths]
+
+    try:
+        _set_tmpdir(trial_paths)
+        yield
+    finally:
+        _restore_tmpdir()
 
 
 def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
