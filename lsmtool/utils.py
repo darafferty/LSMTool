@@ -124,3 +124,62 @@ def table_to_array(table, dtype=float):
         input table, and the dtype is as specified.
     """
     return table.as_array().view(dtype).reshape(-1, len(table.colnames))
+
+
+def transfer_patches(from_skymodel, to_skymodel, patch_dict=None):
+    """
+    Transfers the patches defined in from_skymodel to to_skymodel.
+
+    Parameters
+    ----------
+    from_skymodel : LSMTool skymodel.SkyModel object
+        Sky model from which to transfer patches
+    to_skymodel : LSMTool skymodel.SkyModel object
+        Sky model to which to transfer patches
+    patch_dict : dict, optional
+        Dict of patch positions
+    """
+    if not from_skymodel.hasPatches:
+        raise ValueError(
+            "Cannot transfer patches since from_skymodel is not grouped "
+            "into patches."
+        )
+    names_from = from_skymodel.getColValues("Name").tolist()
+    names_to = to_skymodel.getColValues("Name").tolist()
+
+    if not to_skymodel.hasPatches:
+        to_skymodel.group("single")
+
+    if set(names_from) == set(names_to):
+        # Both sky models have the same sources, so use indexing
+        ind_ss = np.argsort(names_from)
+        ind_ts = np.argsort(names_to)
+        to_skymodel.table["Patch"][ind_ts] = from_skymodel.table["Patch"][
+            ind_ss
+        ]
+    elif set(names_to).issubset(set(names_from)):
+        # The to_skymodel is a subset of from_skymodel, so use slower matching
+        # algorithm
+        for ind_ts, name in enumerate(names_to):
+            ind_ss = names_from.index(name)
+            to_skymodel.table["Patch"][ind_ts] = from_skymodel.table["Patch"][
+                ind_ss
+            ]
+    elif set(names_from).issubset(set(names_to)):
+        # The from_skymodel is a subset of to_skymodel, so use slower matching
+        # algorithm, leaving non-matching sources in their initial patches
+        for ind_ss, name in enumerate(names_from):
+            ind_ts = names_to.index(name)
+            to_skymodel.table["Patch"][ind_ts] = from_skymodel.table["Patch"][
+                ind_ss
+            ]
+    else:
+        # Skymodels don't match, raise error
+        raise ValueError(
+            "Cannot transfer patches since neither sky model is a "
+            "subset of the other."
+        )
+
+    to_skymodel._updateGroups()
+    if patch_dict is not None:
+        to_skymodel.setPatchPositions(patchDict=patch_dict)
