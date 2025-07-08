@@ -11,6 +11,8 @@ https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-se
 Some functions were removed or combined when migrating the module to LSMTools.
 """
 
+import contextlib as ctx
+import os
 import pickle
 from pathlib import Path
 
@@ -19,6 +21,37 @@ from astropy.coordinates import SkyCoord
 from PIL import Image, ImageDraw
 from shapely.geometry import Point, Polygon
 from shapely.prepared import prep
+
+
+# save original tmp path if defined
+ORIGINAL_TMPDIR = os.environ.get("TMPDIR")
+TRIAL_TMP_PATHS = ("/tmp", "/var/tmp", "/usr/tmp")
+
+
+def _set_tmpdir(trial_paths=TRIAL_TMP_PATHS):
+    """Sets a temporary directory to avoid path length issues."""
+    for tmpdir in trial_paths:
+        if Path(tmpdir).exists():
+            os.environ["TMPDIR"] = tmpdir
+            break
+
+
+def _restore_tmpdir():
+    """Restores the original temporary directory."""
+    if ORIGINAL_TMPDIR is not None:
+        os.environ["TMPDIR"] = ORIGINAL_TMPDIR
+
+
+@ctx.contextmanager
+def temp_storage(trial_paths=TRIAL_TMP_PATHS):
+    
+    # Try to set the TMPDIR evn var to a short path, to ensure we do not hit
+    # limits for socket paths (used by the mulitprocessing module) in the PyBDSF
+    # calls. We try a number of standard paths (the same ones used in the
+    # tempfile Python library)
+    _set_tmpdir(trial_paths)
+    yield
+    _restore_tmpdir()
 
 
 def format_coordinates(ra, dec, precision=6):
