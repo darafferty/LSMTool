@@ -6,6 +6,7 @@ Script to filter and group a sky model with an image.
 # https://git.astron.nl/RD/rapthor/-/blob/
 # 544ddf8cff8e65c5686b23479e227a12e6d1ed4f/rapthor/scripts/filter_skymodel.py
 
+import logging
 import os
 from ast import literal_eval
 from pathlib import Path
@@ -29,12 +30,123 @@ from .utils import (
     table_to_array,
 )
 
-# type alias for paths
+# Module logger
+logger = logging.getLogger(__name__)
+
+
+# Type aliases for paths-like objects
 PathLike = Union[str, Path]
 PathLikeOptional = Union[PathLike, None]
 
 # conversion factor between sofia and makeshourcedb parameterisations
 FWHM_PER_SIGMA = 2 * np.sqrt(2 * np.log(2))
+
+
+def filter_skymodel(
+    flat_noise_image,
+    true_sky_image,
+    input_skymodel,
+    output_apparent_sky,
+    output_true_sky,
+    beam_ms,
+    source_finder="bdsf",
+    **kws,
+):
+    """Filters a sky model based on a source finder.
+
+    This function filters a sky model using either SoFiA-2 or PyBDSF,
+    based on the `source_finder` parameter.  It applies the chosen
+    source finder to generate a filtered sky model.
+
+    Parameters
+    ----------
+    flat_noise_image : str or Path
+        Filename of input image to use to detect sources for filtering.
+        It should be a flat-noise / apparent sky image (without primary-beam
+        correction).
+    true_sky_image : str or Path, optional
+        Filename of input image to use to determine the true flux of sources.
+        It should be a true flux image (with primary-beam correction).
+        If beam_ms is not empty, this argument must be supplied. Otherwise,
+        filter_skymodel ignores it and uses the flat_noise_image instead.
+    input_skymodel : str or Path
+        Filename of input makesourcedb sky model.
+        If beam_ms is empty, it should be an apparent sky model, without
+        primary-beam correction.
+        If beam_ms is not empty, it should be a true sky model, with
+        primary-beam correction.
+    output_apparent_sky : str or Path
+        Output file name for the generated apparent sky model.
+    output_true_sky : str or Path
+        Output file name for the generated true sky model.
+    beam_ms : str or Path, optional
+        The filename of the MS for deriving the beam attenuation.
+    source_finder : str, optional
+        The source finder to use, either "sofia" or "bdsf". Defaults to "bdsf".
+    **kws
+        Additional keyword arguments to pass to the source finder function.
+
+    """
+
+    runners = {"bdsf": filter_skymodel_bdsf, "sofia": filter_skymodel_sofia}
+    source_finder = resolve_source_finder(source_finder)
+    runner = runners[source_finder]
+
+    runner(
+        flat_noise_image,
+        true_sky_image,
+        input_skymodel,
+        output_apparent_sky,
+        output_true_sky,
+        beam_ms=beam_ms,
+        **kws,
+    )
+
+
+def resolve_source_finder(name, fallback="bdsf", emit=logger.warning):
+    """Inspects the image configuration to resolve which source finder to use
+    for sky model filtering.
+
+    Checks the 'source_finder' parameter in the image configuration. If the
+    parameter is valid, it is returned. If the parameter is invalid or missing,
+    a warning is logged, and the fallback value is returned.
+
+    Parameters
+    ----------
+    name : str
+        Name of the source finder to use.
+    fallback : str
+        Name of the source finder to use by default.
+    emit : callable
+        Function that controls how messages are produced from the function on
+        invalid input. By default this logs a warning using the .
+
+    Returns
+    -------
+    str
+        The resolved source finder ('sofia', 'bdsf', or 'off').
+    """
+    source_finder = name.lower()
+    valid = {"sofia", "bdsf"}
+    if source_finder in valid:
+        return source_finder
+
+    if source_finder is None:
+        emit(
+            "'source_finder' parameter should be specified when "
+            "'filter_skymodel' is `True`. Defaulting to %r.",
+            fallback,
+        )
+        return fallback
+
+    emit(
+        "%r not a valid value of 'source_finder'. Valid options are %s. "
+        "Falling back to the default algorithm: %r.",
+        source_finder,
+        valid,
+        fallback,
+    )
+    return fallback
 
 
 def filter_skymodel_bdsf(
