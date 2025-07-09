@@ -1,3 +1,4 @@
+import contextlib as ctx
 import os
 import pickle
 from pathlib import Path
@@ -8,7 +9,6 @@ import pytest
 from conftest import TEST_DATA_PATH
 
 from lsmtool.io import (
-    TRIAL_TMP_PATHS,
     _restore_tmpdir,
     _set_tmpdir,
     read_vertices_ra_dec,
@@ -17,48 +17,48 @@ from lsmtool.io import (
 
 
 @pytest.mark.parametrize(
-    "trial_paths, expected_tmpdir",
+    "trial_paths, expected_tmpdir, context",
     [
-        pytest.param(["/tmp"], "/tmp", id="path_tmp"),
-        pytest.param(["/var/tmp", "/tmp"], "/var/tmp", id="path_var_tmp"),
+        # Nominal test cases
+        pytest.param(["/tmp"], "/tmp", None, id="path_tmp"),
+        pytest.param(
+            ["/var/tmp", "/tmp"], "/var/tmp", None, id="path_var_tmp"
+        ),
         pytest.param(
             ["/usr/tmp", "/var/tmp", "/tmp"],
             "/usr/tmp" if Path("/usr/tmp").exists() else "/var/tmp",
+            None,
             id="path_usr_tmp",
+        ),
+        # Error test cases
+        pytest.param(
+            None,
+            None,
+            pytest.raises(NotADirectoryError),
+            id="invalid_trial_paths_none",
+        ),
+        pytest.param(
+            [],
+            [],
+            pytest.raises(NotADirectoryError),
+            id="invalid_trial_paths_empty",
         ),
     ],
 )
-@patch("lsmtool.io._set_tmpdir", wraps=_set_tmpdir)
 @patch("lsmtool.io._restore_tmpdir", wraps=_restore_tmpdir)
+@patch("lsmtool.io._set_tmpdir", wraps=_set_tmpdir)
 def test_temp_storage(
-    mock_restore_tmpdir,
-    mock_set_tmpdir,
-    trial_paths,
-    expected_tmpdir,
+    mock_set_tmpdir, mock_restore_tmpdir, trial_paths, expected_tmpdir, context
 ):
     """Test the temp_storage context manager."""
 
     # Act
-    with temp_storage(trial_paths):
-        assert os.environ["TMPDIR"] == expected_tmpdir
+    with context or ctx.nullcontext():
+        with temp_storage(trial_paths):
+            assert os.environ["TMPDIR"] == expected_tmpdir
 
     # Assert
     mock_set_tmpdir.assert_called_once_with(trial_paths)
-    mock_restore_tmpdir.assert_called_once()
-
-
-@patch("lsmtool.io._set_tmpdir", side_effect=ValueError("tmpdir error"))
-@patch("lsmtool.io._restore_tmpdir", wraps=_restore_tmpdir)
-def test_temp_storage_set_tmpdir_error(mock_restore_tmpdir, mock_set_tmpdir):
-    """Test temp_storage when _set_tmpdir raises an error."""
-
-    # Act
-    with pytest.raises(ValueError, match="tmpdir error"):
-        with temp_storage():
-            pass
-
-    # Assert
-    mock_set_tmpdir.assert_called_once_with(TRIAL_TMP_PATHS)
     mock_restore_tmpdir.assert_called_once()
 
 
@@ -90,7 +90,7 @@ def test_read_vertices_ra_dec(filename):
 
 def test_read_vertices_invalid(tmp_path):
     """Test reading vertices from pickle file."""
-    path = tmp_path / "test_read_vertives_invalid.pkl"
+    path = tmp_path / "test_read_vertices_invalid.pkl"
     with path.open("wb") as file:
         pickle.dump("Invalid content", file)
 

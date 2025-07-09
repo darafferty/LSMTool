@@ -45,10 +45,15 @@ def temp_storage(trial_paths=TRIAL_TMP_PATHS):
 
 def _set_tmpdir(trial_paths=TRIAL_TMP_PATHS):
     """Sets a temporary directory to avoid path length issues."""
+    trial_paths = trial_paths or []
     for tmpdir in trial_paths:
         if Path(tmpdir).exists():
             os.environ["TMPDIR"] = tmpdir
-            break
+            return
+
+    raise NotADirectoryError(
+        f"None of the trial paths exist: {', '.join(trial_paths)}."
+    )
 
 
 def _restore_tmpdir():
