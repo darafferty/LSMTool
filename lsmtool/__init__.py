@@ -26,7 +26,4 @@ SkyModel object.
 from . import _logging as logger
 from .io import load
 
-
-logger.setLevel('info')
-
-
+logger.setLevel("info")
