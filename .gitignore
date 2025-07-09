@@ -72,3 +72,4 @@ wheelhouse/
 
 # Downloaded test data
 tests/resources/LOFAR_HBA_MOCK.ms
+tests/resources/WSRT_Measures*

@@ -3,14 +3,68 @@ Configuration for python tests.
 """
 
 import shutil
+import tarfile
+import urllib.request
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 import lsmtool
 
 TEST_PATH = Path(__file__).parent
 TEST_DATA_PATH = TEST_PATH / "resources"
+
+
+@pytest.fixture
+def wsrt_test_ms(tmp_path):
+    """Uncompresses test_midbands.ms into a temporary directory."""
+    ms_name = "test_midbands.ms"
+    untar(TEST_DATA_PATH / f"{ms_name}.tgz", tmp_path)
+    return tmp_path / ms_name
+
+
+def get_wsrt_measures():
+    """
+    Downloads and extracts WSRT measurement set if it does not exist locally.
+    """
+    measures_path = Path(TEST_DATA_PATH / "WSRT_Measures")
+    if not measures_path.exists():
+        print(f"Downloading WSRT measures to {measures_path}.")
+        measures_path.mkdir()
+        measures_tar = measures_path.with_suffix(".ztar")
+        urllib.request.urlretrieve(
+            f"https://www.astron.nl/iers/{measures_tar.name}",
+            str(measures_tar),
+        )
+
+        # Extract the measurement set and delete compressed archive.
+        untar(measures_tar, remove_archive=True)
+
+    yield
+
+
+def untar(filename, destination=None, remove_archive=False):
+    """
+    Uncompress the measurement set in the tgz file.
+
+    Args:
+        filename: Name of the tar file.
+        destination: Path to extract the tar file to.
+    """
+
+    path = _check_file_exists(filename)
+
+    # Default output folder in the same as input folder
+    destination = destination or path.parent / path.stem
+
+    # Uncompress the tgz file.
+    with tarfile.open(path, "r:gz") as file:
+        file.extractall(destination)
+
+    # Remove the compressed archive if requested
+    if remove_archive:
+        path.unlink()
 
 
 def assert_skymodels_are_equal(
@@ -70,7 +124,8 @@ def _check_file_exists(path):
     if not path.is_absolute():
         path = TEST_DATA_PATH / path
 
-    if not path.is_file():
+    if not path.exists() or not path.is_file():
+        # Fails if the path does not exits or is not a file.
         raise FileNotFoundError(f"Not able to find file: '{path}'.")
 
     return path
