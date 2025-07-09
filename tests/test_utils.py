@@ -14,6 +14,7 @@ from lsmtool.skymodel import SkyModel
 from lsmtool.utils import (
     format_coordinates,
     rasterize,
+    rotation_matrix_2d,
     table_to_array,
     transfer_patches,
 )
@@ -148,6 +149,34 @@ def test_rasterize_nominal(verts, data_shape, blank_value, expected_array):
 
     # Assert
     assert np.all(result == expected_array)
+
+
+@pytest.mark.parametrize(
+    "theta, expected_matrix",
+    [
+        pytest.param(0, [[1, 0], [0, 1]], id="zero"),
+        pytest.param(np.pi / 2, [[0, -1], [1, 0]], id="pi_over_2"),
+        pytest.param(np.pi, [[-1, 0], [0, -1]], id="pi"),
+        pytest.param(-np.pi / 2, [[0, 1], [-1, 0]], id="minus_pi_over_2"),
+        pytest.param(2 * np.pi, [[1, 0], [0, 1]], id="two_pi"),
+        pytest.param(
+            np.pi / 4,
+            [
+                [np.sqrt(2) / 2, -np.sqrt(2) / 2],
+                [np.sqrt(2) / 2, np.sqrt(2) / 2],
+            ],
+            id="pi_over_4",
+        ),
+    ],
+)
+def test_rotation_matrix_2d(theta, expected_matrix):
+    """Test cases for valid theta values."""
+
+    # Act
+    result = rotation_matrix_2d(theta)
+
+    # Assert
+    np.testing.assert_allclose(result, expected_matrix, atol=1e-12)
 
 
 @pytest.mark.parametrize(
