@@ -48,9 +48,12 @@ def untar(filename, destination=None, remove_archive=False):
     """
     Uncompress the measurement set in the tgz file.
 
-    Args:
-        filename: Name of the tar file.
-        destination: Path to extract the tar file to.
+    Parameters
+    ----------
+    filename:  str or Path
+        Name of the tar file.
+    destination:  str or Path
+        Path to extract the tar file to.
     """
 
     path = _check_file_exists(filename)
@@ -76,10 +79,14 @@ def assert_skymodels_are_equal(
     This function loads two skymodels and compares their contents, ignoring
     comments since they contain log messages which vary depending on run time.
 
-    Args:
-        left_filename (str): Path to the first skymodel file.
-        right_filename (str): Path to the second skymodel file.
-        check_patch_names_sizes (bool): Whether to check patch names and sizes.
+    Parameters
+    ----------
+    left_filename : str or Path
+        Path to the first skymodel file.
+    right_filename : str or Path
+        Path to the second skymodel file.
+    check_patch_names_sizes : bool
+        Whether to check patch names and sizes.
     """
     left = lsmtool.load(str(left_filename))
     right = lsmtool.load(str(right_filename))

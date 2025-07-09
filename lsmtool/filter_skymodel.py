@@ -1,10 +1,13 @@
 """
 Script to filter and group a sky model with an image.
-"""
 
-# This file was originally copied from the Rapthor repository:
-# https://git.astron.nl/RD/rapthor/-/blob/
-# 544ddf8cff8e65c5686b23479e227a12e6d1ed4f/rapthor/scripts/filter_skymodel.py
+This file was originally copied from the Rapthor repository:
+https://git.astron.nl/RD/rapthor/-/blob/544ddf/rapthor/scripts/filter_skymodel.py
+
+Also includes substantial changes introduced in the SKA self calibration
+pipeline at
+https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/filter_skymodel.py
+"""
 
 import logging
 import os
@@ -52,7 +55,8 @@ def filter_skymodel(
     source_finder="bdsf",
     **kws,
 ):
-    """Filters a sky model based on a source finder.
+    """
+    Filters a sky model based on a source finder.
 
     This function filters a sky model using either SoFiA-2 or PyBDSF,
     based on the `source_finder` parameter.  It applies the chosen
@@ -104,7 +108,8 @@ def filter_skymodel(
 
 
 def resolve_source_finder(name, fallback="bdsf", emit=logger.warning):
-    """Inspects the image configuration to resolve which source finder to use
+    """
+    Inspects the image configuration to resolve which source finder to use
     for sky model filtering.
 
     Checks the 'source_finder' parameter in the image configuration. If the
@@ -337,11 +342,8 @@ def _bdsf_process_images(
         slow down this function significantly.
     output_true_rms: str, optional
         The filename for the true sky RMS image. If empty, do not create it.
-    
     **config
         Additional keyword arguments passed to the bdsf.process_image call.
-        Includes output_catalog, output_true_rms, output_flat_noise_rms, and
-        config.
     """
 
     # Run PyBDSF first on the true-sky image to determine its properties and
@@ -402,7 +404,8 @@ def _bdsf_filter_sources(
     output_true_sky,
     output_apparent_sky,
 ):
-    """Filter and group sources based on a mask and other criteria.
+    """
+    Filter and group sources based on a mask and other criteria.
 
     This function filters the input sky model based on a mask
     generated from the true sky image. It also handles adding
@@ -468,7 +471,8 @@ def _bdsf_filter_sources(
 
 
 def _bdsf_trim_mask(mask_file, vertices_file):
-    """Trim the mask file to the given vertices.
+    """
+    Trim the mask file to the given vertices.
 
     This function opens the mask file, creates a polygon from the vertices
     using the file's WCS, rasterizes the polygon, and overwrites the
@@ -489,10 +493,11 @@ def _bdsf_trim_mask(mask_file, vertices_file):
 
 
 def _bdsf_create_polygon(wcs, vertices):
-    """Create a polygon from vertices in world coordinates.
+    """
+    Create a polygon from vertices in world coordinates.
 
-    This function reads vertices from a file, converts them to pixel
-    coordinates using the provided WCS, and returns them as a list of tuples.
+    This function converts vertices to pixel coordinates using the
+    provided WCS, and returns them as a list of tuples.
 
     Args:
         wcs (astropy.wcs.WCS):
@@ -807,7 +812,8 @@ def _sofia_get_source_parameters(image_header, catalog_table):
 
 
 def _sofia_get_source_fwhm(image_header, catalog_table, orientations):
-    """Compute the Full-Width Half-Maximum (FWHM) parameters for the detected
+    """
+    Compute the Full-Width Half-Maximum (FWHM) parameters for the detected
     sources in arcseconds.
 
     SoFiA-2 computes the full major and minor axes of the source ellipses
@@ -865,7 +871,8 @@ def _sofia_get_source_fwhm(image_header, catalog_table, orientations):
 
 
 def get_corrected_gaussian_orientations(image_header, catalog_table):
-    """Corrects Gaussian orientations to be absolute.
+    """
+    Corrects Gaussian orientations to be absolute.
 
     Applies a correction to the Gaussian orientations obtained from SoFiA-2
     to ensure they are defined with respect to the North Celestial Pole (NCP),
@@ -910,7 +917,8 @@ def get_corrected_gaussian_orientations(image_header, catalog_table):
 
 
 def _sofia_write_skymodel(output_true_sky, catalog_table, source_parameters):
-    """Writes the source catalog to a file, ensuring that it adheres to the BBS
+    """
+    Writes the source catalog to a file, ensuring that it adheres to the BBS
     format expected by downstream toolchain (wsclean, dp3).
 
     Constructs an astropy Table with the necessary columns for the BBS format
