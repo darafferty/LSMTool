@@ -6,12 +6,16 @@ import sys
 
 import numpy as np
 import pytest
+from astropy.coordinates import SkyCoord
 from astropy.table import Table
+from conftest import TEST_DATA_PATH
 
+from lsmtool.skymodel import SkyModel
 from lsmtool.utils import (
     format_coordinates,
     rasterize,
     table_to_array,
+    transfer_patches,
 )
 
 
@@ -182,3 +186,77 @@ def test_table_to_array(table_data, dtype, expected_shape, expected_dtype):
     assert result.shape == expected_shape
     assert result.dtype == expected_dtype
     assert np.all(result == expected_result)
+
+
+def test_transfer_patches():
+    # Arrange
+    from_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_from.sky"))
+    to_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_to.sky"))
+
+    # Act
+    transfer_patches(from_skymodel, to_skymodel)
+
+    # Assert
+    expected_patches = np.char.add(["Patch"], np.arange(1, 7).astype(str))
+    assert all(to_skymodel.table["Patch"] == expected_patches)
+
+
+def test_transfer_patches_no_patches():
+    # Arrange
+    from_skymodel = SkyModel(str(TEST_DATA_PATH / "no_patches.sky"))
+    to_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_to.sky"))
+
+    # Act & Assert
+    with pytest.raises(
+        ValueError,
+        match="Cannot transfer patches since from_skymodel is not grouped into"
+        " patches.",
+    ):
+        transfer_patches(from_skymodel, to_skymodel)
+
+
+def test_transfer_patches_non_matching_skymodels():
+    # Arrange
+    from_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_from.sky"))
+    to_skymodel = SkyModel(
+        str(TEST_DATA_PATH / "transfer_patches_no_overlap.sky")
+    )
+
+    # Act & Assert
+    with pytest.raises(
+        ValueError,
+        match="Cannot transfer patches since neither sky model is a subset of "
+        "the other.",
+    ):
+        transfer_patches(from_skymodel, to_skymodel)
+
+
+def test_transfer_patches_with_patch_dict():
+    # Arrange
+    from_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_from.sky"))
+    to_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_to.sky"))
+
+    patch_dict = {
+        "Patch1": ["17:23:39.8208", "52.36.48.8520"],
+        "Patch2": ["17:20:06.5856", "52.34.22.6200"],
+        "Patch3": ["17:17:20.3688", "52.29.08.7000"],
+        "Patch4": ["17:17:08.5320", "52.29.09.8520"],
+        "Patch5": ["17:42:37.3608", "54.11.24.1080"],
+        "Patch6": ["17:41:21.3432", "54.43.53.1480"],
+    }
+
+    # Act
+    transfer_patches(from_skymodel, to_skymodel, patch_dict=patch_dict)
+
+    # Assert
+    expected_patches = list(patch_dict.keys())
+    assert np.all(to_skymodel.table["Patch"] == expected_patches)
+
+    # Get the patch positions from the sky model
+    pos = to_skymodel.getPatchPositions()
+    coords = SkyCoord(list(pos.values()))
+    ra = coords.ra.to_string("hourangle", sep=":", precision=4)
+    dec = coords.dec.to_string(sep=".", precision=4)
+    # Check that the patch positions match
+    ra_in, dec_in = zip(*patch_dict.values())
+    assert np.all([ra.ravel() == ra_in, dec.ravel() == dec_in])
