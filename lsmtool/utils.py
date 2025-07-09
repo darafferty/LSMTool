@@ -98,14 +98,27 @@ def rasterize(verts, data, blank_value=0):
 
 
 def rotation_matrix_2d(theta):
-    """Rotation matrix."""
+    """Returns a 2D rotation matrix.
+
+    This function calculates and returns a 2x2 rotation matrix
+    for a given angle theta (in radians).
+
+    Parameters
+    ----------
+    theta: float or np.ndarray
+        The angle of rotation in radians.
+
+    Returns:
+        A 2x2 NumPy array representing the rotation matrix.
+    """
     cos = np.cos(theta)
     sin = np.sin(theta)
     return np.array([[cos, -sin], [sin, cos]])
 
 
 def table_to_array(table, dtype=float):
-    """Convert an astropy Table into a NumPy array.
+    """
+    Convert an astropy Table into a NumPy array.
 
     Converts a two-column astropy Table to a NumPy array of the specified
     dtype. This function assumes each row in the table has a uniform data type.
