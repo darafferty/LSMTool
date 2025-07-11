@@ -22,7 +22,6 @@ from astropy.io import fits as pyfits
 from astropy.table import Table
 from astropy.units import Quantity
 from astropy.wcs import WCS
-from astropy.units import Quantity
 
 from .correct_gaussian_orientation import compute_absolute_orientation
 from .io import load, read_vertices_ra_dec, temp_storage
@@ -43,6 +42,8 @@ PathLikeOptional = Union[PathLike, None]
 
 # conversion factor between sofia and makeshourcedb parameterisations
 FWHM_PER_SIGMA = 2 * np.sqrt(2 * np.log(2))
+
+KNOWN_SOURCE_FINDERS = {"sofia", "bdsf"}
 
 
 def filter_skymodel(
@@ -109,47 +110,58 @@ def filter_skymodel(
 
 def resolve_source_finder(name, fallback="bdsf", emit=logger.warning):
     """
-    Inspects the image configuration to resolve which source finder to use
-    for sky model filtering.
+    Resolve which source finder to use.
 
-    Checks the 'source_finder' parameter in the image configuration. If the
-    parameter is valid, it is returned. If the parameter is invalid or missing,
-    a warning is logged, and the fallback value is returned.
+    This function checks the given source finder name against valid options
+    ("sofia" or "bdsf"). If the name is invalid, it falls back to the
+    default algorithm and emits a warning message. Custom message handling is
+    possible by passing a callable as the `emit` parameter.
 
     Parameters
     ----------
-    name : str
-        Name of the source finder to use.
-    fallback : str
-        Name of the source finder to use by default.
-    emit : callable
-        Function that controls how messages are produced from the function on
-        invalid input. By default this logs a warning using the .
+    name : str or bool or None
+        The source finder name to resolve.  If True or "on", the fallback
+        is used.  If None, False, "off", or "none", None is returned. If an
+        invalid string is passed, this is reported by the `emit` function, and
+        the fallback value is returned (if emit does not raise an exception).
+    fallback : str, optional
+        The default source finder algorithm to use if the given name is
+        invalid. Defaults to "bdsf".
+    emit : callable, optional
+        The function to use for emitting messages. Defaults to
+        `logger.warning`.
 
     Returns
     -------
-    str
-        The resolved source finder ('sofia', 'bdsf', or 'off').
+    str or None
+        The resolved source finder name, or None if no source finder should
+        be used.
+
+    Raises
+    ------
+    TypeError
+        If the input `name` is not a string, boolean, or None.
     """
+
+    if name in {None, False, "off", "none"}:
+        return None
+
+    if name in {True, "on"}:
+        name = fallback
+
+    if not isinstance(name, str):
+        raise TypeError(f"Invalid source finder: {name!r}.")
+
     source_finder = name.lower()
-    valid = {"sofia", "bdsf"}
-    if source_finder in valid:
+    if source_finder in KNOWN_SOURCE_FINDERS:
         return source_finder
 
-    if source_finder is None:
-        emit(
-            "'source_finder' parameter should be specified when "
-            "'filter_skymodel' is `True`. Defaulting to %r.",
-            fallback,
-        )
-        return fallback
+    emit = emit or logger.warning
 
     emit(
-        "%r not a valid value of 'source_finder'. Valid options are %s. "
-        "Falling back to the default algorithm: %r.",
-        source_finder,
-        valid,
-        fallback,
+        f"{source_finder!r} is not a valid value for 'source_finder'. Valid "
+        f"options are {KNOWN_SOURCE_FINDERS}. Falling back to the default algorithm: "
+        f"{fallback!r}.",
     )
     return fallback
 

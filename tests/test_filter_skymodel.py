@@ -4,11 +4,73 @@ Tests for filtering sources from the skymodel based on source detection.
 
 import pytest
 from conftest import TEST_DATA_PATH, assert_skymodels_are_equal, copy_test_data
-
+import contextlib as ctx
 from lsmtool.filter_skymodel import (
     filter_skymodel_bdsf,
     filter_skymodel_sofia,
+    resolve_source_finder,
+    KNOWN_SOURCE_FINDERS,
 )
+import warnings
+
+
+class TestResolveSourceFinder:
+    null = ctx.nullcontext()
+
+    message = (
+        "'invalid' is not a valid value for 'source_finder'. Valid options are"
+        f" {KNOWN_SOURCE_FINDERS}. Falling back to the default algorithm: "
+        "'bdsf'."
+    )
+
+    def raises(exception):
+        def _raises(msg):
+            raise exception(msg)
+
+        return _raises
+
+    @pytest.mark.parametrize(
+        "name, fallback, expected, emit, context",
+        [
+            pytest.param("sofia", "", "sofia", None, null, id="sofia"),
+            pytest.param("bdsf", "", "bdsf", None, null, id="bdsf"),
+            pytest.param("SoFiA", "", "sofia", None, null, id="SoFiA"),
+            pytest.param("BDSF", "", "bdsf", None, null, id="BDSF"),
+            pytest.param("on", "bdsf", "bdsf", None, null, id="default"),
+            pytest.param(
+                True, "SoFiA", "sofia", None, null, id="fallback_sofia"
+            ),
+            pytest.param(
+                None, "bdsf", None, None, null, id="source_finder_off"
+            ),
+            pytest.param(
+                "invalid",
+                "bdsf",
+                "bdsf",
+                warnings.warn,
+                pytest.warns(UserWarning, match=message),
+                id="fallback_with_warning",
+            ),
+            pytest.param(
+                "invalid",
+                "bdsf",
+                "bdsf",
+                raises(ValueError),
+                pytest.raises(ValueError, match=message),
+                id="invalid_raises",
+            ),
+        ],
+    )
+    def test_resolve_source_finder(
+        self, name, fallback, expected, emit, context
+    ):
+
+        # Act
+        with context:
+            result = resolve_source_finder(name, fallback, emit)
+
+            # Assert
+            assert result == expected
 
 
 def get_image_paths(tmp_path, prefix):
