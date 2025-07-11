@@ -33,6 +33,11 @@ trigger_prepare:
 
 run_lint:
   stage: lint
+  before_script: &install_dependencies
+    # WCSLib is required for installing SoFiA which isn't distributed as a
+    # binary wheel
+    - apt-get update -y
+    - apt install wcslib-dev -y
   script:
     - tox -e lint
   allow_failure: true
@@ -40,8 +45,7 @@ run_lint:
 # Basic setup for all Python versions for which we don't have a base image
 .run_unit_test_version_base:
   before_script:
-    - apt-get update -y
-    - apt install wcslib-dev -y
+    - *install_dependencies
     - python --version # For debugging
     - python -m pip install --upgrade pip
     - python -m pip install --upgrade tox twine
