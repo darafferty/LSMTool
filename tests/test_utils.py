@@ -266,12 +266,12 @@ def test_transfer_patches_with_patch_dict():
     to_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_to.sky"))
 
     patch_dict = {
-        "Patch1": ["17:23:39.8208", "52.36.48.8520"],
-        "Patch2": ["17:20:06.5856", "52.34.22.6200"],
-        "Patch3": ["17:17:20.3688", "52.29.08.7000"],
-        "Patch4": ["17:17:08.5320", "52.29.09.8520"],
-        "Patch5": ["17:42:37.3608", "54.11.24.1080"],
-        "Patch6": ["17:41:21.3432", "54.43.53.1480"],
+        "Patch1": ["17:23:39.8208", "+52.36.48.8520"],
+        "Patch2": ["17:20:06.5856", "+52.34.22.6200"],
+        "Patch3": ["17:17:20.3688", "+52.29.08.7000"],
+        "Patch4": ["17:17:08.5320", "+52.29.09.8520"],
+        "Patch5": ["17:42:37.3608", "+54.11.24.1080"],
+        "Patch6": ["17:41:21.3432", "+54.43.53.1480"],
     }
 
     # Act
@@ -284,8 +284,8 @@ def test_transfer_patches_with_patch_dict():
     # Get the patch positions from the sky model
     pos = to_skymodel.getPatchPositions()
     coords = SkyCoord(list(pos.values()))
-    ra = coords.ra.to_string("hourangle", sep=":", precision=4)
-    dec = coords.dec.to_string(sep=".", precision=4)
+    ra, dec = format_coordinates(coords.ra, coords.dec, precision=4)
+
     # Check that the patch positions match
     ra_in, dec_in = zip(*patch_dict.values())
     assert np.all([ra.ravel() == ra_in, dec.ravel() == dec_in])
