@@ -98,18 +98,21 @@ def rasterize(verts, data, blank_value=0):
 
 
 def rotation_matrix_2d(theta):
-    """Returns a 2D rotation matrix.
-
-    This function calculates and returns a 2x2 rotation matrix
-    for a given angle theta (in radians).
+    """
+    Computes the transformation matrix for rotating vectors with two spatial
+    dimensions by angle theta in radians.
 
     Parameters
     ----------
     theta: float or np.ndarray
-        The angle of rotation in radians.
+        The angle of rotation in radians. If theta is a number (float or int),
+        the resulting array will have shape (2, 2). If theta is a numpy array
+        of shape (n, m, ...), the resulting array will have dimensions
+        (2, 2, n, m, ...).
 
     Returns:
-        A 2x2 NumPy array representing the rotation matrix.
+        A NumPy array containing the rotation matrix (or matrices) along the
+        first two array dimensions.
     """
     cos = np.cos(theta)
     sin = np.sin(theta)

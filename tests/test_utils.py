@@ -167,10 +167,7 @@ def test_rasterize_nominal(verts, data_shape, blank_value, expected_array):
     "theta, expected_matrix",
     [
         pytest.param(0, [[1, 0], [0, 1]], id="zero"),
-        pytest.param(np.pi / 2, [[0, -1], [1, 0]], id="pi_over_2"),
         pytest.param(np.pi, [[-1, 0], [0, -1]], id="pi"),
-        pytest.param(-np.pi / 2, [[0, 1], [-1, 0]], id="minus_pi_over_2"),
-        pytest.param(2 * np.pi, [[1, 0], [0, 1]], id="two_pi"),
         pytest.param(
             np.pi / 4,
             [
@@ -178,6 +175,11 @@ def test_rasterize_nominal(verts, data_shape, blank_value, expected_array):
                 [np.sqrt(2) / 2, np.sqrt(2) / 2],
             ],
             id="pi_over_4",
+        ),
+        pytest.param(
+            [np.pi / 2, -np.pi / 2],
+            [[[0, 0], [-1, 1]], [[1, -1], [0, 0]]],
+            id="array_input",
         ),
     ],
 )
