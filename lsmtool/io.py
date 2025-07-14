@@ -137,10 +137,18 @@ def read_vertices_ra_dec(filename):
         A tuple containing two iterables: RA vertices and Dec vertices.
     """
     data = pickle.loads(Path(filename).read_bytes())
-    if len(data) != 2:
-        raise ValueError(
-            f"Unexpected number of data columns ({len(data)}) in file: "
-            f"{filename}. Expected vertices to be a sequence of 2-tuples for "
-            "RA and Dec coordinates."
-        )
-    return np.transpose(data)
+
+    if isinstance(data, list) and len(data) == 2:
+        ra, dec = data
+        if (
+            (type(ra) is type(dec) is np.ndarray)
+            and (ra.dtype == dec.dtype == "float64")
+            and ra.shape == dec.shape
+        ):
+            return np.transpose(data)
+
+    raise ValueError(
+        f"Unexpected number of data columns ({len(data)}) in file: "
+        f"{filename}. Expected vertices to be a sequence of 2-tuples for "
+        "RA and Dec coordinates."
+    )

@@ -88,11 +88,15 @@ def test_read_vertices_ra_dec(filename):
     assert np.allclose(verts, expected)
 
 
-def test_read_vertices_invalid(tmp_path):
+@pytest.mark.parametrize(
+    "contents", ["Invalid content", ["Invalid", "content"]]
+)
+def test_read_vertices_invalid(tmp_path, contents):
     """Test reading vertices from pickle file."""
     path = tmp_path / "test_read_vertices_invalid.pkl"
+    path.unlink(missing_ok=True)
     with path.open("wb") as file:
-        pickle.dump("Invalid content", file)
+        pickle.dump(contents, file)
 
     with pytest.raises(ValueError):
         read_vertices_ra_dec(path)
