@@ -148,7 +148,6 @@ def read_vertices_ra_dec(filename):
             return np.transpose(data)
 
     raise ValueError(
-        f"Unexpected number of data columns ({len(data)}) in file: "
-        f"{filename}. Expected vertices to be a sequence of 2-tuples for "
-        "RA and Dec coordinates."
+        f"Unexpected data in file: {filename}."
+        "Expected two equally-shaped arrays with RA and Dec coordinates."
     )
