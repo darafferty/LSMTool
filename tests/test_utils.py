@@ -2,8 +2,6 @@
 Test utility functions.
 """
 
-import sys
-
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
@@ -98,9 +96,6 @@ def test_format_coordinates_nominal(
             0,
             [[1, 0], [0, 1]],
             id="line",
-            marks=pytest.mark.skipif(
-                sys.version_info < (3, 9), reason="Fails in python<=3.8"
-            ),
         ),
         pytest.param(
             [(0, 0), (0, 1), (1, 1), (1, 0)],

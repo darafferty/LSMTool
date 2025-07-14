@@ -44,7 +44,8 @@ dependencies = [
     "pyvo",
     "scipy >= 0.11",
     "shapely",
-    "Pillow"
+    "Pillow <= 9.0; python_version < '3.9'",
+    "Pillow >= 11.1; python_version >= '3.9'"
 ]
 
 [dependency-groups]
