@@ -86,6 +86,23 @@ def test_format_coordinates_nominal(
     "verts, data_shape, blank_value, expected_array",
     [
         pytest.param(
+            [(0, 0), (0, 0), (0, 0)],
+            (2, 2),
+            0,
+            [[1, 0], [0, 0]],
+            id="point",
+        ),
+        pytest.param(
+            [(0, 0), (1, 1), (0, 0)],
+            (2, 2),
+            0,
+            [[1, 0], [0, 1]],
+            id="line",
+            marks=pytest.mark.skipif(
+                sys.version_info < (3, 9), reason="Fails in python<=3.8"
+            ),
+        ),
+        pytest.param(
             [(0, 0), (0, 1), (1, 1), (1, 0)],
             (4, 4),
             0,
@@ -122,21 +139,16 @@ def test_format_coordinates_nominal(
             id="triangle",
         ),
         pytest.param(
-            [(0, 0), (1, 1), (0, 0)],
-            (2, 2),
+            [(3.5, -0.5), (2.5, 1.5), (1.5, -0.5)],
+            (4, 4),
             0,
-            [[1, 0], [0, 1]],
-            id="line",
-            marks=pytest.mark.skipif(
-                sys.version_info < (3, 9), reason="Fails in python<=3.8"
-            ),
-        ),
-        pytest.param(
-            [(0, 0), (0, 0), (0, 0)],
-            (2, 2),
-            0,
-            [[1, 0], [0, 0]],
-            id="point",
+            [
+                [0, 0, 1, 1],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            id="float_data_off_image",
         ),
     ],
 )
