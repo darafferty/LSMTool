@@ -1,0 +1,3 @@
+FORMAT = Name, Type, Ra, Dec, I, Q, U, V, MajorAxis, MinorAxis, Orientation, ReferenceFrequency='147500000.0', SpectralIndex='[]'
+
+no_overlap, POINT, 12:53:56.76000000, -52.20.49.41600000, 2.5599, , , , , [-0.2648, -0.251]

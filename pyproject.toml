@@ -38,11 +38,14 @@ classifiers = [
 dependencies = [
     "astropy >= 3.2",
     "everybeam >= 0.6.1",
-    "matplotlib >= 0.99",
+    "matplotlib",
     "numpy",
     "python-casacore",
     "pyvo",
     "scipy >= 0.11",
+    "shapely",
+    "Pillow <= 9.0; python_version < '3.9'",
+    "Pillow >= 11.1; python_version >= '3.9'"
 ]
 
 [dependency-groups]
