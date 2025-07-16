@@ -208,7 +208,7 @@ class TestSofia:
         )
         assert_skymodels_are_equal(
             apparent_sky_path,
-            TEST_DATA_PATH / "expected_sofia.apparent_sky.txt",
+            TEST_DATA_PATH / "expected_sofia.true_sky.txt",
             check_patch_names_sizes=False,
         )
 
@@ -230,7 +230,7 @@ class TestSofia:
 
         assert_skymodels_are_equal(
             apparent_sky_path,
-            TEST_DATA_PATH / "expected_sofia.apparent_sky.txt",
+            TEST_DATA_PATH / "expected_sofia.true_sky.txt",
             check_patch_names_sizes=False,
         )
         assert_skymodels_are_equal(
