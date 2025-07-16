@@ -316,7 +316,7 @@ def filter_skymodel_bdsf(
 
 def _bdsf_parse_rmsbox(rmsbox):
     """Parses the rmsbox parameter."""
-    if rmsbox is not None and isinstance(rmsbox, str):
+    if isinstance(rmsbox, str):
         return literal_eval(rmsbox)
     return rmsbox
 
