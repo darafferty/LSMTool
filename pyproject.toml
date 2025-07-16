@@ -146,7 +146,7 @@ description = "run unit tests"
 deps = ["pytest", "coverage"]
 package = "editable"
 set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning" }
-commands = [["python", "--version"], ["python", "-m", "pytest", "tests/{posargs}"]]
+commands = [["python", "--version"], ["python", "-m", "pytest", { replace = "posargs", default = [], extend = true }]]
 
 # [tool.tox.env.fix]
 # description = "format the code base to adhere to our styles, and complain about what we cannot do automatically"
