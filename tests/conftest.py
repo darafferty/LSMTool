@@ -41,8 +41,6 @@ def get_wsrt_measures():
         # Extract the measurement set and delete compressed archive.
         untar(measures_tar, remove_archive=True)
 
-    yield
-
 
 def untar(filename, destination=None, remove_archive=False):
     """
