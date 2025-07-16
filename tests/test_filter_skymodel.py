@@ -6,7 +6,7 @@ import contextlib as ctx
 import warnings
 
 import pytest
-from conftest import TEST_DATA_PATH, assert_skymodels_are_equal, copy_test_data
+from conftest import TEST_DATA_PATH, copy_test_data
 
 from lsmtool.filter_skymodel import (
     KNOWN_SOURCE_FINDERS,
@@ -14,6 +14,7 @@ from lsmtool.filter_skymodel import (
     filter_skymodel_sofia,
     resolve_source_finder,
 )
+from lsmtool.testing import assert_skymodels_are_equal
 
 
 class TestResolveSourceFinder:

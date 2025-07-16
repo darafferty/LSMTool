@@ -5,6 +5,7 @@ Module for file read / write tasks.
 import contextlib as ctx
 import os
 import pickle
+import tarfile
 from pathlib import Path
 
 import numpy as np
@@ -18,7 +19,8 @@ TRIAL_TMP_PATHS = ("/tmp", "/var/tmp", "/usr/tmp")
 
 @ctx.contextmanager
 def temp_storage(trial_paths=TRIAL_TMP_PATHS):
-    """Context manager for setting a temporary storage path.
+    """
+    Context manager for setting a temporary storage path.
 
     This context manager attempts to set the TMPDIR environment variable
     to a short path to avoid issues with path length limitations,
@@ -60,6 +62,72 @@ def _restore_tmpdir():
     """Restores the original temporary directory."""
     if ORIGINAL_TMPDIR is not None:
         os.environ["TMPDIR"] = ORIGINAL_TMPDIR
+
+
+def check_file_exists(path):
+    """
+    Check if a file exists at the given path.
+
+    This function checks if a file exists at the specified path. It raises
+    exceptions if the path is not a string or Path object, or if the file
+    does not exist.
+
+    Parameters
+    ----------
+    path : str or Path
+        The path to the file.
+
+    Returns
+    -------
+    Path
+        The path to the file.
+
+    Raises
+    ------
+    TypeError
+        If the input path is not a string or Path object.
+    FileNotFoundError
+        If the file does not exist at the given path.
+    """
+
+    if not isinstance(path, (str, Path)):
+        raise TypeError(
+            f"Object of type {type(path).__name__} cannot be interpreted as a "
+            "system path."
+        )
+
+    path = Path(path)
+    if not path.exists() or not path.is_file():
+        # Fails if the path does not exits or is not a file.
+        raise FileNotFoundError(f"Not able to find file: '{path}'.")
+
+    return path
+
+
+def untar(filename, destination=None, remove_archive=False):
+    """
+    Uncompress the measurement set in the tgz file.
+
+    Parameters
+    ----------
+    filename:  str or Path
+        Name of the tar file.
+    destination:  str or Path
+        Path to extract the tar file to.
+    """
+
+    path = check_file_exists(filename)
+
+    # Default output folder is the same as the input folder.
+    destination = destination or path.parent / path.stem
+
+    # Uncompress the tgz file.
+    with tarfile.open(path, "r:gz") as file:
+        file.extractall(destination)
+
+    # Remove the compressed archive if requested
+    if remove_archive:
+        path.unlink()
 
 
 def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
