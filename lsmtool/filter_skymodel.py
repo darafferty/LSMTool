@@ -108,7 +108,7 @@ def filter_skymodel(
     )
 
 
-def resolve_source_finder(name, fallback="bdsf", emit=logger.warning):
+def resolve_source_finder(name, fallback="bdsf"):
     """
     Resolve which source finder to use.
 
@@ -127,9 +127,6 @@ def resolve_source_finder(name, fallback="bdsf", emit=logger.warning):
     fallback : str, optional
         The default source finder algorithm to use if the given name is
         invalid. Defaults to "bdsf".
-    emit : callable, optional
-        The function to use for emitting messages. Defaults to
-        `logger.warning`.
 
     Returns
     -------
@@ -139,8 +136,9 @@ def resolve_source_finder(name, fallback="bdsf", emit=logger.warning):
 
     Raises
     ------
-    TypeError
-        If the input `name` is not a string, boolean, or None.
+    ValueError
+        If the input `name` is not boolean, or None, or not a string matching
+        one of the known source finders.
     """
 
     if name in {None, False, "off", "none"}:
@@ -149,21 +147,15 @@ def resolve_source_finder(name, fallback="bdsf", emit=logger.warning):
     if name in {True, "on"}:
         name = fallback
 
-    if not isinstance(name, str):
-        raise TypeError(f"Invalid source finder: {name!r}.")
+    if isinstance(name, str):
+        source_finder = name.lower()
+        if source_finder in KNOWN_SOURCE_FINDERS:
+            return source_finder
 
-    source_finder = name.lower()
-    if source_finder in KNOWN_SOURCE_FINDERS:
-        return source_finder
-
-    emit = emit or logger.warning
-
-    emit(
-        f"{source_finder!r} is not a valid value for 'source_finder'. Valid "
-        f"options are {KNOWN_SOURCE_FINDERS}. Falling back to the default algorithm: "
-        f"{fallback!r}.",
+    raise ValueError(
+        f"{name!r} is not a valid value for 'source_finder'. Valid "
+        f"options are {KNOWN_SOURCE_FINDERS}."
     )
-    return fallback
 
 
 def filter_skymodel_bdsf(

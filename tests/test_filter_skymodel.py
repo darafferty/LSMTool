@@ -3,12 +3,11 @@ Tests for filtering sources from the skymodel based on source detection.
 """
 
 import contextlib as ctx
-import warnings
 
 import pytest
 from conftest import TEST_DATA_PATH, copy_test_data
 
-from lsmtool.filter_skymodel import (
+from lsmtool.filter_skymodel.bdsf import (
     KNOWN_SOURCE_FINDERS,
     filter_skymodel_bdsf,
     filter_skymodel_sofia,
@@ -22,55 +21,33 @@ class TestResolveSourceFinder:
 
     message = (
         "'invalid' is not a valid value for 'source_finder'. Valid options are"
-        f" {KNOWN_SOURCE_FINDERS}. Falling back to the default algorithm: "
-        "'bdsf'."
+        f" {KNOWN_SOURCE_FINDERS}."
     )
 
-    def raises(exception):
-        def _raises(msg):
-            raise exception(msg)
-
-        return _raises
-
     @pytest.mark.parametrize(
-        "name, fallback, expected, emit, context",
+        "name, fallback, expected, context",
         [
-            pytest.param("sofia", "", "sofia", None, null, id="sofia"),
-            pytest.param("bdsf", "", "bdsf", None, null, id="bdsf"),
-            pytest.param("SoFiA", "", "sofia", None, null, id="SoFiA"),
-            pytest.param("BDSF", "", "bdsf", None, null, id="BDSF"),
-            pytest.param("on", "bdsf", "bdsf", None, null, id="default"),
-            pytest.param(
-                True, "SoFiA", "sofia", None, null, id="fallback_sofia"
-            ),
-            pytest.param(
-                None, "bdsf", None, None, null, id="source_finder_off"
-            ),
+            pytest.param("sofia", "", "sofia", null, id="sofia"),
+            pytest.param("bdsf", "", "bdsf", null, id="bdsf"),
+            pytest.param("SoFiA", "", "sofia", null, id="SoFiA"),
+            pytest.param("BDSF", "", "bdsf", null, id="BDSF"),
+            pytest.param("on", "bdsf", "bdsf", null, id="default"),
+            pytest.param(True, "SoFiA", "sofia", null, id="fallback_sofia"),
+            pytest.param(None, "bdsf", None, null, id="source_finder_off"),
             pytest.param(
                 "invalid",
                 "bdsf",
                 "bdsf",
-                warnings.warn,
-                pytest.warns(UserWarning, match=message),
-                id="fallback_with_warning",
-            ),
-            pytest.param(
-                "invalid",
-                "bdsf",
-                "bdsf",
-                raises(ValueError),
                 pytest.raises(ValueError, match=message),
                 id="invalid_raises",
             ),
         ],
     )
-    def test_resolve_source_finder(
-        self, name, fallback, expected, emit, context
-    ):
+    def test_resolve_source_finder(self, name, fallback, expected, context):
 
         # Act
         with context:
-            result = resolve_source_finder(name, fallback, emit)
+            result = resolve_source_finder(name, fallback)
 
             # Assert
             assert result == expected
