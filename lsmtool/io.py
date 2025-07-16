@@ -119,7 +119,7 @@ def untar(filename, destination=None, remove_archive=False):
     path = check_file_exists(filename)
 
     # Default output folder is the same as the input folder.
-    destination = destination or path.parent / path.stem
+    destination = destination or path.parent
 
     # Uncompress the tgz file.
     with tarfile.open(path, "r:gz") as file:
