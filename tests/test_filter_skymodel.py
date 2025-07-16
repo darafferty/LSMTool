@@ -7,11 +7,11 @@ import contextlib as ctx
 import pytest
 from conftest import TEST_DATA_PATH, copy_test_data
 
-from lsmtool.filter_skymodel.bdsf import (
+from lsmtool.filter_skymodel import (
     KNOWN_SOURCE_FINDERS,
-    filter_skymodel_bdsf,
-    filter_skymodel_sofia,
+    bdsf,
     resolve_source_finder,
+    sofia,
 )
 from lsmtool.testing import assert_skymodels_are_equal
 
@@ -21,7 +21,7 @@ class TestResolveSourceFinder:
 
     message = (
         "'invalid' is not a valid value for 'source_finder'. Valid options are"
-        f" {KNOWN_SOURCE_FINDERS}."
+        f" {set(KNOWN_SOURCE_FINDERS.keys())}."
     )
 
     @pytest.mark.parametrize(
@@ -91,7 +91,7 @@ class TestBDSF:
 
         image_path, true_sky_path, apparent_sky_path, beam_ms = image_paths
 
-        filter_skymodel_bdsf(
+        bdsf.filter_skymodel(
             image_path,
             image_path,
             TEST_DATA_PATH / "sector_1-sources-pb.txt",
@@ -128,7 +128,7 @@ class TestBDSF:
 
         image_path, true_sky_path, apparent_sky_path, beam_ms = image_paths
 
-        filter_skymodel_bdsf(
+        bdsf.filter_skymodel(
             image_path,
             image_path,
             "sector_1-sources-pb.txt",
@@ -167,7 +167,7 @@ class TestSofia:
 
         # When supplying a single (flat noise) image, the generated apparent
         # and true skymodels should be equal.
-        filter_skymodel_sofia(
+        sofia.filter_skymodel(
             image_name,
             None,
             apparent_sky_path,
@@ -194,7 +194,7 @@ class TestSofia:
         image_name, true_sky_path, apparent_sky_path = image_paths
 
         # Run with the true sky image
-        filter_skymodel_sofia(
+        sofia.filter_skymodel(
             image_name,
             image_name,
             apparent_sky_path,
