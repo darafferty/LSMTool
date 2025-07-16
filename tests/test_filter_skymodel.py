@@ -2,16 +2,18 @@
 Tests for filtering sources from the skymodel based on source detection.
 """
 
+import contextlib as ctx
+import warnings
+
 import pytest
 from conftest import TEST_DATA_PATH, assert_skymodels_are_equal, copy_test_data
-import contextlib as ctx
+
 from lsmtool.filter_skymodel import (
+    KNOWN_SOURCE_FINDERS,
     filter_skymodel_bdsf,
     filter_skymodel_sofia,
     resolve_source_finder,
-    KNOWN_SOURCE_FINDERS,
 )
-import warnings
 
 
 class TestResolveSourceFinder:
@@ -164,11 +166,11 @@ class TestBDSF:
         assert true_sky_path.exists()
 
         assert_skymodels_are_equal(
-            true_sky_path, TEST_DATA_PATH / "empty.skymodel"
+            true_sky_path, TEST_DATA_PATH / "single_point.sky"
         )
         assert_skymodels_are_equal(
             apparent_sky_path,
-            TEST_DATA_PATH / "empty.skymodel",
+            TEST_DATA_PATH / "single_point.sky",
         )
 
 
