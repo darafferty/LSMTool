@@ -56,7 +56,7 @@ def untar(filename, destination=None, remove_archive=False):
 
     path = _check_file_exists(filename)
 
-    # Default output folder in the same as input folder
+    # Default output folder is the same as the input folder.
     destination = destination or path.parent / path.stem
 
     # Uncompress the tgz file.
