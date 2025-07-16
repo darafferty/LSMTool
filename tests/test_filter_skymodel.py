@@ -92,9 +92,9 @@ class TestBDSF:
     """Test skymodel filtering with pybdsf."""
 
     @pytest.fixture()
-    def image_paths(self, tmp_path, wsrt_test_ms):
+    def image_paths(self, tmp_path, midband_ms):
         """Image paths for testing."""
-        return *get_image_paths(tmp_path, "output_bdsf"), wsrt_test_ms
+        return *get_image_paths(tmp_path, "output_bdsf"), midband_ms
 
     @pytest.fixture()
     def diagnostic_paths(self, tmp_path):
