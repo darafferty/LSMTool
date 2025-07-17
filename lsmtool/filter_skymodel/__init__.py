@@ -53,23 +53,47 @@ def filter_skymodel(
         Filename of input image to use to detect sources for filtering.
         It should be a flat-noise / apparent sky image (without primary-beam
         correction).
-    true_sky_image : str or Path, optional
+    true_sky_image : str or Path or None
         Filename of input image to use to determine the true flux of sources.
         It should be a true flux image (with primary-beam correction).
-        If beam_ms is not empty, this argument must be supplied. Otherwise,
-        filter_skymodel ignores it and uses the flat_noise_image instead.
-    input_skymodel : str or Path
-        Filename of input makesourcedb sky model.
-        If beam_ms is empty, it should be an apparent sky model, without
+        - If `beam_ms` is given and exists, this parameter is ignored and
+        the `flat_noise_image` is used instead.
+        - If beam_ms is None or an empty string, this argument must be
+        supplied.
+    input_true_skymodel : str or Path or None
+        Filename of input makesourcedb sky model, with primary-beam correction.
+        - If this file does not exist, and `input_bright_skymodel` exists,
+        `input_bright_skymodel` will be used as the `input_true_skymodel`.
+        - If this file does not exist, and the `input_bright_skymodel` does not
+        exist, the steps related to the input sky model are skipped but all
+        other processing is still done.
+    input_apparent_skymodel : str or Path or None
+        Filename of input makesourcedb sky model, without primary-beam
+        correction.
+        - If this file exists, and input_true_skymodel exists, it is filtered
+        and grouped to match the sources and patches of the
+        `input_true_skymodel`.
+        - If this file does not exist, and `input_true_skymodel` exists, it is
+        generated from the `input_true_skymodel` by applying the beam
+        attenuation. In this case, if `beam_ms` is not given, or is None, the
+        generated `output_apparent_sky` will be identical to the
+        `output_true_sky` files.
+        - If `input_apparent_skymodel` does not exist, and neither
+        `input_true_skymodel` nor `input_bright_skymodel` exist, an exception
+        is raised.
+    output_apparent_sky: str or Path or None
+        Output file name for the generated apparent sky model, without
         primary-beam correction.
-        If beam_ms is not empty, it should be a true sky model, with
-        primary-beam correction.
-    output_apparent_sky : str or Path
-        Output file name for the generated apparent sky model.
+        - If this file exists, it will be overwritten.
     output_true_sky : str or Path
-        Output file name for the generated true sky model.
-    beam_ms : str or Path, optional
-        The filename of the MS for deriving the beam attenuation.
+        Output file name for the generated true sky model, with
+        primary-beam correction.
+        - If this file exists, it will be overwritten.
+    beam_ms : str or Path or list of str or list of Path or None, default None
+        The filename of the MS for deriving the beam attenuation and
+        theoretical image noise.
+        - If None (the default), or an empty string, the generated
+        apparent and true sky models will be equal.
     source_finder : str, optional
         The source finder to use, either "sofia" or "bdsf". Defaults to "bdsf".
     **kws

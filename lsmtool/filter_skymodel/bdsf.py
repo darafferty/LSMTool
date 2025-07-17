@@ -1,12 +1,12 @@
 """
 Script to filter and group a sky model with an image.
 
-This file was originally copied from the Rapthor repository:
-https://git.astron.nl/RD/rapthor/-/blob/544ddf/rapthor/scripts/filter_skymodel.py
+This file was originally copied from the `Rapthor repository
+<https://git.astron.nl/RD/rapthor/-/blob/544ddf/rapthor/scripts/filter_skymodel.py>`_
 
-Also includes substantial changes introduced in the SKA self calibration
-pipeline at
-https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/filter_skymodel.py
+Also includes substantial changes introduced in the `SKA self calibration
+pipeline
+<https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/filter_skymodel.py>`_
 """
 
 import logging
@@ -70,80 +70,100 @@ def filter_skymodel(
     """
     Filters the input sky model using PyBDSF.
 
-    Note: If no islands of emission are detected in the input image, a
-    blank sky model is made. If any islands are detected in the input image,
-    filtered true-sky and apparent-sky models are made, as well as a FITS clean
-    mask (with the filename input_image+'.mask').
+    If no islands of emission are detected in the input image, a blank sky model
+    is made. If any islands are detected in the input image, filtered true-sky
+    and apparent-sky models are made, as well as a FITS clean mask (with the
+    filename input_image+'.mask').
 
     Parameters
     ----------
-    flat_noise_image : str
+    flat_noise_image : str or Path
         Filename of input image to use to detect sources for filtering.
         It should be a flat-noise / apparent sky image (without primary-beam
         correction).
-    true_sky_image : str, optional
+    true_sky_image : str or Path or None
         Filename of input image to use to determine the true flux of sources.
         It should be a true flux image (with primary-beam correction).
-        If beam_ms is not empty, this argument must be supplied. Otherwise,
-        filter_skymodel ignores it and uses the flat_noise_image instead.
-    input_skymodel : str
-        Filename of input makesourcedb sky model.
-        If beam_ms is empty, it should be an apparent sky model, without
-        primary-beam correction.
-        If beam_ms is not empty, it should be a true sky model, with
-        primary-beam correction.
-    output_apparent_sky: str
+        - If `beam_ms` is given and exists, this parameter is ignored and
+        the `flat_noise_image` is used instead.
+        - If beam_ms is None or an empty string, this argument must be
+        supplied.
+    input_true_skymodel : str or Path or None
+        Filename of input makesourcedb sky model, with primary-beam correction.
+        - If this file does not exist, and `input_bright_skymodel` exists,
+        `input_bright_skymodel` will be used as the `input_true_skymodel`.
+        - If this file does not exist, and the `input_bright_skymodel` does not
+        exist, the steps related to the input sky model are skipped but all
+        other processing is still done.
+    input_apparent_skymodel : str or Path or None
+        Filename of input makesourcedb sky model, without primary-beam
+        correction.
+        - If this file exists, and input_true_skymodel exists, it is filtered
+        and grouped to match the sources and patches of the
+        `input_true_skymodel`.
+        - If this file does not exist, and `input_true_skymodel` exists, it is
+        generated from the `input_true_skymodel` by applying the beam
+        attenuation. In this case, if `beam_ms` is not given, or is None, the
+        generated `output_apparent_sky` will be identical to the
+        `output_true_sky` files.
+        - If `input_apparent_skymodel` does not exist, and neither
+        `input_true_skymodel` nor `input_bright_skymodel` exist, an exception
+        is raised.
+    output_apparent_sky: str or Path or None
         Output file name for the generated apparent sky model, without
         primary-beam correction.
-    output_true_sky : str
+        - If this file exists, it will be overwritten.
+    output_true_sky : str or Path
         Output file name for the generated true sky model, with
         primary-beam correction.
-    vertices_file : str
+        - If this file exists, it will be overwritten.
+    vertices_file : str or Path
         Filename of file with vertices, which determine the imaging field.
-    beam_ms : str, optional
+    beam_ms : str or Path or list of str or list of Path or None, default None
         The filename of the MS for deriving the beam attenuation and
-        theoretical image noise. If empty, the generated apparent and true sky
-        models will be equal.
-    input_bright_skymodel : str, optional
-        Filename of input makesourcedb sky model of bright sources only.
-        If supplied, filter_skymodel adds the sources in this skymodel.
-        If beam_ms is empty, it should be an apparent sky model, without
+        theoretical image noise.
+        - If None (the default), or an empty string, the generated
+        apparent and true sky models will be equal.
+    input_bright_skymodel : str or Path, optional
+        Filename of input makesourcedb sky model of bright sources only. This
+        parameter can be used to add back bright sources to the sky model that
+        were peeled before imaging. This should be a true sky model, with
         primary-beam correction.
-        If beam_ms is not empty, it should be a true sky model, with
-        primary-beam correction.
-    thresh_isl : float, optional
-        Value of thresh_isl PyBDSF parameter
-    thresh_pix : float, optional
-        Value of thresh_pix PyBDSF parameter
-    rmsbox : tuple of floats, optional
-        Value of rms_box PyBDSF parameter
-    rmsbox_bright : tuple of floats, optional
-        Value of rms_box_bright PyBDSF parameter
-    adaptive_rmsbox : bool, optional
-        Value of adaptive_rms_box PyBDSF parameter
-    use_adaptive_threshold : bool, optional
-        If True, use an adaptive threshold estimated from the negative values
-        in the image
-    adaptive_thresh : float, optional
+        - If `input_true_skymodel` exists, sources in `input_bright_skymodel`
+        will be added to the sky model from `input_true_skymodel`.
+        - If `input_true_skymodel` is None, or an empty string, the
+        `input_bright_skymodel` will be used as the `input_true_skymodel`.
+
+    Other Parameters
+    ----------------
+    thresh_isl : float
+        Value of thresh_isl PyBDSF parameter.
+    thresh_pix : float
+        Value of thresh_pix PyBDSF parameter.
+    rmsbox : tuple of float
+        Value of rms_box PyBDSF parameter.
+    rmsbox_bright : tuple of float
+        Value of rms_box_bright PyBDSF parameter.
+    adaptive_rmsbox : bool
+        Value of adaptive_rms_box PyBDSF parameter.
+    adaptive_thresh : float
         If adaptive_rmsbox is True, this value sets the threshold above
-        which a source will use the small rms box
-    comparison_skymodel : str, optional
-        The filename of the sky model to use for flux scale and astrometry
-        comparisons
-    filter_by_mask : bool, optional
+        which a source will use the small rms box.
+    filter_by_mask : bool
         If True, filter the input sky model by the PyBDSF-derived mask,
-        removing sources that lie in unmasked regions
-    remove_negative : bool, optional
-        If True, remove negative sky model components
-    output_catalog: str, optional
-        The filename for source catalog. If empty, do not create it.
-    output_flat_noise_rms: str, optional
-        The filename for the flat noise RMS image. If empty, do not create it.
-        Creating this image may require an additional PyBDSF call and thereby
-        slow down this function significantly.
-    output_true_rms: str, optional
-        The filename for the true sky RMS image. If empty, do not create it.
-    ncores : int, optional
+        removing sources that lie in unmasked regions.
+    output_catalog: str or Path
+        The filename for source catalog. If not provied, (or None, or an empty
+        string), do not create it.
+    output_flat_noise_rms: str or Path
+        The filename for the flat noise RMS image. If not provied, (or None, or
+        an empty string), do not create it. Creating this image may require an
+        additional PyBDSF call and thereby slow down this function
+        significantly.
+    output_true_rms: str or Path
+        The filename for the true sky RMS image. If not provied, (or None, or
+        an empty string), do not create it.
+    ncores : int
         Specify the number of cores that BDSF should use. Defaults to 8.
     """
 
@@ -236,15 +256,15 @@ def process_images(
         Path to the flat noise image.
     true_sky_image : str or Path
         Path to the true sky image.
-    beam_ms : str or Path
+    beam_ms : str or Path or list of str or list of Path or None
         Path to the beam measurement set.
-    output_catalog: str, optional
+    output_catalog: str or Path, optional
         The filename for source catalog. If empty, do not create it.
-    output_flat_noise_rms: str, optional
+    output_flat_noise_rms: str or Path, optional
         The filename for the flat noise RMS image. If empty, do not create it.
         Creating this image may require an additional PyBDSF call and thereby
         slow down this function significantly.
-    output_true_rms: str, optional
+    output_true_rms: str or Path, optional
         The filename for the true sky RMS image. If empty, do not create it.
     **config
         Additional keyword arguments passed to the bdsf.process_image call.
@@ -325,7 +345,7 @@ def filter_sources(
         The PyBDSF image object.
     vertices_file : str or Path
         Filename of file with vertices, which determine the imaging field.
-    input_skymodel : str or Path
+    input_true_skymodel : str or Path
         Filename of input makesourcedb sky model.
     input_bright_skymodel : str or Path, optional
         Filename of input makesourcedb sky model of bright sources only.
@@ -333,13 +353,10 @@ def filter_sources(
         The filename of the MS for deriving the beam attenuation.
     filter_by_mask : bool, optional
         If True, filter the input sky model by the PyBDSF-derived mask.
-    remove_negative : bool, optional
-        If True, remove negative sky model components.
     output_true_sky : str or Path
         Output file name for the generated true sky model.
     output_apparent_sky : str or Path
         Output file name for the generated apparent sky model.
-
     """
 
     mask_file = f"{img_true_sky.filename}.mask"
@@ -419,12 +436,16 @@ def trim_mask(mask_file: PathLike, vertices_file: PathLike):
     using the file's WCS, rasterizes the polygon, and overwrites the
     mask file with the rasterized polygon data.
 
-    Args:
-        mask_file: Path to the mask file.
-        vertices_file: Path to the file containing vertices.
+    Parameters
+    ----------
+    mask_file: Path or str:
+        Path to the mask file.
+    vertices_file: Path or str:
+        Path to the file containing vertices.
     """
     hdu = pyfits.open(mask_file, memmap=False)
     vertices = read_vertices_ra_dec(vertices_file)
+    # Construct polygon needed to trim the mask to the sector
     verts = create_polygon(WCS(hdu[0].header), vertices)
 
     # Rasterize the poly
@@ -470,25 +491,29 @@ def create_polygon(wcs: WCS, vertices: ListOfCoords) -> ListOfCoords:
     """
     Create a polygon from vertices in world coordinates.
 
-    This function converts vertices to pixel coordinates using the
-    provided WCS, and returns them as a list of tuples.
+    This function converts vertices to pixel coordinates using the provided
+    World Coordinate System (WCS), and returns them as a list of tuples.
 
-    Args:
-        wcs (astropy.wcs.WCS):
-            The WCS object for coordinate transformation.
-        vertices (list):
-            Vertices of the polygon in world coordinates.
+    Parameters
+    ----------
+    wcs : astropy.wcs.WCS
+        The WCS object for coordinate transformation.
+    vertices : list
+        Vertices of the polygon in world coordinates.
 
-    Returns:
+    Returns
+    -------
+    coordinates: list of tuple
         A list of (x, y) pixel coordinates representing the polygon vertices.
     """
-
-    # Construct polygon needed to trim the mask to the sector
     return list(generate_polygon(wcs, vertices))
 
 
 def generate_polygon(wcs: WCS, vertices: ListOfCoords):
-
+    """
+    Generate pixel coordinates for polygon vertices.
+    See ::py:func:`create_polygon`.
+    """
     ra_ind = wcs.axis_type_names.index("RA")
     dec_ind = wcs.axis_type_names.index("DEC")
 
@@ -505,6 +530,19 @@ def generate_polygon(wcs: WCS, vertices: ListOfCoords):
 def add_bright_sources(
     input_skymodel: SkyModel, input_bright_skymodel: PathLike
 ):
+    """
+    Add bright sources to the input sky model.
+
+    Loads the bright source sky model, renames the sources to remove any
+    previous sector prefixes, and appends it to the input sky model.
+
+    Parameters
+    ----------
+    input_skymodel : SkyModel
+        The input sky model to which bright sources will be added.
+    input_bright_skymodel : str or Path
+        The filename of the bright source sky model.
+    """
 
     bright_skymodel = load(input_bright_skymodel)
     # Rename the bright sources, removing the '_sector_*' added previously

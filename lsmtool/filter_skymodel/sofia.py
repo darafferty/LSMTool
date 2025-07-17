@@ -220,10 +220,10 @@ def get_source_parameters(
 
     Returns
     -------
-    tuple
-        A tuple containing: RA strings, Dec strings, semimajor and semiminor
-        axes in arcseconds, orientations wrt NCP in degrees, and fluxes in the
-        image units.
+    dict
+        A dictionary containing the source parameters: RA strings, Dec strings,
+        semimajor and semiminor axes in arcseconds, orientations wrt NCP in
+        degrees, and fluxes in the image units.
     """
 
     orientations = get_corrected_gaussian_orientations(

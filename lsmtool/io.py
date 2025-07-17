@@ -189,17 +189,17 @@ def load(
         Input ASCII file from which the sky model is read (must respect the
         makesourcedb format), name of VO service to query (must be one of
         'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'), or dict (single
-        source only)
+        source only).
     beamMS : str, optional
         Measurement set from which the primary beam will be estimated. A
-        column of attenuated Stokes I fluxes will be added to the table
+        column of attenuated Stokes I fluxes will be added to the table.
     VOPosition : list of floats
         A list specifying a new position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
-        [123.2312, 23.3422]) for a cone search
+        [123.2312, 23.3422]) for a cone search.
     VORadius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
-        '30 arcsec') for cone search region in degrees
+        '30 arcsec') for cone search region in degrees.
 
     Returns
     -------
