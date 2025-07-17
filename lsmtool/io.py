@@ -3,10 +3,12 @@ Module for file read / write tasks.
 """
 
 import contextlib as ctx
+import numbers
 import os
 import pickle
 import tarfile
 from pathlib import Path
+from typing import Sequence, Union
 
 import numpy as np
 
@@ -16,9 +18,16 @@ from .skymodel import SkyModel
 ORIGINAL_TMPDIR = os.environ.get("TMPDIR")
 TRIAL_TMP_PATHS = ("/tmp", "/var/tmp", "/usr/tmp")
 
+# Type aliases for paths-like objects
+PathLike = Union[str, Path]
+PathLikeOptional = Union[PathLike, None]
+ListOfPathLike = Sequence[PathLike]
+ListOfPathLikeOptional = Union[ListOfPathLike, None]
+PathLikeOrListOptional = Union[PathLikeOptional, ListOfPathLike]
+
 
 @ctx.contextmanager
-def temp_storage(trial_paths=TRIAL_TMP_PATHS):
+def temp_storage(trial_paths: ListOfPathLike = TRIAL_TMP_PATHS):
     """
     Context manager for setting a temporary storage path.
 
@@ -45,7 +54,7 @@ def temp_storage(trial_paths=TRIAL_TMP_PATHS):
         _restore_tmpdir()
 
 
-def _set_tmpdir(trial_paths=TRIAL_TMP_PATHS):
+def _set_tmpdir(trial_paths: ListOfPathLike = TRIAL_TMP_PATHS):
     """Sets a temporary directory to avoid path length issues."""
     trial_paths = trial_paths or []
     for tmpdir in trial_paths:
@@ -64,7 +73,7 @@ def _restore_tmpdir():
         os.environ["TMPDIR"] = ORIGINAL_TMPDIR
 
 
-def check_file_exists(path):
+def check_file_exists(path: PathLike):
     """
     Check if a file exists at the given path.
 
@@ -104,7 +113,11 @@ def check_file_exists(path):
     return path
 
 
-def untar(filename, destination=None, remove_archive=False):
+def untar(
+    filename: PathLike,
+    destination: PathLikeOptional = None,
+    remove_archive: bool = False,
+):
     """
     Uncompress the measurement set in the tgz file.
 
@@ -130,7 +143,12 @@ def untar(filename, destination=None, remove_archive=False):
         path.unlink()
 
 
-def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
+def load(
+    fileName: PathLike,
+    beamMS: PathLikeOptional = None,
+    VOPosition: Sequence[numbers.Real] = None,
+    VORadius: Union[numbers.Real, str] = None,
+) -> SkyModel:
     """
     Load a sky model from a file or VO service and return a SkyModel object.
 
@@ -185,17 +203,20 @@ def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
     """
 
     return SkyModel(
-        fileName, beamMS=beamMS, VOPosition=VOPosition, VORadius=VORadius
+        str(fileName),
+        beamMS=(str(beamMS) if beamMS else None),
+        VOPosition=VOPosition,
+        VORadius=VORadius,
     )
 
 
-def read_vertices_ra_dec(filename):
+def read_vertices_ra_dec(filename: PathLike):
     """
     Read facet vertices from a pickle file.
 
     Parameters
     ----------
-    filename : str or pathlib.Path
+    filename : str or Path
         The path to the pickle file where facet vertices are stored as
         tuples of RA and Dec values.
 

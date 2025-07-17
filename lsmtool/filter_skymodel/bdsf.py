@@ -10,43 +10,56 @@ https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-se
 """
 
 import logging
+import numbers
 import os
 from ast import literal_eval
 from pathlib import Path
+from typing import List, Tuple, Union
 
 import bdsf
 import numpy as np
 from astropy.io import fits as pyfits
 from astropy.wcs import WCS
-
-from ..io import load, read_vertices_ra_dec, temp_storage
+from ..io import (
+    ListOfPathLike,
+    PathLike,
+    PathLikeOptional,
+    PathLikeOrListOptional,
+    load,
+    read_vertices_ra_dec,
+    temp_storage,
+)
+from ..skymodel import SkyModel
 from ..utils import format_coordinates, rasterize
 
 # Module logger
 logger = logging.getLogger(__name__)
 
+# type aliases
+ListOfCoords = List[Tuple[numbers.Real, numbers.Real]]
+
 
 def filter_skymodel(
-    # pylint: disable=too-many-locals,too-many-statements
-    flat_noise_image,
-    true_sky_image,
-    input_skymodel,
-    output_apparent_sky,
-    output_true_sky,
-    vertices_file,
-    beam_ms="",
-    input_bright_skymodel=None,
-    thresh_isl=5.0,
-    thresh_pix=7.5,
-    rmsbox=(150, 50),
-    rmsbox_bright=(35, 7),
-    adaptive_rmsbox=True,
-    adaptive_thresh=75.0,
-    filter_by_mask=True,
-    remove_negative=False,
-    output_catalog="",
-    output_flat_noise_rms="",
-    output_true_rms="",
+    flat_noise_image: PathLike,
+    true_sky_image: PathLikeOptional,
+    input_true_skymodel: PathLikeOptional,
+    input_apparent_skymodel: PathLikeOptional,
+    output_apparent_sky: PathLike,
+    output_true_sky: PathLike,
+    vertices_file: PathLike,
+    beam_ms: PathLikeOrListOptional = None,
+    input_bright_skymodel: PathLikeOptional = None,
+    thresh_isl: numbers.Real = 5.0,
+    thresh_pix: numbers.Real = 7.5,
+    rmsbox: Tuple[numbers.Integral] = (150, 50),
+    rmsbox_bright: Tuple[numbers.Integral] = (35, 7),
+    adaptive_rmsbox: bool = True,
+    adaptive_thresh: numbers.Real = 75.0,
+    filter_by_mask: bool = True,
+    remove_negative: bool = False,
+    output_catalog: PathLikeOptional = "",
+    output_flat_noise_rms: PathLikeOptional = "",
+    output_true_rms: PathLikeOptional = "",
     ncores=8,
 ):
     """
@@ -174,18 +187,18 @@ def filter_skymodel(
         )
 
 
-def parse_rmsbox(rmsbox):
+def parse_rmsbox(rmsbox: Union[str, None]):
     """Parses the rmsbox parameter."""
     return literal_eval(rmsbox) if isinstance(rmsbox, str) else rmsbox
 
 
 def process_images(
-    flat_noise_image,
-    true_sky_image,
-    beam_ms,
-    output_catalog,
-    output_flat_noise_rms,
-    output_true_rms,
+    flat_noise_image: PathLike,
+    true_sky_image: PathLike,
+    beam_ms: PathLikeOrListOptional,
+    output_catalog: PathLikeOptional,
+    output_flat_noise_rms: PathLikeOptional,
+    output_true_rms: PathLikeOptional,
     **config,
 ):
     """
@@ -264,15 +277,16 @@ def process_images(
 
 
 def filter_sources(
-    img_true_sky,
-    vertices_file,
-    input_skymodel,
-    input_bright_skymodel,
-    beam_ms,
-    filter_by_mask,
-    remove_negative,
-    output_true_sky,
-    output_apparent_sky,
+    img_true_sky: PathLike,
+    vertices_file: PathLike,
+    input_true_skymodel: PathLikeOptional,
+    input_apparent_skymodel: PathLikeOptional,
+    input_bright_skymodel: PathLikeOptional,
+    beam_ms: PathLikeOrListOptional,
+    filter_by_mask: bool,
+    remove_negative: bool,
+    output_true_sky: PathLikeOptional,
+    output_apparent_sky: PathLikeOptional,
 ):
     """
     Filter and group sources based on a mask and other criteria.
@@ -340,7 +354,7 @@ def filter_sources(
     os.remove(mask_file)
 
 
-def trim_mask(mask_file, vertices_file):
+def trim_mask(mask_file: PathLike, vertices_file: PathLike):
     """
     Trim the mask file to the given vertices.
 
@@ -362,7 +376,7 @@ def trim_mask(mask_file, vertices_file):
     hdu.writeto(mask_file, overwrite=True)
 
 
-def create_polygon(wcs, vertices):
+def create_polygon(wcs: WCS, vertices: ListOfCoords) -> ListOfCoords:
     """
     Create a polygon from vertices in world coordinates.
 
@@ -383,7 +397,7 @@ def create_polygon(wcs, vertices):
     return list(generate_polygon(wcs, vertices))
 
 
-def generate_polygon(wcs, vertices):
+def generate_polygon(wcs: WCS, vertices: ListOfCoords):
 
     ra_ind = wcs.axis_type_names.index("RA")
     dec_ind = wcs.axis_type_names.index("DEC")
@@ -398,7 +412,9 @@ def generate_polygon(wcs, vertices):
         )
 
 
-def add_bright_sources(input_skymodel, input_bright_skymodel):
+def add_bright_sources(
+    input_skymodel: SkyModel, input_bright_skymodel: PathLike
+):
 
     s_bright = load(str(input_bright_skymodel))
     # Rename the bright sources, removing the '_sector_*' added previously
@@ -411,7 +427,11 @@ def add_bright_sources(input_skymodel, input_bright_skymodel):
     input_skymodel.concatenate(s_bright)
 
 
-def create_dummy_skymodel(img_true_sky, output_true_sky, output_apparent_sky):
+def create_dummy_skymodel(
+    img_true_sky: bdsf.image.Image,
+    output_true_sky: PathLike,
+    output_apparent_sky: PathLike,
+):
     """
     Create a dummy sky model if no islands of emission are detected.
 

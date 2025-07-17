@@ -13,7 +13,13 @@ respectively.
 """
 
 import logging
+from typing import Union
 
+from ..io import (
+    PathLike,
+    PathLikeOptional,
+    PathLikeOrListOptional,
+)
 from . import bdsf, sofia
 
 logger = logging.getLogger(__name__)
@@ -23,13 +29,13 @@ KNOWN_SOURCE_FINDERS = {"sofia": sofia, "bdsf": bdsf}
 
 
 def filter_skymodel(
-    flat_noise_image,
-    true_sky_image,
-    input_skymodel,
-    output_apparent_sky,
-    output_true_sky,
-    beam_ms,
-    source_finder="bdsf",
+    flat_noise_image: PathLike,
+    true_sky_image: PathLikeOptional,
+    input_skymodel: PathLike,
+    output_apparent_sky: PathLike,
+    output_true_sky: PathLike,
+    beam_ms: PathLikeOrListOptional,
+    source_finder: str = "bdsf",
     **kws,
 ):
     """
@@ -82,7 +88,9 @@ def filter_skymodel(
     )
 
 
-def resolve_source_finder(name, fallback="bdsf"):
+def resolve_source_finder(
+    name: Union[None, bool, str], fallback: str = "bdsf"
+) -> Union[None, str]:
     """
     Resolve which source finder to use.
 

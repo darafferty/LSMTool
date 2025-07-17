@@ -1,20 +1,16 @@
+import numbers
 from pathlib import Path
-from typing import Union
+from typing import Sequence
 
 import numpy as np
 import sofia2
-from astropy.io import fits as pyfits
+from astropy.io import fits
 from astropy.table import Table
 from astropy.units import Quantity
 
 from ..correct_gaussian_orientation import compute_absolute_orientation
-from ..io import load
+from ..io import PathLike, PathLikeOptional, PathLikeOrListOptional, load
 from ..utils import format_coordinates, rotation_matrix_2d, table_to_array
-
-# Type aliases for paths-like objects
-PathLike = Union[str, Path]
-PathLikeOptional = Union[PathLike, None]
-
 
 # conversion factor between sofia and makeshourcedb parameterisations
 FWHM_PER_SIGMA = 2 * np.sqrt(2 * np.log(2))
@@ -26,10 +22,10 @@ def filter_skymodel(
     true_sky_image: PathLikeOptional,
     output_apparent_sky: PathLike,
     output_true_sky: PathLike,
-    beam_ms: PathLikeOptional = None,
+    beam_ms: PathLikeOrListOptional = None,
     output_dir: PathLikeOptional = None,
     output_prefix: str = "sofia",
-    ncores: int = 0,
+    ncores: numbers.Integral = 0,
     **kws,
 ):
     """
@@ -143,7 +139,7 @@ def filter_skymodel(
     rename_sources(catalog_table)
 
     # Read image header
-    image_header = pyfits.getheader(input_image, 0)
+    image_header = fits.getheader(input_image, 0)
     validate_image(image_header)
 
     # Convert source parameters
@@ -163,7 +159,7 @@ def filter_skymodel(
     skymodel.write(output_apparent_sky, clobber=True, applyBeam=bool(beam_ms))
 
 
-def validate_catalog(catalog_path):
+def validate_catalog(catalog_path: PathLike) -> Table:
     # Read output source catalog
     catalog_table = Table.read(catalog_path, format="votable")
 
@@ -187,14 +183,14 @@ def validate_catalog(catalog_path):
     return catalog_table
 
 
-def rename_sources(catalog_table):
+def rename_sources(catalog_table: Table):
     # Remove whitespace from source names (incompatible with BBS format)
     names = catalog_table["name"]
     for i, name in enumerate(names):
         names[i] = name.replace(" ", "_")
 
 
-def validate_image(image_header):
+def validate_image(image_header: fits.header.Header):
     # Check units are as expected
     for i, dimension in enumerate(("width", "height"), 1):
         unit = image_header[f"CUNIT{i}"]
@@ -205,7 +201,9 @@ def validate_image(image_header):
             )
 
 
-def get_source_parameters(image_header, catalog_table):
+def get_source_parameters(
+    image_header: fits.header.Header, catalog_table: Table
+) -> dict:
     """
     Get source parameters from SoFiA-2 catalog and image header.
 
@@ -254,7 +252,11 @@ def get_source_parameters(image_header, catalog_table):
     }
 
 
-def get_source_fwhm(image_header, catalog_table, orientations):
+def get_source_fwhm(
+    image_header: fits.header.Header,
+    catalog_table: Table,
+    orientations: Sequence,
+) -> np.ndarray:
     """
     Compute the Full-Width Half-Maximum (FWHM) parameters for the detected
     sources in arcseconds.
@@ -276,7 +278,6 @@ def get_source_fwhm(image_header, catalog_table, orientations):
     orientations : numpy.ndarray
         The corrected Gaussian orientations in radians, defined with respect
         to the NCP.
-
 
     Returns
     -------
@@ -313,7 +314,9 @@ def get_source_fwhm(image_header, catalog_table, orientations):
     return (metric_scalars * ellipse_fwhm_pixels).T
 
 
-def get_corrected_gaussian_orientations(image_header, catalog_table):
+def get_corrected_gaussian_orientations(
+    image_header: fits.header.Header, catalog_table: Table
+) -> np.ndarray:
     """
     Corrects Gaussian orientations to be absolute.
 
@@ -359,7 +362,9 @@ def get_corrected_gaussian_orientations(image_header, catalog_table):
     )
 
 
-def write_skymodel(output_true_sky, catalog_table, source_parameters):
+def write_skymodel(
+    output_true_sky: PathLike, catalog_table: Table, source_parameters: tuple
+):
     """
     Writes the source catalog to a file, ensuring that it adheres to the BBS
     format expected by downstream toolchain (wsclean, dp3).
