@@ -92,12 +92,13 @@ class TestBDSF:
         image_path, true_sky_path, apparent_sky_path, beam_ms = image_paths
 
         bdsf.filter_skymodel(
-            image_path,
-            image_path,
-            TEST_DATA_PATH / "sector_1-sources-pb.txt",
-            apparent_sky_path,
-            true_sky_path,
-            TEST_DATA_PATH / "expected_sector_1_vertices.pkl",
+            flat_noise_image=image_path,
+            true_sky_image=image_path,
+            input_true_skymodel=TEST_DATA_PATH / "sector_1-sources-pb.txt",
+            input_apparent_skymodel=None,
+            output_apparent_sky=apparent_sky_path,
+            output_true_sky=true_sky_path,
+            vertices_file=TEST_DATA_PATH / "expected_sector_1_vertices.pkl",
             beam_ms=beam_ms,
             thresh_isl=4.0,
             thresh_pix=5.0,
@@ -129,12 +130,13 @@ class TestBDSF:
         image_path, true_sky_path, apparent_sky_path, beam_ms = image_paths
 
         bdsf.filter_skymodel(
-            image_path,
-            image_path,
-            "sector_1-sources-pb.txt",
-            apparent_sky_path,
-            true_sky_path,
-            "expected_sector_1_vertices.pkl",
+            flat_noise_image=image_path,
+            true_sky_image=image_path,
+            input_true_skymodel=TEST_DATA_PATH / "sector_1-sources-pb.txt",
+            input_apparent_skymodel=None,
+            output_apparent_sky=apparent_sky_path,
+            output_true_sky=true_sky_path,
+            vertices_file=TEST_DATA_PATH / "expected_sector_1_vertices.pkl",
             beam_ms=beam_ms,
             thresh_isl=400.0,
             thresh_pix=500.0,

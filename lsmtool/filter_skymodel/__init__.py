@@ -31,10 +31,12 @@ KNOWN_SOURCE_FINDERS = {"sofia": sofia, "bdsf": bdsf}
 def filter_skymodel(
     flat_noise_image: PathLike,
     true_sky_image: PathLikeOptional,
-    input_skymodel: PathLike,
+    input_true_skymodel: PathLikeOptional,
+    input_apparent_skymodel: PathLikeOptional,
     output_apparent_sky: PathLike,
     output_true_sky: PathLike,
     beam_ms: PathLikeOrListOptional,
+    /,
     source_finder: str = "bdsf",
     **kws,
 ):
@@ -80,7 +82,8 @@ def filter_skymodel(
     runner(
         flat_noise_image,
         true_sky_image,
-        input_skymodel,
+        input_true_skymodel,
+        input_apparent_skymodel,
         output_apparent_sky,
         output_true_sky,
         beam_ms=beam_ms,

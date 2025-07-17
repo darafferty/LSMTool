@@ -20,17 +20,21 @@ import bdsf
 import numpy as np
 from astropy.io import fits as pyfits
 from astropy.wcs import WCS
+from casacore.tables import table as casa_table
+
 from ..io import (
     ListOfPathLike,
     PathLike,
     PathLikeOptional,
     PathLikeOrListOptional,
+    check_file_exists,
     load,
     read_vertices_ra_dec,
     temp_storage,
+    validate_paths,
 )
 from ..skymodel import SkyModel
-from ..utils import format_coordinates, rasterize
+from ..utils import format_coordinates, rasterize, transfer_patches
 
 # Module logger
 logger = logging.getLogger(__name__)
@@ -49,6 +53,8 @@ def filter_skymodel(
     vertices_file: PathLike,
     beam_ms: PathLikeOrListOptional = None,
     input_bright_skymodel: PathLikeOptional = None,
+    *,
+    # remaining parameters are keyword-only
     thresh_isl: numbers.Real = 5.0,
     thresh_pix: numbers.Real = 7.5,
     rmsbox: Tuple[numbers.Integral] = (150, 50),
@@ -56,7 +62,6 @@ def filter_skymodel(
     adaptive_rmsbox: bool = True,
     adaptive_thresh: numbers.Real = 75.0,
     filter_by_mask: bool = True,
-    remove_negative: bool = False,
     output_catalog: PathLikeOptional = "",
     output_flat_noise_rms: PathLikeOptional = "",
     output_true_rms: PathLikeOptional = "",
@@ -142,6 +147,22 @@ def filter_skymodel(
         Specify the number of cores that BDSF should use. Defaults to 8.
     """
 
+    # Check that the input paths are valid before attempting any work.
+    # For parameters that are expected to be paths:
+    # - If they are required, ensure that they exist
+    # - If they are not required, and are not null, ensure that they exist
+    validate_paths(
+        flat_noise_image=flat_noise_image,
+        vertices_file=vertices_file,
+        required=True,
+    )
+    validate_paths(
+        true_sky_image=true_sky_image,
+        input_true_skymodel=input_true_skymodel,
+        input_apparent_skymodel=input_apparent_skymodel,
+        required=False,
+    )
+
     rmsbox = parse_rmsbox(rmsbox)
     rmsbox_bright = parse_rmsbox(rmsbox_bright)
 
@@ -173,11 +194,11 @@ def filter_skymodel(
         filter_sources(
             img_true_sky,
             vertices_file,
-            input_skymodel,
+            input_true_skymodel,
+            input_apparent_skymodel,
             input_bright_skymodel,
             beam_ms,
             filter_by_mask,
-            remove_negative,
             output_true_sky,
             output_apparent_sky,
         )
@@ -239,11 +260,14 @@ def process_images(
     )
 
     if output_catalog:
+        # Write the catalog of sources detected in the input true sky image.
+        # This will write the catalog to file, even if no sources were found.
         img_true_sky.write_catalog(
             outfile=str(output_catalog),
             format="fits",
             catalog_type="srl",
             clobber=True,
+            force_output=True,
         )
 
     if output_true_rms:
@@ -284,7 +308,6 @@ def filter_sources(
     input_bright_skymodel: PathLikeOptional,
     beam_ms: PathLikeOrListOptional,
     filter_by_mask: bool,
-    remove_negative: bool,
     output_true_sky: PathLikeOptional,
     output_apparent_sky: PathLikeOptional,
 ):
@@ -323,34 +346,68 @@ def filter_sources(
     img_true_sky.export_image(
         outfile=mask_file, clobber=True, img_type="island_mask"
     )
+    del img_true_sky  # helps reduce memory usage
 
     # Construct polygon needed to trim the mask to the sector
     trim_mask(mask_file, vertices_file)
 
-    # Load the sky model with the associated beam MS.
-    input_skymodel = load(str(input_skymodel), beamMS=str(beam_ms))
+    # Select the best measurement set for beam attenuation.
+    beam_ms = select_midpoint(beam_ms) if beam_ms else None
 
-    # If bright sources were peeled before imaging, add them back
-    if input_bright_skymodel:
-        add_bright_sources(input_skymodel, input_bright_skymodel)
+    # Load input true sky model and add bright source catalogue if provided
+    if input_true_skymodel:
+        # Load the sky model with the associated beam MS.
+        input_skymodel = load(input_true_skymodel, beamMS=beam_ms)
+        if input_bright_skymodel:
+            # If bright sources were peeled before imaging, add them back
+            add_bright_sources(input_skymodel, input_bright_skymodel)
+    else:
+        # If no input true skymodel given, use the input bright sources
+        # skymodel
+        input_skymodel = load(input_bright_skymodel)
 
     # Do final filtering and write out the sky models
-    if remove_negative:
-        # Keep only those sources with positive flux densities
-        input_skymodel.select("I > 0.0")
-
     if input_skymodel and filter_by_mask:
         # Keep only those sources in PyBDSF masked regions
         input_skymodel.select(f"{mask_file} == True")
 
-    # Write out apparent- and true-sky models
-    input_skymodel.group(mask_file)  # group the sky model by mask islands
-    input_skymodel.write(output_true_sky, clobber=True)
-    input_skymodel.write(
-        output_apparent_sky,
-        clobber=True,
-        applyBeam=bool(beam_ms),
-    )
+    if input_skymodel:
+        # Group the sky model by mask islands
+        input_skymodel.group(mask_file)
+
+        if input_apparent_skymodel:
+            apparent_skymodel = load(input_apparent_skymodel)
+            # Match the filtering and grouping of the filtered model
+            matches = np.isin(
+                apparent_skymodel.getColValues("Name"),
+                input_skymodel.getColValues("Name"),
+            )
+            apparent_skymodel.select(matches)
+            transfer_patches(
+                input_skymodel,
+                apparent_skymodel,
+                patch_dict=input_skymodel.getPatchPositions(),
+            )
+
+        # Write out true sky models``
+        input_skymodel.write(output_true_sky, clobber=True)
+        # Write out apparent-sky model:
+        # If apparent sky model given, this will write out the filtered
+        # skymodel
+        # If apparent sky model in not given, attenuate the true-sky applying
+        # the beam. If beam_ms is null, the apparent and true skymodels will be
+        # equal
+        input_skymodel.write(
+            output_apparent_sky,
+            clobber=True,
+            applyBeam=bool(beam_ms),
+        )
+    else:
+        # Input true sky model is empty. Require that input_apparent_skymodel
+        # exists
+        check_file_exists(input_apparent_skymodel)
+
+    # Remove the mask file
     os.remove(mask_file)
 
 
@@ -374,6 +431,39 @@ def trim_mask(mask_file: PathLike, vertices_file: PathLike):
     data = hdu[0].data
     data[0, 0, :, :] = rasterize(verts, data[0, 0, :, :])
     hdu.writeto(mask_file, overwrite=True)
+
+
+def select_midpoint(beam_ms: ListOfPathLike) -> str:
+    """
+    Select the best measurement set for beam attenuation.
+
+    Selects the measurement set (MS) that is closest to the median time
+    of all provided data. This is intended to choose a representative beam
+    for attenuation calculations.
+
+    Parameters
+    ----------
+    beam_ms : list of str
+        List of measurement set filenames.
+
+    Returns
+    -------
+    str
+        The filename of the selected measurement set.
+    """
+    if isinstance(beam_ms, (str, Path)):
+        return beam_ms
+
+    n = len(beam_ms)
+    ms_times = np.empty(n)
+    for i, ms in enumerate(beam_ms):
+        with casa_table(str(ms), ack=False) as table:
+            ms_times[i] = np.mean(table.getcol("TIME"))
+
+    ms_times.sort()
+    mid_time = ms_times[n // 2]
+    beam_ind = ms_times.index(mid_time)
+    return beam_ms[beam_ind]
 
 
 def create_polygon(wcs: WCS, vertices: ListOfCoords) -> ListOfCoords:
@@ -416,15 +506,18 @@ def add_bright_sources(
     input_skymodel: SkyModel, input_bright_skymodel: PathLike
 ):
 
-    s_bright = load(str(input_bright_skymodel))
+    bright_skymodel = load(input_bright_skymodel)
     # Rename the bright sources, removing the '_sector_*' added previously
     # (otherwise the '_sector_*' text will be added every iteration, eventually
     # making for very long source names)
     new_names = [
-        name.split("_sector")[0] for name in s_bright.getColValues("Name")
+        name.split("_sector")[0]
+        for name in bright_skymodel.getColValues("Name")
     ]
-    s_bright.setColValues("Name", new_names)
-    input_skymodel.concatenate(s_bright)
+    # str.split can be relaced with str.removeprefix once python 3.8 is dropped
+    bright_skymodel.setColValues("Name", new_names)
+    input_skymodel.concatenate(bright_skymodel)
+    return bright_skymodel
 
 
 def create_dummy_skymodel(

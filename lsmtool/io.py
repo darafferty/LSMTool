@@ -113,6 +113,37 @@ def check_file_exists(path: PathLike):
     return path
 
 
+def validate_paths(required: bool = True, **filenames):
+    """
+    Checks if provided filenames exist, raising an exception if a file is
+    non-existant and required.
+
+    Parameters
+    ----------
+    required : bool, optional
+        If True, all filenames must correspond to existing files. If False,
+        non truthy objects (None or "" etc) will not raise an exception.
+    **filenames
+        Keyword arguments where keys are parameter names and values are
+        filenames to validate.
+
+    Raises
+    ------
+    TypeError
+        If a filename is not a string or Path object. The corresponding
+        parameter name will be shown in the exception message,
+    FileNotFoundError
+        If a required file does not exist. The corresponding parameter name
+        will be shown in the exception message,
+    """
+    for name, path in filenames.items():
+        try:
+            if path or required:
+                check_file_exists(path)
+        except (TypeError, FileNotFoundError) as err:
+            raise type(err)(f"Invalid filename for {name!r}: {err}") from None
+
+
 def untar(
     filename: PathLike,
     destination: PathLikeOptional = None,
