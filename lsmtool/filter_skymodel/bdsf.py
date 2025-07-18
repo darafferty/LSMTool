@@ -65,8 +65,8 @@ def filter_skymodel(
     output_catalog: PathLikeOptional = "",
     output_flat_noise_rms: PathLikeOptional = "",
     output_true_rms: PathLikeOptional = "",
-    ncores=8,
-):
+    ncores: int = 8,
+) -> int:
     """
     Filters the input sky model using PyBDSF.
 
@@ -165,6 +165,11 @@ def filter_skymodel(
         an empty string), do not create it.
     ncores : int
         Specify the number of cores that BDSF should use. Defaults to 8.
+
+    Returns
+    -------
+    n_sources : int
+        The number of sources detected by pyBDSF.
     """
 
     # Check that the input paths are valid before attempting any work.
@@ -210,6 +215,10 @@ def filter_skymodel(
     # NOTE: The TMPDIR environmental variable is set back to its original value
     # once the with block above exits
 
+    # Save number of sources found by PyBDSF for later use
+    n_sources = img_true_sky.nsrc
+
+    # Filter the sky model if any sources were detected
     if img_true_sky.nisl > 0:
         filter_sources(
             img_true_sky,
@@ -226,6 +235,8 @@ def filter_skymodel(
         create_dummy_skymodel(
             img_true_sky, output_true_sky, output_apparent_sky
         )
+
+    return n_sources
 
 
 def parse_rmsbox(rmsbox: Union[str, None]):
@@ -330,7 +341,7 @@ def filter_sources(
     filter_by_mask: bool,
     output_true_sky: PathLikeOptional,
     output_apparent_sky: PathLikeOptional,
-):
+) -> SkyModel:
     """
     Filter and group sources based on a mask and other criteria.
 
@@ -426,6 +437,8 @@ def filter_sources(
 
     # Remove the mask file
     os.remove(mask_file)
+
+    return input_skymodel
 
 
 def trim_mask(mask_file: PathLike, vertices_file: PathLike):
