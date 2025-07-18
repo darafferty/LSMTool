@@ -12,7 +12,6 @@ the sky model filtering with `pyBDSF
 respectively.
 """
 
-import logging
 from typing import Union
 
 from ..io import (
@@ -21,8 +20,6 @@ from ..io import (
     PathLikeOrListOptional,
 )
 from . import bdsf, sofia
-
-logger = logging.getLogger(__name__)
 
 KNOWN_SOURCE_FINDERS = {"sofia": sofia, "bdsf": bdsf}
 
