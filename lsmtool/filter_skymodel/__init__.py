@@ -5,7 +5,7 @@ This module provides functionality to filter and refine sky models using image
 data and source finders like PyBDSF or SoFiA-2. It allows for the creation of
 both apparent and true sky models, taking into account primary beam correction.
 
-There are two submodules: ::py:mod:`.bdsf` and ::py:mod:`sofia`, implementing
+There are two submodules: ::py:mod:`.bdsf` and ::py:mod:`.sofia`, implementing
 the sky model filtering with `pyBDSF
 <https://pybdsf.readthedocs.io/en/stable/>`_ and `SoFiA-2
 <https://gitlab.com/SoFiA-Admin/SoFiA-2/-/wikis/documents/SoFiA-2_User_Manual.pdf>`_
@@ -24,7 +24,6 @@ from . import bdsf, sofia
 
 logger = logging.getLogger(__name__)
 
-#
 KNOWN_SOURCE_FINDERS = {"sofia": sofia, "bdsf": bdsf}
 
 
