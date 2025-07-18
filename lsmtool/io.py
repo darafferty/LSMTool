@@ -7,6 +7,7 @@ import numbers
 import os
 import pickle
 import tarfile
+import tempfile
 from pathlib import Path
 from typing import Sequence, Union
 
@@ -16,7 +17,7 @@ from .skymodel import SkyModel
 
 # save original tmp path if defined
 ORIGINAL_TMPDIR = os.environ.get("TMPDIR")
-TRIAL_TMP_PATHS = ("/tmp", "/var/tmp", "/usr/tmp")
+TRIAL_TMP_PATHS = [tempfile.gettempdir()]
 
 # Type aliases for paths-like objects
 PathLike = Union[str, Path]
@@ -27,7 +28,7 @@ PathLikeOrListOptional = Union[PathLikeOptional, ListOfPathLike]
 
 
 @ctx.contextmanager
-def temp_storage(trial_paths: ListOfPathLike = TRIAL_TMP_PATHS):
+def temp_storage(trial_paths: PathLikeOrListOptional = TRIAL_TMP_PATHS):
     """
     Context manager for setting a temporary storage path.
 
@@ -41,30 +42,36 @@ def temp_storage(trial_paths: ListOfPathLike = TRIAL_TMP_PATHS):
     trial_paths : tuple of str, optional
         A tuple of paths to try setting as the TMPDIR environment variable.
         The first existing path in the tuple will be used. Defaults to
-        TRIAL_TMP_PATHS, which includes the same locations used in the
-        tempfile Python library.
+        TRIAL_TMP_PATHS, which uses the same locations used by the
+        :py::mod:`tempfile` library.
     """
     if isinstance(trial_paths, (str, Path)):
         trial_paths = [trial_paths]
 
     try:
-        _set_tmpdir(trial_paths)
-        yield
+        yield _set_tmpdir(trial_paths)
     finally:
         _restore_tmpdir()
 
 
-def _set_tmpdir(trial_paths: ListOfPathLike = TRIAL_TMP_PATHS):
+def _set_tmpdir(trial_paths: PathLikeOrListOptional = TRIAL_TMP_PATHS):
     """Sets a temporary directory to avoid path length issues."""
     trial_paths = trial_paths or []
     for tmpdir in trial_paths:
-        if Path(tmpdir).exists():
+        path = Path(tmpdir)
+        if path.exists():
             os.environ["TMPDIR"] = tmpdir
-            return
+            return path
 
     raise NotADirectoryError(
         f"None of the trial paths exist: {', '.join(trial_paths)}."
     )
+
+
+def _restore_tmpdir():
+    """Restores the original temporary directory."""
+    if ORIGINAL_TMPDIR is not None:
+        os.environ["TMPDIR"] = ORIGINAL_TMPDIR
 
 
 def _restore_tmpdir():

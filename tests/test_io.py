@@ -54,8 +54,8 @@ def test_temp_storage(
 
     # Act
     with context or ctx.nullcontext():
-        with temp_storage(trial_paths):
-            assert os.environ["TMPDIR"] == expected_tmpdir
+        with temp_storage(trial_paths) as tmp:
+            assert os.environ["TMPDIR"] == expected_tmpdir == str(tmp)
 
     # Assert
     mock_set_tmpdir.assert_called_once_with(trial_paths)
