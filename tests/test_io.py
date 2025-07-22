@@ -100,3 +100,8 @@ def test_read_vertices_invalid(tmp_path, contents):
 
     with pytest.raises(ValueError):
         read_vertices_ra_dec(path)
+
+
+def test_read_vertices_non_existent():
+    with pytest.raises(FileNotFoundError):
+        read_vertices_ra_dec("/path/to/vertices.file")
