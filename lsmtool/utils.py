@@ -160,6 +160,7 @@ def transfer_patches(from_skymodel, to_skymodel, patch_dict=None):
             "Cannot transfer patches since from_skymodel is not grouped "
             "into patches."
         )
+
     names_from = from_skymodel.getColValues("Name").tolist()
     names_to = to_skymodel.getColValues("Name").tolist()
     names_from_set = set(names_from)
@@ -168,29 +169,24 @@ def transfer_patches(from_skymodel, to_skymodel, patch_dict=None):
     if not to_skymodel.hasPatches:
         to_skymodel.group("single")
 
+    input_patches = from_skymodel.table["Patch"]
+    output_patches = to_skymodel.table["Patch"]
+
     if names_from_set == names_to_set:
         # Both sky models have the same sources, so use indexing
         ind_ss = np.argsort(names_from)
         ind_ts = np.argsort(names_to)
-        to_skymodel.table["Patch"][ind_ts] = from_skymodel.table["Patch"][
-            ind_ss
-        ]
+        output_patches[ind_ts] = input_patches[ind_ss]
     elif names_to_set.issubset(names_from_set):
         # The to_skymodel is a subset of from_skymodel, so use slower matching
         # algorithm
         for ind_ts, name in enumerate(names_to):
-            ind_ss = names_from.index(name)
-            to_skymodel.table["Patch"][ind_ts] = from_skymodel.table["Patch"][
-                ind_ss
-            ]
+            output_patches[ind_ts] = input_patches[names_from.index(name)]
     elif names_from_set.issubset(names_to_set):
         # The from_skymodel is a subset of to_skymodel, so use slower matching
         # algorithm, leaving non-matching sources in their initial patches
         for ind_ss, name in enumerate(names_from):
-            ind_ts = names_to.index(name)
-            to_skymodel.table["Patch"][ind_ts] = from_skymodel.table["Patch"][
-                ind_ss
-            ]
+            output_patches[names_to.index(name)] = input_patches[ind_ss]
     else:
         # Skymodels don't match, raise error
         raise ValueError(
