@@ -318,11 +318,12 @@ def get_corrected_gaussian_orientations(
     image_header: fits.header.Header, catalog_table: Table
 ) -> np.ndarray:
     """
-    Corrects Gaussian orientations to be absolute.
+    Corrects the orientation of the Gaussian sources (measured with respect to
+    the image) to be with respect to the North Celestial Pole (NCP).
 
-    Applies a correction to the Gaussian orientations obtained from SoFiA-2
-    to ensure they are defined with respect to the North Celestial Pole (NCP),
-    as required by the BBS sky model format. SoFiA-2 outputs orientations
+    Applies a correction to the Gaussian orientations obtained from SoFiA-2 to
+    ensure they are defined with respect to the North Celestial Pole, as
+    required by the makesourcedb sky model format. SoFiA-2 outputs orientations
     relative to the vertical axis of the image, which is not necessarily
     aligned with the NCP.
 
