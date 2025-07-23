@@ -25,6 +25,7 @@ authors = [
 ]
 maintainers = [
     { name = "Marcel Loose", email = "loose@astron.nl" },
+    { name = "Hannes Breytenbach", email = "hannes.breytenbach@skao.int" },
 ]
 license = { file = "LICENSE" }
 classifiers = [
