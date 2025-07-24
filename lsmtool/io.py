@@ -6,7 +6,6 @@ import contextlib as ctx
 import numbers
 import os
 import pickle
-import tarfile
 import tempfile
 from pathlib import Path
 from typing import Sequence, Union
@@ -145,36 +144,6 @@ def validate_paths(required: bool = True, **filenames):
                 check_file_exists(path)
         except (TypeError, FileNotFoundError) as err:
             raise type(err)(f"Invalid filename for {name!r}: {err}") from None
-
-
-def untar(
-    filename: PathLike,
-    destination: PathLikeOptional = None,
-    remove_archive: bool = False,
-):
-    """
-    Uncompress the measurement set in the tgz file.
-
-    Parameters
-    ----------
-    filename:  str or Path
-        Name of the tar file.
-    destination:  str or Path
-        Path to extract the tar file to.
-    """
-
-    path = check_file_exists(filename)
-
-    # Default output folder is the same as the input folder.
-    destination = destination or path.parent
-
-    # Uncompress the tgz file.
-    with tarfile.open(path, "r:gz") as file:
-        file.extractall(destination)
-
-    # Remove the compressed archive if requested
-    if remove_archive:
-        path.unlink()
 
 
 def load(

@@ -3,10 +3,11 @@ Configuration for python tests.
 """
 
 import shutil
+import tarfile
 from pathlib import Path
 
 import pytest
-from lsmtool.io import check_file_exists, untar
+from lsmtool.io import check_file_exists, PathLike, PathLikeOptional
 
 
 TEST_PATH = Path(__file__).parent
@@ -19,6 +20,36 @@ def midband_ms(tmp_path):
     ms_name = "test_midbands.ms"
     untar(TEST_DATA_PATH / f"{ms_name}.tgz", tmp_path)
     return tmp_path / ms_name
+
+
+def untar(
+    filename: PathLike,
+    destination: PathLikeOptional = None,
+    remove_archive: bool = False,
+):
+    """
+    Uncompress the measurement set in the tgz file.
+
+    Parameters
+    ----------
+    filename:  str or Path
+        Name of the tar file.
+    destination:  str or Path
+        Path to extract the tar file to.
+    """
+
+    path = check_file_exists(filename)
+
+    # Default output folder is the same as the input folder.
+    destination = destination or path.parent
+
+    # Uncompress the tgz file.
+    with tarfile.open(path, "r:gz") as file:
+        file.extractall(destination)
+
+    # Remove the compressed archive if requested
+    if remove_archive:
+        path.unlink()
 
 
 def copy_test_data(files_to_copy, target):
