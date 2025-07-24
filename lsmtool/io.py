@@ -70,13 +70,9 @@ def _set_tmpdir(trial_paths: PathLikeOrListOptional = TRIAL_TMP_PATHS):
 
 def _restore_tmpdir():
     """Restores the original temporary directory."""
-    if ORIGINAL_TMPDIR is not None:
-        os.environ["TMPDIR"] = ORIGINAL_TMPDIR
-
-
-def _restore_tmpdir():
-    """Restores the original temporary directory."""
-    if ORIGINAL_TMPDIR is not None:
+    if ORIGINAL_TMPDIR is None:
+        os.environ.pop("TMPDIR", None)
+    else:
         os.environ["TMPDIR"] = ORIGINAL_TMPDIR
 
 
