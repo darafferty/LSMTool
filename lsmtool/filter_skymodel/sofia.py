@@ -6,7 +6,7 @@ import numpy as np
 import sofia2
 from astropy.io import fits
 from astropy.table import Table
-from astropy.units import Quantity
+from astropy.units import Quantity, UnitsError
 
 from ..correct_gaussian_orientation import compute_absolute_orientation
 from ..io import PathLike, PathLikeOptional, PathLikeOrListOptional, load
@@ -164,12 +164,19 @@ def validate_catalog(catalog_path: PathLike) -> Table:
     catalog_table = Table.read(catalog_path, format="votable")
 
     # Check units of required columns are as expected
-    assert catalog_table["ra"].unit == "deg"
-    assert catalog_table["dec"].unit == "deg"
-    assert catalog_table["freq"].unit == "Hz"
-    assert catalog_table["f_sum"].unit == "Jy"
     # NOTE: The fork of SoFiA-2 being used in this implementation:
     # https://gitlab.com/milhazes/SoFiA-2  converts the flux units to Jy.
+    for column, required_unit in {
+        "ra": "deg",
+        "dec": "deg",
+        "freq": "Hz",
+        "f_sum": "Jy",
+    }.items():
+        if (given_unit := catalog_table[column].unit) != required_unit:
+            raise UnitsError(
+                f"Expected unit for {column!r} column to be {required_unit}: "
+                f"{given_unit!r}."
+            )
 
     # Get gaussian orientation
     orientations = catalog_table["ell_pa"]
