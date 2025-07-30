@@ -15,7 +15,7 @@ TEST_DATA_PATH = TEST_PATH / "resources"
 
 
 @pytest.fixture
-def midband_ms(tmp_path):
+def midbands_ms(tmp_path):
     """Uncompresses test_midbands.ms into a temporary directory."""
     ms_name = "test_midbands.ms"
     untar(TEST_DATA_PATH / f"{ms_name}.tgz", tmp_path)
