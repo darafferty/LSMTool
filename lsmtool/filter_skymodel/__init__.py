@@ -162,12 +162,21 @@ def resolve_source_finder(name: str) -> str:
         finders.
     """
 
+    additional_info = ""
     if isinstance(name, str):
         source_finder = name.lower()
         if source_finder in KNOWN_SOURCE_FINDERS:
             return source_finder
 
+        if source_finder == "sofia" and "sofia" not in KNOWN_SOURCE_FINDERS:
+            additional_info = (
+                " You have requested 'sofia' as a source finder, but it appears "
+                "that SoFia-2 is not installed on your system. You may install "
+                "sofia by running the following command: "
+                ">>> python -m pip install lsmtool[sofia]"
+            )
+
     raise ValueError(
         f"{name!r} is not a valid value for 'source_finder'. Valid "
-        f"options are {set(KNOWN_SOURCE_FINDERS.keys())}."
+        f"options are {set(KNOWN_SOURCE_FINDERS.keys())}.{additional_info}"
     )
