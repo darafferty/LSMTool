@@ -42,8 +42,7 @@ def _modify_patches(input_skymodel, update_patch_names, regroup, tmp_path):
 
 def _update_patch_names(skymodel):
     last_patch_name = skymodel.getPatchNames()[-1]
-    stem, nr = last_patch_name.rsplit("_", 1)
-    new_name = f"{stem}_{int(nr) + 1}"
+    new_name = "Whatever"
 
     patch_pos = skymodel.getPatchPositions()
     patch_pos[new_name] = patch_pos.pop(last_patch_name)
