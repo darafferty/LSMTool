@@ -83,6 +83,12 @@ def _update_patch_names(skymodel):
             True,
             id="different_patch_names_ignore",
         ),
+        pytest.param(
+            (False, False),
+            True,
+            True,
+            id="no_edit",
+        ),
     ],
     indirect=["modified_skymodel"],
 )
