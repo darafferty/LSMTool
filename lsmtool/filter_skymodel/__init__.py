@@ -13,7 +13,6 @@ respectively.
 """
 
 import contextlib as ctx
-from typing import Union
 
 from ..io import (
     PathLike,
@@ -135,9 +134,7 @@ def filter_skymodel(
     )
 
 
-def resolve_source_finder(
-    name: Union[None, bool, str], fallback: str = "bdsf"
-) -> Union[None, str]:
+def resolve_source_finder(name: str) -> str:
     """
     Resolve which source finder to use based on input string.
 
@@ -164,12 +161,6 @@ def resolve_source_finder(
         If the input `name` is not a string matching one of the known source
         finders.
     """
-
-    if name in {None, False, "off", "none"}:
-        return None
-
-    if name in {True, "on"}:
-        name = fallback
 
     if isinstance(name, str):
         source_finder = name.lower()

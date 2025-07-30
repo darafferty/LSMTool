@@ -8,7 +8,6 @@ import pytest
 from conftest import TEST_DATA_PATH, copy_test_data
 
 from lsmtool.filter_skymodel import (
-    KNOWN_SOURCE_FINDERS,
     bdsf,
     resolve_source_finder,
     sofia,
@@ -17,39 +16,27 @@ from lsmtool.testing import check_skymodels_equal
 
 
 class TestResolveSourceFinder:
-    null = ctx.nullcontext()
 
-    message = (
-        "'invalid' is not a valid value for 'source_finder'. Valid options are"
-        f" {set(KNOWN_SOURCE_FINDERS.keys())}."
-    )
+    null_context = ctx.nullcontext()
+    raises = pytest.raises(ValueError)
 
     @pytest.mark.parametrize(
-        "name, fallback, expected, context",
+        "name, expected, context",
         [
-            pytest.param("sofia", "", "sofia", null, id="sofia"),
-            pytest.param("bdsf", "", "bdsf", null, id="bdsf"),
-            pytest.param("SoFiA", "", "sofia", null, id="SoFiA"),
-            pytest.param("BDSF", "", "bdsf", null, id="BDSF"),
-            pytest.param("on", "bdsf", "bdsf", null, id="default"),
-            pytest.param(True, "SoFiA", "sofia", null, id="fallback_sofia"),
-            pytest.param(None, "bdsf", None, null, id="source_finder_off"),
-            pytest.param(
-                "invalid",
-                "bdsf",
-                "bdsf",
-                pytest.raises(ValueError, match=message),
-                id="invalid_raises",
-            ),
+            pytest.param("sofia", "sofia", null_context, id="sofia"),
+            pytest.param("bdsf", "bdsf", null_context, id="bdsf"),
+            pytest.param("SoFiA", "sofia", null_context, id="SoFiA"),
+            pytest.param("BDSF", "bdsf", null_context, id="BDSF"),
+            pytest.param(None, None, raises, id="nonetype_raises"),
+            pytest.param(True, None, raises, id="true_raises"),
+            pytest.param("none", None, raises, id="invalid_string_raises"),
         ],
     )
-    def test_resolve_source_finder(self, name, fallback, expected, context):
+    def test_resolve_source_finder(self, name, expected, context):
         # Act
         with context:
-            result = resolve_source_finder(name, fallback)
-
             # Assert
-            assert result == expected
+            assert resolve_source_finder(name) == expected
 
 
 def get_image_paths(tmp_path, prefix):
