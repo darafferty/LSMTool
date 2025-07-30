@@ -174,8 +174,8 @@ def validate_catalog(catalog_path: PathLike) -> Table:
     }.items():
         if (given_unit := catalog_table[column].unit) != required_unit:
             raise UnitsError(
-                f"Expected unit for {column!r} column to be {required_unit}: "
-                f"{given_unit!r}."
+                f"Invalid unit {given_unit!r} for {column!r} column. "
+                f"Expected unit: {required_unit!r}."
             )
 
     # Get gaussian orientation
