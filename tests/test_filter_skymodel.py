@@ -13,7 +13,7 @@ from lsmtool.filter_skymodel import (
     resolve_source_finder,
     sofia,
 )
-from lsmtool.testing import assert_skymodels_are_equal
+from lsmtool.testing import check_skymodels_equal
 
 
 class TestResolveSourceFinder:
@@ -108,10 +108,10 @@ class TestBDSF:
         assert true_sky_path.exists()
         assert apparent_sky_path.exists()
 
-        assert_skymodels_are_equal(
+        assert check_skymodels_equal(
             apparent_sky_path, TEST_DATA_PATH / "expected.apparent_sky.txt"
         )
-        assert_skymodels_are_equal(
+        assert check_skymodels_equal(
             true_sky_path, TEST_DATA_PATH / "expected.true_sky.txt"
         )
 
@@ -145,10 +145,10 @@ class TestBDSF:
         assert apparent_sky_path.exists()
         assert true_sky_path.exists()
 
-        assert_skymodels_are_equal(
+        assert check_skymodels_equal(
             true_sky_path, TEST_DATA_PATH / "single_point.sky"
         )
-        assert_skymodels_are_equal(
+        assert check_skymodels_equal(
             apparent_sky_path,
             TEST_DATA_PATH / "single_point.sky",
         )
@@ -180,12 +180,12 @@ class TestSofia:
         assert apparent_sky_path.exists()
         assert true_sky_path.exists()
 
-        assert_skymodels_are_equal(
+        assert check_skymodels_equal(
             true_sky_path,
             apparent_sky_path,
             check_patch_names_sizes=False,
         )
-        assert_skymodels_are_equal(
+        assert check_skymodels_equal(
             apparent_sky_path,
             TEST_DATA_PATH / "expected_sofia.true_sky.txt",
             check_patch_names_sizes=False,
@@ -207,12 +207,12 @@ class TestSofia:
         assert apparent_sky_path.exists()
         assert true_sky_path.exists()
 
-        assert_skymodels_are_equal(
+        assert check_skymodels_equal(
             apparent_sky_path,
             TEST_DATA_PATH / "expected_sofia.true_sky.txt",
             check_patch_names_sizes=False,
         )
-        assert_skymodels_are_equal(
+        assert check_skymodels_equal(
             true_sky_path,
             TEST_DATA_PATH / "expected_sofia.true_sky.txt",
             check_patch_names_sizes=False,
