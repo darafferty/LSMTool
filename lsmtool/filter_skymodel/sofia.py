@@ -202,7 +202,7 @@ def validate_image(image_header: fits.header.Header):
     for i, dimension in enumerate(("width", "height"), 1):
         unit = image_header[f"CUNIT{i}"]
         if unit != "deg":
-            raise ValueError(
+            raise UnitsError(
                 f"Unit of the image {dimension} is {unit}. Only 'deg' is "
                 "supported."
             )
