@@ -12,6 +12,7 @@ the sky model filtering with `pyBDSF
 respectively.
 """
 
+import contextlib as ctx
 from typing import Union
 
 from ..io import (
@@ -19,9 +20,14 @@ from ..io import (
     PathLikeOptional,
     PathLikeOrListOptional,
 )
-from . import bdsf, sofia
+from . import bdsf
 
-KNOWN_SOURCE_FINDERS = {"sofia": sofia, "bdsf": bdsf}
+KNOWN_SOURCE_FINDERS = {"bdsf": bdsf}
+
+with ctx.suppress(ModuleNotFoundError):
+    from . import sofia
+
+    KNOWN_SOURCE_FINDERS["sofia"] = sofia
 
 
 def filter_skymodel(

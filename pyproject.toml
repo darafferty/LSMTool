@@ -48,13 +48,15 @@ dependencies = [
     "Pillow <= 9.0; python_version < '3.9'",
     "Pillow > 11.1; python_version >= '3.9'",
     "bdsf",
-    "sofia2 @ git+https://gitlab.com/milhazes/SoFia-2.git@694646dc"
 ]
+[project.optional-dependencies]
+sofia = ["sofia2 @ git+https://gitlab.com/milhazes/SoFia-2.git@694646dc"]
 
 [dependency-groups]
 docs = ["sphinx", "numpydoc"]
 tests = ["pytest", "tox>=4.21", "coverage"]
 dev = ["ruff", 
+       "lsmtool[sofia]",
        {include-group = "docs"}, 
        {include-group = "tests"}]
 
@@ -145,6 +147,7 @@ env_list = ["fix", "coverage", "lint", "format", "py{8,9,10,11,12}"]
 [tool.tox.env_run_base]
 description = "run unit tests"
 deps = ["pytest", "coverage"]
+extras = ["sofia"]
 package = "editable"
 set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning" }
 commands = [["python", "--version"], ["python", "-m", "pytest", { replace = "posargs", default = [], extend = true }]]

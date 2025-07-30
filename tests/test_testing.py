@@ -170,7 +170,6 @@ def test_check_skymodels_equal_patches(
 def test_check_skymodels_equal(
     left_filename, right_filename, check_patch_names_sizes, expected_equal
 ):
-
     # Assert
     assert (
         check_skymodels_equal(

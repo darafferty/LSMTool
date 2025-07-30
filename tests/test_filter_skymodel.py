@@ -44,7 +44,6 @@ class TestResolveSourceFinder:
         ],
     )
     def test_resolve_source_finder(self, name, fallback, expected, context):
-
         # Act
         with context:
             result = resolve_source_finder(name, fallback)
@@ -116,7 +115,6 @@ class TestBDSF:
         )
 
     def test_filter_skymodel_diagnostics(self, image_paths, diagnostic_paths):
-
         # run the base test
         self.test_filter_skymodel(image_paths, **diagnostic_paths)
         # check that the additional files were created
