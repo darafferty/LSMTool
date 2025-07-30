@@ -158,13 +158,6 @@ def test_check_skymodels_equal_patches(
             False,
             id="not_equal",
         ),
-        # pytest.param(
-        #     "", skymodel_modified_patches, True, False, id="boop",
-        # ),
-        # pytest.param(
-        #     "", "", True, False, id="different_default_values"
-        # ),
-        # pytest.param("", "", True, False, id="different_col_values"),
     ],
 )
 def test_check_skymodels_equal(

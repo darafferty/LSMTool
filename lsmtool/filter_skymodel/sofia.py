@@ -12,7 +12,7 @@ from ..correct_gaussian_orientation import compute_absolute_orientation
 from ..io import PathLike, PathLikeOptional, PathLikeOrListOptional, load
 from ..utils import format_coordinates, rotation_matrix_2d, table_to_array
 
-# conversion factor between sofia and makeshourcedb parameterisations
+# conversion factor between sofia and makesourcedb parametrisations
 FWHM_PER_SIGMA = 2 * np.sqrt(2 * np.log(2))
 
 
@@ -102,8 +102,8 @@ def filter_skymodel(
         "input.data": str(input_image),  # Input file
         "pipeline.threads": str(ncores),
         "scfind.enable": "true",  # Use the default S+C find algorithm
-        "scfind.statistic": "gauss",  # Gaussian statistics seem to give
-        # better output models
+        # Gaussian statistics seem to give better output models
+        "scfind.statistic": "gauss",  
         "scfind.kernelsZ": "0",  # Required for 2D images
         "linker.radiusZ": "1",  # Required for 2D images
         "linker.minSizeZ": "1",  # Required for 2D images
@@ -145,8 +145,8 @@ def filter_skymodel(
     # Convert source parameters
     source_parameters = get_source_parameters(image_header, catalog_table)
 
-    # Create additional columns needed by BBS format.
-    # Details of the expected format fo the BBS source catalog can be found at:
+    # Create additional columns needed by makesourcedb format. Details of the
+    # expected format for the  makesourcedb catalog can be found at:
     # https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb
     write_skymodel(output_true_sky, catalog_table, source_parameters)
 
@@ -244,7 +244,7 @@ def get_source_parameters(
     # Get fluxes
     fluxes = catalog_table["f_sum"]
 
-    # Create arrays of strings that adheres to the BBS format:
+    # Create arrays of strings that adheres to the makesourcedb format:
     ra_strings, dec_strings = format_coordinates(
         catalog_table["ra"], catalog_table["dec"]
     )
