@@ -123,7 +123,11 @@ class TestBDSF:
         assert diagnostic_paths["output_flat_noise_rms"].exists()
 
     def test_filter_skymodel_empty(self, image_paths):
-        """Test skymodel filtering with too high thresholds"""
+        """
+        Test skymodel filtering with too high thresholds.
+        filter_skymodel() should fallback to using create_dummy_skymodel().
+        This test also tests create_dummy_skymodel(), including its output.
+        """
 
         image_path, true_sky_path, apparent_sky_path, beam_ms = image_paths
 

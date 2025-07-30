@@ -133,10 +133,10 @@ def validate_paths(required: bool = True, **filenames):
     ------
     TypeError
         If a filename is not a string or Path object. The corresponding
-        parameter name will be shown in the exception message,
+        parameter name will be shown in the exception message.
     FileNotFoundError
         If a required file does not exist. The corresponding parameter name
-        will be shown in the exception message,
+        will be shown in the exception message.
     """
     for name, path in filenames.items():
         try:

@@ -42,15 +42,17 @@ def filter_skymodel(
     Measurement Set format).
 
     Note: This function produces the following output files:
-    - SoFiA source catalogue: "<output_prefix>_cat.xml".
-    - output_apparent_sky: Generated apparent sky model in CSV format, without
-      primary-beam correction.
-    - output_true_sky: Generated true sky model in CSV format, with
-      primary-beam correction. Will be identical to the output_apparent_sky if
-      no beam measurement set is provided.
+      - SoFiA source catalogue: "<output_prefix>_cat.xml".
+      - output_apparent_sky: Generated apparent sky model in CSV format, without
+        primary-beam correction.
+      - output_true_sky: Generated true sky model in CSV format, with
+        primary-beam correction. Will be identical to the output_apparent_sky if
+        no beam measurement set is provided.
 
-    The SoFiA-2 documentation is available at:
-    https://gitlab.com/SoFiA-Admin/SoFiA-2/-/wikis/documents/SoFiA-2_User_Manual.pdf
+    Please refer to the `SoFiA-2 documentation (pdf)`_ for more information.
+
+    .. _SoFiA-2 documentation (pdf):
+        https://gitlab.com/SoFiA-Admin/SoFiA-2/-/wikis/documents/SoFiA-2_User_Manual.pdf
 
     Parameters
     ----------
@@ -103,7 +105,7 @@ def filter_skymodel(
         "pipeline.threads": str(ncores),
         "scfind.enable": "true",  # Use the default S+C find algorithm
         # Gaussian statistics seem to give better output models
-        "scfind.statistic": "gauss",  
+        "scfind.statistic": "gauss",
         "scfind.kernelsZ": "0",  # Required for 2D images
         "linker.radiusZ": "1",  # Required for 2D images
         "linker.minSizeZ": "1",  # Required for 2D images
@@ -191,14 +193,16 @@ def validate_catalog(catalog_path: PathLike) -> Table:
 
 
 def rename_sources(catalog_table: Table):
-    # Remove whitespace from source names (incompatible with BBS format)
+    """
+    Remove whitespace from source names (incompatible with makesourcedb format).
+    """
     names = catalog_table["name"]
     for i, name in enumerate(names):
         names[i] = name.replace(" ", "_")
 
 
 def validate_image(image_header: fits.header.Header):
-    # Check units are as expected
+    """Check that the image units are as expected."""
     for i, dimension in enumerate(("width", "height"), 1):
         unit = image_header[f"CUNIT{i}"]
         if unit != "deg":
@@ -214,8 +218,8 @@ def get_source_parameters(
     """
     Get source parameters from SoFiA-2 catalog and image header.
 
-    Extracts source positions, axes, orientation, and fluxes
-    from the SoFiA-2 catalog and image header.  Orientations are corrected to
+    Extracts source positions, axes, orientation, and fluxes from the
+    SoFiA-2 catalog and image header. Orientations are corrected to
     be with respect to the North Celestial Pole (NCP).
 
     Parameters
@@ -374,12 +378,12 @@ def write_skymodel(
     output_true_sky: PathLike, catalog_table: Table, source_parameters: tuple
 ):
     """
-    Writes the source catalog to a file, ensuring that it adheres to the BBS
-    format expected by downstream toolchain (wsclean, dp3).
+    Writes the source catalog to a file, ensuring that it adheres to the
+    makesourcedb format expected by downstream toolchain (wsclean, dp3).
 
-    Constructs an astropy Table with the necessary columns for the BBS format
+    Constructs an astropy Table with the necessary columns for the makesourcedb format
     and writes it to a CSV file. Then, it modifies the header of the CSV file
-    to match the BBS format specifications. Details of the source catalog
+    to match the makesourcedb format specifications. Details of the source catalog
     format can be found at:
     https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb
 
@@ -420,7 +424,7 @@ def write_skymodel(
     csv_table["Orientation"] = source_parameters["Orientation"]
 
     with output_true_sky.open("w", encoding="utf-8") as stream:
-        # Write the format specifier line for BBS makesourcedb format
+        # Write the format specifier line for makesourcedb format
         stream.write(
             "Format = Name, Type, Ra, Dec, I, SpectralIndex, LogarithmicSI, "
             f"ReferenceFrequency='{reference_freq:.5e}', "

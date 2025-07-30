@@ -1,14 +1,17 @@
 """
 Module that holds miscellaneous utility functions and classes.
 
-This file was adapted from the original in the Rapthor repository:
-https://git.astron.nl/RD/rapthor/-/tree/master/rapthor/lib/miscellaneous.py
+This file was adapted from the `original`_ in the Rapthor repository:
 
 Additional functions for supporting skymodel filtering based on SoFiA was added
-for the SKA self calibration pipeline at 
-https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/miscellaneous.py
+for the SKA self calibration pipeline in this `merge request`_.
 
 Some functions were removed or combined when migrating the module to LSMTools.
+
+.. _original:
+    https://git.astron.nl/RD/rapthor/-/tree/master/rapthor/lib/miscellaneous.py
+.. _merge request:
+    https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/miscellaneous.py
 """
 
 import numpy as np
@@ -25,8 +28,8 @@ def format_coordinates(ra, dec, precision=6):
 
     Converts RA and Dec values (in degrees) to string representations according
     to the BBS makesourcedb sky model format. The format specification can be
-    found at:
-    https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb#angle_specification
+    found in the `lofar documentation`_.
+
 
     Parameters
     ----------
@@ -43,6 +46,8 @@ def format_coordinates(ra, dec, precision=6):
     tuple of numpy.ndarray
         A tuple containing two arrays: formatted RA strings and formatted Dec
         strings.
+
+    .. _lofar documentation: https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb#angle_specification
     """
     coords = SkyCoord(ra, dec, unit="deg")
     return (

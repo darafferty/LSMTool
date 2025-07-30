@@ -2,9 +2,9 @@
 
 """
 This initializes the LSMTool module by importing the necessary submodules
-containing utility (:py:mod:`.utils`) and input-output (:py:mod:`.io`)
-functions. Table input-output operations using makesourcedb format are
-registered with astropy upon import.
+containing utility (:py:mod:`lsmtool.utils`) and input-output
+(:py:mod:`lsmtool.io`) functions. Table input-output operations using
+makesourcedb format are registered with astropy upon import.
 
 .. moduleauthor:: David Rafferty <drafferty@hs.uni-hamburg.de>
 """

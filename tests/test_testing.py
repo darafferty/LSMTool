@@ -1,5 +1,5 @@
 """
-Tests for assertion helpers used in tests
+Tests for skymodel assertion helpers.
 """
 
 import pytest

@@ -1,12 +1,14 @@
 """
-Script to filter and group a sky model with an image.
+Module for filtering and grouping a sky model based on sources found by
+`pyBDSF`_ in an image. This file was originally copied from the `rapthor
+repository`_. Also includes substantial changes introduced in the `SKA self
+calibration pipeline`_.
 
-This file was originally copied from the `Rapthor repository
-<https://git.astron.nl/RD/rapthor/-/blob/544ddf/rapthor/scripts/filter_skymodel.py>`_
-
-Also includes substantial changes introduced in the `SKA self calibration
-pipeline
-<https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/filter_skymodel.py>`_
+.. _pyBDSF: https://pybdsf.readthedocs.io/en/stable/
+.. _rapthor repository: 
+    https://git.astron.nl/RD/rapthor/-/blob/544ddf/rapthor/scripts/filter_skymodel.py
+.. _SKA self calibration pipeline:
+    https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/filter_skymodel.py
 """
 
 import logging
@@ -70,101 +72,53 @@ def filter_skymodel(
     """
     Filters the input sky model using PyBDSF.
 
-    If no islands of emission are detected in the input image, a blank sky model
-    is made. If any islands are detected in the input image, filtered true-sky
-    and apparent-sky models are made, as well as a FITS clean mask (with the
-    filename input_image+'.mask').
+    If no islands of emission are detected in the input image, a blank sky
+    model is made. If any islands are detected in the input image, filtered
+    true-sky and apparent-sky models are made, as well as a FITS clean mask
+    (with the filename input_image+'.mask').
 
     Parameters
     ----------
-    flat_noise_image : str or Path
-        Filename of input image to use to detect sources for filtering.
-        It should be a flat-noise / apparent sky image (without primary-beam
-        correction).
-    true_sky_image : str or Path or None
-        Filename of input image to use to determine the true flux of sources.
-        It should be a true flux image (with primary-beam correction).
-        - If `beam_ms` is given and exists, this parameter is ignored and
-        the `flat_noise_image` is used instead.
-        - If beam_ms is None or an empty string, this argument must be
-        supplied.
-    input_true_skymodel : str or Path or None
-        Filename of input makesourcedb sky model, with primary-beam correction.
-        - If this file does not exist, and `input_bright_skymodel` exists,
-        `input_bright_skymodel` will be used as the `input_true_skymodel`.
-        - If this file does not exist, and the `input_bright_skymodel` does not
-        exist, the steps related to the input sky model are skipped but all
-        other processing is still done.
-    input_apparent_skymodel : str or Path or None
-        Filename of input makesourcedb sky model, without primary-beam
-        correction.
-        - If this file exists, and input_true_skymodel exists, it is filtered
-        and grouped to match the sources and patches of the
-        `input_true_skymodel`.
-        - If this file does not exist, and `input_true_skymodel` exists, it is
-        generated from the `input_true_skymodel` by applying the beam
-        attenuation. In this case, if `beam_ms` is not given, or is None, the
-        generated `output_apparent_sky` will be identical to the
-        `output_true_sky` files.
-        - If `input_apparent_skymodel` does not exist, and neither
-        `input_true_skymodel` nor `input_bright_skymodel` exist, an exception
-        is raised.
-    output_apparent_sky: str or Path or None
-        Output file name for the generated apparent sky model, without
-        primary-beam correction.
-        - If this file exists, it will be overwritten.
-    output_true_sky : str or Path
-        Output file name for the generated true sky model, with
-        primary-beam correction.
-        - If this file exists, it will be overwritten.
-    vertices_file : str or Path
-        Filename of file with vertices, which determine the imaging field.
-    beam_ms : str or Path or list of str or list of Path or None, default None
-        The filename of the MS for deriving the beam attenuation and
-        theoretical image noise.
-        - If None (the default), or an empty string, the generated
-        apparent and true sky models will be equal.
-    input_bright_skymodel : str or Path, optional
-        Filename of input makesourcedb sky model of bright sources only. This
-        parameter can be used to add back bright sources to the sky model that
-        were peeled before imaging. This should be a true sky model, with
-        primary-beam correction.
-        - If `input_true_skymodel` exists, sources in `input_bright_skymodel`
-        will be added to the sky model from `input_true_skymodel`.
-        - If `input_true_skymodel` is None, or an empty string, the
-        `input_bright_skymodel` will be used as the `input_true_skymodel`.
+    flat_noise_image, true_sky_image, ..., beam_ms, input_bright_skymodel
+        Please :py:func:`lsmtool.filter_skymodel.filter_skymodel` for the
+        meaning of the positional parameters.
 
     Other Parameters
     ----------------
-    thresh_isl : float
+    thresh_isl : float, optional
         Value of thresh_isl PyBDSF parameter.
-    thresh_pix : float
+    thresh_pix : float, optional
         Value of thresh_pix PyBDSF parameter.
-    rmsbox : tuple of float
+    rmsbox : tuple of float, optional
         Value of rms_box PyBDSF parameter.
-    rmsbox_bright : tuple of float
+    rmsbox_bright : tuple of float, optional
         Value of rms_box_bright PyBDSF parameter.
-    adaptive_rmsbox : bool
+    adaptive_rmsbox : bool, optional
         Value of adaptive_rms_box PyBDSF parameter.
-    adaptive_thresh : float
-        If adaptive_rmsbox is True, this value sets the threshold above
-        which a source will use the small rms box.
-    filter_by_mask : bool
+    adaptive_thresh : float, optional
+        If adaptive_rmsbox is True, this value sets the threshold above which a
+        source will use the small rms box.
+    filter_by_mask : bool, optional
         If True, filter the input sky model by the PyBDSF-derived mask,
         removing sources that lie in unmasked regions.
-    output_catalog: str or Path
-        The filename for source catalog. If not provied, (or None, or an empty
-        string), do not create it.
-    output_flat_noise_rms: str or Path
-        The filename for the flat noise RMS image. If not provied, (or None, or
-        an empty string), do not create it. Creating this image may require an
-        additional PyBDSF call and thereby slow down this function
-        significantly.
-    output_true_rms: str or Path
-        The filename for the true sky RMS image. If not provied, (or None, or
-        an empty string), do not create it.
+    output_catalog: str or Path, optional
+        The filename for source catalog. If not provided, do not create it.
+    output_flat_noise_rms: str or Path, optional
+        The filename for the flat noise root-mean-square (RMS) image. If not
+        provied, do not create it. Creating this image may require an
+        additional PyBDSF call
+        and thereby slow down this function significantly.
+    output_true_rms: str or Path, optional
+        The filename for the true sky RMS image. If not provied, do not create
+        it.
     ncores : int
         Specify the number of cores that BDSF should use. Defaults to 8.
+
+    Raises
+    ------
+    FileNotFoundError
+        If none of the following input files is defined: `input_true_skymodel`,
+        `input_apparent_skymodel` or `input_bright_skymodel`.
 
     Returns
     -------
@@ -256,10 +210,9 @@ def process_images(
     """
     Processes images using PyBDSF and generates output files.
 
-    This function runs PyBDSF on either the true sky image or the
-    flat noise image, depending on whether a beam measurement set
-    is provided. It then optionally generates a source catalog and
-    RMS maps.
+    This function runs PyBDSF on either the true sky image or the flat noise
+    image, depending on whether a beam measurement set is provided. It then
+    optionally generates a source catalog and RMS maps.
 
     Parameters
     ----------
@@ -345,10 +298,9 @@ def filter_sources(
     """
     Filter and group sources based on a mask and other criteria.
 
-    This function filters the input sky model based on a mask
-    generated from the true sky image. It also handles adding
-    bright sources, removing negative components, and grouping
-    sources by mask islands.
+    This function filters the input sky model based on a mask generated from
+    the true sky image. It also handles adding bright sources, removing
+    negative components, and grouping sources by mask islands.
 
     Parameters
     ----------
@@ -446,8 +398,8 @@ def trim_mask(mask_file: PathLike, vertices_file: PathLike):
     Trim the mask file to the given vertices.
 
     This function opens the mask file, creates a polygon from the vertices
-    using the file's WCS, rasterizes the polygon, and overwrites the
-    mask file with the rasterized polygon data.
+    using the file's WCS, rasterizes the polygon, and overwrites the mask file
+    with the rasterized polygon data.
 
     Parameters
     ----------
@@ -471,9 +423,9 @@ def select_midpoint(beam_ms: ListOfPathLike) -> str:
     """
     Select the best measurement set for beam attenuation.
 
-    Selects the measurement set (MS) that is closest to the median time
-    of all provided data. This is intended to choose a representative beam
-    for attenuation calculations.
+    Selects the measurement set (MS) that is closest to the median time of all
+    provided data. This is intended to choose a representative beam for
+    attenuation calculations.
 
     Parameters
     ----------
