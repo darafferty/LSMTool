@@ -38,7 +38,7 @@ def compute_absolute_orientation(
     ra_diff = ra_source - ra_center
     dl_ddec = -sin(dec_source) * sin(ra_diff)
     # fmt: off
-    dm_ddec = ( 
+    dm_ddec = (
         cos(dec_source) * cos(dec_center) +
         sin(dec_source) * sin(dec_center) * cos(ra_diff)
     )  # fmt: on
