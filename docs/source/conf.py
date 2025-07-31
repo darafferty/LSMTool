@@ -183,6 +183,11 @@ html_theme = "default"
 # Output file base name for HTML help builder.
 htmlhelp_basename = "LSMTooldoc"
 
+# If a function's signature length in characters exceeds the number set, each
+# parameter within the signature will be displayed on an individual logical
+# line.
+maximum_signature_line_length = 80
+
 
 # -- Options for LaTeX output ---------------------------------------------
 
