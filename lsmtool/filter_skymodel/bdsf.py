@@ -348,55 +348,54 @@ def filter_sources(
     # Load input true sky model and add bright source catalogue if provided
     if input_true_skymodel:
         # Load the sky model with the associated beam MS.
-        input_true_skymodel = load(input_true_skymodel, beamMS=beam_ms)
+        true_skymodel = load(input_true_skymodel, beamMS=beam_ms)
         if input_bright_skymodel:
             # If bright sources were peeled before imaging, add them back
-            add_bright_sources(input_true_skymodel, input_bright_skymodel)
+            add_bright_sources(true_skymodel, input_bright_skymodel)
     else:
         # If no input true skymodel given, use the input bright sources
         # skymodel
-        input_true_skymodel = load(input_bright_skymodel)
+        true_skymodel = load(input_bright_skymodel)
 
     # Do final filtering and write out the sky models
-    if input_true_skymodel and filter_by_mask:
+    if filter_by_mask:
         # Keep only those sources in PyBDSF masked regions
-        input_true_skymodel.select(f"{mask_file} == True")
+        true_skymodel.select(f"{mask_file} == True")
 
-    if input_true_skymodel:
-        # Group the sky model by mask islands
-        input_true_skymodel.group(mask_file)
+    # Group the sky model by mask islands
+    true_skymodel.group(mask_file)
 
-        if input_apparent_skymodel:
-            apparent_skymodel = load(input_apparent_skymodel)
-            # Match the filtering and grouping of the filtered model
-            matches = np.isin(
-                apparent_skymodel.getColValues("Name"),
-                input_true_skymodel.getColValues("Name"),
-            )
-            apparent_skymodel.select(matches)
-            transfer_patches(
-                input_true_skymodel,
-                apparent_skymodel,
-                patch_dict=input_true_skymodel.getPatchPositions(),
-            )
-            apparent_skymodel.write(
-                output_apparent_sky, clobber=True, applyBeam=False
-            )
-        else:
-            # If the apparent sky model is not given, attenuate the true-sky
-            # one by applying the beam. If beam_ms is None, the apparent and
-            # true skymodels will be equal.
-            input_true_skymodel.write(
-                output_apparent_sky, clobber=True, applyBeam=bool(beam_ms)
-            )
+    if input_apparent_skymodel:
+        apparent_skymodel = load(input_apparent_skymodel)
+        # Match the filtering and grouping of the filtered model
+        matches = np.isin(
+            apparent_skymodel.getColValues("Name"),
+            true_skymodel.getColValues("Name"),
+        )
+        apparent_skymodel.select(matches)
+        transfer_patches(
+            true_skymodel,
+            apparent_skymodel,
+            patch_dict=true_skymodel.getPatchPositions(),
+        )
+        apparent_skymodel.write(
+            output_apparent_sky, clobber=True, applyBeam=False
+        )
+    else:
+        # If the apparent sky model is not given, attenuate the true-sky
+        # one by applying the beam. If beam_ms is None, the apparent and
+        # true skymodels will be equal.
+        true_skymodel.write(
+            output_apparent_sky, clobber=True, applyBeam=bool(beam_ms)
+        )
 
-        # Write out true sky model
-        input_true_skymodel.write(output_true_sky, clobber=True)
+    # Write out true sky model
+    true_skymodel.write(output_true_sky, clobber=True)
 
     # Remove the mask file
     os.remove(mask_file)
 
-    return input_true_skymodel
+    return true_skymodel
 
 
 def trim_mask(mask_file: PathLike, vertices_file: PathLike):
