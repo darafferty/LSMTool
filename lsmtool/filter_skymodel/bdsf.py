@@ -29,7 +29,6 @@ from ..io import (
     PathLike,
     PathLikeOptional,
     PathLikeOrListOptional,
-    check_file_exists,
     load,
     read_vertices_ra_dec,
     temp_storage,
@@ -139,8 +138,20 @@ def filter_skymodel(
         true_sky_image=true_sky_image,
         input_true_skymodel=input_true_skymodel,
         input_apparent_skymodel=input_apparent_skymodel,
+        input_bright_skymodel=input_bright_skymodel,
         required=False,
     )
+    # Require that one of the input skymodels exist, otherwise there is nothing
+    # to filter. At this point we know that the paths exist if they are given,
+    # so we only need to check that at least one of these are provided.
+    if not (
+        input_true_skymodel or input_apparent_skymodel or input_bright_skymodel
+    ):
+        raise FileNotFoundError(
+            "At least one of the following input skymodels should be provided: "
+            "input_true_skymodel, input_apparent_skymodel, "
+            "input_bright_skymodel."
+        )
 
     rmsbox = parse_rmsbox(rmsbox)
     rmsbox_bright = parse_rmsbox(rmsbox_bright)
@@ -381,11 +392,6 @@ def filter_sources(
 
         # Write out true sky model
         input_true_skymodel.write(output_true_sky, clobber=True)
-
-    else:
-        # Input true sky model is empty. Require that input_apparent_skymodel
-        # exists
-        check_file_exists(input_apparent_skymodel)
 
     # Remove the mask file
     os.remove(mask_file)
