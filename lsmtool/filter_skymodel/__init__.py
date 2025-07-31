@@ -139,7 +139,7 @@ def resolve_source_finder(name: str) -> str:
     Resolve which source finder to use based on input string.
 
     This function checks the given source finder name against valid options,
-    Currently supported options are: "bdsf" and "sofia" (if installed)). The
+    Currently supported options are: "bdsf" and "sofia" (if installed). The
     currently supported source finders are listed in the module variable:
     `KNOWN_SOURCE_FINDERS`.
 

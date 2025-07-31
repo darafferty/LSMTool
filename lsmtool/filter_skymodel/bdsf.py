@@ -79,7 +79,7 @@ def filter_skymodel(
     Parameters
     ----------
     flat_noise_image, true_sky_image, ..., beam_ms, input_bright_skymodel
-        Please :py:func:`lsmtool.filter_skymodel.filter_skymodel` for the
+        See :py:func:`lsmtool.filter_skymodel.filter_skymodel` for the
         meaning of the positional parameters.
 
     Other Parameters
@@ -319,10 +319,12 @@ def filter_sources(
         The PyBDSF image object.
     vertices_file : str or Path
         Filename of file with vertices, which determine the imaging field.
-    input_true_skymodel : str or Path
+    input_true_skymodel : str or Path, optional
         Filename of input makesourcedb sky model.
+        If not provided, the input_bright_skymodel must be provided.
     input_bright_skymodel : str or Path, optional
         Filename of input makesourcedb sky model of bright sources only.
+        If not provided, the input_true_skymodel must be provided.
     beam_ms : str or Path, optional
         The filename of the MS for deriving the beam attenuation.
     filter_by_mask : bool, optional
