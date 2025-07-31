@@ -3,9 +3,12 @@ Module for file read / write tasks.
 """
 
 import contextlib as ctx
+import numbers
 import os
 import pickle
+import tempfile
 from pathlib import Path
+from typing import Sequence, Union
 
 import numpy as np
 
@@ -13,12 +16,20 @@ from .skymodel import SkyModel
 
 # save original tmp path if defined
 ORIGINAL_TMPDIR = os.environ.get("TMPDIR")
-TRIAL_TMP_PATHS = ("/tmp", "/var/tmp", "/usr/tmp")
+TRIAL_TMP_PATHS = [tempfile.gettempdir()]
+
+# Type aliases for paths-like objects
+PathLike = Union[str, Path]
+PathLikeOptional = Union[PathLike, None]
+ListOfPathLike = Sequence[PathLike]
+ListOfPathLikeOptional = Union[ListOfPathLike, None]
+PathLikeOrListOptional = Union[PathLikeOptional, ListOfPathLike]
 
 
 @ctx.contextmanager
-def temp_storage(trial_paths=TRIAL_TMP_PATHS):
-    """Context manager for setting a temporary storage path.
+def temp_storage(trial_paths: PathLikeOrListOptional = TRIAL_TMP_PATHS):
+    """
+    Context manager for setting a temporary storage path.
 
     This context manager attempts to set the TMPDIR environment variable
     to a short path to avoid issues with path length limitations,
@@ -30,26 +41,26 @@ def temp_storage(trial_paths=TRIAL_TMP_PATHS):
     trial_paths : tuple of str, optional
         A tuple of paths to try setting as the TMPDIR environment variable.
         The first existing path in the tuple will be used. Defaults to
-        TRIAL_TMP_PATHS, which includes the same locations used in the
-        tempfile Python library.
+        TRIAL_TMP_PATHS, which uses the same locations used by the
+        :py::mod:`tempfile` library.
     """
     if isinstance(trial_paths, (str, Path)):
         trial_paths = [trial_paths]
 
     try:
-        _set_tmpdir(trial_paths)
-        yield
+        yield _set_tmpdir(trial_paths)
     finally:
         _restore_tmpdir()
 
 
-def _set_tmpdir(trial_paths=TRIAL_TMP_PATHS):
+def _set_tmpdir(trial_paths: PathLikeOrListOptional = TRIAL_TMP_PATHS):
     """Sets a temporary directory to avoid path length issues."""
     trial_paths = trial_paths or []
     for tmpdir in trial_paths:
-        if Path(tmpdir).exists():
+        path = Path(tmpdir)
+        if path.exists():
             os.environ["TMPDIR"] = tmpdir
-            return
+            return path
 
     raise NotADirectoryError(
         f"None of the trial paths exist: {', '.join(trial_paths)}."
@@ -58,11 +69,89 @@ def _set_tmpdir(trial_paths=TRIAL_TMP_PATHS):
 
 def _restore_tmpdir():
     """Restores the original temporary directory."""
-    if ORIGINAL_TMPDIR is not None:
+    if ORIGINAL_TMPDIR is None:
+        os.environ.pop("TMPDIR", None)
+    else:
         os.environ["TMPDIR"] = ORIGINAL_TMPDIR
 
 
-def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
+def check_file_exists(path: PathLike):
+    """
+    Check if a file exists at the given path.
+
+    This function checks if a file exists at the specified path. It raises
+    exceptions if the path is not a string or Path object, or if the file
+    does not exist.
+
+    Parameters
+    ----------
+    path : str or Path
+        The path to the file.
+
+    Returns
+    -------
+    Path
+        The path to the file.
+
+    Raises
+    ------
+    TypeError
+        If the input path is not a string or Path object.
+    FileNotFoundError
+        If the file does not exist at the given path.
+    """
+
+    if not isinstance(path, (str, Path)):
+        raise TypeError(
+            f"Object of type {type(path).__name__} cannot be interpreted as a "
+            "system path."
+        )
+
+    path = Path(path)
+    if not path.exists() or not path.is_file():
+        # Fails if the path does not exits or is not a file.
+        raise FileNotFoundError(f"Not able to find file: '{path}'.")
+
+    return path
+
+
+def validate_paths(required: bool = True, **filenames):
+    """
+    Checks if provided filenames exist, raising an exception if a file is
+    non-existant and required.
+
+    Parameters
+    ----------
+    required : bool, optional
+        If True, all filenames must correspond to existing files. If False,
+        non truthy objects (None or "" etc) will not raise an exception.
+    **filenames
+        Keyword arguments where keys are parameter names and values are
+        filenames to validate.
+
+    Raises
+    ------
+    TypeError
+        If a filename is not a string or Path object. The corresponding
+        parameter name will be shown in the exception message.
+    FileNotFoundError
+        If a required file does not exist. The corresponding parameter name
+        will be shown in the exception message.
+    """
+    for name, path in filenames.items():
+        try:
+            if path or required:
+                check_file_exists(path)
+        except (TypeError, FileNotFoundError) as err:
+            raise type(err)(f"Invalid filename for {name!r}: {err}") from None
+
+
+def load(
+    fileName: PathLike,
+    beamMS: PathLikeOptional = None,
+    VOPosition: Sequence[numbers.Real] = None,
+    VORadius: Union[numbers.Real, str] = None,
+) -> SkyModel:
     """
     Load a sky model from a file or VO service and return a SkyModel object.
 
@@ -72,17 +161,17 @@ def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
         Input ASCII file from which the sky model is read (must respect the
         makesourcedb format), name of VO service to query (must be one of
         'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'), or dict (single
-        source only)
+        source only).
     beamMS : str, optional
         Measurement set from which the primary beam will be estimated. A
-        column of attenuated Stokes I fluxes will be added to the table
+        column of attenuated Stokes I fluxes will be added to the table.
     VOPosition : list of floats
         A list specifying a new position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
-        [123.2312, 23.3422]) for a cone search
+        [123.2312, 23.3422]) for a cone search.
     VORadius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g.,
-        '30 arcsec') for cone search region in degrees
+        '30 arcsec') for cone search region in degrees.
 
     Returns
     -------
@@ -117,17 +206,20 @@ def load(fileName, beamMS=None, VOPosition=None, VORadius=None):
     """
 
     return SkyModel(
-        fileName, beamMS=beamMS, VOPosition=VOPosition, VORadius=VORadius
+        str(fileName),
+        beamMS=(str(beamMS) if beamMS else None),
+        VOPosition=VOPosition,
+        VORadius=VORadius,
     )
 
 
-def read_vertices_ra_dec(filename):
+def read_vertices_ra_dec(filename: PathLike):
     """
     Read facet vertices from a pickle file.
 
     Parameters
     ----------
-    filename : str or pathlib.Path
+    filename : str or Path
         The path to the pickle file where facet vertices are stored as
         tuples of RA and Dec values.
 

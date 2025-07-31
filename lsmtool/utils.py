@@ -1,14 +1,17 @@
 """
 Module that holds miscellaneous utility functions and classes.
 
-This file was adapted from the original in the Rapthor repository:
-https://git.astron.nl/RD/rapthor/-/tree/master/rapthor/lib/miscellaneous.py
+This file was adapted from the `original`_ in the Rapthor repository:
 
 Additional functions for supporting skymodel filtering based on SoFiA was added
-for the SKA self calibration pipeline at 
-https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/miscellaneous.py
+for the SKA self calibration pipeline in this `merge request`_.
 
 Some functions were removed or combined when migrating the module to LSMTools.
+
+.. _original:
+    https://git.astron.nl/RD/rapthor/-/tree/master/rapthor/lib/miscellaneous.py
+.. _merge request:
+    https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/miscellaneous.py
 """
 
 import numpy as np
@@ -25,8 +28,8 @@ def format_coordinates(ra, dec, precision=6):
 
     Converts RA and Dec values (in degrees) to string representations according
     to the BBS makesourcedb sky model format. The format specification can be
-    found at:
-    https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb#angle_specification
+    found in the `lofar documentation`_.
+
 
     Parameters
     ----------
@@ -43,6 +46,8 @@ def format_coordinates(ra, dec, precision=6):
     tuple of numpy.ndarray
         A tuple containing two arrays: formatted RA strings and formatted Dec
         strings.
+
+    .. _lofar documentation: https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb#angle_specification
     """
     coords = SkyCoord(ra, dec, unit="deg")
     return (
@@ -160,6 +165,7 @@ def transfer_patches(from_skymodel, to_skymodel, patch_dict=None):
             "Cannot transfer patches since from_skymodel is not grouped "
             "into patches."
         )
+
     names_from = from_skymodel.getColValues("Name").tolist()
     names_to = to_skymodel.getColValues("Name").tolist()
     names_from_set = set(names_from)
@@ -168,29 +174,24 @@ def transfer_patches(from_skymodel, to_skymodel, patch_dict=None):
     if not to_skymodel.hasPatches:
         to_skymodel.group("single")
 
+    input_patches = from_skymodel.table["Patch"]
+    output_patches = to_skymodel.table["Patch"]
+
     if names_from_set == names_to_set:
         # Both sky models have the same sources, so use indexing
         ind_ss = np.argsort(names_from)
         ind_ts = np.argsort(names_to)
-        to_skymodel.table["Patch"][ind_ts] = from_skymodel.table["Patch"][
-            ind_ss
-        ]
+        output_patches[ind_ts] = input_patches[ind_ss]
     elif names_to_set.issubset(names_from_set):
         # The to_skymodel is a subset of from_skymodel, so use slower matching
         # algorithm
         for ind_ts, name in enumerate(names_to):
-            ind_ss = names_from.index(name)
-            to_skymodel.table["Patch"][ind_ts] = from_skymodel.table["Patch"][
-                ind_ss
-            ]
+            output_patches[ind_ts] = input_patches[names_from.index(name)]
     elif names_from_set.issubset(names_to_set):
         # The from_skymodel is a subset of to_skymodel, so use slower matching
         # algorithm, leaving non-matching sources in their initial patches
         for ind_ss, name in enumerate(names_from):
-            ind_ts = names_to.index(name)
-            to_skymodel.table["Patch"][ind_ts] = from_skymodel.table["Patch"][
-                ind_ss
-            ]
+            output_patches[names_to.index(name)] = input_patches[ind_ss]
     else:
         # Skymodels don't match, raise error
         raise ValueError(

@@ -54,8 +54,8 @@ def test_temp_storage(
 
     # Act
     with context or ctx.nullcontext():
-        with temp_storage(trial_paths):
-            assert os.environ["TMPDIR"] == expected_tmpdir
+        with temp_storage(trial_paths) as tmp:
+            assert os.environ["TMPDIR"] == expected_tmpdir == str(tmp)
 
     # Assert
     mock_set_tmpdir.assert_called_once_with(trial_paths)
@@ -100,3 +100,8 @@ def test_read_vertices_invalid(tmp_path, contents):
 
     with pytest.raises(ValueError):
         read_vertices_ra_dec(path)
+
+
+def test_read_vertices_non_existent():
+    with pytest.raises(FileNotFoundError):
+        read_vertices_ra_dec("/path/to/vertices.file")

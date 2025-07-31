@@ -19,12 +19,13 @@ name = "lsmtool"
 dynamic = ["version"]
 description = "The LOFAR Local Sky Model Tool"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 authors = [
     { name = "David Rafferty", email = "drafferty@hs.uni-hamburg.de" },
 ]
 maintainers = [
     { name = "Marcel Loose", email = "loose@astron.nl" },
+    { name = "Hannes Breytenbach", email = "hannes.breytenbach@skao.int" },
 ]
 license = { file = "LICENSE" }
 classifiers = [
@@ -45,13 +46,17 @@ dependencies = [
     "scipy >= 0.11",
     "shapely",
     "Pillow <= 9.0; python_version < '3.9'",
-    "Pillow >= 11.1; python_version >= '3.9'"
+    "Pillow > 11.1; python_version >= '3.9'",
+    "bdsf",
 ]
+[project.optional-dependencies]
+sofia = ["sofia2 @ git+https://gitlab.com/milhazes/SoFia-2.git@694646dc"]
 
 [dependency-groups]
 docs = ["sphinx", "numpydoc"]
 tests = ["pytest", "tox>=4.21", "coverage"]
 dev = ["ruff", 
+       "lsmtool[sofia]",
        {include-group = "docs"}, 
        {include-group = "tests"}]
 
@@ -142,9 +147,10 @@ env_list = ["fix", "coverage", "lint", "format", "py{8,9,10,11,12}"]
 [tool.tox.env_run_base]
 description = "run unit tests"
 deps = ["pytest", "coverage"]
+extras = ["sofia"]
 package = "editable"
 set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning" }
-commands = [["python", "--version"], ["python", "-m", "pytest", "tests/{posargs}"]]
+commands = [["python", "--version"], ["python", "-m", "pytest", { replace = "posargs", default = [], extend = true }]]
 
 # [tool.tox.env.fix]
 # description = "format the code base to adhere to our styles, and complain about what we cannot do automatically"

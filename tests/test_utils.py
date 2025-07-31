@@ -145,6 +145,13 @@ def test_format_coordinates_nominal(
             ],
             id="float_data_off_image",
         ),
+        pytest.param(
+            [(2.7, 3.1), (3.2, 4.5), (5.1, 6.3)],
+            (5, 5),
+            0,
+            np.zeros((5, 5)),
+            id="test_case_from_rapthor",
+        ),
     ],
 )
 def test_rasterize_nominal(verts, data_shape, blank_value, expected_array):
