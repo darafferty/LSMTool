@@ -124,7 +124,14 @@ exclude = [
     "*lib/python*",
     "*egg",
     "_version.py",
-    "lsmtool",
+    "__pycache__",
+    "lsmtool/_logging.py",
+    "lsmtool/lsmtool.py",
+    "lsmtool/operations",
+    "lsmtool/operations_lib.py",
+    "lsmtool/skymodel.py",
+    "lsmtool/tableio.py",
+    "lsmtool/_version.py",
     "tests"
 ]
 
