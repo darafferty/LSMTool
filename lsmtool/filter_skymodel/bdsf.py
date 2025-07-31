@@ -91,12 +91,12 @@ def filter_skymodel(
     rmsbox : tuple of float, optional
         Value of rms_box PyBDSF parameter.
     rmsbox_bright : tuple of float, optional
-        Value of rms_box_bright PyBDSF parameter.
+        Value of `rms_box_bright` PyBDSF parameter.
     adaptive_rmsbox : bool, optional
-        Value of adaptive_rms_box PyBDSF parameter.
+        Value of `adaptive_rms_box` PyBDSF parameter.
     adaptive_thresh : float, optional
-        If adaptive_rmsbox is True, this value sets the threshold above which a
-        source will use the small rms box.
+        If `adaptive_rmsbox` is True, this value sets the threshold above which
+        a source will use the small rms box.
     filter_by_mask : bool, optional
         If True, filter the input sky model by the PyBDSF-derived mask,
         removing sources that lie in unmasked regions.
@@ -105,8 +105,8 @@ def filter_skymodel(
     output_flat_noise_rms: str or Path, optional
         The filename for the flat noise root-mean-square (RMS) image. If not
         provied, do not create it. Creating this image may require an
-        additional PyBDSF call
-        and thereby slow down this function significantly.
+        additional PyBDSF call and thereby slow down this function
+        significantly.
     output_true_rms: str or Path, optional
         The filename for the true sky RMS image. If not provied, do not create
         it.
