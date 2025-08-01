@@ -161,20 +161,23 @@ commands = [["python", "--version"], ["python", "-m", "pytest", { replace = "pos
 [tool.tox.env.coverage]
 commands = [
     ["python", "--version"],
-    ["python", "-m", "pytest", "--cov-report", "term", "--cov-report", "xml", "--cov-report", "html", "--cov=lmstool", "tests/{posargs}"]]
+    ["python", "-m", "pytest", "--cov-report", "term", "--cov-report", "xml", 
+     "--cov-report", "html", "--cov=lmstool", "tests/{posargs}"]]
 
 # Command prefixes to reuse the same virtualenv for all linting jobs.
 [tool.tox.env.lint]
 deps = ["ruff"]
 commands = [
     ["python", "-m", "ruff", "--version"],
-    ["python", "-m", "ruff", "check", { replace = "posargs", default = [], extend = true }]
+    ["python", "-m", "ruff", "check", 
+     { replace = "posargs", default = [], extend = true }]
 ]
 
 [tool.tox.env.format]
 deps = ["ruff"]
 commands = [
-    ["python", "-m", "ruff", "format", "-v", { replace = "posargs", default = [], extend = true }]
+    ["python", "-m", "ruff", "format", "-v", 
+     { replace = "posargs", default = [], extend = true }]
 ]
 
 [tool.tox.env.docs]
@@ -183,7 +186,6 @@ extras = ["sofia"]
 # unset LC_ALL / LANGUAGE from testenv, would fail sphinx otherwise
 set_env = ""
 changedir = "{tox_root}"
-extras = ["docs"]
 allowlist_externals = ["rm", "sphinx-build"]
 commands = [
     ["rm", "-rf", "docs/build/html"],
