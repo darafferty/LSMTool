@@ -53,7 +53,7 @@ dependencies = [
 sofia = ["sofia2 @ git+https://gitlab.com/milhazes/SoFia-2.git@694646dc"]
 
 [dependency-groups]
-docs = ["sphinx>=7.1", "numpydoc", "sphinx-rtd-theme>=0.4.3"]
+docs = ["sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
 tests = ["pytest", "tox>=4.21", "coverage"]
 dev = ["ruff", 
        "lsmtool[sofia]",
@@ -177,16 +177,14 @@ commands = [
     ["python", "-m", "ruff", "format", "-v", { replace = "posargs", default = [], extend = true }]
 ]
 
-# [tool.tox.env.docs]
-# deps = [
-#     "-r{toxinidir}/docs/requirements.txt"]
-# # unset LC_ALL / LANGUAGE from testenv, would fail sphinx otherwise
-# set_env = ""
-# changedir = "{tox_root}"
-# commands = [
-#     ["python", "docs/cleanup.py"],
-#     ["sphinx-build", "-b", "html", "docs/source", "docs/build/html"]
-# ]
+[tool.tox.env.docs]
+# unset LC_ALL / LANGUAGE from testenv, would fail sphinx otherwise
+set_env = ""
+changedir = "{tox_root}"
+commands = [
+    ["python", "docs/cleanup.py"],
+    ["sphinx-build", "-b", "html", "docs/source", "docs/build/html"]
+]
 
 [tool.tox.env.build]
 package = "wheel"
