@@ -1,6 +1,6 @@
 
-io module
----------
+io
+--
 
 .. automodule:: lsmtool.io
     :members:

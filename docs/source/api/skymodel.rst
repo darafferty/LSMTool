@@ -1,6 +1,6 @@
 
-skymodel module
----------------
+skymodel
+--------
 
 .. automodule:: lsmtool.skymodel
     :members:

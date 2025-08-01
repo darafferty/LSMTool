@@ -1,6 +1,6 @@
 
-operations_lib module
----------------------
+operations_lib
+--------------
 
 .. automodule:: lsmtool.operations_lib
     :members:

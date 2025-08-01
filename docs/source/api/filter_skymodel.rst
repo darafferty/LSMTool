@@ -1,6 +1,6 @@
 
-filter_skymodel module
-======================
+filter_skymodel
+===============
 
 .. automodule:: lsmtool.filter_skymodel
     :members:

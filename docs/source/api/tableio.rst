@@ -1,7 +1,7 @@
 
 
-tableio module
---------------
+tableio
+-------
 
 .. automodule:: lsmtool.tableio
     :members:
