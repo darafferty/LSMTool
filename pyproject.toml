@@ -140,7 +140,10 @@ exclude = [
 # Some additional functional errors such as `await` on none async or wrong return types / args.
 # More info https://docs.astral.sh/ruff/rules/
 select = ["N", "A", "E", "F", "B", "W", "Q", "PL", "ASYNC", "S", "G", "RET", "ARG", "I"]
-ignore = ["E203"]
+
+# ignore: magic-value-comparison (PLR2004)
+ignore = ["PLR2004"]
+
 
 ###########################
 # tox settings            #
