@@ -53,7 +53,7 @@ dependencies = [
 sofia = ["sofia2 @ git+https://gitlab.com/milhazes/SoFia-2.git@694646dc"]
 
 [dependency-groups]
-docs = ["sphinx>=7.1", "numpydoc"]
+docs = ["sphinx>=7.1", "numpydoc", "sphinx-rtd-theme>=0.4.3"]
 tests = ["pytest", "tox>=4.21", "coverage"]
 dev = ["ruff", 
        "lsmtool[sofia]",
