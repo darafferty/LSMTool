@@ -53,8 +53,8 @@ dependencies = [
 sofia = ["sofia2 @ git+https://gitlab.com/milhazes/SoFia-2.git@694646dc"]
 
 [dependency-groups]
-docs = ["sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
-tests = ["pytest", "tox>=4.21", "coverage"]
+docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
+tests = ["pytest", "coverage"]
 dev = ["ruff", 
        "lsmtool[sofia]",
        {include-group = "docs"}, 
@@ -178,11 +178,15 @@ commands = [
 ]
 
 [tool.tox.env.docs]
+deps = [{ replace = "ref", of = ["dependency-groups", "docs"], extend = true }]
+extras = ["sofia"]
 # unset LC_ALL / LANGUAGE from testenv, would fail sphinx otherwise
 set_env = ""
 changedir = "{tox_root}"
+extras = ["docs"]
+allowlist_externals = ["rm", "sphinx-build"]
 commands = [
-    ["python", "docs/cleanup.py"],
+    ["rm", "-rf", "docs/build/html"],
     ["sphinx-build", "-b", "html", "docs/source", "docs/build/html"]
 ]
 
