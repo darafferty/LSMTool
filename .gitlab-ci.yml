@@ -13,6 +13,7 @@ stages:
   # check if this needs to be a separate step
   # - build_extensions
   - test
+  - package
 
 # Caching of dependencies to speed up builds
 variables:
@@ -76,3 +77,27 @@ run_unit_tests:
 #     paths:
 #       - htmlcov/*
 
+
+# Build and package the project
+package_files:
+  stage: package
+  artifacts:
+    expire_in: 1w
+    paths:
+      - dist/*
+  before_script:
+    - *install_dependencies
+  script:
+    - tox -e build
+
+# Build the sphinx documentation
+package_docs:
+  stage: package
+  artifacts:
+    expire_in: 1w
+    paths:
+      - docs/build/*
+  before_script:
+    - *install_dependencies
+  script:
+    - tox -e docs

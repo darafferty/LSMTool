@@ -808,11 +808,13 @@ class SkyModel(object):
             If set, the array returned will be of values aggregated
             over the patch members. The following aggregation functions are
             available:
+
                 - 'sum': sum of patch values
                 - 'mean': mean of patch values
                 - 'wmean': Stokes-I-weighted mean of patch values
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
+
             Note that, in some cases, certain aggregation functions will not
             produce meaningful results. For example, asking for the sum of
             the MajorAxis values per patch will not give a good indication of
@@ -1846,55 +1848,54 @@ class SkyModel(object):
         Parameters
         ----------
         filterExpression : str, dict, list, or numpy array
+
             - If string:
-                A string specifying the filter expression in the form:
-                '<property> <operator> <value> [<units>]'
-                (e.g., 'I <= 10.5 Jy').
-
+              A string specifying the filter expression in the form:
+              '<property> <operator> <value> [<units>]'
+              (e.g., 'I <= 10.5 Jy').
             - If dict:
-                The filter can also be given as a dictionary in the form:
-                {'filterProp':property, 'filterOper':operator,
-                    'filterVal':value, 'filterUnits':units}
-
+              The filter can also be given as a dictionary in the form:
+              {'filterProp':property, 'filterOper':operator,
+              'filterVal':value, 'filterUnits':units}
             - If list:
-                The filter can also be given as a list of:
-                [property, operator, value] or
-                [property, operator, value, units]
-
+              The filter can also be given as a list of:
+              [property, operator, value] or
+              [property, operator, value, units]
             - If numpy array:
-                The indices to filter on can be specified directly as a numpy array
-                of row or patch indices such as:
-                array([ 0,  2, 19, 20, 31, 37])
+              The indices to filter on can be specified directly as a numpy array
+              of row or patch indices such as:
+              ``array([ 0,  2, 19, 20, 31, 37])``
+              or as a numpy array of bools with the same length as the sky model.
+              If a numpy array is given and the indices correspond to patches, then
+              set aggregate=True.
+              The property to filter on must be one of the following:
 
-                or as a numpy array of bools with the same length as the sky model.
-
-                If a numpy array is given and the indices correspond to patches, then
-                set aggregate=True.
-
-            The property to filter on must be one of the following:
                 - a valid column name
                 - the filename of a mask image
 
-            Supported operators are:
-                - !=
-                - <=
-                - >=
-                - >
-                - <
-                - = (or '==')
-            Units are optional and must be specified as required by astropy.units.
+              Supported operators are:
+                  - !=
+                  - <=
+                  - >=
+                  - >
+                  - <
+                  - = (or '==')
+
+              Units are optional and must be specified as required by astropy.units.
         aggregate : str, optional
             If set, the selection will be done on values aggregated
             over the patch members. The following aggregation functions are
             available:
+
                 - 'sum': sum of patch values
                 - 'mean': mean of patch values
                 - 'wmean': Stokes I weighted mean of patch values
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
                 - True: only valid when the filter indices are specified directly
-                as a numpy array. If True, filtering is done on patches instead
-                of sources.
+                  as a numpy array. If True, filtering is done on patches instead
+                  of sources.
+
         applyBeam : bool, optional
             If True, apparent fluxes will be used.
         useRegEx : bool, optional
@@ -1947,43 +1948,42 @@ class SkyModel(object):
         Parameters
         ----------
         filterExpression : str, dict, list, or numpy array
-            - If string:
-                A string specifying the filter expression in the form:
-                '<property> <operator> <value> [<units>]'
-                (e.g., 'I <= 10.5 Jy').
 
+            - If string: 
+              A string specifying the filter expression in the form:
+              '<property> <operator> <value> [<units>]'
+              (e.g., 'I <= 10.5 Jy').
             - If dict:
-                The filter can also be given as a dictionary in the form:
-                {'filterProp':property, 'filterOper':operator,
-                    'filterVal':value, 'filterUnits':units}
-
+              The filter can also be given as a dictionary in the
+              form: {'filterProp':property, 'filterOper':operator,
+              'filterVal':value, 'filterUnits':units}
             - If list:
-                The filter can also be given as a list of:
-                [property, operator, value] or
-                [property, operator, value, units]
-
+              The filter can also be given as a list of:
+              [property, operator, value] or
+              [property, operator, value, units]
             - If numpy array:
-                The indices to filter on can be specified directly as a numpy array
-                of row or patch indices such as:
-                array([ 0,  2, 19, 20, 31, 37])
+              The indices to filter on can be specified directly as a numpy array
+              of row or patch indices such as:
+              ``array([ 0,  2, 19, 20, 31, 37])``
+              or as a numpy array of bools with the same length as the sky model.
+              If a numpy array is given and the indices correspond to patches, then
+              set ``aggregate=True``.
+              The property to filter on must be one of the following:
 
-                or as a numpy array of bools with the same length as the sky model.
-
-                If a numpy array is given and the indices correspond to patches, then
-                set aggregate=True.
-
-            The property to filter on must be one of the following:
                 - a valid column name
                 - the filename of a mask image
 
-            Supported operators are:
+              Supported operators are:
+
                 - !=
                 - <=
                 - >=
                 - >
                 - <
                 - = (or '==')
+
             Units are optional and must be specified as required by astropy.units.
+
         aggregate : str, optional
             If set, the selection will be done on values aggregated
             over the patch members. The following aggregation functions are
@@ -2051,26 +2051,28 @@ class SkyModel(object):
             Input sky model.
         algorithm : str
             Algorithm to use for grouping:
+
             - 'single' => all sources are grouped into a single patch
             - 'every' => every source gets a separate patch named 'source_patch'
             - 'cluster' => SAGECAL clustering algorithm that groups sources into
-                specified number of clusters (specified by the numClusters parameter)
+              specified number of clusters (specified by the numClusters parameter)
             - 'tessellate' => group into tiles whose total flux approximates
-                the target flux (specified by the targetFlux parameter)
+              the target flux (specified by the targetFlux parameter)
             - 'threshold' => group by convolving the sky model with a Gaussian beam
-                and then thresholding to find islands of emission (NOTE: all sources
-                are currently considered to be point sources of flux unity)
+              and then thresholding to find islands of emission (NOTE: all sources
+              are currently considered to be point sources of flux unity)
             - 'facet' => group by facets using as an input a fits file. It requires
-                the use of the additional parameter 'facet' to enter the name of the
-                fits file.
+              the use of the additional parameter 'facet' to enter the name of the
+              fits file.
             - 'voronoi' => given a previously grouped sky model, Voronoi tesselate
-                using the patch positions for patches above the target flux
-                (specified by the targetFlux parameter) or whose names match the
-                input names (specified by the patchNames parameter)
+              using the patch positions for patches above the target flux
+              (specified by the targetFlux parameter) or whose names match the
+              input names (specified by the patchNames parameter)
             - 'meanshift' => use the meanshift clustering algorithm
             - the filename of a mask image => group by masked regions (where mask =
-                True). Sources outside of masked regions are given patches of their
-                own
+              True). Sources outside of masked regions are given patches of their
+              own
+    
         targetFlux : str or float, optional
             Target flux for 'tessellate' (the total flux of each tile will be close
             to this value) and 'voronoi' algorithms. The target flux can be specified
@@ -2155,9 +2157,11 @@ class SkyModel(object):
             Input sky model from which to transfer patches.
         matchBy : str, optional
             Determines how matching sources are determined:
+
             - 'name' => matches are identified by name
             - 'position' => matches are identified by radius. Sources within the
-                radius specified by the radius parameter are considered matches
+              radius specified by the radius parameter are considered matches
+
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
             for matching when matchBy='position'
@@ -2235,8 +2239,8 @@ class SkyModel(object):
             A dictionary that specifies the column values for the source to be
             added
 
-        Examples:
-        ---------
+        Examples
+        --------
         Add a point source::
 
             >>> source = {'Name':'src1', 'Type':'POINT', 'Ra':'12:32:10.1',
@@ -2264,7 +2268,7 @@ class SkyModel(object):
 
             >>> s.merge(['bin0', 'bin1', 'bin2'], 'binmerged')
 
-         """
+        """
         operations.merge.merge(self, patches, name=name)
 
     def concatenate(self, LSM2, matchBy='name', radius=0.1, keep='all',
@@ -2278,18 +2282,22 @@ class SkyModel(object):
             Secondary sky model to concatenate with the parent sky model
         matchBy : str, optional
             Determines how duplicate sources are determined:
+            
             - 'name' => duplicates are identified by name
             - 'position' => duplicates are identified by radius. Sources within the
-                radius specified by the radius parameter are considered duplicates
+              radius specified by the radius parameter are considered duplicates
+
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
             for matching when matchBy='position'
         keep : str, optional
             Determines how duplicates are treated:
+
             - 'all' => all duplicates are kept; those with identical names are re-
-                named
+              named
             - 'from1' => duplicates kept are those from sky model 1 (the parent)
             - 'from2' => duplicates kept are those from sky model 2 (the secondary)
+
         inheritPatches : bool, optional
             If True, duplicates inherit the patch name from the parent sky model. If
             False, duplicates keep their own patch names.
@@ -2329,14 +2337,18 @@ class SkyModel(object):
 
         Comparison plots and a text file with statistics are written out to the
         an output directory. Plots are made for:
-            - flux ratio vs. radius from sky model center
-            - flux ratio vs. sky position
-            - flux ratio vs flux
-            - position offsets
+
+          - flux ratio vs. radius from sky model center
+          - flux ratio vs. sky position
+          - flux ratio vs flux
+          - position offsets
+          
         The following statistics are saved to 'stats.txt' in the output directory:
+
             - mean and standard deviation of flux ratio
             - mean and standard deviation of RA offsets
             - mean and standard deviation of Dec offsets
+
         These statistics are also returned as a dictionary.
 
         Parameters
@@ -2373,6 +2385,7 @@ class SkyModel(object):
         stats : dict
             Dict of statistics with the following keys (where the clipped values
             are after 3-sigma clipping):
+
                 - 'meanRatio'
                 - 'stdRatio'
                 - 'meanRAOffsetDeg'
@@ -2426,8 +2439,8 @@ class SkyModel(object):
             One of 'source' or 'patch': label points using source names ('source')
             or patch names ('patch')
 
-        Examples:
-        ---------
+        Examples
+        --------
         Plot and display to the screen::
 
             >>> s.plot()
