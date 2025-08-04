@@ -141,14 +141,16 @@ exclude = [
 # More info https://docs.astral.sh/ruff/rules/
 select = ["N", "A", "E", "F", "B", "W", "Q", "PL", "ASYNC", "S", "G", "RET", "ARG", "I"]
 
-# ignore: magic-value-comparison (PLR2004)
-ignore = ["PLR2004"]
+# ignore: 
+# PLR2004: magic-value-comparison
+# N803: pep8-naming (lsmtool mostly uses pascalCase and CamelCase naming scheme)
+ignore = ["PLR2004", "N803"]
 
 
 ###########################
 # tox settings            #
 ###########################
-# Adapted from https://git.astron.nl/templates/python-package/-/blob/9ccee1fed6796b6784e8814cc83ee4e5d34bba3d/%7B%7Bcookiecutter.project_slug%7D%7D/pyproject.toml
+# Adapted from: https://git.astron.nl/templates/python-package/-/blob/9ccee1fed6796b6784e8814cc83ee4e5d34bba3d/%7B%7Bcookiecutter.project_slug%7D%7D/pyproject.toml
 [tool.tox]
 # Generative environment list to test all supported Python versions
 requires = ["tox>=4.21"]
@@ -160,7 +162,10 @@ deps = [{ replace = "ref", of = ["dependency-groups", "tests"], extend = true }]
 extras = ["sofia"]
 package = "editable"
 set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning" }
-commands = [["python", "--version"], ["python", "-m", "pytest", { replace = "posargs", default = [], extend = true }]]
+commands = [
+    ["python", "--version"],
+    ["python", "-m", "pytest", { replace = "posargs", default = [], extend = true }]
+]
 
 # [tool.tox.env.fix]
 # description = "format the code base to adhere to our styles, and complain about what we cannot do automatically"
@@ -172,7 +177,8 @@ commands = [["python", "--version"], ["python", "-m", "pytest", { replace = "pos
 commands = [
     ["python", "--version"],
     ["python", "-m", "pytest", "--cov-report", "term", "--cov-report", "xml", 
-     "--cov-report", "html", "--cov=lmstool", "tests/{posargs}"]]
+     "--cov-report", "html", "--cov=lmstool", "tests/{posargs}"]
+]
 
 # Command prefixes to reuse the same virtualenv for all linting jobs.
 [tool.tox.env.lint]
