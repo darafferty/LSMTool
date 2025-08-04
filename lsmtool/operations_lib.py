@@ -41,8 +41,9 @@ def normalize_ra_dec(ra, dec):
         The normalized RA in degrees in the range [0, 360) and the
         Dec in degrees in the range [-90, 90], with the following
         elements:
-            NormalizedRADec.ra - RA in degrees
-            NormalizedRADec.dec - Dec in degrees
+
+            - NormalizedRADec.ra: RA in degrees
+            - NormalizedRADec.dec: Dec in degrees
     """
     NormalizedRADec = namedtuple('NormalizedRADec', ['ra', 'dec'])
     ra = ra.value if type(ra) is Angle else ra

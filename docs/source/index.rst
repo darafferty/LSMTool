@@ -1,16 +1,17 @@
 LSMTool: the LOFAR Sky Model Tool
 =================================
 
-LSMTool is a Python package which allows for the manipulation of LOFAR sky models in the ``makesourcedb`` format.
+LSMTool is a Python package which allows for the manipulation of LOFAR sky
+models in the ``makesourcedb`` format.
 
 Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    overview.rst
-   lsmtool.rst
+   api/lsmtool
 
 Indices and tables
 ==================

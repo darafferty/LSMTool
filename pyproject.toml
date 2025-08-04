@@ -5,7 +5,7 @@
 [build-system]
 requires = [
     "pybind11",
-    "scikit-build-core>=0.8",
+    "scikit-build-core>=0.10",
 ]
 build-backend = "scikit_build_core.build"
 
@@ -53,8 +53,8 @@ dependencies = [
 sofia = ["sofia2 @ git+https://gitlab.com/milhazes/SoFia-2.git@694646dc"]
 
 [dependency-groups]
-docs = ["sphinx", "numpydoc"]
-tests = ["pytest", "tox>=4.21", "coverage"]
+docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
+tests = ["pytest", "coverage"]
 dev = ["ruff", 
        "lsmtool[sofia]",
        {include-group = "docs"}, 
@@ -93,7 +93,7 @@ skip = ["*-musllinux_*"]
 [tool.scikit-build]
 cmake.version = ">=3.15"
 ninja.version = ">=1.5"
-cmake.verbose = true
+build.verbose = true
 logging.level = "INFO"
 metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 sdist.include = ["lsmtool/_version.py"]
@@ -146,7 +146,7 @@ env_list = ["fix", "coverage", "lint", "format", "py{8,9,10,11,12}"]
 
 [tool.tox.env_run_base]
 description = "run unit tests"
-deps = ["pytest", "coverage"]
+deps = [{ replace = "ref", of = ["dependency-groups", "tests"], extend = true }]
 extras = ["sofia"]
 package = "editable"
 set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning" }
@@ -161,32 +161,36 @@ commands = [["python", "--version"], ["python", "-m", "pytest", { replace = "pos
 [tool.tox.env.coverage]
 commands = [
     ["python", "--version"],
-    ["python", "-m", "pytest", "--cov-report", "term", "--cov-report", "xml", "--cov-report", "html", "--cov=lmstool", "tests/{posargs}"]]
+    ["python", "-m", "pytest", "--cov-report", "term", "--cov-report", "xml", 
+     "--cov-report", "html", "--cov=lmstool", "tests/{posargs}"]]
 
 # Command prefixes to reuse the same virtualenv for all linting jobs.
 [tool.tox.env.lint]
 deps = ["ruff"]
 commands = [
     ["python", "-m", "ruff", "--version"],
-    ["python", "-m", "ruff", "check", { replace = "posargs", default = [], extend = true }]
+    ["python", "-m", "ruff", "check", 
+     { replace = "posargs", default = [], extend = true }]
 ]
 
 [tool.tox.env.format]
 deps = ["ruff"]
 commands = [
-    ["python", "-m", "ruff", "format", "-v", { replace = "posargs", default = [], extend = true }]
+    ["python", "-m", "ruff", "format", "-v", 
+     { replace = "posargs", default = [], extend = true }]
 ]
 
-# [tool.tox.env.docs]
-# deps = [
-#     "-r{toxinidir}/docs/requirements.txt"]
-# # unset LC_ALL / LANGUAGE from testenv, would fail sphinx otherwise
-# set_env = ""
-# changedir = "{tox_root}"
-# commands = [
-#     ["python", "docs/cleanup.py"],
-#     ["sphinx-build", "-b", "html", "docs/source", "docs/build/html"]
-# ]
+[tool.tox.env.docs]
+deps = [{ replace = "ref", of = ["dependency-groups", "docs"], extend = true }]
+extras = ["sofia"]
+# unset LC_ALL / LANGUAGE from testenv, would fail sphinx otherwise
+set_env = ""
+changedir = "{tox_root}"
+allowlist_externals = ["rm", "sphinx-build"]
+commands = [
+    ["rm", "-rf", "docs/build/html"],
+    ["sphinx-build", "-b", "html", "docs/source", "docs/build/html"]
+]
 
 [tool.tox.env.build]
 package = "wheel"

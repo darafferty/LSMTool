@@ -28,8 +28,8 @@ def format_coordinates(ra, dec, precision=6):
 
     Converts RA and Dec values (in degrees) to string representations according
     to the BBS makesourcedb sky model format. The format specification can be
-    found in the `lofar documentation`_.
-
+    found in the `lofar documentation
+    <https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb#angle_specification>`_.
 
     Parameters
     ----------
@@ -46,8 +46,6 @@ def format_coordinates(ra, dec, precision=6):
     tuple of numpy.ndarray
         A tuple containing two arrays: formatted RA strings and formatted Dec
         strings.
-
-    .. _lofar documentation: https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb#angle_specification
     """
     coords = SkyCoord(ra, dec, unit="deg")
     return (
