@@ -177,7 +177,7 @@ commands = [
 commands = [
     ["python", "--version"],
     ["python", "-m", "pytest", "--cov-report", "term", "--cov-report", "xml", 
-     "--cov-report", "html", "--cov=lmstool", "tests/{posargs}"]
+     "--cov-report", "html", "--cov=lsmtool", "tests/{posargs}"]
 ]
 
 # Command prefixes to reuse the same virtualenv for all linting jobs.
