@@ -137,4 +137,4 @@ def main():
     add_absolute_orientation(
         args.skymodelfile, skymodel_filename_out, ra_center, dec_center
     )
-    logger.info(f"Saved corrected skymodel to {skymodel_filename_out}")
+    logger.info("Saved corrected skymodel to %r.", skymodel_filename_out)

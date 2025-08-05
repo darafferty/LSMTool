@@ -17,7 +17,6 @@ FWHM_PER_SIGMA = 2 * np.sqrt(2 * np.log(2))
 
 
 def filter_skymodel(
-    # pylint: disable=too-many-arguments,too-many-locals
     flat_noise_image: PathLike,
     true_sky_image: PathLikeOptional,
     output_apparent_sky: PathLike,
@@ -132,7 +131,6 @@ def filter_skymodel(
         sofia_args["output.filename"] = output_prefix
 
     # Run sofia
-    # pylint: disable=c-extension-no-member # pylint cannot inspect sofia2.
     sofia2.process_image(*map("=".join, sofia_args.items()))
 
     # Read output source catalog
