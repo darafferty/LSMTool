@@ -5,7 +5,7 @@ repository`_. Also includes substantial changes introduced in the `SKA self
 calibration pipeline`_.
 
 .. _pyBDSF: https://pybdsf.readthedocs.io/en/stable/
-.. _rapthor repository: 
+.. _rapthor repository:
     https://git.astron.nl/RD/rapthor/-/blob/544ddf/rapthor/scripts/filter_skymodel.py
 .. _SKA self calibration pipeline:
     https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/filter_skymodel.py
