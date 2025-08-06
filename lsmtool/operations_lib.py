@@ -206,7 +206,7 @@ def radec2xy(RA, Dec, refRA=None, refDec=None, crdelt=None):
         refDec = Dec[0]
 
     # Make wcs object to handle transformation from ra and dec to pixel coords.
-    w = makeWCS(refRA, refDec, crdelt=crdelt)
+    w = make_wcs(refRA, refDec, crdelt=crdelt)
 
     for ra_deg, dec_deg in zip(RA, Dec):
         ra_dec = np.array([[ra_deg, dec_deg]])
@@ -250,7 +250,7 @@ def xy2radec(x, y, refRA=0.0, refDec=0.0, crdelt=None):
     Dec = []
 
     # Make wcs object to handle transformation from ra and dec to pixel coords.
-    w = makeWCS(refRA, refDec, crdelt=crdelt)
+    w = make_wcs(refRA, refDec, crdelt=crdelt)
 
     for xp, yp in zip(x, y):
         x_y = np.array([[xp, yp]])
@@ -260,7 +260,7 @@ def xy2radec(x, y, refRA=0.0, refDec=0.0, crdelt=None):
     return RA, Dec
 
 
-def makeWCS(refRA, refDec, crdelt=None):
+def make_wcs(refRA, refDec, crdelt=None):
     """
     Makes simple WCS object.
 

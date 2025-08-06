@@ -426,7 +426,7 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
     Makes sky plot of measured-to-predicted flux ratio
     """
     import numpy as np
-    from ..operations_lib import makeWCS
+    from ..operations_lib import make_wcs
     try:
         from astropy.stats.funcs import sigma_clip
     except ImportError:
@@ -450,7 +450,7 @@ def plotFluxRatioSky(predFlux, measFlux, x, y, RA, Dec, midRA, midDec, labels,
     ratio = measFlux / predFlux
 
     fig = plt.figure(figsize=(7.0, 5.0))
-    wcs = makeWCS(midRA, midDec)
+    wcs = make_wcs(midRA, midDec)
     ax1 = WCSAxes(fig, [0.12, 0.12, 0.8, 0.8], wcs=wcs)
     fig.add_axes(ax1)
     plt.title('Flux Density Ratios ({0} / {1})'.format(name1, name2))

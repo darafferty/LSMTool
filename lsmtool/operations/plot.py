@@ -94,7 +94,7 @@ def plot(LSM, fileName=None, labelBy=None):
     except:
         hasWCSaxes = False
     import numpy as np
-    from ..operations_lib import radec2xy, makeWCS
+    from ..operations_lib import radec2xy, make_wcs
     global midRA, midDec, ymin, xmin
 
     if len(LSM) == 0:
@@ -105,7 +105,7 @@ def plot(LSM, fileName=None, labelBy=None):
     plt.clf()
     x, y, midRA, midDec  = LSM._getXY()
     if hasWCSaxes:
-        wcs = makeWCS(midRA, midDec)
+        wcs = make_wcs(midRA, midDec)
         ax = WCSAxes(fig, [0.16, 0.1, 0.8, 0.8], wcs=wcs)
         fig.add_axes(ax)
     else:
@@ -233,4 +233,3 @@ def Dectickformatter(y, pos):
     dectick = xy2radec([xmin], [y], midRA, midDec)[1][0]
     decstr = '{0:.2f}'.format(dectick)
     return decstr
-
