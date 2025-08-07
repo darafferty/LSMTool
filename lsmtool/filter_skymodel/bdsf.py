@@ -54,8 +54,7 @@ def filter_skymodel(
     vertices_file: PathLike,
     beam_ms: PathLikeOrListOptional = None,
     input_bright_skymodel: PathLikeOptional = None,
-    *,
-    # remaining parameters are keyword-only
+    *,  # remaining parameters are keyword-only
     thresh_isl: numbers.Real = 5.0,
     thresh_pix: numbers.Real = 7.5,
     rmsbox: Tuple[numbers.Integral] = (150, 50),
