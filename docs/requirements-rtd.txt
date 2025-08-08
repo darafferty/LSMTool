@@ -2,3 +2,4 @@
 # See .readthedocs.yaml in the root of this repository.
 numpydoc
 setuptools_scm
+sphinx-rtd-theme
