@@ -168,96 +168,66 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
     return fluxes * beam
 
 
-def radec2xy(RA, Dec, refRA=None, refDec=None, crdelt=None):
+def radec2xy(wcs, ra_list, dec_list):
     """
     Returns x, y for input ra, dec.
 
-    Note that the reference RA and Dec must be the same in calls to both
-    radec2xy() and xy2radec() if matched pairs of (x, y) <=> (RA, Dec) are
+    Note that the WCS object must define the same transformation in calls to
+    both radec2xy() and xy2radec() if matched pairs of (x, y) <=> (RA, Dec) are
     desired.
 
     Parameters
     ----------
-    RA : list
-        List of RA values in degrees
-    Dec : list
-        List of Dec values in degrees
-    refRA : float, optional
-        Reference RA in degrees.
-    refDec : float, optional
-        Reference Dec in degrees
-    crdelt: float, optional
-        Delta in degrees for sky grid
+    wcs : astropy.wcs.WCS object
+        WCS object defining transformation.
+    ra_list : list or numpy array of float
+        RA values in degrees.
+    dec_list : list or numpy array of float
+        Dec values in degrees.
 
     Returns
     -------
-    x, y : list, list
-        Lists of x and y pixel values corresponding to the input RA and Dec
-        values
-
+    x, y : numpy array of float
+        x and y pixel values corresponding to the input RA and Dec values.
     """
-    import numpy as np
 
-    x = []
-    y = []
-    if refRA is None:
-        refRA = RA[0]
-    if refDec is None:
-        refDec = Dec[0]
+    if len(ra_list) != len(dec_list):
+        raise ValueError('RA and Dec lists must be of equal length')
 
-    # Make wcs object to handle transformation from ra and dec to pixel coords.
-    w = make_wcs(refRA, refDec, crdelt=crdelt)
-
-    for ra_deg, dec_deg in zip(RA, Dec):
-        ra_dec = np.array([[ra_deg, dec_deg]])
-        x.append(w.wcs_world2pix(ra_dec, 0)[0][0])
-        y.append(w.wcs_world2pix(ra_dec, 0)[0][1])
-
-    return x, y
+    ra_dec = np.stack((ra_list, dec_list), axis=-1)
+    return wcs.wcs_world2pix(ra_dec, 0).transpose()
 
 
-def xy2radec(x, y, refRA=0.0, refDec=0.0, crdelt=None):
+
+def xy2radec(wcs, x_list, y_list):
     """
     Returns x, y for input ra, dec.
 
-    Note that the reference RA and Dec must be the same in calls to both
-    radec2xy() and xy2radec() if matched pairs of (x, y) <=> (RA, Dec) are
+    Note that the WCS object must define the same transformation in calls to
+    both radec2xy() and xy2radec() if matched pairs of (x, y) <=> (RA, Dec) are
     desired.
 
     Parameters
     ----------
-    x : list
-        List of x values in pixels
-    y : list
-        List of y values in pixels
-    refRA : float, optional
-        Reference RA in degrees
-    refDec : float, optional
-        Reference Dec in degrees
-    crdelt: float, optional
-        Delta in degrees for sky grid
+    wcs : astropy.wcs.WCS object
+        WCS object defining transformation.
+    x : list or numpy array of float
+        x values in pixels.
+    y : list or numpy array of float
+        y values in pixels.
 
     Returns
     -------
-    RA, Dec : list, list
-        Lists of RA and Dec values corresponding to the input x and y pixel
-        values
+    ra, dec : numpy array of float
+        RA and Dec values corresponding to the input x and y pixel values.
 
     """
-    import numpy as np
 
-    RA = []
-    Dec = []
+    if len(x_list) != len(y_list):
+        raise ValueError('x and y lists must be of equal length')
 
-    # Make wcs object to handle transformation from ra and dec to pixel coords.
-    w = make_wcs(refRA, refDec, crdelt=crdelt)
-
-    for xp, yp in zip(x, y):
-        x_y = np.array([[xp, yp]])
-        RA.append(w.wcs_pix2world(x_y, 0)[0][0])
-        Dec.append(w.wcs_pix2world(x_y, 0)[0][1])
-
-    return RA, Dec
+    x_y = np.stack((x_list, y_list), axis=-1)
+    return wcs.wcs_pix2world(x_y, 0).transpose()
 
 
 def make_wcs(refRA, refDec, crdelt=None):
@@ -606,8 +576,9 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
     width_ra = width
     width_dec = width
     wcs_pixel_scale = 20.0 / 3600.0  # 20"/pixel
-    x_cal, y_cal = radec2xy(ra_cal, dec_cal, refRA=ra_mid, refDec=dec_mid, crdelt=wcs_pixel_scale)
-    x_mid, y_mid = radec2xy([ra_mid], [dec_mid], refRA=ra_mid, refDec=dec_mid, crdelt=wcs_pixel_scale)
+    wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
+    x_cal, y_cal = radec2xy(wcs, ra_cal, dec_cal)
+    x_mid, y_mid = radec2xy(wcs, [ra_mid], [dec_mid])
     width_x = width_ra / wcs_pixel_scale / 2.0
     width_y = width_dec / wcs_pixel_scale / 2.0
     bounding_box = np.array([x_mid[0] - width_x, x_mid[0] + width_x,
@@ -618,12 +589,12 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
     facet_polys = []
     for region in vor.filtered_regions:
         vertices = vor.vertices[region + [region[0]], :]
-        ra, dec = xy2radec(vertices[:, 0], vertices[:, 1], refRA=ra_mid, refDec=dec_mid, crdelt=wcs_pixel_scale)
+        ra, dec = xy2radec(wcs, vertices[:, 0], vertices[:, 1])
         vertices = np.stack((ra, dec)).T
         facet_polys.append(vertices)
     facet_points = []
     for point in vor.filtered_points:
-        ra, dec = xy2radec([point[0]], [point[1]], refRA=ra_mid, refDec=dec_mid, crdelt=wcs_pixel_scale)
+        ra, dec = xy2radec(wcs, [point[0]], [point[1]])
         facet_points.append((ra[0], dec[0]))
 
     return facet_points, facet_polys

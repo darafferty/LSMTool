@@ -19,6 +19,9 @@
 
 import logging
 
+from ..operations_lib import make_wcs, xy2radec
+
+
 log = logging.getLogger('LSMTool.PLOT')
 log.debug('Loading PLOT module.')
 
@@ -95,7 +98,7 @@ def plot(LSM, fileName=None, labelBy=None):
         hasWCSaxes = False
     import numpy as np
     from ..operations_lib import radec2xy, make_wcs
-    global midRA, midDec, ymin, xmin
+    global wcs, ymin, xmin
 
     if len(LSM) == 0:
         log.error('Sky model is empty.')
@@ -104,8 +107,8 @@ def plot(LSM, fileName=None, labelBy=None):
     fig = plt.figure(1,figsize=(7.66,7))
     plt.clf()
     x, y, midRA, midDec  = LSM._getXY()
+    wcs = make_wcs(midRA, midDec)
     if hasWCSaxes:
-        wcs = make_wcs(midRA, midDec)
         ax = WCSAxes(fig, [0.16, 0.1, 0.8, 0.8], wcs=wcs)
         fig.add_axes(ax)
     else:
@@ -158,7 +161,7 @@ def plot(LSM, fileName=None, labelBy=None):
         if len(goodInd[0]) < len(RAp):
             log.info('Some patch positions are unset. Run setPatchPositions() '
                 'before plotting to see patch positions and patch names.')
-        xp, yp = radec2xy(RAp[goodInd], Decp[goodInd], midRA, midDec)
+        xp, yp = radec2xy(wcs, RAp[goodInd], Decp[goodInd])
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
 
     # Set axis labels, etc.
@@ -208,10 +211,8 @@ def plot(LSM, fileName=None, labelBy=None):
 
 def formatCoord(x, y):
     """Custom coordinate format"""
-    from ..operations_lib import xy2radec
-
-    global midRA, midDec
-    RA, Dec = xy2radec([x], [y], midRA, midDec)
+    global wcs
+    RA, Dec = xy2radec(wcs, [x], [y])
     return 'RA = {0:.2f} Dec = {1:.2f}'.format(RA[0], Dec[0])
 
 
@@ -219,8 +220,8 @@ def RAtickformatter(x, pos):
     """Changes x tick labels from pixels to RA in degrees"""
     from ..operations_lib import xy2radec
 
-    global ymin, midRA, midDec
-    ratick = xy2radec([x], [ymin], midRA, midDec)[0][0]
+    global ymin, wcs
+    ratick = xy2radec(wcs, [x], [ymin])[0][0]
     rastr = '{0:.2f}'.format(ratick)
     return rastr
 
@@ -229,7 +230,7 @@ def Dectickformatter(y, pos):
     """Changes y tick labels from pixels to Dec in degrees"""
     from ..operations_lib import xy2radec
 
-    global xmin, midRA, midDec
-    dectick = xy2radec([xmin], [y], midRA, midDec)[1][0]
+    global xmin, wcs
+    dectick = xy2radec(wcs, [xmin], [y])[1][0]
     decstr = '{0:.2f}'.format(dectick)
     return decstr

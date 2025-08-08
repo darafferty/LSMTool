@@ -23,7 +23,7 @@ import astropy.units as u
 from . import _logging
 from . import tableio
 from . import operations
-from .operations_lib import normalize_ra_dec
+from .operations_lib import make_wcs, normalize_ra_dec
 
 # Python 3 compatibility
 try:
@@ -512,21 +512,17 @@ class SkyModel(object):
                     # Each patch has a different projection center
                     xAll = []  # has length = num of sources
                     yAll = []
-                    midRAAll = []  # has length = num of patches
-                    midDecAll = []
+                    wcsAll = []
                     for name in patchName:
                         x, y, midRA, midDec = self._getXY(patchName=name)
                         xAll.extend(x)
                         yAll.extend(y)
-                        midRAAll.append(midRA)
-                        midDecAll.append(midDec)
+                        wcsAll.append(make_wcs(midRA, midDec))
                 else:
                     xAll, yAll, midRA, midDec = self._getXY()
-                    midRAAll = []  # has length = num of patches
-                    midDecAll = []
+                    wcsAll = []  # has length = num of patches
                     for name in patchName:
-                        midRAAll.append(midRA)
-                        midDecAll.append(midDec)
+                        wcsAll.append(make_wcs(midRA, midDec))
 
                 xCol = Column(name='X', data=xAll)
                 yCol = Column(name='Y', data=yAll)
@@ -541,8 +537,8 @@ class SkyModel(object):
                     midX = minX + (maxX - minX) / 2.0
                     midY = minY + (maxY - minY) / 2.0
                     for i, name in enumerate(patchName):
-                        RADec = xy2radec([midX[i]], [midY[i]], midRAAll[i], midDecAll[i])
-                        RANorm, DecNorm = RADec2Angle(RADec[0], RADec[1])
+                        RA, Dec = xy2radec(wcsAll[i], [midX[i]], [midY[i]])
+                        RANorm, DecNorm = RADec2Angle(RA.tolist(), Dec.tolist())
                         patchDict[name] = [RANorm[0], DecNorm[0]]
                 elif method == 'mean' or method == 'wmean':
                     if method == 'mean':
@@ -554,8 +550,8 @@ class SkyModel(object):
                     meanY = self._getAveragedColumn('Y', applyBeam=applyBeam,
                                                     weight=weight)
                     for i, name in enumerate(patchName):
-                        RADec = xy2radec([meanX[i]], [meanY[i]], midRAAll[i], midDecAll[i])
-                        RANorm, DecNorm = RADec2Angle(RADec[0], RADec[1])
+                        RA, Dec = xy2radec(wcsAll[i], [meanX[i]], [meanY[i]])
+                        RANorm, DecNorm = RADec2Angle(RA.tolist(), Dec.tolist())
                         patchDict[name] = [RANorm[0], DecNorm[0]]
                 self.table.remove_column('X')
                 self.table.remove_column('Y')
@@ -679,6 +675,7 @@ class SkyModel(object):
         if len(self.table) == 0:
             return [0], [0], 0, 0
 
+
         if byPatch:
             if 'Patch' not in self.table.keys():
                 raise ValueError('Sky model must be grouped before "byPatch" can be used.')
@@ -691,20 +688,22 @@ class SkyModel(object):
                 ind = self.getRowIndex(patchName)
                 RA = RA[ind]
                 Dec = Dec[ind]
-        x, y = radec2xy(RA, Dec, crdelt=crdelt)
+        wcs = make_wcs(RA[0], Dec[0], crdelt=crdelt)
+        x, y = radec2xy(wcs, RA, Dec)
 
         # Refine x and y using midpoint
         if len(x) > 1:
-            xmid = min(x) + (max(x) - min(x)) / 2.0
-            ymid = min(y) + (max(y) - min(y)) / 2.0
+            xmid = np.min(x) + (np.max(x) - np.min(x)) / 2.0
+            ymid = np.min(y) + (np.max(y) - np.min(y)) / 2.0
             xind = np.argsort(x)
             yind = np.argsort(y)
             try:
-                midxind = np.where(np.array(x)[xind] > xmid)[0][0]
-                midyind = np.where(np.array(y)[yind] > ymid)[0][0]
+                midxind = np.where(x[xind] > xmid)[0][0]
+                midyind = np.where(y[yind] > ymid)[0][0]
                 midRA = RA[xind[midxind]]
                 midDec = Dec[yind[midyind]]
-                x, y = radec2xy(RA, Dec, midRA, midDec, crdelt=crdelt)
+                wcs = make_wcs(midRA, midDec, crdelt=crdelt)
+                x, y = radec2xy(wcs, RA, Dec)
             except IndexError:
                 midRA = RA[0]
                 midDec = Dec[0]
@@ -713,7 +712,7 @@ class SkyModel(object):
             midDec = Dec[0]
         midRADec = normalize_ra_dec(midRA, midDec)
 
-        return np.array(x), np.array(y), midRADec.ra, midRADec.dec
+        return x, y, midRADec.ra, midRADec.dec
 
     def getDefaultValues(self):
         """
@@ -1949,7 +1948,7 @@ class SkyModel(object):
         ----------
         filterExpression : str, dict, list, or numpy array
 
-            - If string: 
+            - If string:
               A string specifying the filter expression in the form:
               '<property> <operator> <value> [<units>]'
               (e.g., 'I <= 10.5 Jy').
@@ -2072,7 +2071,7 @@ class SkyModel(object):
             - the filename of a mask image => group by masked regions (where mask =
               True). Sources outside of masked regions are given patches of their
               own
-    
+
         targetFlux : str or float, optional
             Target flux for 'tessellate' (the total flux of each tile will be close
             to this value) and 'voronoi' algorithms. The target flux can be specified
@@ -2282,7 +2281,7 @@ class SkyModel(object):
             Secondary sky model to concatenate with the parent sky model
         matchBy : str, optional
             Determines how duplicate sources are determined:
-            
+
             - 'name' => duplicates are identified by name
             - 'position' => duplicates are identified by radius. Sources within the
               radius specified by the radius parameter are considered duplicates
@@ -2342,7 +2341,7 @@ class SkyModel(object):
           - flux ratio vs. sky position
           - flux ratio vs flux
           - position offsets
-          
+
         The following statistics are saved to 'stats.txt' in the output directory:
 
             - mean and standard deviation of flux ratio
@@ -2546,7 +2545,8 @@ class SkyModel(object):
         # Now we have the size, refine the RA, Dec of the image center
         xcen = np.min(x) + (np.max(x) - np.min(x)) / 2.0
         ycen = np.min(y) + (np.max(y) - np.min(y)) / 2.0
-        refRA, refDec = xy2radec([xcen], [ycen], refRA=refRA, refDec=refDec, crdelt=cellsize)
+        wcs = make_wcs(refRA, refDec, crdelt=cellsize)
+        refRA, refDec = xy2radec(wcs, [xcen], [ycen])
         RA = self.getColValues('Ra')
         Dec = self.getColValues('Dec')
 
