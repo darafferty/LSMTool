@@ -1,27 +1,32 @@
-#! /usr/bin/env python
-# Runs an example of each operation
+"""Runs an example of each operation"""
+
 import lsmtool
 import filecmp
 import pytest
+
 
 @pytest.fixture()
 def sky_no_patches():
     return lsmtool.load('tests/resources/no_patches.sky')
 
+
 def test_select(sky_no_patches):
     """Select individual sources with Stokes I fluxes above 1 Jy."""
+    assert len(sky_no_patches) == 1210
     sky_no_patches.select('I > 1.0 Jy')
     assert len(sky_no_patches) == 965
 
 
 def test_transfer(sky_no_patches):
     """Transfer patches from patches.sky."""
+    assert not sky_no_patches.hasPatches
     sky_no_patches.transfer('tests/resources/patches.sky')
     assert sky_no_patches.hasPatches
 
 
 def test_remove(sky_no_patches):
     """Remove patches with total fluxes below 2 Jy."""
+    assert len(sky_no_patches) == 1210
     sky_no_patches.remove('I < 2.0 Jy', aggregate='sum')
     assert len(sky_no_patches) == 389
 
@@ -37,6 +42,7 @@ def test_ungroup(sky_no_patches):
 
 def test_concatenate(sky_no_patches):
     """Concatenate with concat.sky."""
+    assert len(sky_no_patches) == 1210
     sky_no_patches.concatenate('tests/resources/concat.sky', matchBy='position',
                                radius='30 arcsec', keep='from2')
     assert len(sky_no_patches) == 2898
@@ -44,9 +50,10 @@ def test_concatenate(sky_no_patches):
 
 def test_concatenate_differing_spectral_index(sky_no_patches):
     """Concatenate with single_spectralindx.sky."""
+    original_length = len(sky_no_patches)
     sky_no_patches.concatenate('tests/resources/single_spectralindx.sky',
-                                    matchBy='position', radius='30 arcsec', keep='from2')
-    assert len(sky_no_patches) == 1210
+                               matchBy='position', radius='30 arcsec', keep='from2')
+    assert len(sky_no_patches) == original_length
 
 
 def test_compare(sky_no_patches, tmp_path):
@@ -70,7 +77,7 @@ def test_add(sky_no_patches):
 def test_group(sky_no_patches):
     """Group using tessellation to a target flux of 50 Jy."""
     sky_no_patches.group('tessellate', targetFlux='50.0 Jy')
-    assert sky_no_patches.hasPatches
+    assert len(sky_no_patches.getPatchNames()) == 79
 
 
 def test_move(sky_no_patches):
