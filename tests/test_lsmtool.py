@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 # Runs an example of each operation
 import lsmtool
-import os
 import filecmp
 import pytest
 
@@ -50,15 +49,14 @@ def test_concatenate_differing_spectral_index(sky_no_patches):
     assert len(sky_no_patches) == 1210
 
 
-def test_compare(sky_no_patches):
+def test_compare(sky_no_patches, tmp_path):
     """Compare to concat.sky."""
-    if os.path.exists('tests/flux_ratio_vs_distance.pdf'):
-        os.remove('tests/flux_ratio_vs_distance.pdf')
+    flux_ratio_path = tmp_path / "flux_ratio_vs_distance.pdf"
     sky_concat = lsmtool.load('tests/resources/concat.sky')
     sky_concat.ungroup()
     sky_concat.select('I > 5.0 Jy')
-    sky_no_patches.compare(sky_concat, outDir='tests/')
-    assert os.path.exists('tests/flux_ratio_vs_distance.pdf')
+    sky_no_patches.compare(sky_concat, outDir=str(tmp_path))
+    assert flux_ratio_path.is_file()
 
 
 def test_add(sky_no_patches):
@@ -97,16 +95,15 @@ def test_setPatchPositions(sky_no_patches):
     assert round(sky_no_patches.getPatchPositions()['merged_patch'][0].value, 4) == 274.1166
 
 
-def test_facet_write(sky_no_patches):
+def test_facet_write(sky_no_patches, tmp_path):
     """Write ds9 facet file."""
     # Note: differences in the libraries used can cause slight differences in the
     # resulting facet file, so it is not possible to compare with a reference
     # file. Instead, we just check that the file exists
-    if os.path.exists('tests/facet.reg'):
-        os.remove('tests/facet.reg')
+    facet_path = tmp_path / "facet.reg"
     sky_no_patches.group("single")
-    sky_no_patches.write('tests/facet.reg', format='facet', clobber=True)
-    assert os.path.exists('tests/facet.reg')
+    sky_no_patches.write(str(facet_path), format='facet', clobber=True)
+    assert facet_path.is_file()
 
 
 @pytest.fixture
@@ -126,20 +123,18 @@ def final_model(sky_no_patches):
     return sky_no_patches
 
 
-def test_write(final_model):
+def test_write(final_model, tmp_path):
     """Write final model to file."""
-    if os.path.exists('tests/final.sky'):
-        os.remove('tests/final.sky')
-    final_model.write('tests/final.sky', clobber=True, addHistory=False)
-    assert filecmp.cmp('tests/final.sky', 'tests/resources/final.sky')
+    final_path = tmp_path / "final.sky"
+    final_model.write(str(final_path), clobber=True, addHistory=False)
+    assert filecmp.cmp(final_path, 'tests/resources/final.sky')
 
 
-def test_plot(final_model):
+def test_plot(final_model, tmp_path):
     """Plot the model."""
-    if os.path.exists('tests/plot.pdf'):
-        os.remove('tests/plot.pdf')
-    final_model.plot('tests/plot.pdf')
-    assert os.path.exists('tests/plot.pdf')
+    plot_path = tmp_path / "plot.pdf"
+    final_model.plot(str(plot_path))
+    assert plot_path.is_file()
 
 
 def test_meanshift():
