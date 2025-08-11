@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import filecmp
-import numpy
+import numpy as np
 import pathlib
 import requests
 import tarfile
@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 import lsmtool
-from lsmtool.operations_lib import apply_beam, normalize_ra_dec
+from lsmtool.operations_lib import apply_beam, make_wcs, normalize_ra_dec
 
 
 class TestOperationsLib(unittest.TestCase):
@@ -81,7 +81,7 @@ class TestOperationsLib(unittest.TestCase):
             self.ra,
             self.dec,
         )
-        numpy.set_printoptions(precision=6)
+        np.set_printoptions(precision=6)
         with open(outfile, "w") as f:
             f.write(str(result))
         assert filecmp.cmp(reffile, outfile, shallow=False)
@@ -99,7 +99,7 @@ class TestOperationsLib(unittest.TestCase):
             self.dec,
             invert=True
         )
-        numpy.set_printoptions(precision=6)
+        np.set_printoptions(precision=6)
         with open(outfile, "w") as f:
             f.write(str(result))
         assert filecmp.cmp(reffile, outfile, shallow=False)
@@ -112,6 +112,34 @@ class TestOperationsLib(unittest.TestCase):
         dec = 95.0
         result = normalize_ra_dec(ra, dec)
         assert (result.ra == 270.0 and result.dec == 85.0)
+
+
+def test_make_wcs_default():
+    """Test `make_wcs` with default parameters."""
+    ref_ra = 10
+    ref_dec = -42
+    crdelt = 0.066667
+    w = make_wcs(ref_ra, ref_dec)
+    assert w is not None
+    assert w.naxis == 2
+    assert (w.wcs.crpix == np.array([1000, 1000])).all()
+    assert (w.wcs.cdelt == np.array([-crdelt, crdelt])).all()
+    assert (w.wcs.crval == np.array([ref_ra, ref_dec])).all()
+    assert (w.wcs.ctype == np.array(["RA---TAN", "DEC--TAN"])).all()
+
+
+def test_make_wcs_custom():
+    """Test `make_wcs` with a custom crdelt parameter."""
+    ref_ra = -10
+    ref_dec = 42
+    crdelt = 0.42
+    w = make_wcs(ref_ra, ref_dec, crdelt)
+    assert w is not None
+    assert w.naxis == 2
+    assert (w.wcs.crpix == np.array([1000, 1000])).all()
+    assert (w.wcs.cdelt == np.array([-crdelt, crdelt])).all()
+    assert (w.wcs.crval == np.array([ref_ra, ref_dec])).all()
+    assert (w.wcs.ctype == np.array(["RA---TAN", "DEC--TAN"])).all()
 
 
 if __name__ == "__main__":
