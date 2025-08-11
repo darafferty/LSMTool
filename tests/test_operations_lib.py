@@ -8,6 +8,8 @@ import tarfile
 import tempfile
 import unittest
 
+from numpy.testing import assert_array_equal
+
 import lsmtool
 from lsmtool.operations_lib import apply_beam, make_wcs, normalize_ra_dec
 
@@ -122,10 +124,10 @@ def test_make_wcs_default():
     w = make_wcs(ref_ra, ref_dec)
     assert w is not None
     assert w.naxis == 2
-    assert (w.wcs.crpix == np.array([1000, 1000])).all()
-    assert (w.wcs.cdelt == np.array([-crdelt, crdelt])).all()
-    assert (w.wcs.crval == np.array([ref_ra, ref_dec])).all()
-    assert (w.wcs.ctype == np.array(["RA---TAN", "DEC--TAN"])).all()
+    assert_array_equal(w.wcs.crpix, [1000, 1000])
+    assert_array_equal(w.wcs.cdelt, [-crdelt, crdelt])
+    assert_array_equal(w.wcs.crval, [ref_ra, ref_dec])
+    assert_array_equal(w.wcs.ctype, ["RA---TAN", "DEC--TAN"])
 
 
 def test_make_wcs_custom():
@@ -136,10 +138,10 @@ def test_make_wcs_custom():
     w = make_wcs(ref_ra, ref_dec, crdelt)
     assert w is not None
     assert w.naxis == 2
-    assert (w.wcs.crpix == np.array([1000, 1000])).all()
-    assert (w.wcs.cdelt == np.array([-crdelt, crdelt])).all()
-    assert (w.wcs.crval == np.array([ref_ra, ref_dec])).all()
-    assert (w.wcs.ctype == np.array(["RA---TAN", "DEC--TAN"])).all()
+    assert_array_equal(w.wcs.crpix, [1000, 1000])
+    assert_array_equal(w.wcs.cdelt, [-crdelt, crdelt])
+    assert_array_equal(w.wcs.crval, [ref_ra, ref_dec])
+    assert_array_equal(w.wcs.ctype, ["RA---TAN", "DEC--TAN"])
 
 
 if __name__ == "__main__":
