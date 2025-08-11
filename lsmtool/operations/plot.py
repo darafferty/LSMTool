@@ -97,7 +97,7 @@ def plot(LSM, fileName=None, labelBy=None):
     except:
         hasWCSaxes = False
     import numpy as np
-    from ..operations_lib import radec2xy, make_wcs
+    from ..operations_lib import make_wcs
     global wcs, ymin, xmin
 
     if len(LSM) == 0:
@@ -161,7 +161,7 @@ def plot(LSM, fileName=None, labelBy=None):
         if len(goodInd[0]) < len(RAp):
             log.info('Some patch positions are unset. Run setPatchPositions() '
                 'before plotting to see patch positions and patch names.')
-        xp, yp = radec2xy(wcs, RAp[goodInd], Decp[goodInd])
+        xp, yp = wcs.wcs_world2pix(RAp[goodInd], Decp[goodInd], 0)
         plt.scatter(xp, yp, s=100, c=cp, marker='*')
 
     # Set axis labels, etc.

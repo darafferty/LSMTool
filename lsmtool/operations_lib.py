@@ -168,37 +168,6 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
     return fluxes * beam
 
 
-def radec2xy(wcs, ra_list, dec_list):
-    """
-    Returns x, y for input ra, dec.
-
-    Note that the WCS object must define the same transformation in calls to
-    both radec2xy() and xy2radec() if matched pairs of (x, y) <=> (RA, Dec) are
-    desired.
-
-    Parameters
-    ----------
-    wcs : astropy.wcs.WCS object
-        WCS object defining transformation.
-    ra_list : list or numpy array of float
-        RA values in degrees.
-    dec_list : list or numpy array of float
-        Dec values in degrees.
-
-    Returns
-    -------
-    x, y : numpy array of float
-        x and y pixel values corresponding to the input RA and Dec values.
-    """
-
-    if len(ra_list) != len(dec_list):
-        raise ValueError('RA and Dec lists must be of equal length')
-
-    ra_dec = np.stack((ra_list, dec_list), axis=-1)
-    return wcs.wcs_world2pix(ra_dec, 0).transpose()
-
-
-
 def xy2radec(wcs, x_list, y_list):
     """
     Returns x, y for input ra, dec.
@@ -577,12 +546,12 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
     width_dec = width
     wcs_pixel_scale = 20.0 / 3600.0  # 20"/pixel
     wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
-    x_cal, y_cal = radec2xy(wcs, ra_cal, dec_cal)
-    x_mid, y_mid = radec2xy(wcs, [ra_mid], [dec_mid])
+    x_cal, y_cal = wcs.wcs_world2pix(ra_cal, dec_cal, 0)
+    x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, 0)
     width_x = width_ra / wcs_pixel_scale / 2.0
     width_y = width_dec / wcs_pixel_scale / 2.0
-    bounding_box = np.array([x_mid[0] - width_x, x_mid[0] + width_x,
-                             y_mid[0] - width_y, y_mid[0] + width_y])
+    bounding_box = np.array([x_mid - width_x, x_mid + width_x,
+                             y_mid - width_y, y_mid + width_y])
 
     # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
     vor = voronoi(np.stack((x_cal, y_cal)).T, bounding_box)

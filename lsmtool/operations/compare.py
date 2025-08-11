@@ -117,7 +117,7 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
             outDir='comparison_results/', name1='LOFAR', name2='GSM', format='png')
 
     """
-    from ..operations_lib import make_wcs, matchSky, radec2xy
+    from ..operations_lib import make_wcs, matchSky
     from ..skymodel import SkyModel
     import numpy as np
     import os
@@ -260,11 +260,11 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     x, y, refRA, refDec = LSM1._getXY()
     wcs = make_wcs(refRA, refDec)
     if byPatch:
-        x, y = radec2xy(wcs, RA, Dec)
+        x, y = wcs.wcs_world2pix(RA, Dec, 0)
     else:
         x = x[matches1]
         y = y[matches1]
-    refx, refy = radec2xy(wcs, RA2, Dec2)
+    refx, refy = wcs.wcs_world2pix(RA2, Dec2, 0)
 
     if labelBy is not None:
         if labelBy.lower() == 'source':
