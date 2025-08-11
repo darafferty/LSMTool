@@ -19,8 +19,6 @@
 
 import logging
 
-from ..operations_lib import make_wcs, xy2radec
-
 
 log = logging.getLogger('LSMTool.PLOT')
 log.debug('Loading PLOT module.')
@@ -212,25 +210,21 @@ def plot(LSM, fileName=None, labelBy=None):
 def formatCoord(x, y):
     """Custom coordinate format"""
     global wcs
-    RA, Dec = xy2radec(wcs, [x], [y])
-    return 'RA = {0:.2f} Dec = {1:.2f}'.format(RA[0], Dec[0])
+    RA, Dec = wcs.wcs_pix2world(x, y, 0)
+    return 'RA = {0:.2f} Dec = {1:.2f}'.format(RA, Dec)
 
 
 def RAtickformatter(x, pos):
     """Changes x tick labels from pixels to RA in degrees"""
-    from ..operations_lib import xy2radec
-
     global ymin, wcs
-    ratick = xy2radec(wcs, [x], [ymin])[0][0]
+    ratick = wcs.wcs_pix2world(x, ymin, 0)[0]
     rastr = '{0:.2f}'.format(ratick)
     return rastr
 
 
 def Dectickformatter(y, pos):
     """Changes y tick labels from pixels to Dec in degrees"""
-    from ..operations_lib import xy2radec
-
     global xmin, wcs
-    dectick = xy2radec(wcs, [xmin], [y])[1][0]
+    dectick = wcs.wcs_pix2world(xmin, y, 0)[1]
     decstr = '{0:.2f}'.format(dectick)
     return decstr

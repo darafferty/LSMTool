@@ -488,7 +488,6 @@ class SkyModel(object):
 
         """
         import numpy as np
-        from .operations_lib import xy2radec
         from astropy.table import Column
         from .tableio import RADec2Angle
 
@@ -537,7 +536,7 @@ class SkyModel(object):
                     midX = minX + (maxX - minX) / 2.0
                     midY = minY + (maxY - minY) / 2.0
                     for i, name in enumerate(patchName):
-                        RA, Dec = xy2radec(wcsAll[i], [midX[i]], [midY[i]])
+                        RA, Dec = wcsAll[i].wcs_pix2world(midX[i], midY[i], 0)
                         RANorm, DecNorm = RADec2Angle(RA.tolist(), Dec.tolist())
                         patchDict[name] = [RANorm[0], DecNorm[0]]
                 elif method == 'mean' or method == 'wmean':
@@ -550,7 +549,7 @@ class SkyModel(object):
                     meanY = self._getAveragedColumn('Y', applyBeam=applyBeam,
                                                     weight=weight)
                     for i, name in enumerate(patchName):
-                        RA, Dec = xy2radec(wcsAll[i], [meanX[i]], [meanY[i]])
+                        RA, Dec = wcsAll[i].wcs_pix2world(meanX[i], meanY[i], 0)
                         RANorm, DecNorm = RADec2Angle(RA.tolist(), Dec.tolist())
                         patchDict[name] = [RANorm[0], DecNorm[0]]
                 self.table.remove_column('X')
@@ -669,7 +668,6 @@ class SkyModel(object):
             Dec values
 
         """
-        from .operations_lib import radec2xy
         import numpy as np
 
         if len(self.table) == 0:
@@ -689,7 +687,7 @@ class SkyModel(object):
                 RA = RA[ind]
                 Dec = Dec[ind]
         wcs = make_wcs(RA[0], Dec[0], crdelt=crdelt)
-        x, y = radec2xy(wcs, RA, Dec)
+        x, y = wcs.wcs_world2pix(RA, Dec, 0)
 
         # Refine x and y using midpoint
         if len(x) > 1:
@@ -703,7 +701,7 @@ class SkyModel(object):
                 midRA = RA[xind[midxind]]
                 midDec = Dec[yind[midyind]]
                 wcs = make_wcs(midRA, midDec, crdelt=crdelt)
-                x, y = radec2xy(wcs, RA, Dec)
+                x, y = wcs.wcs_world2pix(RA, Dec, 0)
             except IndexError:
                 midRA = RA[0]
                 midDec = Dec[0]
@@ -2484,7 +2482,7 @@ class SkyModel(object):
         import numpy as np
         from astropy.io import fits as pyfits
         from astropy import wcs
-        from .operations_lib import make_template_image, gaussian_fcn, tessellate, xy2radec
+        from .operations_lib import make_template_image, gaussian_fcn, tessellate
 
         # Check inputs
         if writeRegionFile and not self.hasPatches:
@@ -2546,12 +2544,12 @@ class SkyModel(object):
         xcen = np.min(x) + (np.max(x) - np.min(x)) / 2.0
         ycen = np.min(y) + (np.max(y) - np.min(y)) / 2.0
         wcs = make_wcs(refRA, refDec, crdelt=cellsize)
-        refRA, refDec = xy2radec(wcs, [xcen], [ycen])
+        refRA, refDec = wcs.wcs_pix2world(xcen, ycen, 0)
         RA = self.getColValues('Ra')
         Dec = self.getColValues('Dec')
 
         for image_name in image_names:
-            make_template_image(image_name, refRA[0], refDec[0], refFreq,
+            make_template_image(image_name, refRA, refDec, refFreq,
                                 ximsize=xsize, yimsize=ysize, cellsize_deg=cellsize)
 
         # Build each image, one at a time (to minimize memory usage)

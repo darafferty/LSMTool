@@ -168,37 +168,6 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
     return fluxes * beam
 
 
-def xy2radec(wcs, x_list, y_list):
-    """
-    Returns x, y for input ra, dec.
-
-    Note that the WCS object must define the same transformation in calls to
-    both radec2xy() and xy2radec() if matched pairs of (x, y) <=> (RA, Dec) are
-    desired.
-
-    Parameters
-    ----------
-    wcs : astropy.wcs.WCS object
-        WCS object defining transformation.
-    x : list or numpy array of float
-        x values in pixels.
-    y : list or numpy array of float
-        y values in pixels.
-
-    Returns
-    -------
-    ra, dec : numpy array of float
-        RA and Dec values corresponding to the input x and y pixel values.
-
-    """
-
-    if len(x_list) != len(y_list):
-        raise ValueError('x and y lists must be of equal length')
-
-    x_y = np.stack((x_list, y_list), axis=-1)
-    return wcs.wcs_pix2world(x_y, 0).transpose()
-
-
 def make_wcs(refRA, refDec, crdelt=None):
     """
     Makes simple WCS object.
@@ -558,13 +527,13 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
     facet_polys = []
     for region in vor.filtered_regions:
         vertices = vor.vertices[region + [region[0]], :]
-        ra, dec = xy2radec(wcs, vertices[:, 0], vertices[:, 1])
+        ra, dec = wcs.wcs_pix2world(vertices[:, 0], vertices[:, 1], 0)
         vertices = np.stack((ra, dec)).T
         facet_polys.append(vertices)
     facet_points = []
     for point in vor.filtered_points:
-        ra, dec = xy2radec(wcs, [point[0]], [point[1]])
-        facet_points.append((ra[0], dec[0]))
+        ra, dec = wcs.wcs_pix2world(point[0], point[1], 0)
+        facet_points.append((ra.item(), dec.item()))
 
     return facet_points, facet_polys
 
