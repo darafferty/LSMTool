@@ -452,7 +452,7 @@ def select_midpoint(beam_ms: ListOfPathLike) -> str:
         with casa_table(str(ms), ack=False) as table:
             ms_times[i] = np.mean(table.getcol("TIME"))
 
-    ms_times.sort()
+    ms_times = sorted(ms_times)
     mid_time = ms_times[n // 2]
     beam_ind = ms_times.index(mid_time)
     return beam_ms[beam_ind]
