@@ -209,14 +209,12 @@ def plot(LSM, fileName=None, labelBy=None):
 
 def formatCoord(x, y):
     """Custom coordinate format"""
-    global wcs
     RA, Dec = wcs.wcs_pix2world(x, y, 0)
     return 'RA = {0:.2f} Dec = {1:.2f}'.format(RA, Dec)
 
 
 def RAtickformatter(x, pos):
     """Changes x tick labels from pixels to RA in degrees"""
-    global ymin, wcs
     ratick = wcs.wcs_pix2world(x, ymin, 0)[0]
     rastr = '{0:.2f}'.format(ratick)
     return rastr
@@ -224,7 +222,6 @@ def RAtickformatter(x, pos):
 
 def Dectickformatter(y, pos):
     """Changes y tick labels from pixels to Dec in degrees"""
-    global xmin, wcs
     dectick = wcs.wcs_pix2world(xmin, y, 0)[1]
     decstr = '{0:.2f}'.format(dectick)
     return decstr
