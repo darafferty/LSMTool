@@ -74,32 +74,36 @@ def test_add(sky_no_patches):
     assert len(sky_no_patches) == original_length + 1
 
 
-def test_group(sky_no_patches):
-    """Group using tessellation to a target flux of 50 Jy."""
+@pytest.fixture
+def sky_grouped(sky_no_patches):
+    """Group sky_no_patches using tessellation to a target flux of 50 Jy."""
     sky_no_patches.group('tessellate', targetFlux='50.0 Jy')
-    assert len(sky_no_patches.getPatchNames()) == 79
+    return sky_no_patches
 
 
-def test_move(sky_no_patches):
+def test_group(sky_grouped):
+    """Basic check for the grouped skymodel."""
+    assert len(sky_grouped.getPatchNames()) == 79
+
+
+def test_move(sky_grouped):
     """Move patch Patch_1 to 16:04:16.2288, 58.03.06.912."""
-    test_group(sky_no_patches)
-    sky_no_patches.move('Patch_1', position=['16:04:16.2288', '58.03.06.912'])
-    assert round(sky_no_patches.getPatchPositions()['Patch_1'][0].value, 4) == 241.0676
+    sky_grouped.move('Patch_1', position=['16:04:16.2288', '58.03.06.912'])
+    assert round(sky_grouped.getPatchPositions()['Patch_1'][0].value, 4) == 241.0676
 
 
-def test_merge(sky_no_patches):
+def test_merge(sky_grouped):
     """Merge patches Patch_0 and Patch_2."""
-    test_group(sky_no_patches)
-    patch_count = len(sky_no_patches.getPatchNames())
-    sky_no_patches.merge(['Patch_0', 'Patch_2'], name='merged_patch')
-    assert len(sky_no_patches.getPatchNames()) == patch_count - 1
+    patch_count = len(sky_grouped.getPatchNames())
+    sky_grouped.merge(['Patch_0', 'Patch_2'], name='merged_patch')
+    assert len(sky_grouped.getPatchNames()) == patch_count - 1
 
 
-def test_setPatchPositions(sky_no_patches):
+def test_setPatchPositions(sky_grouped):
     """Set patch positions to midpoint of patch."""
-    test_merge(sky_no_patches)
-    sky_no_patches.setPatchPositions(method='mid')
-    assert round(sky_no_patches.getPatchPositions()['merged_patch'][0].value, 4) == 274.1166
+    sky_grouped.merge(['Patch_0', 'Patch_2'], name='merged_patch')
+    sky_grouped.setPatchPositions(method='mid')
+    assert round(sky_grouped.getPatchPositions()['merged_patch'][0].value, 4) == 274.1166
 
 
 def test_facet_write(sky_no_patches, tmp_path):
