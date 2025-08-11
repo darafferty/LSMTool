@@ -10,6 +10,11 @@ def sky_no_patches():
     return lsmtool.load('tests/resources/no_patches.sky')
 
 
+@pytest.fixture()
+def sky_patches():
+    return lsmtool.load('tests/resources/patches.sky')
+
+
 def test_select(sky_no_patches):
     """Select individual sources with Stokes I fluxes above 1 Jy."""
     assert len(sky_no_patches) == 1210
@@ -17,27 +22,25 @@ def test_select(sky_no_patches):
     assert len(sky_no_patches) == 965
 
 
-def test_transfer(sky_no_patches):
+def test_transfer(sky_no_patches, sky_patches):
     """Transfer patches from patches.sky."""
     assert not sky_no_patches.hasPatches
-    sky_no_patches.transfer('tests/resources/patches.sky')
+    sky_no_patches.transfer(sky_patches)
     assert sky_no_patches.hasPatches
 
 
 def test_remove(sky_no_patches):
-    """Remove patches with total fluxes below 2 Jy."""
+    """Remove sources with total fluxes below 2 Jy."""
     assert len(sky_no_patches) == 1210
     sky_no_patches.remove('I < 2.0 Jy', aggregate='sum')
     assert len(sky_no_patches) == 389
 
 
-def test_ungroup(sky_no_patches):
-    """Ungroup the skymodel."""
-    sky_no_patches.group("every")
-    assert sky_no_patches.hasPatches
-
-    sky_no_patches.ungroup()
-    assert not sky_no_patches.hasPatches
+def test_ungroup(sky_patches):
+    """Ungroup a skymodel with patches."""
+    assert sky_patches.hasPatches
+    sky_patches.ungroup()
+    assert not sky_patches.hasPatches
 
 
 def test_concatenate(sky_no_patches):
@@ -118,10 +121,10 @@ def test_facet_write(sky_no_patches, tmp_path):
 
 
 @pytest.fixture
-def final_model(sky_no_patches):
+def final_model(sky_no_patches, sky_patches):
     """Create a skymodel resembling the steps in 'validation.parset'."""
     sky_no_patches.select('I > 1.0 Jy')
-    sky_no_patches.transfer('tests/resources/patches.sky')
+    sky_no_patches.transfer(sky_patches)
     sky_no_patches.remove('I < 2.0 Jy', aggregate='sum')
     sky_no_patches.concatenate('tests/resources/concat.sky', matchBy='position',
                                        radius='30 arcsec', keep='from2')
