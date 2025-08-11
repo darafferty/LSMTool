@@ -197,8 +197,6 @@ def make_wcs(refRA, refDec, crdelt=None):
     w.wcs.cdelt = np.array([-crdelt, crdelt])
     w.wcs.crval = [refRA, refDec]
     w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
-    w.wcs.set_pv([(2, 1, 45.0)])
-
     return w
 
 
