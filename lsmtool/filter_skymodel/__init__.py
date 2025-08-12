@@ -39,7 +39,7 @@ def filter_skymodel(
     output_true_sky: PathLike,
     beam_ms: PathLikeOrListOptional,
     input_bright_skymodel: PathLikeOptional = None,
-    /,
+    *,
     source_finder: str = "bdsf",
     **kws,
 ):

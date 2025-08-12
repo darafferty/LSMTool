@@ -54,8 +54,7 @@ def filter_skymodel(
     vertices_file: PathLike,
     beam_ms: PathLikeOrListOptional = None,
     input_bright_skymodel: PathLikeOptional = None,
-    *,
-    # remaining parameters are keyword-only
+    *,  # remaining parameters are keyword-only
     thresh_isl: numbers.Real = 5.0,
     thresh_pix: numbers.Real = 7.5,
     rmsbox: Tuple[numbers.Integral] = (150, 50),
@@ -453,7 +452,7 @@ def select_midpoint(beam_ms: ListOfPathLike) -> str:
         with casa_table(str(ms), ack=False) as table:
             ms_times[i] = np.mean(table.getcol("TIME"))
 
-    ms_times.sort()
+    ms_times = sorted(ms_times)
     mid_time = ms_times[n // 2]
     beam_ind = ms_times.index(mid_time)
     return beam_ms[beam_ind]
