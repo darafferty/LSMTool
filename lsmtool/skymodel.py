@@ -691,8 +691,8 @@ class SkyModel(object):
 
         # Refine x and y using midpoint
         if len(x) > 1:
-            xmid = np.min(x) + (np.max(x) - np.min(x)) / 2.0
-            ymid = np.min(y) + (np.max(y) - np.min(y)) / 2.0
+            xmid = x.min() + np.ptp(x) / 2.0
+            ymid = y.min() + np.ptp(y) / 2.0
             xind = np.argsort(x)
             yind = np.argsort(y)
             try:
