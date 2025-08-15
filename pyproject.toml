@@ -50,7 +50,7 @@ dependencies = [
     "bdsf",
 ]
 [project.optional-dependencies]
-sofia = ["sofia2 @ git+https://gitlab.com/milhazes/SoFia-2.git@694646dc"]
+sofia = ["sofia2 @ git+https://gitlab.com/ska-telescope/external/SoFiA-2.git@main"]
 
 [dependency-groups]
 docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
