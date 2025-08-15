@@ -77,7 +77,10 @@ def filter_skymodel(
 
     Parameters
     ----------
-    flat_noise_image, true_sky_image, ..., beam_ms, input_bright_skymodel
+    flat_noise_image, true_sky_image, input_true_skymodel, output_apparent_sky
+        See :py:func:`lsmtool.filter_skymodel.filter_skymodel` for the
+        meaning of the positional parameters.
+    output_true_sky, beam_ms, vertices_file, input_bright_skymodel
         See :py:func:`lsmtool.filter_skymodel.filter_skymodel` for the
         meaning of the positional parameters.
 
