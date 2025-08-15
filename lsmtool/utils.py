@@ -20,6 +20,7 @@ from PIL import Image, ImageDraw
 from shapely.geometry import Point, Polygon
 from shapely.prepared import prep
 
+WCS_ORIGIN = 0
 
 def format_coordinates(ra, dec, precision=6):
     """
