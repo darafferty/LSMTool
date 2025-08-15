@@ -21,7 +21,7 @@ from collections import namedtuple
 from math import floor, ceil
 import numpy as np
 import scipy as sp
-
+from lsmtool.utils import WCS_ORIGIN
 
 NormalizedRADec = namedtuple('NormalizedRADec', ['ra', 'dec'])
 
@@ -483,7 +483,7 @@ def gaussian_fcn(g, x1, x2, const=False):
         return gimg
 
 
-def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
+def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec):
     """
     Makes a Voronoi tessellation and returns the resulting facet centers
     and polygons
@@ -498,8 +498,10 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
         RA in degrees of bounding box center
     dec_mid : float
         Dec in degrees of bounding box center
-    width : float
-        Width of bounding box in degrees
+    width_ra : float
+        Width of bounding box in RA in degrees, corrected to Dec = 0
+    width_dec : float
+        Width of bounding box in Dec in degrees
 
     Returns
     -------
@@ -510,14 +512,12 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
         facet)
     """
     # Build the bounding box corner coordinates
-    if width <= 0.0:
-        raise ValueError('The width cannot be zero or less')
-    width_ra = width
-    width_dec = width
+    if width_ra <= 0.0 or width_dec <= 0.0:
+        raise ValueError('The RA/Dec width cannot be zero or less')
     wcs_pixel_scale = 20.0 / 3600.0  # 20"/pixel
     wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
-    x_cal, y_cal = wcs.wcs_world2pix(ra_cal, dec_cal, 0)
-    x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, 0)
+    x_cal, y_cal = wcs.wcs_world2pix(ra_cal, dec_cal, WCS_ORIGIN)
+    x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
     width_x = width_ra / wcs_pixel_scale / 2.0
     width_y = width_dec / wcs_pixel_scale / 2.0
     bounding_box = np.array([x_mid - width_x, x_mid + width_x,
@@ -528,14 +528,12 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
     facet_polys = []
     for region in vor.filtered_regions:
         vertices = vor.vertices[region + [region[0]], :]
-        ra, dec = wcs.wcs_pix2world(vertices[:, 0], vertices[:, 1], 0)
+        ra, dec = wcs.wcs_pix2world(vertices[:, 0], vertices[:, 1], WCS_ORIGIN)
         vertices = np.stack((ra, dec)).T
         facet_polys.append(vertices)
-    facet_points = []
-    for point in vor.filtered_points:
-        ra, dec = wcs.wcs_pix2world(point[0], point[1], 0)
-        facet_points.append((ra.item(), dec.item()))
-
+    facet_points = list(map(
+        tuple, wcs.wcs_pix2world(vor.filtered_points, WCS_ORIGIN)
+    ))
     return facet_points, facet_polys
 
 
