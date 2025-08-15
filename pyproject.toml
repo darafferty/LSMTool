@@ -50,15 +50,15 @@ dependencies = [
     "bdsf",
 ]
 [project.optional-dependencies]
+tests = ["pytest", "coverage"]
+docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
 sofia = ["sofia2 @ git+https://gitlab.com/ska-telescope/external/SoFiA-2.git@main"]
+dev = ["ruff", "lsmtool[docs, tests, sofia]"]
 
 [dependency-groups]
-docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
-tests = ["pytest", "coverage"]
-dev = ["ruff", 
-       "lsmtool[sofia]",
-       {include-group = "docs"}, 
-       {include-group = "tests"}]
+docs = ["lsmtool[docs]"]
+tests = ["lsmtool[tests]"]
+dev = ["lsmtool[dev]"]
 
 [project.scripts]
 lsmtool = "lsmtool.lsmtool:main"
@@ -136,10 +136,13 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Expand basic rules with name and style checks roughly equivalent to flake8 + black + pylint
-# Some additional functional errors such as `await` on none async or wrong return types / args.
+# Expand basic rules with name and style checks roughly equivalent to 
+# flake8 + black + pylint. Some additional functional errors such as `await` on 
+# none async or wrong return types / args.
 # More info https://docs.astral.sh/ruff/rules/
-select = ["N", "A", "E", "F", "B", "W", "Q", "PL", "ASYNC", "S", "G", "RET", "ARG", "I"]
+select = [
+    "N", "A", "E", "F", "B", "W", "Q", "PL", "ASYNC", "S", "G", "RET", "ARG", "I"
+]
 
 # ignore: 
 # PLR2004: magic-value-comparison
