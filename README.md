@@ -1,5 +1,4 @@
-LSMTool: the LOFAR Sky Model Tool
-=================================
+# LSMTool: the LOFAR Sky Model Tool
 
 LSMTool allows the manipulation of LOFAR sky models (in the makesourcedb format).
 
@@ -36,7 +35,8 @@ The following operations are available:
 
 For details, please see the [full documentation](https://lsmtool.readthedocs.io/en/latest/).
 
-### Dependencies
+
+## Dependencies
 
 LSMTool depends on the following packages:
 
@@ -54,19 +54,31 @@ LSMTool depends on the following packages:
 These packages will normally be installed automatically.
 
 
-### Downloading and Installing
+## Downloading and Installing
 
-* Install the latest release from PyPI:
+LSMTool uses `PyBDSF` as default source finder. If you wish, you can use [SoFiA-2](https://gitlab.com/SoFiA-Admin/SoFiA-2/) instead, which can be installed as extra.
+
+### Install the latest release from PyPI
+
 ```
     pip install lsmtool
 ```
+or with `SoFiA-2` as extra:
+```
+    pip install lsmtool[sofia]
+```
 
-* Or install the latest developer version from the git repository:
+### Install the latest developer version
 ```
     pip install git+https://git.astron.nl/RD/LSMTool.git
 ```
+or with `SoFiA-2` as extra:
+```
+    pip install lsmtool[sofia] git+https://git.astron.nl/RD/LSMTool.git
+```
 
-* If you have a C++11-compliant compiler, you can build a faster
+### Install a faster mean-shift grouping algorithm
+If you have a C++11-compliant compiler, you can build a faster
 version of the mean shift grouping algorithm by compiling it
 yourself:
 ```
@@ -75,18 +87,12 @@ yourself:
     sed -Ei 's/^(BUILD_EXTENSIONS = ).*/\1"ON"/' pyproject.toml
     pip install .
 ```
-
-#### Notes
-
-* The C++ version will give slightly different results compared to the
+Note that the C++ version will give slightly different results compared to the
 Python version, but such differences are not expected to be important
 in practice.
 
-* If you wish to use an alternative to the `PyBDSF` source finder, you can manually install [Sofia-2](https://gitlab.com/SoFiA-Admin/SoFiA-2/)
 
-
-
-### Testing
+## Testing
 
 If you've cloned the repository, and installed the software from source, you can test that the installation works as expected:
 ```
@@ -96,8 +102,7 @@ If you've cloned the repository, and installed the software from source, you can
 If no errors occur, LSMTool is installed correctly.
 
 
-Usage
------
+## Usage
 
 The LSMTool executable can be used from the command line with a parset that defines the steps
 to be done. E.g.:
