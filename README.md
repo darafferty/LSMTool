@@ -1,5 +1,4 @@
-LSMTool: the LOFAR Sky Model Tool
-=================================
+# LSMTool: the LOFAR Sky Model Tool
 
 LSMTool allows the manipulation of LOFAR sky models (in the makesourcedb format).
 
@@ -36,58 +35,74 @@ The following operations are available:
 
 For details, please see the [full documentation](https://lsmtool.readthedocs.io/en/latest/).
 
-Installation
-------------
 
-LSMTool is already installed on the LOFAR CEP3 cluster. Users on CEP3
-should run the following commands before using LSMTool:
+## Dependencies
 
-    source ~rafferty/init_lsmtool
+LSMTool depends on the following packages:
 
-If you want to install LSMTool yourself, follow the instructions below.
+* [Astropy](https://www.astropy.org/) (version 3.2 or later)
+* [EveryBeam](https://git.astron.nl/RD/EveryBeam.git) (version 0.6.1 or later)
+* [Matplotlib](https://matplotlib.org/)
+* [NumPy](https://numpy.org/)
+* [Pillow](https://pypi.org/project/pillow/) (any version except 10.x)
+* [PyBDSF](https://github.com/lofar-astron/PyBDSF.git)
+* [Python-Casacore](https://github.com/casacore/python-casacore.git)
+* [PyVO](https://github.com/astropy/pyvo)
+* [Scipy](https://scipy.org/) (version 0.11 or later)
+* [Shapely](https://github.com/shapely/shapely)
 
-### Dependencies
+These packages will normally be installed automatically.
 
-* [Numpy](https://www.numpy.org)
-* [Scipy](https://www.scipy.org)
-* [Matplotlib](https://www.matplotlib.org)
-* [Astropy](https://www.astropy.org)
-* [EveryBeam](https://everybeam.readthedocs.io)
-* [PyVO](https://pyvo.readthedocs.org) (optional, for VO access)
 
-### Downloading and Installing
+## Downloading and Installing
 
-* Install the latest release from PyPI:
+LSMTool uses `PyBDSF` as default source finder. If you wish, you can use [SoFiA-2](https://gitlab.com/SoFiA-Admin/SoFiA-2/) instead, which can be installed as extra.
 
+### Install the latest release from PyPI
+
+```
     pip install lsmtool
+```
+or with `SoFiA-2` as extra:
+```
+    pip install lsmtool[sofia]
+```
 
-* Or install the latest developer version from the git repository:
-
+### Install the latest developer version
+```
     pip install git+https://git.astron.nl/RD/LSMTool.git
+```
+or with `SoFiA-2` as extra:
+```
+    pip install lsmtool[sofia] git+https://git.astron.nl/RD/LSMTool.git
+```
 
+### Install a faster mean-shift grouping algorithm
 If you have a C++11-compliant compiler, you can build a faster
 version of the mean shift grouping algorithm by compiling it
 yourself:
-
+```
     git clone https://git.astron.nl/RD/LSMTool.git
     cd LSMTool
-    python setup.py install --build_c_extentions
-
+    sed -Ei 's/^(BUILD_EXTENSIONS = ).*/\1"ON"/' pyproject.toml
+    pip install .
+```
 Note that the C++ version will give slightly different results compared to the
 Python version, but such differences are not expected to be important
 in practice.
 
-### Testing
 
-You can test that the installation worked with:
+## Testing
 
-    python setup.py test
-
+If you've cloned the repository, and installed the software from source, you can test that the installation works as expected:
+```
+    pip install pytest
+    pytest
+```
 If no errors occur, LSMTool is installed correctly.
 
 
-Usage
------
+## Usage
 
 The LSMTool executable can be used from the command line with a parset that defines the steps
 to be done. E.g.:
