@@ -49,7 +49,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "LSMTool"
-copyright = "2022, David Rafferty"
+copyright = "2014-%Y, David Rafferty and Team Rapthor (ASTRON)"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

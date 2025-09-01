@@ -1,16 +1,6 @@
 User Guide
 ==========
 
-LSMTool is a Python package which allows for the manipulation of sky
-models in the ``makesourcedb`` format (used by DP3). To initialize
-your environment for LSMTool, users on CEP3 should run the following
-command::
-
-    $ module load lsmtool
-
-To install LSMTool elsewhere, please see the README at
-https://git.astron.nl/RD/LSMTool for instructions.
-
 Usage
 -----
 
@@ -36,40 +26,40 @@ Operations
 These are the operations that LSMTool can perform:
 
 SELECT
-    : Select sources by source or patch properties
+    Select sources by source or patch properties
 
 REMOVE
-    : Remove sources by source or patch properties
+    Remove sources by source or patch properties
 
 TRANSFER
-    : Transfer a patch scheme from one sky model to another
+    Transfer a patch scheme from one sky model to another
 
 GROUP
-    : Group sources into patches
+    Group sources into patches
 
 UNGROUP
-    : Remove patches
+    Remove patches
 
 MOVE
-    : Move a source or patch position
+    Move a source or patch position
 
 MERGE
-    : Merge two or more patches into one
+    Merge two or more patches into one
 
 CONCATENATE
-    : Concatenate two sky models
+    Concatenate two sky models
 
 ADD
-    : Add a source
+    Add a source
 
 SETPATCHPOSITIONS
-    : Calculate and set patch positions
+    Calculate and set patch positions
 
 PLOT
-    : Plot a simple representation of the sky model
+    Plot a simple representation of the sky model
 
 COMPARE
-    : Compare source fluxes and positions of two sky models
+    Compare source fluxes and positions of two sky models
 
 Example parset
 --------------
@@ -108,8 +98,7 @@ then groups the sources into patches:
 In the first line of this parset the step names are defined. In the next
 sections, the step parameters for every step are defined. Steps are
 applied sequentially, in the same order defined in the list of steps. A
-list of step-specific parameters is given in
-Table [lsmtool:tab:local\ :sub:`v`\ al].
+list of step-specific parameters is given in the table below.
 
 +--------------------+-----------------+----------------+------------------------------------------------------------------------+
 | Var Name           |   Format        | Example        | Comment                                                                |
@@ -225,11 +214,11 @@ A sky model can then be loaded with, e.g.:
 
     >>> LSM = lsmtool.load('skymodel.sky')
 
-All of the operations described in Section [lsmtool:operations] are
+All of the operations described in the section `Operations`_ are
 available as methods of the resulting sky model object (with the same
 name as the corresponding operation). For example, the following
-commands with duplicate the steps done in the example parset given in
-Section [lsmtool:parset]:
+commands will duplicate the steps done in the example parset given
+above in the section `Example parset`_:
 
 ::
 
@@ -240,8 +229,8 @@ Section [lsmtool:parset]:
     >>> LSM.setPatchPositions(method='mid')
 
 In many cases, the methods accept parameters with the same names as
-those used in a parset (see the full documentation for details). The sky
-model can then written to a new file with:
+those used in a parset (see the :doc:`API Reference <api/lsmtool>` for details).
+The sky model can then be written to a new file with:
 
 ::
 
@@ -249,7 +238,8 @@ model can then written to a new file with:
 
 Additionally, sky models can be written out as ds9 region files and kvis
 annotation files (as well as all the formats supported by the
-astropy.table package, such at VOTable, HDF5, and FITS):
+`astropy.table <https://docs.astropy.org/en/latest/table/ref_api.html#module-astropy.table>`_
+package, such as VOTable, HDF5, and FITS):
 
 ::
 
@@ -263,45 +253,46 @@ In addition to the operations described above, a number of other methods
 are available:
 
 LSM.copy()
-    : Return a copy of the sky model object
+    Return a copy of the sky model object
 
 LSM.info()
-    : Print information about the sky model
+    Print information about the sky model
 
 LSM.more()
-    : Print the sky model to the screen, using more-like controls
+    Print the sky model to the screen, using more-like controls
 
 LSM.broadcast()
-    : Send the sky model to other applications using SAMP
+    Send the sky model to other applications using SAMP
 
 LSM.getColNames()
-    : Returns a list of the column names in the sky model
+    Returns a list of the column names in the sky model
 
 LSM.getColValues()
-    : Returns a numpy array of column values
+    Returns a numpy array of column values
 
 LSM.getRowIndex()
-    : Returns the row index or indices for a source or patch
+    Returns the row index or indices for a source or patch
 
 LSM.getRowValues()
-    : Returns a table or row for a source or patch
+    Returns a table or row for a source or patch
 
 LSM.getPatchPositions()
-    : Returns patch RA and Dec values
+    Returns patch RA and Dec values
 
 LSM.getDefaltValues()
-    : Returns column default values
+    Returns column default values
 
 LSM.getPatchSizes()
-    : Returns an array of patch sizes
+    Returns an array of patch sizes
 
 LSM.setColValues()
-    : Sets column values
+    Sets column values
 
 LSM.setRowValues()
-    : Sets row values
+    Sets row values
 
 LSM.setDefaultValues()
-    : Sets default column values
+    Sets default column values
 
-For details on these methods, please see the full module documentation.
+For details on these methods, please refer to the :doc:`skymodel <api/skymodel>`
+API reference.
