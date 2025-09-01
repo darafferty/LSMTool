@@ -61,7 +61,7 @@ run_unit_tests:
     - tox -e py3${PY_VERSION}
   parallel:
     matrix: # use the matrix for testing
-      - PY_VERSION: [8, 9, 10, 11, 12]
+      - PY_VERSION: [10, 11, 12, 13]
 
 # Run code coverage on the base image thus also performing unit tests
 # run_unit_tests_coverage:

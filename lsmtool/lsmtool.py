@@ -27,7 +27,7 @@ import os
 import time
 import logging
 from lsmtool import _version, _logging, skymodel, operations
-import lofar.parameterset
+from lofar_parameterset.parameterset import parameterset
 
 
 def main():
@@ -79,7 +79,7 @@ def main():
         sys.exit(1)
 
     # from ~vdtol/Expion-2011-05-03/src
-    parset = lofar.parameterset.parameterset(parsetFile)
+    parset = parameterset.fromFile(parsetFile)
     steps = parset.getStringVector("LSMTool.Steps", [])
 
     # Possible operations, linked to relevant function
@@ -100,13 +100,13 @@ def main():
     for step in steps:
         operation = parset.getString('.'.join(["LSMTool.Steps", step, "Operation"]))
         logging.info("--> Starting \'" + step + "\' step (operation: " + operation + ").")
-        start = time.clock()
+        start = time.perf_counter()
         returncode = availableOperations[operation].run(step, parset, LSM)
         if returncode != 0:
            logging.error("Step \'" + step + "\' incomplete. Trying to continue anyway...")
         else:
            logging.info("Step \'" + step + "\' completed successfully.")
-        elapsed = (time.clock() - start)
+        elapsed = (time.perf_counter() - start)
         logging.debug("Time for this step: "+str(elapsed)+" s.")
 
     logging.info("Done.")
