@@ -112,9 +112,9 @@ def filter_skymodel(
 
     Returns
     -------
-    n_sources : int
+    n_sources : int or None
         The number of sources detected (only returned when source_finder is
-        "bdsf").
+        "bdsf"; otherwise None is returned).
 
     See Also
     --------
@@ -127,31 +127,17 @@ def filter_skymodel(
 
     source_finder = resolve_source_finder(source_finder)
     runner = KNOWN_SOURCE_FINDERS[source_finder].filter_skymodel
-    if source_finder == "bdsf":
-        n_sources = runner(
-            flat_noise_image,
-            true_sky_image,
-            input_true_skymodel,
-            input_apparent_skymodel,
-            output_apparent_sky,
-            output_true_sky,
-            beam_ms=beam_ms,
-            input_bright_skymodel=input_bright_skymodel,
-            **kws,
-        )
-        return n_sources
-    else:
-        runner(
-            flat_noise_image,
-            true_sky_image,
-            input_true_skymodel,
-            input_apparent_skymodel,
-            output_apparent_sky,
-            output_true_sky,
-            beam_ms=beam_ms,
-            input_bright_skymodel=input_bright_skymodel,
-            **kws,
-        )
+    return runner(
+        flat_noise_image,
+        true_sky_image,
+        input_true_skymodel,
+        input_apparent_skymodel,
+        output_apparent_sky,
+        output_true_sky,
+        beam_ms=beam_ms,
+        input_bright_skymodel=input_bright_skymodel,
+        **kws,
+    )
 
 
 def resolve_source_finder(name: str) -> str:
