@@ -140,17 +140,6 @@ def filter_skymodel(
         input_bright_skymodel=input_bright_skymodel,
         required=False,
     )
-    # Require that one of the input skymodels exist, otherwise there is nothing
-    # to filter. At this point we know that the paths exist if they are given,
-    # so we only need to check that at least one of these are provided.
-    if not (
-        input_true_skymodel or input_apparent_skymodel or input_bright_skymodel
-    ):
-        raise FileNotFoundError(
-            "At least one of the following input skymodels should be provided: "
-            "input_true_skymodel, input_apparent_skymodel, "
-            "input_bright_skymodel."
-        )
 
     rmsbox = parse_rmsbox(rmsbox)
     rmsbox_bright = parse_rmsbox(rmsbox_bright)
@@ -182,8 +171,8 @@ def filter_skymodel(
     # Save number of sources found by PyBDSF for later use
     n_sources = img_true_sky.nsrc
 
-    # Filter the sky model if any sources were detected
-    if img_true_sky.nisl > 0:
+    # Filter the sky model (if it was given) and any sources were detected
+    if img_true_sky.nisl > 0 and (input_true_skymodel or input_bright_skymodel):
         filter_sources(
             img_true_sky,
             vertices_file,
@@ -319,11 +308,11 @@ def filter_sources(
     vertices_file : str or Path
         Filename of file with vertices, which determine the imaging field.
     input_true_skymodel : str or Path, optional
-        Filename of input makesourcedb sky model.
-        If not provided, the input_bright_skymodel must be provided.
+        Filename of input makesourcedb sky model with true fluxes.
+    input_apparent_skymodel : str or Path, optional
+        Filename of input makesourcedb sky model with apparent fluxes.
     input_bright_skymodel : str or Path, optional
         Filename of input makesourcedb sky model of bright sources only.
-        If not provided, the input_true_skymodel must be provided.
     beam_ms : str or Path, optional
         The filename of the MS for deriving the beam attenuation.
     filter_by_mask : bool, optional

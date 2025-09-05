@@ -110,6 +110,12 @@ def filter_skymodel(
     **kws
         Additional keyword arguments to pass to the source finder function.
 
+    Returns
+    -------
+    n_sources : int
+        The number of sources detected (only returned when source_finder is
+        "bdsf").
+
     See Also
     --------
     lsmtool.filter_skymodel.bdsf.filter_skymodel :
@@ -121,17 +127,31 @@ def filter_skymodel(
 
     source_finder = resolve_source_finder(source_finder)
     runner = KNOWN_SOURCE_FINDERS[source_finder].filter_skymodel
-    runner(
-        flat_noise_image,
-        true_sky_image,
-        input_true_skymodel,
-        input_apparent_skymodel,
-        output_apparent_sky,
-        output_true_sky,
-        beam_ms=beam_ms,
-        input_bright_skymodel=input_bright_skymodel,
-        **kws,
-    )
+    if source_finder == "bdsf":
+        n_sources = runner(
+            flat_noise_image,
+            true_sky_image,
+            input_true_skymodel,
+            input_apparent_skymodel,
+            output_apparent_sky,
+            output_true_sky,
+            beam_ms=beam_ms,
+            input_bright_skymodel=input_bright_skymodel,
+            **kws,
+        )
+        return n_sources
+    else:
+        runner(
+            flat_noise_image,
+            true_sky_image,
+            input_true_skymodel,
+            input_apparent_skymodel,
+            output_apparent_sky,
+            output_true_sky,
+            beam_ms=beam_ms,
+            input_bright_skymodel=input_bright_skymodel,
+            **kws,
+        )
 
 
 def resolve_source_finder(name: str) -> str:
