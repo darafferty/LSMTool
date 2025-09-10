@@ -102,14 +102,14 @@ def filter_skymodel(
     filter_by_mask : bool, optional
         If True, filter the input sky model by the PyBDSF-derived mask,
         removing sources that lie in unmasked regions.
-    output_catalog: str or Path, optional
+    output_catalog: str or pathlib.Path, optional
         The filename for source catalog. If not provided, do not create it.
-    output_flat_noise_rms: str or Path, optional
+    output_flat_noise_rms: str or pathlib.Path, optional
         The filename for the flat noise root-mean-square (RMS) image. If not
         provied, do not create it. Creating this image may require an
         additional PyBDSF call and thereby slow down this function
         significantly.
-    output_true_rms: str or Path, optional
+    output_true_rms: str or pathlib.Path, optional
         The filename for the true sky RMS image. If not provied, do not create
         it.
     ncores : int
@@ -218,19 +218,19 @@ def process_images(
 
     Parameters
     ----------
-    flat_noise_image : str or Path
+    flat_noise_image : str or pathlib.Path
         Path to the flat noise image.
-    true_sky_image : str or Path
+    true_sky_image : str or pathlib.Path
         Path to the true sky image.
-    beam_ms : str or Path or list of str or list of Path or None
+    beam_ms : str or pathlib.Path or list of str or list of Path or None
         Path to the beam measurement set.
-    output_catalog: str or Path, optional
+    output_catalog: str or pathlib.Path, optional
         The filename for source catalog. If empty, do not create it.
-    output_flat_noise_rms: str or Path, optional
+    output_flat_noise_rms: str or pathlib.Path, optional
         The filename for the flat noise RMS image. If empty, do not create it.
         Creating this image may require an additional PyBDSF call and thereby
         slow down this function significantly.
-    output_true_rms: str or Path, optional
+    output_true_rms: str or pathlib.Path, optional
         The filename for the true sky RMS image. If empty, do not create it.
     **config
         Additional keyword arguments passed to the bdsf.process_image call.
@@ -308,21 +308,21 @@ def filter_sources(
     ----------
     img_true_sky : bdsf.image.Image
         The PyBDSF image object.
-    vertices_file : str or Path
+    vertices_file : str or pathlib.Path
         Filename of file with vertices, which determine the imaging field.
-    input_true_skymodel : str or Path, optional
+    input_true_skymodel : str or pathlib.Path, optional
         Filename of input makesourcedb sky model with true fluxes.
     input_apparent_skymodel : str or Path, optional
         Filename of input makesourcedb sky model with apparent fluxes.
-    input_bright_skymodel : str or Path, optional
+    input_bright_skymodel : str or pathlib.Path, optional
         Filename of input makesourcedb sky model of bright sources only.
-    beam_ms : str or Path, optional
+    beam_ms : str or pathlib.Path, optional
         The filename of the MS for deriving the beam attenuation.
     filter_by_mask : bool, optional
         If True, filter the input sky model by the PyBDSF-derived mask.
-    output_true_sky : str or Path
+    output_true_sky : str or pathlib.Path
         Output file name for the generated true sky model.
-    output_apparent_sky : str or Path
+    output_apparent_sky : str or pathlib.Path
         Output file name for the generated apparent sky model.
     """
 
@@ -401,9 +401,9 @@ def trim_mask(mask_file: PathLike, vertices_file: PathLike):
 
     Parameters
     ----------
-    mask_file: Path or str:
+    mask_file: str or pathlib.Path:
         Path to the mask file.
-    vertices_file: Path or str:
+    vertices_file: str or pathlib.Path:
         Path to the file containing vertices.
     """
     hdu = pyfits.open(mask_file, memmap=False)
@@ -503,7 +503,7 @@ def add_bright_sources(
     ----------
     input_skymodel : SkyModel
         The input sky model to which bright sources will be added.
-    input_bright_skymodel : str or Path
+    input_bright_skymodel : str or pathlib.Path
         The filename of the bright source sky model.
     """
 
@@ -533,9 +533,9 @@ def create_dummy_skymodel(
     ----------
     img_true_sky : bdsf.image.Image
         The PyBDSF image object.
-    output_true_sky : str or Path
+    output_true_sky : str or pathlib.Path
         Output file name for the true sky model.
-    output_apparent_sky : str or Path
+    output_apparent_sky : str or pathlib.Path
         Output file name for the apparent sky model.
 
     """
