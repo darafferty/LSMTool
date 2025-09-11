@@ -67,7 +67,7 @@ def filter_skymodel(
 
     input_true_skymodel : str or pathlib.Path or None
         Filename of input makesourcedb sky model, with primary-beam correction.
-        
+
         - If this file exists, and `input_bright_skymodel` exists, they are
           concatenated and used as the `input_true_skymodel`.
         - If this file does not exist, and the `input_bright_skymodel` does not
