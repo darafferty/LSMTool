@@ -4,7 +4,7 @@ default:
     pull_policy: always
   cache:
     paths:
-      - .cache/pip
+      - $PIP_CACHE_DIR
       # Do not cache .tox, to recreate virtualenvs for every step
 
 stages:
