@@ -9,7 +9,7 @@ default:
 
 stages:
   - prepare
-  # - lint
+  - lint
   # # check if this needs to be a separate step
   # # - build_extensions
   # - test
