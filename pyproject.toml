@@ -212,4 +212,4 @@ commands = [
 [tool.tox.env.build]
 package = "wheel"
 deps = ["build>=0.8.0"]
-commands = [["python", "-m", "build"], ["du", "-msc" "dist/*"]]
+commands = [["python", "-m", "build"], ["du", "-msc", "*"]]

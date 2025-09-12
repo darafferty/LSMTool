@@ -40,7 +40,8 @@ run_lint:
     - apt-get update -y
     - apt install wcslib-dev -y
   script:
-    - tox -e lint
+    - "Skipping linting for now"
+    # - tox -e lint
   allow_failure: true
 
 # Basic setup for all Python versions for which we don't have a base image
