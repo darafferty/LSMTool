@@ -2,10 +2,10 @@ default:
   image:
     name: $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG
     pull_policy: always
-  # cache:
-  #   paths:
-  #     - $PIP_CACHE_DIR
-  #     # Do not cache .tox, to recreate virtualenvs for every step
+  cache:
+    paths:
+      - .cache/pip
+      # Do not cache .tox, to recreate virtualenvs for every step
 
 stages:
   - prepare
@@ -89,10 +89,6 @@ package_files:
     - *install_dependencies
   script:
     - tox -e build
-  after_script:
-    - du -h dist/*
-    - tar tvf dist/*.gz
-  allow_failure: true
 
 # Build the sphinx documentation
 package_docs:
