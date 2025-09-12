@@ -19,9 +19,9 @@ def check_skymodels_equal(
 
     Parameters
     ----------
-    left_filename : str or Path
+    left_filename : str or pathlib.Path
         Path to the first skymodel file.
-    right_filename : str or Path
+    right_filename : str or pathlib.Path
         Path to the second skymodel file.
     check_patch_names_sizes : bool
         Whether to check patch names and sizes.

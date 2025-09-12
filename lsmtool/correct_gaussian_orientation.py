@@ -57,7 +57,7 @@ def add_absolute_orientation(
 
     Parameters
     ----------
-    skymodel_filename_in, skymodel_filename_out : str or Path
+    skymodel_filename_in, skymodel_filename_out : str or pathlib.Path
         Input and output sky model filenames.
     ra_center, dec_center : astropy.units.Quantity
         Right ascension and declination of the image center.

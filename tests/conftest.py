@@ -32,9 +32,9 @@ def untar(
 
     Parameters
     ----------
-    filename:  str or Path
+    filename:  str or pathlib.Path
         Name of the tar file.
-    destination:  str or Path
+    destination:  str or pathlib.Path
         Path to extract the tar file to.
     """
 

@@ -55,27 +55,27 @@ def filter_skymodel(
 
     Parameters
     ----------
-    flat_noise_image : str or Path
+    flat_noise_image : str or pathlib.Path
         Filename of input image to use to detect sources for filtering.
         It should be a flat-noise / apparent sky image (without primary-beam
         correction).
-    true_sky_image : str or Path, optional
+    true_sky_image : str or pathlib.Path, optional
         Filename of input image to use to determine the true flux of sources.
         It should be a true flux image (with primary-beam correction).
         If beam_ms is not given or is None, this argument must be supplied.
         Otherwise, filter_skymodel ignores it and uses the flat_noise_image
         instead.
-    output_apparent_sky: str or Path
+    output_apparent_sky: str or pathlib.Path
         Output file name for the generated apparent sky model, without
         primary-beam correction.
-    output_true_sky : str or Path
+    output_true_sky : str or pathlib.Path
         Output file name for the generated true sky model, with primary-beam
         correction.
-    beam_ms : str or Path, optional
+    beam_ms : str or pathlib.Path, optional
         The filename of the MS for deriving the beam attenuation and
         theoretical image noise. If empty, the generated apparent and true sky
         models will be equal.
-    output_dir : str or Path, optional
+    output_dir : str or pathlib.Path, optional
         Full path to the directory to which all output files will be written.
         If unset, the parent directory of the input data cube will be used by
         default.
@@ -389,7 +389,7 @@ def write_skymodel(
 
     Parameters
     ----------
-    output_true_sky : str or Path
+    output_true_sky : str or pathlib.Path
         Output file name for the skymodel.
     catalog_table : astropy.table.Table
         The source catalog table.
