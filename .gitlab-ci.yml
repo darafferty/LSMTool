@@ -10,27 +10,27 @@ default:
 stages:
   - prepare
   - lint
-  # # check if this needs to be a separate step
-  # # - build_extensions
-  # - test
+  # check if this needs to be a separate step
+  # - build_extensions
+  - test
   - package
 
 # Caching of dependencies to speed up builds
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
-# # Job templates from Gitlab that scan for security issues or leaked secrets
-# include:
-#   - template: Security/SAST.gitlab-ci.yml
-#   - template: Security/Dependency-Scanning.gitlab-ci.yml
-#   - template: Security/Secret-Detection.gitlab-ci.yml
+# Job templates from Gitlab that scan for security issues or leaked secrets
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
 
-# # Prepare image to run ci on, image will be used in most jobs
-# trigger_prepare:
-#   stage: prepare
-#   trigger:
-#     strategy: depend
-#     include: .prepare.gitlab-ci.yml
+# Prepare image to run ci on, image will be used in most jobs
+trigger_prepare:
+  stage: prepare
+  trigger:
+    strategy: depend
+    include: .prepare.gitlab-ci.yml
 
 run_lint:
   stage: lint
@@ -40,8 +40,7 @@ run_lint:
     - apt-get update -y
     - apt install wcslib-dev -y
   script:
-    - echo "Skipping linting for now"
-    # - tox -e lint
+    - tox -e lint
   allow_failure: true
 
 # Basic setup for all Python versions for which we don't have a base image
@@ -52,31 +51,31 @@ run_lint:
     - python -m pip install --upgrade pip
     - python -m pip install --upgrade tox twine
 
-# # Run all unit tests for Python versions except the base image
-# # The base image is used for the highest Python version
-# run_unit_tests:
-#   extends: .run_unit_test_version_base
-#   stage: test
-#   image: python:3.${PY_VERSION}
-#   script:
-#     - tox -e py3${PY_VERSION}
-#   parallel:
-#     matrix: # use the matrix for testing
-#       - PY_VERSION: [10, 11, 12, 13]
+# Run all unit tests for Python versions except the base image
+# The base image is used for the highest Python version
+run_unit_tests:
+  extends: .run_unit_test_version_base
+  stage: test
+  image: python:3.${PY_VERSION}
+  script:
+    - tox -e py3${PY_VERSION}
+  parallel:
+    matrix: # use the matrix for testing
+      - PY_VERSION: [10, 11, 12, 13]
 
-# # Run code coverage on the base image thus also performing unit tests
-# # run_unit_tests_coverage:
-# #   stage: test
-# #   script:
-# #    - tox -e coverage
-# #   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
-# #   artifacts:
-# #     reports:
-# #       coverage_report:
-# #         coverage_format: cobertura
-# #         path: coverage.xml
-# #     paths:
-# #       - htmlcov/*
+# Run code coverage on the base image thus also performing unit tests
+# run_unit_tests_coverage:
+#   stage: test
+#   script:
+#    - tox -e coverage
+#   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+#   artifacts:
+#     reports:
+#       coverage_report:
+#         coverage_format: cobertura
+#         path: coverage.xml
+#     paths:
+#       - htmlcov/*
 
 
 # Build and package the project
@@ -95,14 +94,14 @@ package_files:
     - tar tvf dist/*.gz
   allow_failure: true
 
-# # Build the sphinx documentation
-# package_docs:
-#   stage: package
-#   artifacts:
-#     expire_in: 1w
-#     paths:
-#       - docs/build/*
-#   before_script:
-#     - *install_dependencies
-#   script:
-#     - tox -e docs
+# Build the sphinx documentation
+package_docs:
+  stage: package
+  artifacts:
+    expire_in: 1w
+    paths:
+      - docs/build/*
+  before_script:
+    - *install_dependencies
+  script:
+    - tox -e docs
