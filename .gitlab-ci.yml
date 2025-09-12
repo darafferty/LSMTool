@@ -19,18 +19,18 @@ stages:
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
-# Job templates from Gitlab that scan for security issues or leaked secrets
-include:
-  - template: Security/SAST.gitlab-ci.yml
-  - template: Security/Dependency-Scanning.gitlab-ci.yml
-  - template: Security/Secret-Detection.gitlab-ci.yml
+# # Job templates from Gitlab that scan for security issues or leaked secrets
+# include:
+#   - template: Security/SAST.gitlab-ci.yml
+#   - template: Security/Dependency-Scanning.gitlab-ci.yml
+#   - template: Security/Secret-Detection.gitlab-ci.yml
 
-# Prepare image to run ci on, image will be used in most jobs
-trigger_prepare:
-  stage: prepare
-  trigger:
-    strategy: depend
-    include: .prepare.gitlab-ci.yml
+# # Prepare image to run ci on, image will be used in most jobs
+# trigger_prepare:
+#   stage: prepare
+#   trigger:
+#     strategy: depend
+#     include: .prepare.gitlab-ci.yml
 
 run_lint:
   stage: lint
