@@ -92,6 +92,7 @@ package_files:
     - tox -e build
   after_script:
     - du -h dist/*
+    - tar tvf dist/*.gz
   allow_failure: true
 
 # # Build the sphinx documentation
