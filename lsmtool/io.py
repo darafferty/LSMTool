@@ -80,12 +80,12 @@ def check_file_exists(path: PathLike):
     Check if a file exists at the given path.
 
     This function checks if a file exists at the specified path. It raises
-    exceptions if the path is not a string or Path object, or if the file
+    exceptions if the path is not a string or pathlib.Path object, or if the file
     does not exist.
 
     Parameters
     ----------
-    path : str or Path
+    path : str or pathlib.Path
         The path to the file.
 
     Returns
@@ -96,7 +96,7 @@ def check_file_exists(path: PathLike):
     Raises
     ------
     TypeError
-        If the input path is not a string or Path object.
+        If the input path is not a string or pathlib.Path object.
     FileNotFoundError
         If the file does not exist at the given path.
     """
@@ -132,7 +132,7 @@ def validate_paths(required: bool = True, **filenames):
     Raises
     ------
     TypeError
-        If a filename is not a string or Path object. The corresponding
+        If a filename is not a string or pathlib.Path object. The corresponding
         parameter name will be shown in the exception message.
     FileNotFoundError
         If a required file does not exist. The corresponding parameter name
@@ -219,7 +219,7 @@ def read_vertices_ra_dec(filename: PathLike):
 
     Parameters
     ----------
-    filename : str or Path
+    filename : str or pathlib.Path
         The path to the pickle file where facet vertices are stored as
         tuples of RA and Dec values.
 
