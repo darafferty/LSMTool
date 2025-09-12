@@ -147,9 +147,9 @@ def test_format_coordinates_nominal(
         ),
         pytest.param(
             [(2.7, 3.1), (3.2, 4.5), (5.1, 6.3)],
-            (5, 5),
+            (5, 6),
             0,
-            np.zeros((5, 5)),
+            np.zeros((5, 6)),
             id="test_case_from_rapthor",
         ),
     ],
