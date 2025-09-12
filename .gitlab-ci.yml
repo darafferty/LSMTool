@@ -89,6 +89,9 @@ package_files:
     - *install_dependencies
   script:
     - tox -e build
+  after_script:
+    - du -h dist/*
+  allow_failure: true
 
 # Build the sphinx documentation
 package_docs:
