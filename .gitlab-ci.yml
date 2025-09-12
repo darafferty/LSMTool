@@ -40,7 +40,7 @@ run_lint:
     - apt-get update -y
     - apt install wcslib-dev -y
   script:
-    - "Skipping linting for now"
+    - echo "Skipping linting for now"
     # - tox -e lint
   allow_failure: true
 
