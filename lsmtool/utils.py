@@ -80,12 +80,12 @@ def rasterize(verts, data, blank_value=0):
 
     # Mask everything outside of the polygon plus its border (outline) with
     # zeros (inside polygon plus border are ones)
-    mask = Image.new("L", (data.shape[0], data.shape[1]), 0)
+    mask = Image.new("L", (data.shape[1], data.shape[0]), 0)
     ImageDraw.Draw(mask).polygon(verts, outline=1, fill=1)
     data *= mask
 
     # Now check the border precisely
-    mask = Image.new("L", (data.shape[0], data.shape[1]), 0)
+    mask = Image.new("L", (data.shape[1], data.shape[0]), 0)
     ImageDraw.Draw(mask).polygon(verts, outline=1, fill=0)
     masked_ind = np.where(np.array(mask).transpose())
 
