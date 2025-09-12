@@ -212,5 +212,4 @@ commands = [
 [tool.tox.env.build]
 package = "wheel"
 deps = ["build>=0.8.0"]
-allowlist_externals = ["du", "ls"]
-commands = [["python", "-m", "build"], ["du", "-msc", "*"]]
+commands = [["python", "-m", "build"]]
