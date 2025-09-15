@@ -266,14 +266,35 @@ def read_vertices(filename, wcs):
     """
     # The input file always contains vertices as RA,Dec coordinates.
     vertices_celestial = read_vertices_ra_dec(filename)
+    return ra_dec_to_pixel(vertices_celestial, wcs)
 
-    # Convert to image pixel coordinates (x, y). Note: we need to add two extra
-    # (dummy) elements to the celestial coordinates, since the wcs has four
-    # axes, and then remove them from the resulting image coordinates.
+
+def ra_dec_to_pixel(coordinates, wcs):
+    """
+    Convert celestial coordinates (RA, Dec) to image pixel coordinates.
+
+    This function transforms an array of shape (N ,2), with RA and Dec
+    coordinates as columns, into pixel coordinates using the provided WCS
+    object, handling extra axes as needed.
+
+    Parameters
+    ----------
+    coordinates : numpy.ndarray
+        Array of shape (N, 2) containing RA and Dec values.
+    wcs : astropy.wcs.WCS
+        WCS object used for the coordinate transformation.
+
+    Returns
+    -------
+    list of tuple
+        List of (x, y) pixel coordinate tuples.
+    """
+
+    # NOTE: In case the wcs has four axes (ra, dec, freq, pol), we need to add
+    # two extra (dummy) elements to the celestial coordinates, then ignore them.
     null_coordinates = [0] * (wcs.naxis - 2)
     vertices_x, vertices_y, *_ = wcs.wcs_world2pix(
-        *vertices_celestial.T, *null_coordinates, WCS_ORIGIN
+        *coordinates.T, *null_coordinates, WCS_ORIGIN
     )
-
     # Convert to a list of (x, y) tuples.
     return list(zip(vertices_x, vertices_y))
