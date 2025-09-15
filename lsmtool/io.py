@@ -271,9 +271,9 @@ def read_vertices(filename, wcs):
     # (dummy) elements to the celestial coordinates, since the wcs has four
     # axes, and then remove them from the resulting image coordinates.
     null_coordinates = [0] * (wcs.naxis - 2)
-    *vertices_image, _, _ = wcs.wcs_world2pix(
+    vertices_x, vertices_y, *_ = wcs.wcs_world2pix(
         *vertices_celestial.T, *null_coordinates, WCS_ORIGIN
     )
 
     # Convert to a list of (x, y) tuples.
-    return list(zip(*vertices_image))
+    return list(zip(vertices_x, vertices_y))
