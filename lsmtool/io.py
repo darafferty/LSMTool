@@ -228,8 +228,8 @@ def read_vertices_ra_dec(filename: PathLike):
 
     Returns
     -------
-    tuple of iterables
-        A tuple containing two iterables: RA vertices and Dec vertices.
+    numpy.ndarray
+        Array of shape (N, 2) containing RA and Dec vertices as columns.
     """
     data = pickle.loads(Path(filename).read_bytes())
 
