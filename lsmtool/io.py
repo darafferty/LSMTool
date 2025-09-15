@@ -18,6 +18,9 @@ from .skymodel import SkyModel
 ORIGINAL_TMPDIR = os.environ.get("TMPDIR")
 TRIAL_TMP_PATHS = [tempfile.gettempdir()]
 
+# Always use a 0-based origin in wcs_pix2world and wcs_world2pix calls.
+WCS_ORIGIN = 0
+
 # Type aliases for paths-like objects
 PathLike = Union[str, Path]
 PathLikeOptional = Union[PathLike, None]
@@ -243,3 +246,33 @@ def read_vertices_ra_dec(filename: PathLike):
         f"Unexpected data in file: {filename}."
         "Expected two equally-shaped arrays with RA and Dec coordinates."
     )
+
+
+def read_vertices(filename, wcs):
+    """
+    Read facet vertices from a file and convert them to pixel coordinates.
+
+    Parameters
+    ----------
+    filename: str or pathlib.Path
+        Path to file containing the vertices to read.
+    wcs : astropy.wcs.WCS object
+        WCS object for converting the vertices to pixel coordinates.
+
+    Returns
+    -------
+    vertices: list of (x, y) tuples of float
+        The converted coordinates.
+    """
+    # The input file always contains vertices as RA,Dec coordinates.
+    vertices_celestial = read_vertices_ra_dec(filename)
+
+    # Convert to image pixel coordinates (x, y). Note: we need to add two extra
+    # (dummy) elements to the celestial coordinates, since the wcs has four
+    # axes, and then remove them from the resulting image coordinates.
+    vertices_image = wcs.wcs_world2pix(
+        np.pad(vertices_celestial, [(0, 0), (0, 2)]), WCS_ORIGIN
+    )[:, 0:2]
+
+    # Convert to a list of (x, y) tuples.
+    return list(zip(*vertices_image))
