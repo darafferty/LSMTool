@@ -134,7 +134,7 @@ def rasterize(verts, data, blank_value=0):
     return data
 
 
-def rasterize_image(fitsfile, vertices_file, output_image):
+def rasterize_image(fitsfile, vertices_file, output_image=None):
     """
     Rasterize data in a FITS image using a polygon defined by vertices, writing
     data to an output FITS file.
@@ -148,8 +148,9 @@ def rasterize_image(fitsfile, vertices_file, output_image):
         Path to the input FITS file.
     vertices_file : str or pathlib.Path
         Path to the file containing polygon vertices in RA, DEC coordinates.
-    output_image : str or pathlib.Path
-        Path to the output FITS file.
+    output_file : str or pathlib.Path, optional
+        Path to the output FITS file. If None, the default, the input file will
+        be overwritten.
     """
 
     # Construct polygon
@@ -160,7 +161,7 @@ def rasterize_image(fitsfile, vertices_file, output_image):
         # Rasterize the poly
         hdu.data[0, 0, :, :] = rasterize(vertices, hdu.data[0, 0, :, :])
 
-        hdu.writeto(output_image, overwrite=True)
+        hdu.writeto(output_image or fitsfile, overwrite=True)
 
 
 def rotation_matrix_2d(theta):
