@@ -266,10 +266,10 @@ def read_vertices(filename, wcs):
     """
     # The input file always contains vertices as RA,Dec coordinates.
     vertices_celestial = read_vertices_ra_dec(filename)
-    return ra_dec_to_pixel(vertices_celestial, wcs)
+    return convert_coordinates_to_pixels(vertices_celestial, wcs)
 
 
-def ra_dec_to_pixel(coordinates, wcs):
+def convert_coordinates_to_pixels(coordinates, wcs):
     """
     Convert celestial coordinates (RA, Dec) to image pixel coordinates.
 
