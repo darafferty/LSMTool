@@ -15,13 +15,13 @@ Some functions were removed or combined when migrating the module to LSMTools.
 """
 
 import numpy as np
+from astropy import wcs
 from astropy.coordinates import SkyCoord
+from astropy.io import fits
 from PIL import Image, ImageDraw
 from shapely.geometry import Point, Polygon
 from shapely.prepared import prep
-
-# Always use a 0-based origin in wcs_pix2world and wcs_world2pix calls.
-WCS_ORIGIN = 0
+from .io import read_vertices
 
 
 def format_coordinates(ra, dec, precision=6):
@@ -132,6 +132,35 @@ def rasterize(verts, data, blank_value=0):
         data[data == 0] = blank_value
 
     return data
+
+
+def rasterize_image(fitsfile, vertices_file, output_image):
+    """
+    Rasterize data in a FITS image using a polygon defined by vertices, writing
+    data to an output FITS file.
+
+    Reads the image data from the FITS file, reads polygon vertices, rasterizes
+    the polygon onto the image data, and writes the rasterized data.
+
+    Parameters
+    ----------
+    fitsfile : str or pathlib.Path
+        Path to the input FITS file.
+    vertices_file : str or pathlib.Path
+        Path to the file containing polygon vertices in RA, DEC coordinates.
+    output_image : str or pathlib.Path
+        Path to the output FITS file.
+    """
+
+    # Construct polygon
+    with fits.open(fitsfile, memmap=False) as hdulist:
+        hdu = hdulist[0]
+        vertices = read_vertices(vertices_file, wcs.WCS(hdu.header))
+
+        # Rasterize the poly
+        hdu.data[0, 0, :, :] = rasterize(vertices, hdu.data[0, 0, :, :])
+
+        hdu.writeto(output_image, overwrite=True)
 
 
 def rotation_matrix_2d(theta):
