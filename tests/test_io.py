@@ -6,11 +6,14 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+from astropy.io import fits
+from astropy.wcs import WCS
 from conftest import TEST_DATA_PATH
 
 from lsmtool.io import (
     _restore_tmpdir,
     _set_tmpdir,
+    read_vertices,
     read_vertices_ra_dec,
     temp_storage,
 )
@@ -70,7 +73,7 @@ def test_temp_storage(
             id="path_input",
         ),
         pytest.param(
-            str((TEST_DATA_PATH / "expected_sector_1_vertices.pkl")),
+            str(TEST_DATA_PATH / "expected_sector_1_vertices.pkl"),
             id="string_input",
         ),
     ],
@@ -85,7 +88,7 @@ def test_read_vertices_ra_dec(filename):
         (252.40480266238433, 53.393467021582275),
         (265.2866140036157, 53.393467021582275),
     )
-    assert np.allclose(verts, expected)
+    np.testing.assert_allclose(verts, expected)
 
 
 @pytest.mark.parametrize(
@@ -102,6 +105,32 @@ def test_read_vertices_invalid(tmp_path, contents):
         read_vertices_ra_dec(path)
 
 
-def test_read_vertices_non_existent():
+@pytest.mark.parametrize(
+    "reader, wcs", [(read_vertices, (WCS(),)), (read_vertices_ra_dec, ())]
+)
+def test_read_vertices_non_existent(reader, wcs):
     with pytest.raises(FileNotFoundError):
-        read_vertices_ra_dec("/path/to/vertices.file")
+        reader("/path/to/vertices.file", *wcs)
+
+
+def test_read_vertices_wcs():
+    filename = TEST_DATA_PATH / "expected_sector_1_vertices.pkl"
+    wcs = WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
+    vertices_pixel = read_vertices(filename, wcs)
+    expected = [
+        (
+            23.750160560517628,
+            23.75016056051743,
+            476.24983943948394,
+            476.24983943948195,
+            23.750160560517628,
+        ),
+        (
+            23.750160560516235,
+            476.24983943948354,
+            476.24983943948325,
+            23.75016056051578,
+            23.750160560516235,
+        ),
+    ]
+    np.testing.assert_allclose(vertices_pixel, expected)
