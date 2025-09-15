@@ -23,6 +23,9 @@ from shapely.geometry import Point, Polygon
 from shapely.prepared import prep
 from .io import read_vertices
 
+# Always use a 0-based origin in wcs_pix2world and wcs_world2pix calls.
+WCS_ORIGIN = 0
+
 
 def format_coordinates(ra, dec, precision=6):
     """
@@ -97,7 +100,7 @@ def rasterize(verts, data, blank_value=0):
 
     Parameters
     ----------
-    verts : list of tuples
+    vertices : list of tuples
         List of input vertices of polygon to rasterize. Each item in the list
         should be a (x, y) coordinate point, where x and y are float or int.
     data : np.ndarray
@@ -112,18 +115,18 @@ def rasterize(verts, data, blank_value=0):
     data : np.ndarray
         2-D array containing the rasterized polygon.
     """
-    poly = Polygon(verts)
+    poly = Polygon(vertices)
     prepared_polygon = prep(poly)
 
     # Mask everything outside of the polygon plus its border (outline) with
     # zeros (inside polygon plus border are ones)
     mask = Image.new("L", (data.shape[1], data.shape[0]), 0)
-    ImageDraw.Draw(mask).polygon(verts, outline=1, fill=1)
+    ImageDraw.Draw(mask).polygon(vertices, outline=1, fill=1)
     data *= mask
 
     # Now check the border precisely
     mask = Image.new("L", (data.shape[1], data.shape[0]), 0)
-    ImageDraw.Draw(mask).polygon(verts, outline=1, fill=0)
+    ImageDraw.Draw(mask).polygon(vertices, outline=1, fill=0)
     masked_ind = np.where(np.array(mask).transpose())
 
     points = [Point(xm, ym) for xm, ym in zip(masked_ind[0], masked_ind[1])]

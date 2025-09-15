@@ -83,7 +83,7 @@ def test_format_coordinates_nominal(
 
 
 @pytest.mark.parametrize(
-    "verts, data_shape, blank_value, expected_array",
+    "vertices, data_shape, blank_value, expected_array",
     [
         pytest.param(
             [(0, 0), (0, 0), (0, 0)],
@@ -156,12 +156,12 @@ def test_format_coordinates_nominal(
         ),
     ],
 )
-def test_rasterize_nominal(verts, data_shape, blank_value, expected_array):
+def test_rasterize_nominal(vertices, data_shape, blank_value, expected_array):
     # Arrange
     data = np.ones(data_shape)
 
     # Act
-    result = rasterize(verts, data, blank_value=blank_value)
+    result = rasterize(vertices, data, blank_value=blank_value)
 
     # Assert
     assert np.all(result == expected_array)
