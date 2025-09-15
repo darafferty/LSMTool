@@ -90,7 +90,10 @@ def convert_coordinates_to_pixels(coordinates, wcs):
 
 def rasterize(verts, data, blank_value=0):
     """
-    Rasterize a polygon into a data array.
+    Rasterize a polygon into a data array, setting any data outside the polygon
+    to `blank_value`.
+
+    .. note:: This function modifies data in-place.
 
     Parameters
     ----------
@@ -98,8 +101,8 @@ def rasterize(verts, data, blank_value=0):
         List of input vertices of polygon to rasterize. Each item in the list
         should be a (x, y) coordinate point, where x and y are float or int.
     data : np.ndarray
-        2-D numpy array into which to rasterize the polygon. Note, the data are
-        updated in-place.
+        A 2-D numpy array into which to rasterize the polygon. Note that the
+        data are updated in-place.
     blank_value : int or float, optional
         Value to use for filling regions outside the polygon. The data type of
         the fill value should be compatible with the dtype of the data array.
@@ -136,11 +139,9 @@ def rasterize(verts, data, blank_value=0):
 
 def mask_polygon_exterior(fits_file, vertices_file, output_file=None):
     """
-    Rasterize data in a FITS image using a polygon defined by vertices, writing
-    data to an output FITS file.
-
-    Reads the image data from the FITS file, reads polygon vertices, rasterizes
-    the polygon onto the image data, and writes the rasterized data.
+    Rasterize the image data in *fits_file* using the polygon defined by the
+    *vertices_file*, mask any data outside the polygon, and write the result to
+    an *output_fits* file.
 
     Parameters
     ----------
@@ -153,12 +154,11 @@ def mask_polygon_exterior(fits_file, vertices_file, output_file=None):
         be overwritten.
     """
 
-    # Construct polygon
     with fits.open(fits_file, memmap=False) as hdulist:
         hdu = hdulist[0]
         vertices = read_vertices(vertices_file, wcs.WCS(hdu.header))
 
-        # Rasterize the poly
+        # Rasterize the polygon and mask exterior pixels
         hdu.data[0, 0, :, :] = rasterize(vertices, hdu.data[0, 0, :, :])
 
         hdu.writeto(output_file or fits_file, overwrite=True)
