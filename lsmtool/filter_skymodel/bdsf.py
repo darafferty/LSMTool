@@ -20,8 +20,6 @@ from typing import List, Tuple, Union
 
 import bdsf
 import numpy as np
-from astropy.io import fits as pyfits
-from astropy.wcs import WCS
 from casacore.tables import table as casa_table
 
 from ..io import (
@@ -30,12 +28,15 @@ from ..io import (
     PathLikeOptional,
     PathLikeOrListOptional,
     load,
-    read_vertices_ra_dec,
     temp_storage,
     validate_paths,
 )
 from ..skymodel import SkyModel
-from ..utils import format_coordinates, rasterize, transfer_patches
+from ..utils import (
+    format_coordinates,
+    mask_polygon_exterior,
+    transfer_patches,
+)
 
 # Module logger
 logger = logging.getLogger(__name__)
@@ -335,8 +336,8 @@ def filter_sources(
     )
     del img_true_sky  # helps reduce memory usage
 
-    # Construct polygon needed to trim the mask to the sector
-    trim_mask(mask_file, vertices_file)
+    # Trim the mask file to the image sector
+    mask_polygon_exterior(mask_file, vertices_file)
 
     # Select the best measurement set for beam attenuation.
     beam_ms = select_midpoint(beam_ms) if beam_ms else None
@@ -394,32 +395,6 @@ def filter_sources(
     return true_skymodel
 
 
-def trim_mask(mask_file: PathLike, vertices_file: PathLike):
-    """
-    Trim the mask file to the given vertices.
-
-    This function opens the mask file, creates a polygon from the vertices
-    using the file's WCS, rasterizes the polygon, and overwrites the mask file
-    with the rasterized polygon data.
-
-    Parameters
-    ----------
-    mask_file: str or pathlib.Path:
-        Path to the mask file.
-    vertices_file: str or pathlib.Path:
-        Path to the file containing vertices.
-    """
-    hdu = pyfits.open(mask_file, memmap=False)
-    vertices = read_vertices_ra_dec(vertices_file)
-    # Construct polygon needed to trim the mask to the sector
-    verts = create_polygon(WCS(hdu[0].header), vertices)
-
-    # Rasterize the poly
-    data = hdu[0].data
-    data[0, 0, :, :] = rasterize(verts, data[0, 0, :, :])
-    hdu.writeto(mask_file, overwrite=True)
-
-
 def select_midpoint(beam_ms: ListOfPathLike) -> str:
     """
     Select the best measurement set for beam attenuation.
@@ -452,45 +427,6 @@ def select_midpoint(beam_ms: ListOfPathLike) -> str:
     beam_ind = ms_times.index(mid_time)
     return beam_ms[beam_ind]
 
-
-def create_polygon(wcs: WCS, vertices: ListOfCoords) -> ListOfCoords:
-    """
-    Create a polygon from vertices in world coordinates.
-
-    This function converts vertices to pixel coordinates using the provided
-    World Coordinate System (WCS), and returns them as a list of tuples.
-
-    Parameters
-    ----------
-    wcs : astropy.wcs.WCS
-        The WCS object for coordinate transformation.
-    vertices : list
-        Vertices of the polygon in world coordinates.
-
-    Returns
-    -------
-    coordinates: list of tuple
-        A list of (x, y) pixel coordinates representing the polygon vertices.
-    """
-    return list(generate_polygon(wcs, vertices))
-
-
-def generate_polygon(wcs: WCS, vertices: ListOfCoords):
-    """
-    Generate pixel coordinates for polygon vertices.
-    See ::py:func:`create_polygon`.
-    """
-    ra_ind = wcs.axis_type_names.index("RA")
-    dec_ind = wcs.axis_type_names.index("DEC")
-
-    for ra_vert, dec_vert in vertices:
-        ra_dec = np.array([[0.0, 0.0, 0.0, 0.0]])
-        ra_dec[0][ra_ind] = ra_vert
-        ra_dec[0][dec_ind] = dec_vert
-        yield (
-            wcs.wcs_world2pix(ra_dec, 0)[0][ra_ind],
-            wcs.wcs_world2pix(ra_dec, 0)[0][dec_ind],
-        )
 
 
 def add_bright_sources(
