@@ -309,7 +309,6 @@ def test_transfer_patches_with_patch_dict():
     assert np.all([ra.ravel() == ra_in, dec.ravel() == dec_in])
 
 
-
 @pytest.fixture(
     params=[
         wcs_params_2d := {
@@ -343,9 +342,9 @@ def test_transfer_patches_with_patch_dict():
 def wcs(request):
     return WCS(request.param)
 
+
 @pytest.mark.parametrize(
-    "coordinates, pixels_expected",
-    [(np.array([[RA, DEC]]), [(250.0, 250.0)])]
+    "coordinates, pixels_expected", [(np.array([[RA, DEC]]), [(250.0, 250.0)])]
 )
 def test_convert_coordinates_to_pixels(coordinates, pixels_expected, wcs):
     result = convert_coordinates_to_pixels(coordinates, wcs)
