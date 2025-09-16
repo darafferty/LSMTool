@@ -13,8 +13,8 @@ from conftest import TEST_DATA_PATH
 from lsmtool.io import (
     _restore_tmpdir,
     _set_tmpdir,
-    read_vertices,
     read_vertices_ra_dec,
+    read_vertices_x_y,
     temp_storage,
 )
 
@@ -106,17 +106,17 @@ def test_read_vertices_invalid(tmp_path, contents):
 
 
 @pytest.mark.parametrize(
-    "reader, wcs", [(read_vertices, (WCS(),)), (read_vertices_ra_dec, ())]
+    "reader, wcs", [(read_vertices_x_y, (WCS(),)), (read_vertices_ra_dec, ())]
 )
 def test_read_vertices_non_existent(reader, wcs):
     with pytest.raises(FileNotFoundError):
         reader("/path/to/vertices.file", *wcs)
 
 
-def test_read_vertices_wcs():
+def test_read_vertices_x_y():
     filename = TEST_DATA_PATH / "expected_sector_1_vertices.pkl"
     wcs = WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
-    vertices_pixel = read_vertices(filename, wcs)
+    vertices_pixel = read_vertices_x_y(filename, wcs)
     expected = [
         (23.750160560517628, 23.750160560516235),
         (23.75016056051743, 476.24983943948354),

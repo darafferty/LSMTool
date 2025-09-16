@@ -248,7 +248,7 @@ def read_vertices_ra_dec(filename: PathLike):
     )
 
 
-def read_vertices(filename, wcs):
+def read_vertices_x_y(filename, wcs):
     """
     Read facet vertices from a file and convert them to pixel coordinates.
 
