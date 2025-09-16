@@ -6,10 +6,12 @@ import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
+from astropy.wcs import WCS
 from conftest import TEST_DATA_PATH
 
 from lsmtool.skymodel import SkyModel
 from lsmtool.utils import (
+    convert_coordinates_to_pixels,
     format_coordinates,
     rasterize,
     rotation_matrix_2d,
@@ -305,3 +307,52 @@ def test_transfer_patches_with_patch_dict():
     # Check that the patch positions match
     ra_in, dec_in = zip(*patch_dict.values())
     assert np.all([ra.ravel() == ra_in, dec.ravel() == dec_in])
+
+
+@pytest.fixture(
+    params=[
+        {
+            "CTYPE1": "RA---SIN",
+            "CTYPE2": "DEC--SIN",
+            "CRVAL1": -101.154291667,
+            "CRVAL2": 57.4111944444,
+            "CRPIX1": 251.0,
+            "CRPIX2": 251.0,
+            "CDELT1": -0.01694027,
+            "CDELT2": 0.01694027,
+        },
+        {
+            "CTYPE1": "RA---SIN",
+            "CRPIX1": 251.0,
+            "CRVAL1": -101.154291667,
+            "CDELT1": -0.01694027,
+            "CUNIT1": "deg",
+            "CTYPE2": "DEC--SIN",
+            "CRPIX2": 251.0,
+            "CRVAL2": 57.4111944444,
+            "CDELT2": 0.01694027,
+            "CUNIT2": "deg",
+            "CTYPE3": "FREQ",
+            "CRPIX3": 1.0,
+            "CRVAL3": 143650817.871094,
+            "CDELT3": 11718750.0,
+            "CUNIT3": "Hz",
+            "CTYPE4": "STOKES",
+            "CRPIX4": 1.0,
+            "CRVAL4": 1.0,
+            "CDELT4": 1.0,
+            "CUNIT4": "        ",
+        },
+    ],
+    ids=["2d", "4d"],
+)
+def wcs(request):
+    return WCS(request.param)
+
+@pytest.mark.parametrize(
+    "coordinates, pixels_expected",
+    [(np.array([[-101.154291667, 57.4111944444]]), [(250.0, 250.0)])]
+)
+def test_convert_coordinates_to_pixels(coordinates, pixels_expected, wcs):
+    result = convert_coordinates_to_pixels(coordinates, wcs)
+    np.testing.assert_equal(result, pixels_expected)
