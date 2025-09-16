@@ -309,29 +309,23 @@ def test_transfer_patches_with_patch_dict():
     assert np.all([ra.ravel() == ra_in, dec.ravel() == dec_in])
 
 
+
 @pytest.fixture(
     params=[
-        {
+        wcs_params_2d := {
             "CTYPE1": "RA---SIN",
             "CTYPE2": "DEC--SIN",
-            "CRVAL1": -101.154291667,
-            "CRVAL2": 57.4111944444,
-            "CRPIX1": 251.0,
-            "CRPIX2": 251.0,
-            "CDELT1": -0.01694027,
-            "CDELT2": 0.01694027,
+            "CRVAL1": (RA := -101.154291667),
+            "CRVAL2": (DEC := 57.4111944444),
+            "CRPIX1": (CRPIX := 251.0),
+            "CRPIX2": CRPIX,
+            "CDELT1": -(CDELT := 0.01694027),
+            "CDELT2": CDELT,
+            "CUNIT1": "deg",
+            "CUNIT2": "deg",
         },
         {
-            "CTYPE1": "RA---SIN",
-            "CRPIX1": 251.0,
-            "CRVAL1": -101.154291667,
-            "CDELT1": -0.01694027,
-            "CUNIT1": "deg",
-            "CTYPE2": "DEC--SIN",
-            "CRPIX2": 251.0,
-            "CRVAL2": 57.4111944444,
-            "CDELT2": 0.01694027,
-            "CUNIT2": "deg",
+            **wcs_params_2d,
             "CTYPE3": "FREQ",
             "CRPIX3": 1.0,
             "CRVAL3": 143650817.871094,
@@ -341,7 +335,7 @@ def test_transfer_patches_with_patch_dict():
             "CRPIX4": 1.0,
             "CRVAL4": 1.0,
             "CDELT4": 1.0,
-            "CUNIT4": "        ",
+            "CUNIT4": "",
         },
     ],
     ids=["2d", "4d"],
@@ -351,7 +345,7 @@ def wcs(request):
 
 @pytest.mark.parametrize(
     "coordinates, pixels_expected",
-    [(np.array([[-101.154291667, 57.4111944444]]), [(250.0, 250.0)])]
+    [(np.array([[RA, DEC]]), [(250.0, 250.0)])]
 )
 def test_convert_coordinates_to_pixels(coordinates, pixels_expected, wcs):
     result = convert_coordinates_to_pixels(coordinates, wcs)
