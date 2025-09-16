@@ -15,6 +15,7 @@ from lsmtool.io import (
     _set_tmpdir,
     read_vertices_ra_dec,
     read_vertices_x_y,
+    read_vertices,
     temp_storage,
 )
 
@@ -65,6 +66,22 @@ def test_temp_storage(
     mock_restore_tmpdir.assert_called_once()
 
 
+EXPECTED_VERTICES_XY = [
+    (23.750160560517628, 23.750160560516235),
+    (23.75016056051743, 476.24983943948354),
+    (476.24983943948394, 476.24983943948325),
+    (476.24983943948195, 23.75016056051578),
+    (23.750160560517628, 23.750160560516235),
+]
+EXPECTED_VERTICES_RA_DEC = (
+    (265.2866140036157, 53.393467021582275),
+    (266.78226621292583, 61.02229999320357),
+    (250.90915045307418, 61.02229999320357),
+    (252.40480266238433, 53.393467021582275),
+    (265.2866140036157, 53.393467021582275),
+)
+
+
 @pytest.mark.parametrize(
     "filename",
     [
@@ -81,20 +98,43 @@ def test_temp_storage(
 def test_read_vertices_ra_dec(filename):
     """Test reading vertices from pickle file."""
     verts = read_vertices_ra_dec(filename)
-    expected = (
-        (265.2866140036157, 53.393467021582275),
-        (266.78226621292583, 61.02229999320357),
-        (250.90915045307418, 61.02229999320357),
-        (252.40480266238433, 53.393467021582275),
-        (265.2866140036157, 53.393467021582275),
-    )
-    np.testing.assert_allclose(verts, expected)
+    np.testing.assert_allclose(verts, EXPECTED_VERTICES_RA_DEC)
+
+
+@pytest.fixture(scope="session")
+def test_image_wcs():
+    return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
+
+
+def test_read_vertices_x_y(test_image_wcs):
+    filename = TEST_DATA_PATH / "expected_sector_1_vertices.pkl"
+    vertices_pixel = read_vertices(filename, test_image_wcs)
+    np.testing.assert_allclose(vertices_pixel, EXPECTED_VERTICES_XY)
+
+
+@pytest.mark.parametrize(
+    "use_wcs, expected_coordinates",
+    [
+        pytest.param(
+            True, EXPECTED_VERTICES_XY,
+            id="with_wcs",
+        ),
+        pytest.param(
+            False, EXPECTED_VERTICES_RA_DEC,
+            id="no_wcs",
+        ),
+    ],
+)
+def test_read_vertices(test_image_wcs, use_wcs, expected_coordinates):
+    filename = TEST_DATA_PATH / "expected_sector_1_vertices.pkl"
+    vertices_pixel = read_vertices(filename, *([test_image_wcs] * use_wcs))
+    np.testing.assert_allclose(vertices_pixel, expected_coordinates)
 
 
 @pytest.mark.parametrize(
     "contents", ["Invalid content", ["Invalid", "content"]]
 )
-def test_read_vertices_invalid(tmp_path, contents):
+def test_read_vertices_ra_dec_invalid(tmp_path, contents):
     """Test reading vertices from pickle file."""
     path = tmp_path / "test_read_vertices_invalid.pkl"
     path.unlink(missing_ok=True)
@@ -106,22 +146,12 @@ def test_read_vertices_invalid(tmp_path, contents):
 
 
 @pytest.mark.parametrize(
-    "reader, wcs", [(read_vertices_x_y, (WCS(),)), (read_vertices_ra_dec, ())]
+    "reader, wcs",
+    [(read_vertices_ra_dec, ()),
+     (read_vertices_x_y, (WCS(),)),
+     (read_vertices, ()),
+     (read_vertices, (WCS(),))]
 )
 def test_read_vertices_non_existent(reader, wcs):
     with pytest.raises(FileNotFoundError):
         reader("/path/to/vertices.file", *wcs)
-
-
-def test_read_vertices_x_y():
-    filename = TEST_DATA_PATH / "expected_sector_1_vertices.pkl"
-    wcs = WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
-    vertices_pixel = read_vertices_x_y(filename, wcs)
-    expected = [
-        (23.750160560517628, 23.750160560516235),
-        (23.75016056051743, 476.24983943948354),
-        (476.24983943948394, 476.24983943948325),
-        (476.24983943948195, 23.75016056051578),
-        (23.750160560517628, 23.750160560516235),
-    ]
-    np.testing.assert_allclose(vertices_pixel, expected)
