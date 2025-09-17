@@ -2,17 +2,22 @@
 Test utility functions.
 """
 
+import pickle
+
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
+from astropy.io import fits
 from astropy.table import Table
 from astropy.wcs import WCS
 from conftest import TEST_DATA_PATH
 
+from lsmtool.io import WCS_ORIGIN
 from lsmtool.skymodel import SkyModel
 from lsmtool.utils import (
     convert_coordinates_to_pixels,
     format_coordinates,
+    mask_polygon_exterior,
     rasterize,
     rotation_matrix_2d,
     table_to_array,
@@ -82,82 +87,97 @@ def test_format_coordinates_nominal(
     assert np.all(dec_str == expected_dec)
 
 
-@pytest.mark.parametrize(
-    "vertices, data_shape, blank_value, expected_array",
-    [
-        pytest.param(
-            [(0, 0), (0, 0), (0, 0)],
-            (2, 2),
-            0,
-            [[1, 0], [0, 0]],
-            id="point",
-        ),
-        pytest.param(
-            [(0, 0), (1, 1), (0, 0)],
-            (2, 2),
-            0,
-            [[1, 0], [0, 1]],
-            id="line",
-        ),
-        pytest.param(
-            [(0, 0), (0, 1), (1, 1), (1, 0)],
-            (4, 4),
-            0,
-            [
-                [1, 1, 0, 0],
-                [1, 1, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            id="square",
-        ),
-        pytest.param(
-            [(0, 0), (0, 2), (1, 1), (2, 2), (2, 0)],
-            (4, 4),
-            -1,
-            [
-                [1, 1, 1, -1],
-                [1, 1, 1, -1],
-                [1, -1, 1, -1],
-                [-1, -1, -1, -1],
-            ],
-            id="irregular_shape",
-        ),
-        pytest.param(
-            [(3.0, 0.0), (2, 1), (1, 0)],
-            (4, 4),
-            0,
-            [
-                [0, 1, 1, 1],
-                [0, 0, 1, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            id="triangle",
-        ),
-        pytest.param(
-            [(3.5, -0.5), (2.5, 1.5), (1.5, -0.5)],
-            (4, 4),
-            0,
-            [
-                [0, 0, 1, 1],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            id="float_data_off_image",
-        ),
-        pytest.param(
-            [(2.7, 3.1), (3.2, 4.5), (5.1, 6.3)],
-            (5, 6),
-            0,
-            np.zeros((5, 6)),
-            id="test_case_from_rapthor",
-        ),
-    ],
+TEST_CASES_POLYGON_MASKING = {
+    "point": {
+        "xy": [(0, 0), (0, 0), (0, 0)],
+        "shape": (2, 2),
+        "fill": 0,
+        "result": [[1, 0], [0, 0]],
+    },
+    "line": {
+        "xy": [(0, 0), (1, 1), (0, 0)],
+        "shape": (2, 2),
+        "fill": 0,
+        "result": [[1, 0], [0, 1]],
+    },
+    "square": {
+        "xy": [(0, 0), (0, 1), (1, 1), (1, 0)],
+        "shape": (4, 4),
+        "fill": 0,
+        "result": [
+            [1, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ],
+    },
+    "rectangle": {
+        "xy": [(0, 0), (0, 2), (1, 2), (1, 0)],
+        "shape": (4, 4),
+        "fill": 0,
+        "result": [
+            [1, 1, 0, 0],
+            [1, 1, 0, 0],
+            [1, 1, 0, 0],
+            [0, 0, 0, 0],
+        ],
+    },
+    "irregular_shape": {
+        "xy": [(0, 0), (0, 2), (1, 1), (2, 2), (2, 0)],
+        "shape": (4, 4),
+        "fill": -1,
+        "result": [
+            [1, 1, 1, -1],
+            [1, 1, 1, -1],
+            [1, -1, 1, -1],
+            [-1, -1, -1, -1],
+        ],
+    },
+    "triangle": {
+        "xy": [(3.0, 0.0), (2, 1), (1, 0)],
+        "shape": (4, 4),
+        "fill": 0,
+        "result": [
+            [0, 1, 1, 1],
+            [0, 0, 1, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ],
+    },
+    "float_data_off_image": {
+        "xy": [(3.5, -0.5), (2.5, 1.5), (1.5, -0.5)],
+        "shape": (4, 4),
+        "fill": 0,
+        "result": [
+            [0, 0, 1, 1],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ],
+    },
+    "test_case_from_rapthor": {
+        "xy": [(2.7, 3.1), (3.2, 4.5), (5.1, 6.3)],
+        "shape": (5, 6),
+        "fill": 0,
+        "result": np.zeros((5, 6)),
+    },
+}
+
+
+@pytest.fixture(
+    scope="session",
+    params=TEST_CASES_POLYGON_MASKING.values(),
+    ids=TEST_CASES_POLYGON_MASKING.keys(),
 )
-def test_rasterize_nominal(vertices, data_shape, blank_value, expected_array):
+def rasterize_test_case(request):
+    return request.param
+
+
+def test_rasterize_nominal(rasterize_test_case):
     # Arrange
+    vertices, data_shape, blank_value, expected_array = (
+        rasterize_test_case.values()
+    )
     data = np.ones(data_shape)
 
     # Act
@@ -165,6 +185,68 @@ def test_rasterize_nominal(vertices, data_shape, blank_value, expected_array):
 
     # Assert
     assert np.all(result == expected_array)
+
+
+@pytest.fixture(
+    scope="session",
+    params=[
+        {
+            "CTYPE1": "RA---SIN",
+            "CTYPE2": "DEC--SIN",
+            "CRVAL1": -101.154291667,
+            "CRVAL2": 57.4111944444,
+            "CRPIX1": 251.0,
+            "CRPIX2": 251.0,
+            "CDELT1": -0.01694027,
+            "CDELT2": 0.01694027,
+            "CUNIT1": "deg",
+            "CUNIT2": "deg",
+            "CTYPE3": "FREQ",
+            "CRPIX3": 1.0,
+            "CRVAL3": 143650817.871094,
+            "CDELT3": 11718750.0,
+            "CUNIT3": "Hz",
+            "CTYPE4": "STOKES",
+            "CRPIX4": 1.0,
+            "CRVAL4": 1.0,
+            "CDELT4": 1.0,
+            "CUNIT4": "",
+        },
+    ],
+    ids=["4d"],
+)
+def wcs(request):
+    return WCS(request.param)
+
+
+@pytest.fixture()
+def fits_file(rasterize_test_case, wcs, tmp_path):
+    """Generate fits file for testing"""
+    # data_shape = request.param
+    path = tmp_path / "fits_file.fits"
+    data = np.ones((1, 1, *rasterize_test_case["shape"]))
+    hdulist = fits.hdu.HDUList(hdu := fits.hdu.PrimaryHDU(data))
+    hdu.header.update(wcs.to_header())
+    hdulist.writeto(path)
+    return path
+
+
+@pytest.fixture()
+def vertices_file(rasterize_test_case, wcs, tmp_path):
+    xy = np.pad(rasterize_test_case["xy"], ((0, 0), (0, 2)))
+    coordinates = list(wcs.wcs_pix2world(xy, WCS_ORIGIN)[:, :2].T)
+    path = tmp_path / "vertex_file.pkl"
+    path.write_bytes(pickle.dumps(coordinates))
+    return path
+
+
+def test_mask_polygon_exterior(rasterize_test_case, fits_file, vertices_file):
+    # Act
+    mask_polygon_exterior(fits_file, vertices_file)
+    result = fits.getdata(fits_file, 0).squeeze()
+
+    # Assert
+    np.testing.assert_equal(result, rasterize_test_case["result"])
 
 
 @pytest.mark.parametrize(
