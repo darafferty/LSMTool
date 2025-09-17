@@ -111,27 +111,28 @@ def test_read_vertices_x_y(test_image_wcs):
     np.testing.assert_allclose(vertices_pixel, EXPECTED_VERTICES_XY)
 
 
-@pytest.mark.parametrize(
-    "contents", ["Invalid content", ["Invalid", "content"]]
-)
-def test_read_vertices_ra_dec_invalid(tmp_path, contents):
-    """Test reading vertices from pickle file."""
-    path = tmp_path / "test_read_vertices_invalid.pkl"
+@pytest.fixture(params=["Invalid content", ["Invalid", "content"]])
+def invalid_vertices_file(request, tmp_path):
+    """Generate vertices file with invalid content."""
+    path = tmp_path / "invalid_vertices.pkl"
     path.unlink(missing_ok=True)
-    with path.open("wb") as file:
-        pickle.dump(contents, file)
-
-    with pytest.raises(ValueError):
-        read_vertices_ra_dec(path)
+    path.write_bytes(pickle.dumps(request.param))
+    return path
 
 
 @pytest.mark.parametrize(
-    "reader, wcs",
-    [
-        (read_vertices_ra_dec, ()),
-        (read_vertices_x_y, (WCS(),)),
-    ],
+    "reader, wcs", [(read_vertices_ra_dec, ()), (read_vertices_x_y, (WCS(),))]
+)
+def test_read_vertices_invalid(reader, wcs, invalid_vertices_file):
+    """Test reading vertices from pickle file."""
+    with pytest.raises(ValueError):
+        reader(invalid_vertices_file, *wcs)
+
+
+@pytest.mark.parametrize(
+    "reader, wcs", [(read_vertices_ra_dec, ()), (read_vertices_x_y, (WCS(),))]
 )
 def test_read_vertices_non_existent(reader, wcs):
+    non_existent_file = "/path/to/vertices.file"
     with pytest.raises(FileNotFoundError):
-        reader("/path/to/vertices.file", *wcs)
+        reader(non_existent_file, *wcs)
