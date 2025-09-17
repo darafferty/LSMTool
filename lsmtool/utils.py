@@ -120,12 +120,12 @@ def rasterize(verts, data, blank_value=0):
 
     # Mask everything outside of the polygon plus its border (outline) with
     # zeros (inside polygon plus border are ones)
-    mask = Image.new("L", (data.shape[1], data.shape[0]), 0)
+    mask = Image.new("L", data.shape[1::-1], 0)
     ImageDraw.Draw(mask).polygon(vertices, outline=1, fill=1)
     data *= mask
 
     # Now check the border precisely
-    mask = Image.new("L", (data.shape[1], data.shape[0]), 0)
+    mask = Image.new("L", data.shape[1::-1], 0)
     ImageDraw.Draw(mask).polygon(vertices, outline=1, fill=0)
     masked_ind = np.where(np.array(mask).transpose())
 
@@ -157,14 +157,15 @@ def mask_polygon_exterior(fits_file, vertices_file, output_file=None):
         be overwritten.
     """
 
-    with fits.open(fits_file, memmap=False) as hdulist:
-        hdu = hdulist[0]
-        vertices = read_vertices(vertices_file, wcs.WCS(hdu.header))
+    hdulist = (hdu,) = fits.open(fits_file, memmap=False)
+    vertices = read_vertices(vertices_file, wcs.WCS(hdu.header))
 
-        # Rasterize the polygon and mask exterior pixels
-        hdu.data[0, 0, :, :] = rasterize(vertices, hdu.data[0, 0, :, :])
+    # Rasterize the polygon and mask exterior pixels. Data is modified inplace.
+    rasterize(vertices, hdu.data[0, 0, :, :])
 
-        hdu.writeto(output_file or fits_file, overwrite=True)
+    # Write output
+    hdulist.writeto(output_file or fits_file, overwrite=True)
+    hdulist.close()
 
 
 def rotation_matrix_2d(theta):
