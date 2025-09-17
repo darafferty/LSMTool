@@ -263,30 +263,6 @@ def read_vertices_x_y(filename, wcs):
     vertices: list of (x, y) tuples of float
         The converted coordinates.
     """
-    return read_vertices(filename, wcs)
-
-
-def read_vertices(filename, wcs=None):
-    """
-    Read facet vertices from a file. If a WCS object is provided, use it to
-    convert the read coordinates to pixel coordinates.
-
-    Parameters
-    ----------
-    filename: str or pathlib.Path
-        Path to file containing the vertices to read.
-    wcs : astropy.wcs.WCS object, optional
-        WCS object for converting the vertices to pixel coordinates.
-
-    Returns
-    -------
-    vertices: list of tuple of float
-        Coordinates of the vertices. If a WCS was provided, this will be in
-        pixel coordinates (x, y). If no WCS was given, these will be in
-        celestial coordinates (RA, DEC).
-    """
     # The input file always contains vertices as RA,Dec coordinates.
     vertices_celestial = read_vertices_ra_dec(filename)
-    if wcs:
-        return convert_coordinates_to_pixels(vertices_celestial, wcs)
-    return vertices_celestial
+    return convert_coordinates_to_pixels(vertices_celestial, wcs)
