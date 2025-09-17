@@ -13,7 +13,6 @@ from conftest import TEST_DATA_PATH
 from lsmtool.io import (
     _restore_tmpdir,
     _set_tmpdir,
-    read_vertices,
     read_vertices_ra_dec,
     read_vertices_x_y,
     temp_storage,
@@ -82,6 +81,11 @@ EXPECTED_VERTICES_RA_DEC = (
 )
 
 
+@pytest.fixture(scope="session")
+def test_image_wcs():
+    return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
+
+
 @pytest.mark.parametrize(
     "filename",
     [
@@ -101,36 +105,10 @@ def test_read_vertices_ra_dec(filename):
     np.testing.assert_allclose(verts, EXPECTED_VERTICES_RA_DEC)
 
 
-@pytest.fixture(scope="session")
-def test_image_wcs():
-    return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
-
-
 def test_read_vertices_x_y(test_image_wcs):
     filename = TEST_DATA_PATH / "expected_sector_1_vertices.pkl"
-    vertices_pixel = read_vertices(filename, test_image_wcs)
+    vertices_pixel = read_vertices_x_y(filename, test_image_wcs)
     np.testing.assert_allclose(vertices_pixel, EXPECTED_VERTICES_XY)
-
-
-@pytest.mark.parametrize(
-    "use_wcs, expected_coordinates",
-    [
-        pytest.param(
-            True,
-            EXPECTED_VERTICES_XY,
-            id="with_wcs",
-        ),
-        pytest.param(
-            False,
-            EXPECTED_VERTICES_RA_DEC,
-            id="no_wcs",
-        ),
-    ],
-)
-def test_read_vertices(test_image_wcs, use_wcs, expected_coordinates):
-    filename = TEST_DATA_PATH / "expected_sector_1_vertices.pkl"
-    vertices_pixel = read_vertices(filename, *([test_image_wcs] * use_wcs))
-    np.testing.assert_allclose(vertices_pixel, expected_coordinates)
 
 
 @pytest.mark.parametrize(
@@ -152,8 +130,6 @@ def test_read_vertices_ra_dec_invalid(tmp_path, contents):
     [
         (read_vertices_ra_dec, ()),
         (read_vertices_x_y, (WCS(),)),
-        (read_vertices, ()),
-        (read_vertices, (WCS(),)),
     ],
 )
 def test_read_vertices_non_existent(reader, wcs):
