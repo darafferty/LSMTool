@@ -206,7 +206,6 @@ def test_rasterize_nominal(rasterize_test_case):
 @pytest.fixture()
 def fits_file(rasterize_test_case, test_image_wcs, tmp_path):
     """Generate fits file for testing"""
-    # data_shape = request.param
     path = tmp_path / "fits_file.fits"
     data = np.ones((1, 1, *rasterize_test_case["shape"]))
     hdulist = fits.hdu.HDUList(hdu := fits.hdu.PrimaryHDU(data))
