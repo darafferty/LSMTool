@@ -20,6 +20,9 @@ from PIL import Image, ImageDraw
 from shapely.geometry import Point, Polygon
 from shapely.prepared import prep
 
+# Always use a 0-based origin in wcs_pix2world and wcs_world2pix calls.
+WCS_ORIGIN = 0
+
 
 def format_coordinates(ra, dec, precision=6):
     """
@@ -52,6 +55,37 @@ def format_coordinates(ra, dec, precision=6):
         coords.ra.to_string("hourangle", sep=":", precision=precision),
         coords.dec.to_string(sep=".", precision=precision, alwayssign=True),
     )
+
+
+def convert_coordinates_to_pixels(coordinates, wcs):
+    """
+    Convert celestial coordinates (RA, Dec) to image pixel coordinates.
+
+    This function transforms an array of shape (N ,2), with RA and Dec
+    coordinates as columns, into pixel coordinates using the provided WCS
+    object, handling extra axes as needed.
+
+    Parameters
+    ----------
+    coordinates : numpy.ndarray
+        Array of shape (N, 2) containing RA and Dec values.
+    wcs : astropy.wcs.WCS
+        WCS object used for the coordinate transformation.
+
+    Returns
+    -------
+    list of tuple
+        List of (x, y) pixel coordinate tuples.
+    """
+
+    # NOTE: In case the wcs has four axes (ra, dec, freq, pol), we need to add
+    # two extra (dummy) elements to the celestial coordinates, then ignore them.
+    null_coordinates = [0] * (wcs.naxis - 2)
+    vertices_x, vertices_y, *_ = wcs.wcs_world2pix(
+        *coordinates.T, *null_coordinates, WCS_ORIGIN
+    )
+    # Convert to a list of (x, y) tuples.
+    return list(zip(vertices_x, vertices_y))
 
 
 def rasterize(verts, data, blank_value=0):
