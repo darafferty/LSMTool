@@ -173,6 +173,10 @@ for name, params in list(TEST_CASES_POLYGON_MASKING.items()):
         TEST_CASES_POLYGON_MASKING[f"{name}_float"] = new_params = params.copy()
         new_params["xy"] = [tuple(map(float, _)) for _ in xy]
 
+    # Check that array of vertex points behaves the same as list of tuples
+    TEST_CASES_POLYGON_MASKING[f"{name}_array"] = new_params = params.copy()
+    new_params["xy"] = np.array(xy)
+
 
 @pytest.fixture(
     scope="session",
