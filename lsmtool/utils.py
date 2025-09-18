@@ -115,6 +115,9 @@ def rasterize(verts, data, blank_value=0):
     data : np.ndarray
         2-D array containing the rasterized polygon.
     """
+    if isinstance(vertices, np.ndarray):
+        vertices = vertices.tolist()
+
     poly = Polygon(vertices)
     prepared_polygon = prep(poly)
 
