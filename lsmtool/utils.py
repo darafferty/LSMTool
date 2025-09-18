@@ -87,7 +87,7 @@ def convert_coordinates_to_pixels(coordinates, wcs):
         *coordinates.T, *null_coordinates, WCS_ORIGIN
     )
     # Convert to a list of (x, y) tuples.
-    return list(zip(vertices_x, vertices_y))
+    return list(zip(vertices_x, vertices_y, strict=True))
 
 
 def rasterize(vertices, data, blank_value=0):
@@ -131,7 +131,7 @@ def rasterize(vertices, data, blank_value=0):
     ImageDraw.Draw(mask).polygon(vertices, outline=1, fill=0)
     masked_ind = np.where(np.array(mask).transpose())
 
-    points = [Point(xm, ym) for xm, ym in zip(masked_ind[0], masked_ind[1])]
+    points = [Point(xm, ym) for xm, ym in zip(*masked_ind[:2], strict=True)]
     outside_points = [v for v in points if prepared_polygon.disjoint(v)]
     for outside_point in outside_points:
         data[int(outside_point.y), int(outside_point.x)] = 0

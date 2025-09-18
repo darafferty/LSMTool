@@ -146,6 +146,10 @@ select = ["N", "A", "E", "F", "B", "W", "Q", "PL", "ASYNC", "S", "G", "RET", "AR
 # N803: pep8-naming (lsmtool mostly uses pascalCase and CamelCase naming scheme)
 ignore = ["PLR2004", "N803"]
 
+[tool.ruff.lint.per-file-ignores]
+"lsmtool/filter_skymodel/*.py" = ["PLR0913"]  # Too many arguments in function definition
+"lsmtool/testing.py" = ["PLR0911"] # Too many return statements
+
 
 ###########################
 # tox settings            #
