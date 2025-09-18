@@ -147,9 +147,9 @@ def mask_polygon_exterior(
     fits_file, vertices_file, output_file=None, precision=None
 ):
     """
-    Rasterize the image data in *fits_file* using the polygon defined by the
-    *vertices_file*, mask any data outside the polygon, and write the result to
-    an *output_fits* file.
+    Rasterize the image data in `fits_file` using the polygon defined by the
+    `vertices_file`, mask any data outside the polygon, and write the result to
+    an `output_fits` file.
 
     Parameters
     ----------
