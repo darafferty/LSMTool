@@ -167,7 +167,8 @@ def rasterize_polygon_mask_exterior(
     """
     from lsmtool.io import read_vertices_x_y
 
-    hdulist = (hdu,) = fits.open(fits_file, memmap=False)
+    hdulist = fits.open(fits_file, memmap=False)
+    hdu = hdulist[0]
     vertices = read_vertices_x_y(vertices_file, wcs.WCS(hdu.header))
 
     if precision is not None:
