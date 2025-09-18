@@ -87,24 +87,26 @@ def test_format_coordinates_nominal(
     assert np.all(dec_str == expected_dec)
 
 
-TEST_CASES_POLYGON_MASKING = {
+# ---------------------------------------------------------------------------- #
+
+TEST_CASES_RASTERIZE = {
     "point": {
         "xy": [(0, 0), (0, 0), (0, 0)],
         "shape": (2, 2),
         "fill": 0,
-        "result": [[1, 0], [0, 0]],
+        "expected": [[1, 0], [0, 0]],
     },
     "line": {
         "xy": [(0, 0), (1, 1), (0, 0)],
         "shape": (2, 2),
         "fill": 0,
-        "result": [[1, 0], [0, 1]],
+        "expected": [[1, 0], [0, 1]],
     },
     "square": {
         "xy": [(0, 0), (0, 1), (1, 1), (1, 0)],
         "shape": (4, 4),
         "fill": 0,
-        "result": [
+        "expected": [
             [1, 1, 0, 0],
             [1, 1, 0, 0],
             [0, 0, 0, 0],
@@ -115,7 +117,7 @@ TEST_CASES_POLYGON_MASKING = {
         "xy": [(0, 0), (0, 2), (1, 2), (1, 0)],
         "shape": (4, 4),
         "fill": 0,
-        "result": [
+        "expected": [
             [1, 1, 0, 0],
             [1, 1, 0, 0],
             [1, 1, 0, 0],
@@ -126,7 +128,7 @@ TEST_CASES_POLYGON_MASKING = {
         "xy": [(0, 0), (0, 2), (1, 1), (2, 2), (2, 0)],
         "shape": (4, 4),
         "fill": -1,
-        "result": [
+        "expected": [
             [1, 1, 1, -1],
             [1, 1, 1, -1],
             [1, -1, 1, -1],
@@ -137,7 +139,7 @@ TEST_CASES_POLYGON_MASKING = {
         "xy": [(3, 0), (2, 1), (1, 0)],
         "shape": (4, 4),
         "fill": 0,
-        "result": [
+        "expected": [
             [0, 1, 1, 1],
             [0, 0, 1, 0],
             [0, 0, 0, 0],
@@ -148,7 +150,7 @@ TEST_CASES_POLYGON_MASKING = {
         "xy": [(3.5, -0.5), (2.5, 1.5), (1.5, -0.5)],
         "shape": (4, 4),
         "fill": 0,
-        "result": [
+        "expected": [
             [0, 0, 1, 1],
             [0, 0, 0, 0],
             [0, 0, 0, 0],
@@ -159,29 +161,29 @@ TEST_CASES_POLYGON_MASKING = {
         "xy": [(2.7, 3.1), (3.2, 4.5), (5.1, 6.3)],
         "shape": (5, 6),
         "fill": 0,
-        "result": np.zeros((5, 6)),
+        "expected": np.zeros((5, 6)),
     },
 }
 
 
-# For the test cases above, check that when vertices given as integers,
-# the same result is obtained with the same vertices represented as floats.
-# Additionally, check that 
-for name, params in list(TEST_CASES_POLYGON_MASKING.items()):
+# For the test cases above, check that when vertices given as integers, the
+# same result is obtained with the same vertices represented as tuple of
+# floats, or as array of floats
+for name, params in list(TEST_CASES_RASTERIZE.items()):
     # The next line checks if the types of all the vertex points are integer
     if check_float := set(map(type, sum(xy := params["xy"], ()))) == {int}:
-        TEST_CASES_POLYGON_MASKING[f"{name}_float"] = new_params = params.copy()
+        TEST_CASES_RASTERIZE[f"{name}_float"] = new_params = params.copy()
         new_params["xy"] = [tuple(map(float, _)) for _ in xy]
 
     # Check that array of vertex points behaves the same as list of tuples
-    TEST_CASES_POLYGON_MASKING[f"{name}_array"] = new_params = params.copy()
+    TEST_CASES_RASTERIZE[f"{name}_array"] = new_params = params.copy()
     new_params["xy"] = np.array(xy)
 
 
 @pytest.fixture(
     scope="session",
-    params=TEST_CASES_POLYGON_MASKING.values(),
-    ids=TEST_CASES_POLYGON_MASKING.keys(),
+    params=TEST_CASES_RASTERIZE.values(),
+    ids=TEST_CASES_RASTERIZE.keys(),
 )
 def rasterize_test_case(request):
     return request.param
@@ -256,13 +258,16 @@ def vertices_file(rasterize_test_case, wcs, tmp_path):
 
 def test_mask_polygon_exterior(rasterize_test_case, fits_file, vertices_file):
     # Act
-    mask_polygon_exterior(fits_file, vertices_file)
+    mask_polygon_exterior(fits_file, vertices_file, precision=1)
     result = fits.getdata(fits_file, 0).squeeze()
 
     # Assert
-    np.testing.assert_equal(result, rasterize_test_case["result"])
+    expected = np.array(rasterize_test_case["expected"])
+    expected[expected == -1] = 0
+    np.testing.assert_equal(result, expected)
 
 
+# ---------------------------------------------------------------------------- #
 @pytest.mark.parametrize(
     "theta, expected_matrix",
     [
