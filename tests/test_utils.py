@@ -12,9 +12,9 @@ from astropy.table import Table
 from astropy.wcs import WCS
 from conftest import TEST_DATA_PATH
 
-from lsmtool.io import WCS_ORIGIN
 from lsmtool.skymodel import SkyModel
 from lsmtool.utils import (
+    WCS_ORIGIN,
     convert_coordinates_to_pixels,
     format_coordinates,
     mask_polygon_exterior,

@@ -21,7 +21,6 @@ from astropy.io import fits
 from PIL import Image, ImageDraw
 from shapely.geometry import Point, Polygon
 from shapely.prepared import prep
-from .io import read_vertices
 
 # Always use a 0-based origin in wcs_pix2world and wcs_world2pix calls.
 WCS_ORIGIN = 0
@@ -166,9 +165,10 @@ def mask_polygon_exterior(
         of significant figures. This is useful on occasion since there may be
         some imprecision in the result due to rounding errors.
     """
+    from lsmtool.io import read_vertices_x_y
 
     hdulist = (hdu,) = fits.open(fits_file, memmap=False)
-    vertices = read_vertices(vertices_file, wcs.WCS(hdu.header))
+    vertices = read_vertices_x_y(vertices_file, wcs.WCS(hdu.header))
 
     if precision is not None:
         vertices = np.round(vertices, precision)
