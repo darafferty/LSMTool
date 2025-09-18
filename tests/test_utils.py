@@ -124,6 +124,20 @@ TEST_CASES_RASTERIZE = {
             [0, 0, 0, 0],
         ],
     },
+    # check that vertice represented as floats or ints behaves the same
+    "rectangle_float": {
+        "xy": [(0.0, 0.0), (0.0, 2.0), (1.0, 2.0), (1.0, 0.0)],
+        "shape": (4, 4),
+        "fill": 0,
+        "expected": [[1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]],
+    },
+    # Check that array of vertex points behaves the same as list of tuples
+    "rectangle_array": {
+        "xy": np.array([[0, 0], [0, 2], [1, 2], [1, 0]]),
+        "shape": (4, 4),
+        "fill": 0,
+        "expected": [[1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]],
+    },
     "irregular_shape": {
         "xy": [(0, 0), (0, 2), (1, 1), (2, 2), (2, 0)],
         "shape": (4, 4),
@@ -146,6 +160,18 @@ TEST_CASES_RASTERIZE = {
             [0, 0, 0, 0],
         ],
     },
+    "triangle_float": {
+        "xy": [(3.0, 0.0), (2.0, 1.0), (1.0, 0.0)],
+        "shape": (4, 4),
+        "fill": 0,
+        "expected": [[0, 1, 1, 1], [0, 0, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+    },
+    "triangle_array": {
+        "xy": np.array([[3, 0], [2, 1], [1, 0]]),
+        "shape": (4, 4),
+        "fill": 0,
+        "expected": [[0, 1, 1, 1], [0, 0, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+    },
     "float_data_off_image": {
         "xy": [(3.5, -0.5), (2.5, 1.5), (1.5, -0.5)],
         "shape": (4, 4),
@@ -164,20 +190,6 @@ TEST_CASES_RASTERIZE = {
         "expected": np.zeros((5, 6)),
     },
 }
-
-
-# For the test cases above, check that when vertices given as integers, the
-# same result is obtained with the same vertices represented as tuple of
-# floats, or as array of floats
-for name, params in list(TEST_CASES_RASTERIZE.items()):
-    # The next line checks if the types of all the vertex points are integer
-    if check_float := set(map(type, sum(xy := params["xy"], ()))) == {int}:
-        TEST_CASES_RASTERIZE[f"{name}_float"] = new_params = params.copy()
-        new_params["xy"] = [tuple(map(float, _)) for _ in xy]
-
-    # Check that array of vertex points behaves the same as list of tuples
-    TEST_CASES_RASTERIZE[f"{name}_array"] = new_params = params.copy()
-    new_params["xy"] = np.array(xy)
 
 
 @pytest.fixture(
