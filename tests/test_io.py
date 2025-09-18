@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from astropy.io import fits
 from astropy.wcs import WCS
 from conftest import TEST_DATA_PATH
 
@@ -65,6 +64,7 @@ def test_temp_storage(
     mock_restore_tmpdir.assert_called_once()
 
 
+# ---------------------------------------------------------------------------- #
 EXPECTED_VERTICES_XY = [
     (23.750160560517628, 23.750160560516235),
     (23.75016056051743, 476.24983943948354),
@@ -79,11 +79,6 @@ EXPECTED_VERTICES_RA_DEC = (
     (252.40480266238433, 53.393467021582275),
     (265.2866140036157, 53.393467021582275),
 )
-
-
-@pytest.fixture(scope="session")
-def test_image_wcs():
-    return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
 
 
 @pytest.mark.parametrize(

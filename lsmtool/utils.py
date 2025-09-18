@@ -142,7 +142,7 @@ def rasterize(vertices, data, blank_value=0):
     return data
 
 
-def mask_polygon_exterior(
+def rasterize_polygon_mask_exterior(
     fits_file, vertices_file, output_file=None, precision=None
 ):
     """

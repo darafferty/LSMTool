@@ -34,7 +34,7 @@ from ..io import (
 from ..skymodel import SkyModel
 from ..utils import (
     format_coordinates,
-    mask_polygon_exterior,
+    rasterize_polygon_mask_exterior,
     transfer_patches,
 )
 
@@ -337,7 +337,7 @@ def filter_sources(
     del img_true_sky  # helps reduce memory usage
 
     # Trim the mask file to the image sector
-    mask_polygon_exterior(mask_file, vertices_file)
+    rasterize_polygon_mask_exterior(mask_file, vertices_file)
 
     # Select the best measurement set for beam attenuation.
     beam_ms = select_midpoint(beam_ms) if beam_ms else None

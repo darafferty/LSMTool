@@ -17,8 +17,8 @@ from lsmtool.utils import (
     WCS_ORIGIN,
     convert_coordinates_to_pixels,
     format_coordinates,
-    mask_polygon_exterior,
     rasterize,
+    rasterize_polygon_mask_exterior,
     rotation_matrix_2d,
     table_to_array,
     transfer_patches,
@@ -203,62 +203,32 @@ def test_rasterize_nominal(rasterize_test_case):
     assert np.all(result == expected_array)
 
 
-@pytest.fixture(
-    scope="session",
-    params=[
-        {
-            "CTYPE1": "RA---SIN",
-            "CTYPE2": "DEC--SIN",
-            "CRVAL1": -101.154291667,
-            "CRVAL2": 57.4111944444,
-            "CRPIX1": 251.0,
-            "CRPIX2": 251.0,
-            "CDELT1": -0.01694027,
-            "CDELT2": 0.01694027,
-            "CUNIT1": "deg",
-            "CUNIT2": "deg",
-            "CTYPE3": "FREQ",
-            "CRPIX3": 1.0,
-            "CRVAL3": 143650817.871094,
-            "CDELT3": 11718750.0,
-            "CUNIT3": "Hz",
-            "CTYPE4": "STOKES",
-            "CRPIX4": 1.0,
-            "CRVAL4": 1.0,
-            "CDELT4": 1.0,
-            "CUNIT4": "",
-        },
-    ],
-    ids=["4d"],
-)
-def wcs(request):
-    return WCS(request.param)
-
-
 @pytest.fixture()
-def fits_file(rasterize_test_case, wcs, tmp_path):
+def fits_file(rasterize_test_case, test_image_wcs, tmp_path):
     """Generate fits file for testing"""
     # data_shape = request.param
     path = tmp_path / "fits_file.fits"
     data = np.ones((1, 1, *rasterize_test_case["shape"]))
     hdulist = fits.hdu.HDUList(hdu := fits.hdu.PrimaryHDU(data))
-    hdu.header.update(wcs.to_header())
+    hdu.header.update(test_image_wcs.to_header())
     hdulist.writeto(path)
     return path
 
 
 @pytest.fixture()
-def vertices_file(rasterize_test_case, wcs, tmp_path):
+def vertices_file(rasterize_test_case, test_image_wcs, tmp_path):
     xy = np.pad(rasterize_test_case["xy"], ((0, 0), (0, 2)))
-    coordinates = list(wcs.wcs_pix2world(xy, WCS_ORIGIN)[:, :2].T)
+    coordinates = list(test_image_wcs.wcs_pix2world(xy, WCS_ORIGIN)[:, :2].T)
     path = tmp_path / "vertex_file.pkl"
     path.write_bytes(pickle.dumps(coordinates))
     return path
 
 
-def test_mask_polygon_exterior(rasterize_test_case, fits_file, vertices_file):
+def test_rasterize_polygon_mask_exterior(
+    rasterize_test_case, fits_file, vertices_file
+):
     # Act
-    mask_polygon_exterior(fits_file, vertices_file, precision=1)
+    rasterize_polygon_mask_exterior(fits_file, vertices_file, precision=1)
     result = fits.getdata(fits_file, 0).squeeze()
 
     # Assert
@@ -336,6 +306,9 @@ def test_table_to_array(table_data, dtype, expected_shape, expected_dtype):
     assert np.all(result == expected_result)
 
 
+# ---------------------------------------------------------------------------- #
+
+
 def test_transfer_patches():
     # Arrange
     from_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_from.sky"))
@@ -408,6 +381,9 @@ def test_transfer_patches_with_patch_dict():
     # Check that the patch positions match
     ra_in, dec_in = zip(*patch_dict.values())
     assert np.all([ra.ravel() == ra_in, dec.ravel() == dec_in])
+
+
+# ---------------------------------------------------------------------------- #
 
 
 @pytest.fixture(
