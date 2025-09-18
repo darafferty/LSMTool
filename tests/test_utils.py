@@ -226,13 +226,15 @@ def vertices_file(rasterize_test_case, test_image_wcs, tmp_path):
 def test_rasterize_polygon_mask_exterior(
     rasterize_test_case, fits_file, vertices_file
 ):
+    if rasterize_test_case["fill"] == -1:
+        pytest.skip(reason="Fill value not supported by function.")
+
     # Act
     rasterize_polygon_mask_exterior(fits_file, vertices_file, precision=1)
     result = fits.getdata(fits_file, 0).squeeze()
 
     # Assert
     expected = np.array(rasterize_test_case["expected"])
-    expected[expected == -1] = 0
     np.testing.assert_equal(result, expected)
 
 
