@@ -13,10 +13,12 @@ from typing import Sequence, Union
 import numpy as np
 
 from .skymodel import SkyModel
+from .utils import convert_coordinates_to_pixels
 
 # save original tmp path if defined
 ORIGINAL_TMPDIR = os.environ.get("TMPDIR")
 TRIAL_TMP_PATHS = [tempfile.gettempdir()]
+
 
 # Type aliases for paths-like objects
 PathLike = Union[str, Path]
@@ -225,8 +227,8 @@ def read_vertices_ra_dec(filename: PathLike):
 
     Returns
     -------
-    tuple of iterables
-        A tuple containing two iterables: RA vertices and Dec vertices.
+    numpy.ndarray
+        Array of shape (N, 2) containing RA and Dec vertices as columns.
     """
     data = pickle.loads(Path(filename).read_bytes())
 
@@ -243,3 +245,24 @@ def read_vertices_ra_dec(filename: PathLike):
         f"Unexpected data in file: {filename}."
         "Expected two equally-shaped arrays with RA and Dec coordinates."
     )
+
+
+def read_vertices_x_y(filename, wcs):
+    """
+    Read facet vertices from a file and convert them to pixel coordinates.
+
+    Parameters
+    ----------
+    filename: str or pathlib.Path
+        Path to file containing the vertices to read.
+    wcs : astropy.wcs.WCS object
+        WCS object for converting the vertices to pixel coordinates.
+
+    Returns
+    -------
+    vertices: list of (x, y) tuples of float
+        The converted coordinates.
+    """
+    # The input file always contains vertices as RA,Dec coordinates.
+    vertices_celestial = read_vertices_ra_dec(filename)
+    return convert_coordinates_to_pixels(vertices_celestial, wcs)

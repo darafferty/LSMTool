@@ -6,12 +6,15 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+from astropy.io import fits
+from astropy.wcs import WCS
 from conftest import TEST_DATA_PATH
 
 from lsmtool.io import (
     _restore_tmpdir,
     _set_tmpdir,
     read_vertices_ra_dec,
+    read_vertices_x_y,
     temp_storage,
 )
 
@@ -62,6 +65,27 @@ def test_temp_storage(
     mock_restore_tmpdir.assert_called_once()
 
 
+EXPECTED_VERTICES_XY = [
+    (23.750160560517628, 23.750160560516235),
+    (23.75016056051743, 476.24983943948354),
+    (476.24983943948394, 476.24983943948325),
+    (476.24983943948195, 23.75016056051578),
+    (23.750160560517628, 23.750160560516235),
+]
+EXPECTED_VERTICES_RA_DEC = (
+    (265.2866140036157, 53.393467021582275),
+    (266.78226621292583, 61.02229999320357),
+    (250.90915045307418, 61.02229999320357),
+    (252.40480266238433, 53.393467021582275),
+    (265.2866140036157, 53.393467021582275),
+)
+
+
+@pytest.fixture(scope="session")
+def test_image_wcs():
+    return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
+
+
 @pytest.mark.parametrize(
     "filename",
     [
@@ -70,7 +94,7 @@ def test_temp_storage(
             id="path_input",
         ),
         pytest.param(
-            str((TEST_DATA_PATH / "expected_sector_1_vertices.pkl")),
+            str(TEST_DATA_PATH / "expected_sector_1_vertices.pkl"),
             id="string_input",
         ),
     ],
@@ -78,30 +102,37 @@ def test_temp_storage(
 def test_read_vertices_ra_dec(filename):
     """Test reading vertices from pickle file."""
     verts = read_vertices_ra_dec(filename)
-    expected = (
-        (265.2866140036157, 53.393467021582275),
-        (266.78226621292583, 61.02229999320357),
-        (250.90915045307418, 61.02229999320357),
-        (252.40480266238433, 53.393467021582275),
-        (265.2866140036157, 53.393467021582275),
-    )
-    assert np.allclose(verts, expected)
+    np.testing.assert_allclose(verts, EXPECTED_VERTICES_RA_DEC)
+
+
+def test_read_vertices_x_y(test_image_wcs):
+    filename = TEST_DATA_PATH / "expected_sector_1_vertices.pkl"
+    vertices_pixel = read_vertices_x_y(filename, test_image_wcs)
+    np.testing.assert_allclose(vertices_pixel, EXPECTED_VERTICES_XY)
+
+
+@pytest.fixture(params=["Invalid content", ["Invalid", "content"]])
+def invalid_vertices_file(request, tmp_path):
+    """Generate vertices file with invalid content."""
+    path = tmp_path / "invalid_vertices.pkl"
+    path.unlink(missing_ok=True)
+    path.write_bytes(pickle.dumps(request.param))
+    return path
 
 
 @pytest.mark.parametrize(
-    "contents", ["Invalid content", ["Invalid", "content"]]
+    "reader, wcs", [(read_vertices_ra_dec, ()), (read_vertices_x_y, (WCS(),))]
 )
-def test_read_vertices_invalid(tmp_path, contents):
+def test_read_vertices_invalid(reader, wcs, invalid_vertices_file):
     """Test reading vertices from pickle file."""
-    path = tmp_path / "test_read_vertices_invalid.pkl"
-    path.unlink(missing_ok=True)
-    with path.open("wb") as file:
-        pickle.dump(contents, file)
-
     with pytest.raises(ValueError):
-        read_vertices_ra_dec(path)
+        reader(invalid_vertices_file, *wcs)
 
 
-def test_read_vertices_non_existent():
+@pytest.mark.parametrize(
+    "reader, wcs", [(read_vertices_ra_dec, ()), (read_vertices_x_y, (WCS(),))]
+)
+def test_read_vertices_non_existent(reader, wcs):
+    non_existent_file = "/path/to/vertices.file"
     with pytest.raises(FileNotFoundError):
-        read_vertices_ra_dec("/path/to/vertices.file")
+        reader(non_existent_file, *wcs)
