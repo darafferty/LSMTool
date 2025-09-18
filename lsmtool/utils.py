@@ -143,7 +143,9 @@ def rasterize(verts, data, blank_value=0):
     return data
 
 
-def mask_polygon_exterior(fits_file, vertices_file, output_file=None):
+def mask_polygon_exterior(
+    fits_file, vertices_file, output_file=None, precision=None
+):
     """
     Rasterize the image data in *fits_file* using the polygon defined by the
     *vertices_file*, mask any data outside the polygon, and write the result to
@@ -158,10 +160,18 @@ def mask_polygon_exterior(fits_file, vertices_file, output_file=None):
     output_file : str or pathlib.Path, optional
         Path to the output FITS file. If None, the default, the input file will
         be overwritten.
+    precision : int, optional
+        A integer specifying the numeric precision for the converted
+        vertices. If provided, the vertex points will be rounded to this number
+        of significant figures. This is useful on occasion since there may be
+        some imprecision in the result due to rounding errors.
     """
 
     hdulist = (hdu,) = fits.open(fits_file, memmap=False)
     vertices = read_vertices(vertices_file, wcs.WCS(hdu.header))
+
+    if precision is not None:
+        vertices = np.round(vertices, precision)
 
     # Rasterize the polygon and mask exterior pixels. Data is modified inplace.
     rasterize(vertices, hdu.data[0, 0, :, :])
