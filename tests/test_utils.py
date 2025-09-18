@@ -12,10 +12,9 @@ from astropy.table import Table
 from astropy.wcs import WCS
 from conftest import TEST_DATA_PATH
 
+from lsmtool.io import WCS_ORIGIN
 from lsmtool.skymodel import SkyModel
 from lsmtool.utils import (
-    WCS_ORIGIN,
-    convert_coordinates_to_pixels,
     format_coordinates,
     rasterize,
     rasterize_polygon_mask_exterior,
@@ -394,48 +393,3 @@ def test_transfer_patches_with_patch_dict():
     # Check that the patch positions match
     ra_in, dec_in = zip(*patch_dict.values())
     assert np.all([ra.ravel() == ra_in, dec.ravel() == dec_in])
-
-
-# ---------------------------------------------------------------------------- #
-
-
-@pytest.fixture(
-    params=[
-        wcs_params_2d := {
-            "CTYPE1": "RA---SIN",
-            "CTYPE2": "DEC--SIN",
-            "CRVAL1": (RA := -101.154291667),
-            "CRVAL2": (DEC := 57.4111944444),
-            "CRPIX1": (CRPIX := 251.0),
-            "CRPIX2": CRPIX,
-            "CDELT1": -(CDELT := 0.01694027),
-            "CDELT2": CDELT,
-            "CUNIT1": "deg",
-            "CUNIT2": "deg",
-        },
-        {
-            **wcs_params_2d,
-            "CTYPE3": "FREQ",
-            "CRPIX3": 1.0,
-            "CRVAL3": 143650817.871094,
-            "CDELT3": 11718750.0,
-            "CUNIT3": "Hz",
-            "CTYPE4": "STOKES",
-            "CRPIX4": 1.0,
-            "CRVAL4": 1.0,
-            "CDELT4": 1.0,
-            "CUNIT4": "",
-        },
-    ],
-    ids=["2d", "4d"],
-)
-def wcs(request):
-    return WCS(request.param)
-
-
-@pytest.mark.parametrize(
-    "coordinates, pixels_expected", [(np.array([[RA, DEC]]), [(250.0, 250.0)])]
-)
-def test_convert_coordinates_to_pixels(coordinates, pixels_expected, wcs):
-    result = convert_coordinates_to_pixels(coordinates, wcs)
-    np.testing.assert_equal(result, pixels_expected)
