@@ -134,7 +134,7 @@ TEST_CASES_POLYGON_MASKING = {
         ],
     },
     "triangle": {
-        "xy": [(3.0, 0.0), (2, 1), (1, 0)],
+        "xy": [(3, 0), (2, 1), (1, 0)],
         "shape": (4, 4),
         "fill": 0,
         "result": [
@@ -162,6 +162,16 @@ TEST_CASES_POLYGON_MASKING = {
         "result": np.zeros((5, 6)),
     },
 }
+
+
+# For the test cases above, check that when vertices given as integers,
+# the same result is obtained with the same vertices represented as floats.
+# Additionally, check that 
+for name, params in list(TEST_CASES_POLYGON_MASKING.items()):
+    # The next line checks if the types of all the vertex points are integer
+    if check_float := set(map(type, sum(xy := params["xy"], ()))) == {int}:
+        TEST_CASES_POLYGON_MASKING[f"{name}_float"] = new_params = params.copy()
+        new_params["xy"] = [tuple(map(float, _)) for _ in xy]
 
 
 @pytest.fixture(
