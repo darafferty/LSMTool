@@ -91,7 +91,7 @@ def convert_coordinates_to_pixels(coordinates, wcs):
     return list(zip(vertices_x, vertices_y))
 
 
-def rasterize(verts, data, blank_value=0):
+def rasterize(vertices, data, blank_value=0):
     """
     Rasterize a polygon into a data array, setting any data outside the polygon
     to `blank_value`.
