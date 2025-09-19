@@ -8,7 +8,8 @@ from pathlib import Path
 
 import pytest
 from lsmtool.io import check_file_exists, PathLike, PathLikeOptional
-
+from astropy.io import fits
+from astropy.wcs import WCS
 
 TEST_PATH = Path(__file__).parent
 TEST_DATA_PATH = TEST_PATH / "resources"
@@ -20,6 +21,11 @@ def midbands_ms(tmp_path):
     ms_name = "test_midbands.ms"
     untar(TEST_DATA_PATH / f"{ms_name}.tgz", tmp_path)
     return tmp_path / ms_name
+
+
+@pytest.fixture(scope="session")
+def test_image_wcs():
+    return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
 
 
 def untar(
