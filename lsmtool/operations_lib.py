@@ -83,7 +83,7 @@ def radec_to_xyz(ra, dec, time):
     from astropy.time import Time
     import numpy as np
 
-    obstime = Time(time/3600/24, scale='utc', format='mjd')
+    obstime = Time(time / 3600 / 24, scale="utc", format="mjd")
 
     dir_pointing = SkyCoord(ra, dec)
     dir_pointing_itrs = dir_pointing.transform_to(ITRS(obstime=obstime))
@@ -130,23 +130,29 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
 
     # Determine a time stamp (in MJD) for later use, betweeen the start and end
     # times of the Measurement Set, using `timeIndx` as fractional indicator.
-    tmin, tmax, ant1 = pt.taql(f"select gmin(TIME), gmax(TIME), gmin(ANTENNA1) from {beamMS}")[0].values()
+    tmin, tmax, ant1 = pt.taql(
+        f"select gmin(TIME), gmax(TIME), gmin(ANTENNA1) from {beamMS}"
+    )[0].values()
 
     # Constrain `timeIndx` between 0 and 1.
-    timeIndx = max(0., min(1., timeIndx))
+    timeIndx = max(0.0, min(1.0, timeIndx))
     time = tmin + (tmax - tmin) * timeIndx
 
     # Get frequency information from the Measurement Set.
-    with pt.table(beamMS+'::SPECTRAL_WINDOW', ack=False) as sw:
-        numchannels = sw.col('NUM_CHAN')[0]
-        startfreq = np.min(sw.col('CHAN_FREQ')[0])
-        channelwidth = sw.col('CHAN_WIDTH')[0][0]
+    with pt.table(beamMS + "::SPECTRAL_WINDOW", ack=False) as sw:
+        numchannels = sw.col("NUM_CHAN")[0]
+        startfreq = np.min(sw.col("CHAN_FREQ")[0])
+        channelwidth = sw.col("CHAN_WIDTH")[0][0]
 
     # Get the pointing direction from the Measurement Set, and convert to local
     # xyz coordinates at the LOFAR core.
-    with pt.table(beamMS+'::FIELD', ack=False) as obs:
-        pointing_ra = Angle(float(obs.col('REFERENCE_DIR')[0][0][0]), unit=u.rad)
-        pointing_dec = Angle(float(obs.col('REFERENCE_DIR')[0][0][1]), unit=u.rad)
+    with pt.table(beamMS + "::FIELD", ack=False) as obs:
+        pointing_ra = Angle(
+            float(obs.col("REFERENCE_DIR")[0][0][0]), unit=u.rad
+        )
+        pointing_dec = Angle(
+            float(obs.col("REFERENCE_DIR")[0][0][1]), unit=u.rad
+        )
     pointing_xyz = radec_to_xyz(pointing_ra, pointing_dec, time)
 
     # Convert the source directions to local xyz coordinates at the LOFAR core.
@@ -236,14 +242,20 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
 
     if byPatch:
         RA, Dec = LSM1.getPatchPositions(asArray=True)
-        catalog1 = SkyCoord(RA, Dec, unit=(u.degree, u.degree), frame='fk5')
+        catalog1 = SkyCoord(RA, Dec, unit=(u.degree, u.degree), frame="fk5")
         RA, Dec = LSM2.getPatchPositions(asArray=True)
-        catalog2 = SkyCoord(RA, Dec, unit=(u.degree, u.degree), frame='fk5')
+        catalog2 = SkyCoord(RA, Dec, unit=(u.degree, u.degree), frame="fk5")
     else:
-        catalog1 = SkyCoord(LSM1.getColValues('Ra'), LSM1.getColValues('Dec'),
-                            unit=(u.degree, u.degree))
-        catalog2 = SkyCoord(LSM2.getColValues('Ra'), LSM2.getColValues('Dec'),
-                            unit=(u.degree, u.degree))
+        catalog1 = SkyCoord(
+            LSM1.getColValues("Ra"),
+            LSM1.getColValues("Dec"),
+            unit=(u.degree, u.degree),
+        )
+        catalog2 = SkyCoord(
+            LSM2.getColValues("Ra"),
+            LSM2.getColValues("Dec"),
+            unit=(u.degree, u.degree),
+        )
     idx, d2d, d3d = match_coordinates_sky(catalog1, catalog2)
 
     try:
@@ -251,7 +263,7 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
     except ValueError:
         pass
     if type(radius) is float:
-        radius = '{0} degree'.format(radius)
+        radius = "{0} degree".format(radius)
     radius = Angle(radius).degree
     matches1 = np.where(d2d.value <= radius)[0]
     matches2 = idx[matches1]
@@ -297,8 +309,8 @@ def calculateSeparation(ra1, dec1, ra2, dec2):
     from astropy.coordinates import SkyCoord
     import astropy.units as u
 
-    coord1 = SkyCoord(ra1, dec1, unit=(u.degree, u.degree), frame='fk5')
-    coord2 = SkyCoord(ra2, dec2, unit=(u.degree, u.degree), frame='fk5')
+    coord1 = SkyCoord(ra1, dec1, unit=(u.degree, u.degree), frame="fk5")
+    coord2 = SkyCoord(ra2, dec2, unit=(u.degree, u.degree), frame="fk5")
 
     return coord1.separation(coord2)
 
@@ -327,42 +339,60 @@ def getFluxAtSingleFrequency(LSM, targetFreq=None, aggregate=None):
 
     # Calculate flux densities
     if targetFreq is None:
-        if 'ReferenceFrequency' in LSM.getColNames():
-            refFreq = LSM.getColValues('ReferenceFrequency', aggregate=aggregate)
+        if "ReferenceFrequency" in LSM.getColNames():
+            refFreq = LSM.getColValues(
+                "ReferenceFrequency", aggregate=aggregate
+            )
         else:
-            refFreq = np.array([LSM.table.meta['ReferenceFrequency']]*len(LSM))
+            refFreq = np.array(
+                [LSM.table.meta["ReferenceFrequency"]] * len(LSM)
+            )
         targetFreq = np.median(refFreq)
-    fluxes = LSM.getColValues('I', aggregate=aggregate)
+    fluxes = LSM.getColValues("I", aggregate=aggregate)
 
     try:
-        alphas = LSM.getColValues('SpectralIndex', aggregate=aggregate).squeeze(axis=0)
+        alphas = LSM.getColValues("SpectralIndex", aggregate=aggregate).squeeze(
+            axis=0
+        )
     except (IndexError, ValueError):
-        alphas = np.array([-0.8]*len(fluxes))
+        alphas = np.array([-0.8] * len(fluxes))
     nterms = alphas.shape[1]
 
-    if 'LogarithmicSI' in LSM.table.meta:
-        logSI = LSM.table.meta['LogarithmicSI']
+    if "LogarithmicSI" in LSM.table.meta:
+        logSI = LSM.table.meta["LogarithmicSI"]
     else:
         logSI = True
 
     if nterms > 1:
         for i in range(nterms):
             if logSI:
-                fluxes *= 10.0**(alphas[:, i] * (np.log10(refFreq / targetFreq))**(i+1))
+                fluxes *= 10.0 ** (
+                    alphas[:, i] * (np.log10(refFreq / targetFreq)) ** (i + 1)
+                )
             else:
                 # stokesI + term0 (nu/refnu - 1) + term1 (nu/refnu - 1)^2 + ...
-                fluxes += alphas[:, i] * ((refFreq / targetFreq) - 1.0)**(i+1)
+                fluxes += alphas[:, i] * ((refFreq / targetFreq) - 1.0) ** (
+                    i + 1
+                )
     else:
         if logSI:
-            fluxes *= 10.0**(alphas * np.log10(refFreq / targetFreq))
+            fluxes *= 10.0 ** (alphas * np.log10(refFreq / targetFreq))
         else:
             fluxes += alphas * ((refFreq / targetFreq) - 1.0)
 
     return fluxes
 
 
-def make_template_image(image_name, reference_ra_deg, reference_dec_deg, reference_freq,
-                        ximsize=512, yimsize=512, cellsize_deg=0.000417, fill_val=0):
+def make_template_image(
+    image_name,
+    reference_ra_deg,
+    reference_dec_deg,
+    reference_freq,
+    ximsize=512,
+    yimsize=512,
+    cellsize_deg=0.000417,
+    fill_val=0,
+):
     """
     Make a blank image and save it to disk
 
@@ -391,48 +421,48 @@ def make_template_image(image_name, reference_ra_deg, reference_dec_deg, referen
     # Make fits hdu
     # Axis order is [STOKES, FREQ, DEC, RA]
     shape_out = [1, 1, yimsize, ximsize]
-    hdu = pyfits.PrimaryHDU(np.ones(shape_out, dtype=np.float32)*fill_val)
+    hdu = pyfits.PrimaryHDU(np.ones(shape_out, dtype=np.float32) * fill_val)
     hdulist = pyfits.HDUList([hdu])
     header = hdulist[0].header
 
     # Add RA, Dec info
     i = 1
-    header['CRVAL{}'.format(i)] = reference_ra_deg
-    header['CDELT{}'.format(i)] = -cellsize_deg
-    header['CRPIX{}'.format(i)] = ximsize / 2.0
-    header['CUNIT{}'.format(i)] = 'deg'
-    header['CTYPE{}'.format(i)] = 'RA---SIN'
+    header["CRVAL{}".format(i)] = reference_ra_deg
+    header["CDELT{}".format(i)] = -cellsize_deg
+    header["CRPIX{}".format(i)] = ximsize / 2.0
+    header["CUNIT{}".format(i)] = "deg"
+    header["CTYPE{}".format(i)] = "RA---SIN"
     i += 1
-    header['CRVAL{}'.format(i)] = reference_dec_deg
-    header['CDELT{}'.format(i)] = cellsize_deg
-    header['CRPIX{}'.format(i)] = yimsize / 2.0
-    header['CUNIT{}'.format(i)] = 'deg'
-    header['CTYPE{}'.format(i)] = 'DEC--SIN'
+    header["CRVAL{}".format(i)] = reference_dec_deg
+    header["CDELT{}".format(i)] = cellsize_deg
+    header["CRPIX{}".format(i)] = yimsize / 2.0
+    header["CUNIT{}".format(i)] = "deg"
+    header["CTYPE{}".format(i)] = "DEC--SIN"
     i += 1
 
     # Add STOKES info
-    header['CRVAL{}'.format(i)] = 1.0
-    header['CDELT{}'.format(i)] = 1.0
-    header['CRPIX{}'.format(i)] = 1.0
-    header['CUNIT{}'.format(i)] = ''
-    header['CTYPE{}'.format(i)] = 'STOKES'
+    header["CRVAL{}".format(i)] = 1.0
+    header["CDELT{}".format(i)] = 1.0
+    header["CRPIX{}".format(i)] = 1.0
+    header["CUNIT{}".format(i)] = ""
+    header["CTYPE{}".format(i)] = "STOKES"
     i += 1
 
     # Add frequency info
     del_freq = 1e8
-    header['RESTFRQ'] = reference_freq
-    header['CRVAL{}'.format(i)] = reference_freq
-    header['CDELT{}'.format(i)] = del_freq
-    header['CRPIX{}'.format(i)] = 1.0
-    header['CUNIT{}'.format(i)] = 'Hz'
-    header['CTYPE{}'.format(i)] = 'FREQ'
+    header["RESTFRQ"] = reference_freq
+    header["CRVAL{}".format(i)] = reference_freq
+    header["CDELT{}".format(i)] = del_freq
+    header["CRPIX{}".format(i)] = 1.0
+    header["CUNIT{}".format(i)] = "Hz"
+    header["CTYPE{}".format(i)] = "FREQ"
     i += 1
 
     # Add equinox
-    header['EQUINOX'] = 2000.0
+    header["EQUINOX"] = 2000.0
 
     # Add telescope
-    header['TELESCOP'] = 'LOFAR'
+    header["TELESCOP"] = "LOFAR"
 
     hdulist[0].header = header
     hdulist.writeto(image_name, overwrite=True)
@@ -470,12 +500,12 @@ def gaussian_fcn(g, x1, x2, const=False):
     th = radians(Th)
     cs = cos(th)
     sn = sin(th)
-    f1 = ((x1-C1)*cs + (x2-C2)*sn)/S1
-    f2 = (-(x1-C1)*sn + (x2-C2)*cs)/S2
-    gimg = A * np.exp(-(f1*f1 + f2*f2)/2)
+    f1 = ((x1 - C1) * cs + (x2 - C2) * sn) / S1
+    f2 = (-(x1 - C1) * sn + (x2 - C2) * cs) / S2
+    gimg = A * np.exp(-(f1 * f1 + f2 * f2) / 2)
 
     if const:
-        mask = np.where(gimg/A > 1e-5)
+        mask = np.where(gimg / A > 1e-5)
         cimg = np.zeros(x1.shape)
         cimg[mask] = A
         return cimg
@@ -511,7 +541,7 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
     """
     # Build the bounding box corner coordinates
     if width <= 0.0:
-        raise ValueError('The width cannot be zero or less')
+        raise ValueError("The width cannot be zero or less")
     width_ra = width
     width_dec = width
     wcs_pixel_scale = 20.0 / 3600.0  # 20"/pixel
@@ -520,8 +550,9 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
     x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, 0)
     width_x = width_ra / wcs_pixel_scale / 2.0
     width_y = width_dec / wcs_pixel_scale / 2.0
-    bounding_box = np.array([x_mid - width_x, x_mid + width_x,
-                             y_mid - width_y, y_mid + width_y])
+    bounding_box = np.array(
+        [x_mid - width_x, x_mid + width_x, y_mid - width_y, y_mid + width_y]
+    )
 
     # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
     vor = voronoi(np.stack((x_cal, y_cal)).T, bounding_box)
@@ -558,35 +589,45 @@ def voronoi(cal_coords, bounding_box):
     eps = 1e-6
 
     # Select calibrators inside the bounding box
-    inside_ind = np.logical_and(np.logical_and(bounding_box[0] <= cal_coords[:, 0],
-                                               cal_coords[:, 0] <= bounding_box[1]),
-                                np.logical_and(bounding_box[2] <= cal_coords[:, 1],
-                                               cal_coords[:, 1] <= bounding_box[3]))
+    inside_ind = np.logical_and(
+        np.logical_and(
+            bounding_box[0] <= cal_coords[:, 0],
+            cal_coords[:, 0] <= bounding_box[1],
+        ),
+        np.logical_and(
+            bounding_box[2] <= cal_coords[:, 1],
+            cal_coords[:, 1] <= bounding_box[3],
+        ),
+    )
     points_center = cal_coords[inside_ind, :]
 
     # Mirror points
     points_left = np.copy(points_center)
     points_left[:, 0] = bounding_box[0] - (points_left[:, 0] - bounding_box[0])
     points_right = np.copy(points_center)
-    points_right[:, 0] = bounding_box[1] + (bounding_box[1] - points_right[:, 0])
+    points_right[:, 0] = bounding_box[1] + (
+        bounding_box[1] - points_right[:, 0]
+    )
     points_down = np.copy(points_center)
     points_down[:, 1] = bounding_box[2] - (points_down[:, 1] - bounding_box[2])
     points_up = np.copy(points_center)
     points_up[:, 1] = bounding_box[3] + (bounding_box[3] - points_up[:, 1])
-    points = np.append(points_center,
-                       np.append(np.append(points_left,
-                                           points_right,
-                                           axis=0),
-                                 np.append(points_down,
-                                           points_up,
-                                           axis=0),
-                                 axis=0),
-                       axis=0)
+    points = np.append(
+        points_center,
+        np.append(
+            np.append(points_left, points_right, axis=0),
+            np.append(points_down, points_up, axis=0),
+            axis=0,
+        ),
+        axis=0,
+    )
 
     # Compute Voronoi, sorting the output regions to match the order of the
     # input coordinates
     vor = sp.spatial.Voronoi(points)
-    sorted_regions = np.array(vor.regions, dtype=object)[np.array(vor.point_region)]
+    sorted_regions = np.array(vor.regions, dtype=object)[
+        np.array(vor.point_region)
+    ]
     vor.regions = sorted_regions.tolist()
 
     # Filter regions
@@ -600,8 +641,12 @@ def voronoi(cal_coords, bounding_box):
             else:
                 x = vor.vertices[index, 0]
                 y = vor.vertices[index, 1]
-                if not (bounding_box[0] - eps <= x and x <= bounding_box[1] + eps and
-                        bounding_box[2] - eps <= y and y <= bounding_box[3] + eps):
+                if not (
+                    bounding_box[0] - eps <= x
+                    and x <= bounding_box[1] + eps
+                    and bounding_box[2] - eps <= y
+                    and y <= bounding_box[3] + eps
+                ):
                     flag = False
                     break
         if region and flag:
