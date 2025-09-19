@@ -2,8 +2,6 @@
 Test utility functions.
 """
 
-import pickle
-
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
@@ -227,10 +225,10 @@ def fits_file(rasterize_test_case, test_image_wcs, tmp_path):
 
 @pytest.fixture()
 def vertices_file(rasterize_test_case, test_image_wcs, tmp_path):
-    xy = np.pad(rasterize_test_case["xy"], ((0, 0), (0, 2)))
-    coordinates = list(test_image_wcs.wcs_pix2world(xy, WCS_ORIGIN)[:, :2].T)
-    path = tmp_path / "vertex_file.pkl"
-    path.write_bytes(pickle.dumps(coordinates))
+    xy = rasterize_test_case["xy"]
+    coordinates = test_image_wcs.celestial.wcs_pix2world(xy, WCS_ORIGIN)
+    path = tmp_path / "vertex_file.npy"
+    np.save(path, coordinates)
     return path
 
 

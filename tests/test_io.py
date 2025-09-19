@@ -1,6 +1,5 @@
 import contextlib as ctx
 import os
-import pickle
 from pathlib import Path
 from unittest.mock import patch
 
@@ -86,23 +85,23 @@ EXPECTED_VERTICES_RA_DEC = (
     "filename",
     [
         pytest.param(
-            (TEST_DATA_PATH / "expected_sector_1_vertices.pkl"),
+            (TEST_DATA_PATH / "expected_sector_1_vertices.npy"),
             id="path_input",
         ),
         pytest.param(
-            str(TEST_DATA_PATH / "expected_sector_1_vertices.pkl"),
+            str(TEST_DATA_PATH / "expected_sector_1_vertices.npy"),
             id="string_input",
         ),
     ],
 )
 def test_read_vertices_ra_dec(filename):
-    """Test reading vertices from pickle file."""
+    """Test reading vertices from npy file."""
     verts = read_vertices_ra_dec(filename)
     np.testing.assert_allclose(verts, EXPECTED_VERTICES_RA_DEC)
 
 
 def test_read_vertices_x_y(test_image_wcs):
-    filename = TEST_DATA_PATH / "expected_sector_1_vertices.pkl"
+    filename = TEST_DATA_PATH / "expected_sector_1_vertices.npy"
     vertices_pixel = read_vertices_x_y(filename, test_image_wcs)
     np.testing.assert_allclose(vertices_pixel, EXPECTED_VERTICES_XY)
 
@@ -110,9 +109,9 @@ def test_read_vertices_x_y(test_image_wcs):
 @pytest.fixture(params=["Invalid content", ["Invalid", "content"]])
 def invalid_vertices_file(request, tmp_path):
     """Generate vertices file with invalid content."""
-    path = tmp_path / "invalid_vertices.pkl"
+    path = tmp_path / "invalid_vertices.npy"
     path.unlink(missing_ok=True)
-    path.write_bytes(pickle.dumps(request.param))
+    np.save(path, request.param)
     return path
 
 
@@ -120,7 +119,7 @@ def invalid_vertices_file(request, tmp_path):
     "reader, wcs", [(read_vertices_ra_dec, ()), (read_vertices_x_y, (WCS(),))]
 )
 def test_read_vertices_invalid(reader, wcs, invalid_vertices_file):
-    """Test reading vertices from pickle file."""
+    """Test reading vertices from npy file with invalid content."""
     with pytest.raises(ValueError):
         reader(invalid_vertices_file, *wcs)
 
