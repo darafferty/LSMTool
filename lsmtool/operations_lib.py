@@ -136,14 +136,14 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
     time = tmin + (tmax - tmin) * timeIndx
 
     # Get frequency information from the Measurement Set.
-    with pt.table(beamMS + "::SPECTRAL_WINDOW", ack=False) as sw:
+    with pt.table(f"{beamMS}::SPECTRAL_WINDOW", ack=False) as sw:
         numchannels = sw.col("NUM_CHAN")[0]
         startfreq = np.min(sw.col("CHAN_FREQ")[0])
         channelwidth = sw.col("CHAN_WIDTH")[0][0]
 
     # Get the pointing direction from the Measurement Set, and convert to local
     # xyz coordinates at the LOFAR core.
-    with pt.table(beamMS + "::FIELD", ack=False) as obs:
+    with pt.table(f"{beamMS}::FIELD", ack=False) as obs:
         pointing_ra = Angle(
             float(obs.col("REFERENCE_DIR")[0][0][0]), unit=u.rad
         )
@@ -260,7 +260,7 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
     except ValueError:
         pass
     if type(radius) is float:
-        radius = "{0} degree".format(radius)
+        radius = f"{radius} degree"
     radius = Angle(radius).degree
     matches1 = np.where(d2d.value <= radius)[0]
     matches2 = idx[matches1]
@@ -424,35 +424,35 @@ def make_template_image(
 
     # Add RA, Dec info
     i = 1
-    header["CRVAL{}".format(i)] = reference_ra_deg
-    header["CDELT{}".format(i)] = -cellsize_deg
-    header["CRPIX{}".format(i)] = ximsize / 2.0
-    header["CUNIT{}".format(i)] = "deg"
-    header["CTYPE{}".format(i)] = "RA---SIN"
+    header[f"CRVAL{i}"] = reference_ra_deg
+    header[f"CDELT{i}"] = -cellsize_deg
+    header[f"CRPIX{i}"] = ximsize / 2.0
+    header[f"CUNIT{i}"] = "deg"
+    header[f"CTYPE{i}"] = "RA---SIN"
     i += 1
-    header["CRVAL{}".format(i)] = reference_dec_deg
-    header["CDELT{}".format(i)] = cellsize_deg
-    header["CRPIX{}".format(i)] = yimsize / 2.0
-    header["CUNIT{}".format(i)] = "deg"
-    header["CTYPE{}".format(i)] = "DEC--SIN"
+    header[f"CRVAL{i}"] = reference_dec_deg
+    header[f"CDELT{i}"] = cellsize_deg
+    header[f"CRPIX{i}"] = yimsize / 2.0
+    header[f"CUNIT{i}"] = "deg"
+    header[f"CTYPE{i}"] = "DEC--SIN"
     i += 1
 
     # Add STOKES info
-    header["CRVAL{}".format(i)] = 1.0
-    header["CDELT{}".format(i)] = 1.0
-    header["CRPIX{}".format(i)] = 1.0
-    header["CUNIT{}".format(i)] = ""
-    header["CTYPE{}".format(i)] = "STOKES"
+    header[f"CRVAL{i}"] = 1.0
+    header[f"CDELT{i}"] = 1.0
+    header[f"CRPIX{i}"] = 1.0
+    header[f"CUNIT{i}"] = ""
+    header[f"CTYPE{i}"] = "STOKES"
     i += 1
 
     # Add frequency info
     del_freq = 1e8
     header["RESTFRQ"] = reference_freq
-    header["CRVAL{}".format(i)] = reference_freq
-    header["CDELT{}".format(i)] = del_freq
-    header["CRPIX{}".format(i)] = 1.0
-    header["CUNIT{}".format(i)] = "Hz"
-    header["CTYPE{}".format(i)] = "FREQ"
+    header[f"CRVAL{i}"] = reference_freq
+    header[f"CDELT{i}"] = del_freq
+    header[f"CRPIX{i}"] = 1.0
+    header[f"CUNIT{i}"] = "Hz"
+    header[f"CTYPE{i}"] = "FREQ"
     i += 1
 
     # Add equinox
