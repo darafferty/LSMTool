@@ -31,7 +31,9 @@ class TestResolveSourceFinder:
                 "sofia",
                 null_context,
                 id="sofia",
-                marks=pytest.mark.skipif(not have_sofia, reason="SoFiA not available"),
+                marks=pytest.mark.skipif(
+                    not have_sofia, reason="SoFiA not available"
+                ),
             ),
             pytest.param("bdsf", "bdsf", null_context, id="bdsf"),
             pytest.param(
@@ -39,7 +41,9 @@ class TestResolveSourceFinder:
                 "sofia",
                 null_context,
                 id="SoFiA",
-                marks=pytest.mark.skipif(not have_sofia, reason="SoFiA not available"),
+                marks=pytest.mark.skipif(
+                    not have_sofia, reason="SoFiA not available"
+                ),
             ),
             pytest.param("BDSF", "bdsf", null_context, id="BDSF"),
             pytest.param(None, None, raises, id="nonetype_raises"),
@@ -81,7 +85,8 @@ class TestBDSF:
         return {
             "output_catalog": tmp_path / "output-catalog.test.fits",
             "output_true_rms": tmp_path / "output-true-sky-rms.test.fits",
-            "output_flat_noise_rms": tmp_path / "output-flat-noise-rms.test.fits",
+            "output_flat_noise_rms": tmp_path
+            / "output-flat-noise-rms.test.fits",
         }
 
     def test_filter_skymodel(self, image_paths, **kws):
@@ -148,7 +153,9 @@ class TestBDSF:
         assert apparent_sky_path.exists()
         assert true_sky_path.exists()
 
-        assert check_skymodels_equal(true_sky_path, TEST_DATA_PATH / "single_point.sky")
+        assert check_skymodels_equal(
+            true_sky_path, TEST_DATA_PATH / "single_point.sky"
+        )
         assert check_skymodels_equal(
             apparent_sky_path,
             TEST_DATA_PATH / "single_point.sky",

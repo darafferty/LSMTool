@@ -23,9 +23,7 @@ from lsmtool.io import (
     [
         # Nominal test cases
         pytest.param(["/tmp"], "/tmp", None, id="path_tmp"),
-        pytest.param(
-            ["/var/tmp", "/tmp"], "/var/tmp", None, id="path_var_tmp"
-        ),
+        pytest.param(["/var/tmp", "/tmp"], "/var/tmp", None, id="path_var_tmp"),
         pytest.param(
             ["/usr/tmp", "/var/tmp", "/tmp"],
             "/usr/tmp" if Path("/usr/tmp").exists() else "/var/tmp",

@@ -428,7 +428,6 @@ def select_midpoint(beam_ms: ListOfPathLike) -> str:
     return beam_ms[beam_ind]
 
 
-
 def add_bright_sources(
     input_skymodel: SkyModel, input_bright_skymodel: PathLike
 ):
