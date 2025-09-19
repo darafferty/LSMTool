@@ -115,6 +115,7 @@ write_to = "lsmtool/_version.py"
 ###########################
 # Copied from https://git.astron.nl/templates/python-package/-/blob/9ccee1fed6796b6784e8814cc83ee4e5d34bba3d/%7B%7Bcookiecutter.project_slug%7D%7D/pyproject.toml
 [tool.ruff]
+line-length = 80
 exclude = [
     ".venv",
     ".git",
@@ -128,10 +129,10 @@ exclude = [
     "lsmtool/_logging.py",
     "lsmtool/lsmtool.py",
     "lsmtool/operations",
-    "lsmtool/operations_lib.py",
     "lsmtool/skymodel.py",
     "lsmtool/tableio.py",
     "lsmtool/_version.py",
+    "lsmtool/_changelog.py",
     "tests"
 ]
 

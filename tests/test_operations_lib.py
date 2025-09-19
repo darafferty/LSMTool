@@ -95,11 +95,7 @@ class TestOperationsLib(unittest.TestCase):
         outfile = str(self.temp_path / "test_apply_beam_invert.out")
         reffile = str(self.resource_path / "test_apply_beam_invert.out")
         result = apply_beam(
-            str(self.ms_path),
-            self.flux,
-            self.ra,
-            self.dec,
-            invert=True
+            str(self.ms_path), self.flux, self.ra, self.dec, invert=True
         )
         np.set_printoptions(precision=6)
         with open(outfile, "w") as f:
@@ -113,7 +109,7 @@ class TestOperationsLib(unittest.TestCase):
         ra = 450.0
         dec = 95.0
         result = normalize_ra_dec(ra, dec)
-        assert (result.ra == 270.0 and result.dec == 85.0)
+        assert result.ra == 270.0 and result.dec == 85.0
 
 
 def test_make_wcs_default():
