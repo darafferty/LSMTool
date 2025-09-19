@@ -111,7 +111,7 @@ def invalid_vertices_file(request, tmp_path):
     """Generate vertices file with invalid content."""
     path = tmp_path / "invalid_vertices.npy"
     path.unlink(missing_ok=True)
-    np.save(path, request.param)
+    np.save(path, request.param, allow_pickle=False)
     return path
 
 

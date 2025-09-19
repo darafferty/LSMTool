@@ -228,7 +228,7 @@ def vertices_file(rasterize_test_case, test_image_wcs, tmp_path):
     xy = rasterize_test_case["xy"]
     coordinates = test_image_wcs.celestial.wcs_pix2world(xy, WCS_ORIGIN)
     path = tmp_path / "vertex_file.npy"
-    np.save(path, coordinates)
+    np.save(path, coordinates, allow_pickle=False)
     return path
 
 
