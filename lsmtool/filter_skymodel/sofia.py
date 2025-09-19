@@ -295,15 +295,11 @@ def get_source_fwhm(
     """
     # Get gaussian major and minor axes in arcseconds
     ellipse_fwhm_pixels = (
-        table_to_array(catalog_table["ell_maj", "ell_min"])
-        * FWHM_PER_SIGMA
-        / 2
+        table_to_array(catalog_table["ell_maj", "ell_min"]) * FWHM_PER_SIGMA / 2
     )
     # Get pixel sizes (width, height) in arcseconds
     pixel_size_arcsec = (
-        Quantity(
-            [[image_header["CDELT1"], image_header["CDELT2"]]], unit="deg"
-        )
+        Quantity([[image_header["CDELT1"], image_header["CDELT2"]]], unit="deg")
         .to("arcsec")
         .value
     )

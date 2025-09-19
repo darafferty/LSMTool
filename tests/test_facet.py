@@ -126,13 +126,9 @@ def test_in_box(cal_coords, bounding_box, expected, context):
             directions := SkyCoord(
                 ra=[119.73, 138.08, 124.13, 115.74],
                 dec=[89.92, 89.91, 89.89, 89.89],
-                unit="deg"
+                unit="deg",
             ),
-            bbox_midpoint := SkyCoord(
-                ra=126.52,
-                dec=90.0,
-                unit="deg"
-            ),
+            bbox_midpoint := SkyCoord(ra=126.52, dec=90.0, unit="deg"),
             bbox_size := (0.3, 0.3),
             # expected_facet_points
             np.transpose([directions.ra.deg, directions.dec.deg]),
