@@ -291,8 +291,6 @@ def convert_coordinates_to_pixels(coordinates, wcs):
         List of (x, y) pixel coordinate tuples.
     """
 
-    # NOTE: In case the wcs has four axes (ra, dec, freq, pol), we need to add
-    # two extra (dummy) elements to the celestial coordinates, then ignore them.
     vertices_x, vertices_y = wcs.celestial.wcs_world2pix(
         *coordinates.T, WCS_ORIGIN
     )
