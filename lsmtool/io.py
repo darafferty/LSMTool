@@ -293,9 +293,8 @@ def convert_coordinates_to_pixels(coordinates, wcs):
 
     # NOTE: In case the wcs has four axes (ra, dec, freq, pol), we need to add
     # two extra (dummy) elements to the celestial coordinates, then ignore them.
-    null_coordinates = [0] * (wcs.naxis - 2)
-    vertices_x, vertices_y, *_ = wcs.wcs_world2pix(
-        *coordinates.T, *null_coordinates, WCS_ORIGIN
+    vertices_x, vertices_y = wcs.celestial.wcs_world2pix(
+        *coordinates.T, WCS_ORIGIN
     )
     # Convert to a list of (x, y) tuples.
     return list(zip(vertices_x, vertices_y, strict=True))
