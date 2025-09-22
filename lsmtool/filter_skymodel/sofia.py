@@ -373,10 +373,10 @@ def write_skymodel(
     Writes the source catalog to a file, ensuring that it adheres to the
     makesourcedb format expected by downstream toolchain (wsclean, dp3).
 
-    Constructs an astropy Table with the necessary columns for the makesourcedb format
-    and writes it to a CSV file. Then, it modifies the header of the CSV file
-    to match the makesourcedb format specifications. Details of the source catalog
-    format can be found at:
+    Constructs an astropy Table with the necessary columns for the makesourcedb
+    format and writes it to a CSV file. Then, it modifies the header of the CSV
+    file to match the makesourcedb format specifications. Details of the source
+    catalog format can be found at:
     https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb
 
     See also: https://wsclean.readthedocs.io/en/latest/component_list.html
