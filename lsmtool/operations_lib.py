@@ -93,9 +93,10 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
     Returns flux attenuated by primary beam.
 
     Note: the attenuation is approximated using the array factor beam from the
-    first station in the beam MS only (and it is assumed that this station is at
-    LOFAR core). This approximation has been found to produce reasonable results
-    for a typical LOFAR observation but may not work well for atypical observations.
+    first station in the beam MS only (and it is assumed that this station is
+    at LOFAR core). This approximation has been found to produce reasonable
+    results for a typical LOFAR observation but may not work well for atypical
+    observations.
 
     Parameters
     ----------

@@ -1,15 +1,15 @@
-from astropy.coordinates import SkyCoord
 import contextlib
 
 import numpy as np
 import pytest
+from astropy.coordinates import SkyCoord
 from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
     in_box,
+    prepare_points_for_tessellate,
     tessellate,
     voronoi,
-    prepare_points_for_tessellate,
 )
 
 NULL_CONTEXT = contextlib.nullcontext()
@@ -132,7 +132,6 @@ def test_in_box(cal_coords, bounding_box, expected, context):
             bbox_size := (0.3, 0.3),
             # expected_facet_points
             np.transpose([directions.ra.deg, directions.dec.deg]),
-            #
             [
                 [
                     [127.3, 89.9],
@@ -207,7 +206,9 @@ def _flatten(iterable):
 
 
 @pytest.mark.parametrize(
-    "cal_coords, bounding_box, expected_in_box, expected_vertices, expected_regions, context",
+    "cal_coords, bounding_box,"
+    "expected_in_box, expected_vertices, expected_regions,"
+    "context",
     [
         # Regular input cases
         # -------------------------------------------------------------------- #

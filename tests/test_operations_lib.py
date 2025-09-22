@@ -23,7 +23,8 @@ class TestOperationsLib(unittest.TestCase):
     `tests/resources` directory. The skymodel was generated, using the pointing
     information in this MS, using the following commands:
     ```
-    s = lsmtool.load('TGSS', VOPosition=["08:13:36.067800", "+48.13.02.58100"], VORadius=1.0)
+    s = lsmtool.load('TGSS', VOPosition=["08:13:36.067800", "+48.13.02.58100"],
+                     VORadius=1.0)
     s.write('tests/resources/LOFAR_HBA_MOCK.sky')
     ```
     """
@@ -58,7 +59,8 @@ class TestOperationsLib(unittest.TestCase):
         """
         Download and unpack MS in our temporary test directory
         """
-        # Filter to strip leading component from file names (like `tar --strip-components=1`)
+        # Filter to strip leading component from file names
+        # (like `tar --strip-components=1`)
         filter = lambda member, path: member.replace(
             name=pathlib.Path(*pathlib.Path(member.path).parts[1:])
         )

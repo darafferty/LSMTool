@@ -8,7 +8,8 @@ from lsmtool.correct_gaussian_orientation import compute_absolute_orientation
 
 
 @pytest.mark.parametrize(
-    "relative_orientation, ra_source, dec_source, ra_center, dec_center, expected",
+    "relative_orientation, ra_source, dec_source, ra_center, dec_center,"
+    "expected",
     [
         # source and image center are the same
         pytest.param(

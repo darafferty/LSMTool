@@ -97,7 +97,7 @@ def filter_skymodel(
 
         - If this file exists, it will be overwritten.
 
-    beam_ms : str or pathlib.Path or list of str or list of Path or None, default None
+    beam_ms : str or pathlib.Path or list of str or list of Path, default None
         The filename of the MS for deriving the beam attenuation and
         theoretical image noise.
 
@@ -188,9 +188,9 @@ def resolve_source_finder(name: str) -> str:
 
         if source_finder == "sofia" and "sofia" not in KNOWN_SOURCE_FINDERS:
             additional_info = (
-                " You have requested 'sofia' as a source finder, but it appears "
-                "that SoFia-2 is not installed on your system. You may install "
-                "sofia by running the following command: "
+                " You have requested 'sofia' as a source finder, but it appears"
+                " that SoFia-2 is not installed on your system. You may install"
+                " sofia by running the following command: "
                 ">>> python -m pip install lsmtool[sofia]"
             )
 
