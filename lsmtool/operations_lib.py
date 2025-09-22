@@ -76,9 +76,9 @@ def radec_to_xyz(ra, dec, time):
     pointing_xyz: numpy.ndarray
         NumPy array containing the ITRS X, Y and Z coordinates
     """
-    from astropy.coordinates import SkyCoord, ITRS
-    from astropy.time import Time
     import numpy as np
+    from astropy.coordinates import ITRS, SkyCoord
+    from astropy.time import Time
 
     obstime = Time(time / 3600 / 24, scale="utc", format="mjd")
 
@@ -119,11 +119,11 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
         Attenuated fluxes
 
     """
+    import astropy.units as u
+    import casacore.tables as pt
     import everybeam as eb
     import numpy as np
-    import casacore.tables as pt
     from astropy.coordinates import Angle
-    import astropy.units as u
 
     # Determine a time stamp (in MJD) for later use, betweeen the start and end
     # times of the Measurement Set, using `timeIndx` as fractional indicator.
@@ -192,8 +192,8 @@ def make_wcs(refRA, refDec, crdelt=None):
         A simple TAN-projection WCS object for specified reference position
 
     """
-    from astropy.wcs import WCS
     import numpy as np
+    from astropy.wcs import WCS
 
     w = WCS(naxis=2)
     w.wcs.crpix = [1000, 1000]
@@ -232,10 +232,10 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
 
     """
 
-    from astropy.coordinates import SkyCoord, Angle
-    from astropy.coordinates.matching import match_coordinates_sky
-    from astropy import units as u
     import numpy as np
+    from astropy import units as u
+    from astropy.coordinates import Angle, SkyCoord
+    from astropy.coordinates.matching import match_coordinates_sky
 
     if byPatch:
         RA, Dec = LSM1.getPatchPositions(asArray=True)
@@ -303,8 +303,8 @@ def calculateSeparation(ra1, dec1, ra2, dec2):
         Angular separation in degrees
 
     """
-    from astropy.coordinates import SkyCoord
     import astropy.units as u
+    from astropy.coordinates import SkyCoord
 
     coord1 = SkyCoord(ra1, dec1, unit=(u.degree, u.degree), frame="fk5")
     coord2 = SkyCoord(ra2, dec2, unit=(u.degree, u.degree), frame="fk5")
@@ -371,11 +371,10 @@ def getFluxAtSingleFrequency(LSM, targetFreq=None, aggregate=None):
                 fluxes += alphas[:, i] * ((refFreq / targetFreq) - 1.0) ** (
                     i + 1
                 )
+    elif logSI:
+        fluxes *= 10.0 ** (alphas * np.log10(refFreq / targetFreq))
     else:
-        if logSI:
-            fluxes *= 10.0 ** (alphas * np.log10(refFreq / targetFreq))
-        else:
-            fluxes += alphas * ((refFreq / targetFreq) - 1.0)
+        fluxes += alphas * ((refFreq / targetFreq) - 1.0)
 
     return fluxes
 
@@ -486,7 +485,8 @@ def gaussian_fcn(g, x1, x2, const=False):
     img : numpy.ndarray
         Image of Gaussian
     """
-    from math import radians, sin, cos
+    from math import cos, radians, sin
+
     import numpy as np
 
     A, C1, C2, S1, S2, Th = g
