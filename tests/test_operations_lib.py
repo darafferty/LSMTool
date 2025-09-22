@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 import filecmp
-import numpy as np
 import pathlib
-import requests
 import tarfile
 import tempfile
 import unittest
 
+import numpy as np
+import requests
 from numpy.testing import assert_array_equal
 
 import lsmtool
