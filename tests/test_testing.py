@@ -3,10 +3,10 @@ Tests for skymodel assertion helpers.
 """
 
 import pytest
-
-from lsmtool.testing import check_skymodels_equal
-from lsmtool import load
 from conftest import TEST_DATA_PATH
+
+from lsmtool import load
+from lsmtool.testing import check_skymodels_equal
 
 
 @pytest.fixture(scope="session")

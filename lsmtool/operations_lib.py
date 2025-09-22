@@ -16,10 +16,11 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from astropy.coordinates import Angle
 from collections import namedtuple
+
 import numpy as np
 import scipy as sp
+from astropy.coordinates import Angle
 
 
 def normalize_ra_dec(ra, dec):
@@ -76,9 +77,9 @@ def radec_to_xyz(ra, dec, time):
     pointing_xyz: array
         NumPy array containing the ITRS X, Y and Z coordinates
     """
-    from astropy.coordinates import SkyCoord, ITRS
-    from astropy.time import Time
     import numpy as np
+    from astropy.coordinates import ITRS, SkyCoord
+    from astropy.time import Time
 
     obstime = Time(time / 3600 / 24, scale="utc", format="mjd")
 
@@ -119,11 +120,11 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
         Attenuated fluxes
 
     """
+    import astropy.units as u
+    import casacore.tables as pt
     import everybeam as eb
     import numpy as np
-    import casacore.tables as pt
     from astropy.coordinates import Angle
-    import astropy.units as u
 
     # Determine a time stamp (in MJD) for later use, betweeen the start and end
     # times of the Measurement Set, using `timeIndx` as fractional indicator.
@@ -192,8 +193,8 @@ def make_wcs(refRA, refDec, crdelt=None):
         A simple TAN-projection WCS object for specified reference position
 
     """
-    from astropy.wcs import WCS
     import numpy as np
+    from astropy.wcs import WCS
 
     w = WCS(naxis=2)
     w.wcs.crpix = [1000, 1000]
@@ -232,10 +233,10 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
 
     """
 
-    from astropy.coordinates import SkyCoord, Angle
-    from astropy.coordinates.matching import match_coordinates_sky
-    from astropy import units as u
     import numpy as np
+    from astropy import units as u
+    from astropy.coordinates import Angle, SkyCoord
+    from astropy.coordinates.matching import match_coordinates_sky
 
     if byPatch:
         RA, Dec = LSM1.getPatchPositions(asArray=True)
@@ -303,8 +304,8 @@ def calculateSeparation(ra1, dec1, ra2, dec2):
         Angular separation in degrees
 
     """
-    from astropy.coordinates import SkyCoord
     import astropy.units as u
+    from astropy.coordinates import SkyCoord
 
     coord1 = SkyCoord(ra1, dec1, unit=(u.degree, u.degree), frame="fk5")
     coord2 = SkyCoord(ra2, dec2, unit=(u.degree, u.degree), frame="fk5")
@@ -371,11 +372,10 @@ def getFluxAtSingleFrequency(LSM, targetFreq=None, aggregate=None):
                 fluxes += alphas[:, i] * ((refFreq / targetFreq) - 1.0) ** (
                     i + 1
                 )
+    elif logSI:
+        fluxes *= 10.0 ** (alphas * np.log10(refFreq / targetFreq))
     else:
-        if logSI:
-            fluxes *= 10.0 ** (alphas * np.log10(refFreq / targetFreq))
-        else:
-            fluxes += alphas * ((refFreq / targetFreq) - 1.0)
+        fluxes += alphas * ((refFreq / targetFreq) - 1.0)
 
     return fluxes
 
@@ -485,7 +485,8 @@ def gaussian_fcn(g, x1, x2, const=False):
     img : array
         Image of Gaussian
     """
-    from math import radians, sin, cos
+    from math import cos, radians, sin
+
     import numpy as np
 
     A, C1, C2, S1, S2, Th = g
@@ -505,8 +506,7 @@ def gaussian_fcn(g, x1, x2, const=False):
         cimg = np.zeros(x1.shape)
         cimg[mask] = A
         return cimg
-    else:
-        return gimg
+    return gimg
 
 
 def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
@@ -634,17 +634,14 @@ def voronoi(cal_coords, bounding_box):
             if index == -1:
                 flag = False
                 break
-            else:
-                x = vor.vertices[index, 0]
-                y = vor.vertices[index, 1]
-                if not (
-                    bounding_box[0] - eps <= x
-                    and x <= bounding_box[1] + eps
-                    and bounding_box[2] - eps <= y
-                    and y <= bounding_box[3] + eps
-                ):
-                    flag = False
-                    break
+            x = vor.vertices[index, 0]
+            y = vor.vertices[index, 1]
+            if not (
+                bounding_box[0] - eps <= x <= bounding_box[1] + eps
+                and bounding_box[2] - eps <= y <= bounding_box[3] + eps
+            ):
+                flag = False
+                break
         if region and flag:
             regions.append(region)
     vor.filtered_points = points_center
