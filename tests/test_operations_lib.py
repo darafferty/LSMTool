@@ -61,12 +61,12 @@ class TestOperationsLib(unittest.TestCase):
         """
         # Filter to strip leading component from file names
         # (like `tar --strip-components=1`)
-        filter = lambda member, path: member.replace(
+        filter_ = lambda member, path: member.replace(
             name=pathlib.Path(*pathlib.Path(member.path).parts[1:])
         )
         with requests.get(cls.ms_url, stream=True) as req:
             with tarfile.open(fileobj=req.raw, mode="r|bz2") as tarobj:
-                tarobj.extractall(path=cls.ms_path, filter=filter)
+                tarobj.extractall(path=cls.ms_path, filter=filter_)
 
     def setUp(self):
         self.skymodel = lsmtool.load(str(self.skymodel_path))
