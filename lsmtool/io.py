@@ -5,7 +5,6 @@ Module for file read / write tasks.
 import contextlib as ctx
 import numbers
 import os
-import pickle
 import tempfile
 from pathlib import Path
 from typing import Sequence, Union
@@ -219,34 +218,28 @@ def load(
 
 def read_vertices_ra_dec(filename: PathLike):
     """
-    Read facet vertices from a pickle file.
+    Read facet vertices from a stored numpy array in .npy format.
 
     Parameters
     ----------
     filename : str or pathlib.Path
-        The path to the pickle file where facet vertices are stored as
-        tuples of RA and Dec values.
+        The path to the file where facet vertices are stored as an array with
+        RA and Dec values along columns.
 
     Returns
     -------
     numpy.ndarray
         Array of shape (N, 2) containing RA and Dec vertices as columns.
     """
-    data = pickle.loads(Path(filename).read_bytes())
+    data = np.load(Path(filename), allow_pickle=False)
 
-    if isinstance(data, list) and len(data) == 2:
-        ra, dec = data
-        if (
-            (type(ra) is type(dec) is np.ndarray)
-            and (ra.dtype == dec.dtype == "float64")
-            and ra.shape == dec.shape
-        ):
-            return np.transpose(data)
+    if data.ndim != 2 or data.shape[1] != 2 or data.dtype != "float64":
+        raise ValueError(
+            f"Unexpected data in file: {filename}."
+            "Expected an array with 2 columns of RA and Dec coordinates."
+        )
 
-    raise ValueError(
-        f"Unexpected data in file: {filename}."
-        "Expected two equally-shaped arrays with RA and Dec coordinates."
-    )
+    return data
 
 
 def read_vertices_x_y(filename, wcs):
