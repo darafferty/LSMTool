@@ -106,12 +106,18 @@ def test_read_vertices_x_y(test_image_wcs):
     np.testing.assert_allclose(vertices_pixel, EXPECTED_VERTICES_XY)
 
 
-@pytest.fixture(params=["Invalid content", ["Invalid", "content"]])
+@pytest.fixture(
+    params=[
+        "Invalid content",
+        ["Invalid", "content"],
+        np.array([np.array([1, 2]), np.array([2, 3, 4])], object),
+    ]
+)
 def invalid_vertices_file(request, tmp_path):
     """Generate vertices file with invalid content."""
     path = tmp_path / "invalid_vertices.npy"
     path.unlink(missing_ok=True)
-    np.save(path, request.param, allow_pickle=False)
+    np.save(path, request.param)
     return path
 
 

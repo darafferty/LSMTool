@@ -231,12 +231,12 @@ def read_vertices_ra_dec(filename: PathLike):
     numpy.ndarray
         Array of shape (N, 2) containing RA and Dec vertices as columns.
     """
-    data = np.load(Path(filename))
+    data = np.load(Path(filename), allow_pickle=False)
 
     if data.ndim != 2 or data.shape[1] != 2 or data.dtype != "float64":
         raise ValueError(
             f"Unexpected data in file: {filename}."
-            "Expected two equally-shaped arrays with RA and Dec coordinates."
+            "Expected an array with 2 columns of RA and Dec coordinates."
         )
 
     return data
