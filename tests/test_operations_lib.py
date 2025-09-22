@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import filecmp
-import pathlib
 import requests
 import tarfile
 import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -35,7 +35,7 @@ class TestOperationsLib(unittest.TestCase):
         Download and unpack Measurement Set used for testing
         """
         # Path to directory containing test resources
-        cls.resource_path = pathlib.Path(__file__).parent / "resources"
+        cls.resource_path = Path(__file__).parent / "resources"
 
         # Path to the input Measurement Set (will be downloaded if non-existent)
         cls.ms_path = cls.resource_path / "LOFAR_HBA_MOCK.ms"
@@ -48,7 +48,7 @@ class TestOperationsLib(unittest.TestCase):
 
         # Create a temporary test directory
         cls.temp_dir = tempfile.TemporaryDirectory()
-        cls.temp_path = pathlib.Path(cls.temp_dir.name)
+        cls.temp_path = Path(cls.temp_dir.name)
 
         # Download MS if it's not available in resource directory
         if not cls.ms_path.exists():
@@ -62,7 +62,7 @@ class TestOperationsLib(unittest.TestCase):
         # Filter to strip leading component from file names
         # (like `tar --strip-components=1`)
         filter_ = lambda member, path: member.replace(
-            name=pathlib.Path(*pathlib.Path(member.path).parts[1:])
+            name=Path(*Path(member.path).parts[1:])
         )
         with requests.get(cls.ms_url, stream=True) as req:
             with tarfile.open(fileobj=req.raw, mode="r|bz2") as tarobj:
