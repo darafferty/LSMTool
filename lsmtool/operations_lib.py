@@ -548,6 +548,28 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec,
     return facet_points, facet_polys
 
 
+def in_box(cal_coords, bounding_box):
+    """
+    Checks if coordinates are inside the bounding box
+
+    Parameters
+    ----------
+    cal_coords : array
+        Array of x, y coordinates
+    bounding_box : array
+        Array defining the bounding box as [minx, maxx, miny, maxy]
+
+    Returns
+    -------
+    inside : array
+        Bool array with True for inside and False if not
+    """
+    return np.logical_and(np.logical_and(bounding_box[0] <= cal_coords[:, 0],
+                                         cal_coords[:, 0] <= bounding_box[1]),
+                          np.logical_and(bounding_box[2] <= cal_coords[:, 1],
+                                         cal_coords[:, 1] <= bounding_box[3]))
+
+
 def voronoi(cal_coords, bounding_box):
     """
     Produces a Voronoi tessellation for the given coordinates and bounding box
@@ -567,13 +589,10 @@ def voronoi(cal_coords, bounding_box):
     eps = 1e-6
 
     # Select calibrators inside the bounding box
-    inside_ind = np.logical_and(np.logical_and(bounding_box[0] <= cal_coords[:, 0],
-                                               cal_coords[:, 0] <= bounding_box[1]),
-                                np.logical_and(bounding_box[2] <= cal_coords[:, 1],
-                                               cal_coords[:, 1] <= bounding_box[3]))
-    points_center = cal_coords[inside_ind, :]
+    i = in_box(cal_coords, bounding_box)
 
     # Mirror points
+    points_center = cal_coords[i, :]
     points_left = np.copy(points_center)
     points_left[:, 0] = bounding_box[0] - (points_left[:, 0] - bounding_box[0])
     points_right = np.copy(points_center)
@@ -594,7 +613,7 @@ def voronoi(cal_coords, bounding_box):
 
     # Compute Voronoi, sorting the output regions to match the order of the
     # input coordinates
-    vor = sp.spatial.Voronoi(points)
+    vor = scipy.spatial.Voronoi(points)
     sorted_regions = np.array(vor.regions, dtype=object)[np.array(vor.point_region)]
     vor.regions = sorted_regions.tolist()
 
