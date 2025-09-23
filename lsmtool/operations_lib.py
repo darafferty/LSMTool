@@ -486,30 +486,31 @@ def gaussian_fcn(g, x1, x2, const=False):
 def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec):
     """
     Makes a Voronoi tessellation and returns the resulting facet centers
-    and polygons
+    and polygons.
 
     Parameters
     ----------
     ra_cal : numpy.ndarray
-        RA values in degrees of calibration directions
+        RA values in degrees of calibration directions.
     dec_cal : numpy.ndarray
-        Dec values in degrees of calibration directions
+        Dec values in degrees of calibration directions.
     ra_mid : float
-        RA in degrees of bounding box center
+        RA in degrees of bounding box center.
     dec_mid : float
-        Dec in degrees of bounding box center
+        Dec in degrees of bounding box center.
     width_ra : float
-        Width of bounding box in RA in degrees, corrected to Dec = 0
+        Width of bounding box in RA in degrees, corrected to Dec = 0.
     width_dec : float
-        Width of bounding box in Dec in degrees
+        Width of bounding box in Dec in degrees.
 
     Returns
     -------
-    facet_points, facet_polys : list of tuples, list of arrays
-        List of facet points (centers) as (RA, Dec) tuples in degrees and
-        list of facet polygons (vertices) as [RA, Dec] arrays in degrees
+    facet_points : list of tuple
+        List of facet points (centers) as (RA, Dec) tuples in degrees.
+    facet_polys : list of numpy.ndarray
+        List of facet polygons (vertices) as [RA, Dec] arrays in degrees
         (each of shape N x 2, where N is the number of vertices in a given
-        facet)
+        facet).
     """
     # Build the bounding box corner coordinates
     if width_ra <= 0.0 or width_dec <= 0.0:
