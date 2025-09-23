@@ -11,7 +11,12 @@ import unittest
 from numpy.testing import assert_array_equal
 
 import lsmtool
-from lsmtool.operations_lib import apply_beam, make_wcs, normalize_ra_dec, tessellate
+from lsmtool.operations_lib import (
+    apply_beam,
+    make_wcs,
+    normalize_ra_dec,
+    tessellate,
+)
 
 
 class TestOperationsLib(unittest.TestCase):
@@ -143,6 +148,7 @@ def test_make_wcs_custom():
     assert_array_equal(w.wcs.crval, [ref_ra, ref_dec])
     assert_array_equal(w.wcs.ctype, ["RA---TAN", "DEC--TAN"])
 
+
 def test_tessellate():
     """
     Test the tessellate function, using a region that encompasses the NCP.
@@ -160,7 +166,12 @@ def test_tessellate():
     facet_polys = [np.round(a, 1).tolist() for a in facet_polys]
 
     # Check the facet points
-    assert facet_points == [[119.7, 89.9], [138.1, 89.9], [124.1, 89.9], [115.7, 89.9]]
+    assert facet_points == [
+        [119.7, 89.9],
+        [138.1, 89.9],
+        [124.1, 89.9],
+        [115.7, 89.9],
+    ]
 
     # Check the facet polygons. Since the start point of each polygon can
     # be different from the control but the polygons still be identical,
@@ -183,24 +194,40 @@ def test_tessellate():
             [146.9, 89.8],
             [127.3, 89.9],
         ],
-        [[127.3, 89.9], [146.9, 89.8], [119.9, 89.8], [119.9, 89.9], [127.3, 89.9]],
-        [[119.9, 89.9], [51.9, 89.8], [81.5, 89.8], [119.9, 89.8], [119.9, 89.9]],
+        [
+            [127.3, 89.9],
+            [146.9, 89.8],
+            [119.9, 89.8],
+            [119.9, 89.9],
+            [127.3, 89.9],
+        ],
+        [
+            [119.9, 89.9],
+            [51.9, 89.8],
+            [81.5, 89.8],
+            [119.9, 89.8],
+            [119.9, 89.9],
+        ],
     ]
     facet_polys_flat = []
     for poly in facet_polys:
         for point in poly:
             facet_polys_flat.append(point)
+
     facet_polys_control_flat = []
     for poly in facet_polys_control:
         for point in poly:
             facet_polys_control_flat.append(point)
+
     all_present = True
     for point in facet_polys_flat:
         if point not in facet_polys_control_flat:
             all_present = False
+
     for point in facet_polys_control_flat:
         if point not in facet_polys_flat:
             all_present = False
+
     assert all_present, "polys: {0}, control: {1}".format(
         facet_polys_flat, facet_polys_control_flat
     )
