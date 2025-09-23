@@ -11,9 +11,8 @@ from typing import Sequence, Union
 
 import numpy as np
 
-from .skymodel import SkyModel
 from .constants import WCS_ORIGIN
-
+from .skymodel import SkyModel
 
 # save original tmp path if defined
 ORIGINAL_TMPDIR = os.environ.get("TMPDIR")
