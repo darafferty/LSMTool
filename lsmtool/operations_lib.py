@@ -22,7 +22,8 @@ from math import floor, ceil
 import numpy as np
 import scipy as sp
 
-from lsmtool.constants import WCS_ORIGIN
+from lsmtool.constants import WCS_ORIGIN, WCS_PIXEL_SCALE
+
 
 NormalizedRADec = namedtuple('NormalizedRADec', ['ra', 'dec'])
 
@@ -484,7 +485,8 @@ def gaussian_fcn(g, x1, x2, const=False):
         return gimg
 
 
-def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec):
+def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec,
+               wcs_pixel_scale=WCS_PIXEL_SCALE):
     """
     Makes a Voronoi tessellation and returns the resulting facet centers
     and polygons.
@@ -503,6 +505,9 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec):
         Width of bounding box in RA in degrees, corrected to Dec = 0.
     width_dec : float
         Width of bounding box in Dec in degrees.
+    wcs_pixel_scale : float
+        The pixel scale to use for the conversion to pixel coordinates in
+        degrees per pixel.
 
     Returns
     -------
@@ -517,7 +522,6 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec):
     if width_ra <= 0.0 or width_dec <= 0.0:
         raise ValueError('The RA/Dec width cannot be zero or less')
 
-    wcs_pixel_scale = 20.0 / 3600.0  # 20"/pixel
     wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
     x_cal, y_cal = wcs.wcs_world2pix(ra_cal, dec_cal, WCS_ORIGIN)
     x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
