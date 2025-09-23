@@ -12,9 +12,8 @@ from typing import Sequence, Union
 import numpy as np
 
 from .skymodel import SkyModel
+from .constants import WCS_ORIGIN
 
-# Always use a 0-based origin in wcs_pix2world and wcs_world2pix calls.
-WCS_ORIGIN = 0
 
 # save original tmp path if defined
 ORIGINAL_TMPDIR = os.environ.get("TMPDIR")
