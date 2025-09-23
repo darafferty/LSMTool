@@ -21,7 +21,8 @@ from collections import namedtuple
 from math import floor, ceil
 import numpy as np
 import scipy as sp
-from lsmtool.utils import WCS_ORIGIN
+
+from lsmtool.constants import WCS_ORIGIN
 
 NormalizedRADec = namedtuple('NormalizedRADec', ['ra', 'dec'])
 
@@ -515,6 +516,7 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec):
     # Build the bounding box corner coordinates
     if width_ra <= 0.0 or width_dec <= 0.0:
         raise ValueError('The RA/Dec width cannot be zero or less')
+
     wcs_pixel_scale = 20.0 / 3600.0  # 20"/pixel
     wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
     x_cal, y_cal = wcs.wcs_world2pix(ra_cal, dec_cal, WCS_ORIGIN)
