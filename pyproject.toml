@@ -150,7 +150,11 @@ ignore = ["PLR2004", "N803"]
 [tool.ruff.lint.per-file-ignores]
 "lsmtool/filter_skymodel/*.py" = ["PLR0913"]  # Too many arguments in function definition
 "lsmtool/testing.py" = ["PLR0911"] # Too many return statements
-
+"tests/*.py" = [
+    "S101",     # Use of `assert` detected
+    "S108",     # Probable insecure usage of temporary file or directory
+    "PLR0913"   # Too many arguments in function definition
+]
 ###########################
 # tox settings            #
 ###########################
