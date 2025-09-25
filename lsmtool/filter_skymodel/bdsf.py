@@ -63,6 +63,7 @@ def filter_skymodel(
     adaptive_rmsbox: bool = True,
     adaptive_thresh: numbers.Real = 75.0,
     filter_by_mask: bool = True,
+    keep_mask: bool = False,
     output_catalog: PathLikeOptional = "",
     output_flat_noise_rms: PathLikeOptional = "",
     output_true_rms: PathLikeOptional = "",
@@ -106,6 +107,8 @@ def filter_skymodel(
     filter_by_mask : bool, optional
         If True, filter the input sky model by the PyBDSF-derived mask,
         removing sources that lie in unmasked regions.
+    keep_mask : bool, optional
+        If True, keep the PyBDSF-derived mask file instead of deleting it.
     output_catalog: str or pathlib.Path, optional
         The filename for source catalog. If not provided, do not create it.
     output_flat_noise_rms: str or pathlib.Path, optional
@@ -188,6 +191,7 @@ def filter_skymodel(
             input_bright_skymodel,
             beam_ms,
             filter_by_mask,
+            keep_mask,
             output_true_sky,
             output_apparent_sky,
         )
@@ -298,6 +302,7 @@ def filter_sources(
     input_bright_skymodel: PathLikeOptional,
     beam_ms: PathLikeOrListOptional,
     filter_by_mask: bool,
+    keep_mask: bool,
     output_true_sky: PathLikeOptional,
     output_apparent_sky: PathLikeOptional,
 ) -> SkyModel:
@@ -324,13 +329,15 @@ def filter_sources(
         The filename of the MS for deriving the beam attenuation.
     filter_by_mask : bool, optional
         If True, filter the input sky model by the PyBDSF-derived mask.
+    keep_mask : bool, optional
+        If True, keep the PyBDSF-derived mask file instead of deleting it.
     output_true_sky : str or pathlib.Path
         Output file name for the generated true sky model.
     output_apparent_sky : str or pathlib.Path
         Output file name for the generated apparent sky model.
     """
 
-    mask_file = f"{img_true_sky.filename}.mask"
+    mask_file = f"{img_true_sky.filename}.mask.fits"
     img_true_sky.export_image(
         outfile=mask_file, clobber=True, img_type="island_mask"
     )
@@ -390,7 +397,8 @@ def filter_sources(
     true_skymodel.write(output_true_sky, clobber=True)
 
     # Remove the mask file
-    os.remove(mask_file)
+    if not keep_mask:
+        os.remove(mask_file)
 
     return true_skymodel
 
