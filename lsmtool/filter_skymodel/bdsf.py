@@ -319,17 +319,17 @@ def filter_sources(
         The PyBDSF image object.
     vertices_file : str or pathlib.Path
         Filename of file with vertices, which determine the imaging field.
-    input_true_skymodel : str or pathlib.Path, optional
+    input_true_skymodel : str or pathlib.Path
         Filename of input makesourcedb sky model with true fluxes.
-    input_apparent_skymodel : str or Path, optional
+    input_apparent_skymodel : str or Path
         Filename of input makesourcedb sky model with apparent fluxes.
-    input_bright_skymodel : str or pathlib.Path, optional
+    input_bright_skymodel : str or pathlib.Path
         Filename of input makesourcedb sky model of bright sources only.
-    beam_ms : str or pathlib.Path, optional
+    beam_ms : str or pathlib.Path
         The filename of the MS for deriving the beam attenuation.
-    filter_by_mask : bool, optional
+    filter_by_mask : bool
         If True, filter the input sky model by the PyBDSF-derived mask.
-    keep_mask : bool, optional
+    keep_mask : bool
         If True, keep the PyBDSF-derived mask file instead of deleting it.
     output_true_sky : str or pathlib.Path
         Output file name for the generated true sky model.
