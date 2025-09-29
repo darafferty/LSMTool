@@ -269,12 +269,14 @@ def get_source_fwhm(
     sources in arcseconds.
 
     SoFiA-2 computes the full major and minor axes of the source ellipses
-    following approach of [Banks+]_. This is equivalent to measuring twice the
+    following approach of `[Banks+]`_. This is equivalent to measuring twice the
     standard deviation along each axes of the Gaussian sources. The
     makesourcedb format expects the axes to be in units of the FWHM of the
     Gaussians. The conversion between the two parametrisations is handled by
     this function. In addition, converting from pixel values to arcseconds in
     the case of non-square pixels is also handled.
+
+    .. _[Banks+]: https://doi.org/10.1093/mnras/272.4.821
 
     Parameters
     ----------
@@ -290,8 +292,6 @@ def get_source_fwhm(
     -------
     fwhm : numpy.ndarray
         The ellipse semimajor and semiminor axes in arcseconds.
-
-    .. [Banks+]: https://doi.org/10.1093/mnras/272.4.821
     """
     # Get gaussian major and minor axes in arcseconds
     ellipse_fwhm_pixels = (
