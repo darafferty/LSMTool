@@ -214,7 +214,7 @@ def test_tessellate(
     Celestial Pole (NCP).
     """
 
-    # Test a region that encompasses the NCP.
+    # Tessellate a region that encompasses the NCP.
     facet_points, facet_polys = tessellate(
         ra_cal,
         ra_dec,
@@ -227,15 +227,15 @@ def test_tessellate(
     # Check the facet points
     np.testing.assert_allclose(facet_points, expected_facet_points)
 
-    # Check the facet polygons. Since the starting point of each polygon can be
-    # different from the expected array, with the polygons still being
-    # identical, we check only that each vertex is present in the control (and
-    # vice versa)
+    # Check the facet polygons. Since the tessellate function is not
+    # guaranteed to return the same order of vertices for identical
+    # polygons, check only that the set of expected and actual vertices
+    # are identical.
     facet_polys = [np.round(a, 1).tolist() for a in facet_polys]
     facet_polys_flat = _flatten(facet_polys)
 
-    facet_polys_control_flat = _flatten(expected_facet_polygons)
-    difference = facet_polys_flat.symmetric_difference(facet_polys_control_flat)
+    facet_polys_expected = _flatten(expected_facet_polygons)
+    difference = facet_polys_flat.symmetric_difference(facet_polys_expected)
     assert not difference
 
 
