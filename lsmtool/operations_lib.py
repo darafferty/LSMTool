@@ -550,7 +550,7 @@ def voronoi(cal_coords, bounding_box):
 
     Returns
     -------
-    vor : Voronoi object
+    vor : scipy.spatial.Voronoi
         The resulting Voronoi object
     """
     eps = 1e-6
