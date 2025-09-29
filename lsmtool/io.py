@@ -228,7 +228,7 @@ def read_vertices_ra_dec(filename: PathLike):
 
     Returns
     -------
-    numpy.ndarray
+    vertices : numpy.ndarray
         Array of shape (N, 2) containing RA and Dec vertices as columns.
     """
     data = np.load(Path(filename), allow_pickle=False)

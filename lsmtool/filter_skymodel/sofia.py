@@ -288,7 +288,7 @@ def get_source_fwhm(
 
     Returns
     -------
-    numpy.ndarray
+    fwhm : numpy.ndarray
         The ellipse semimajor and semiminor axes in arcseconds.
 
     .. [Banks+]: https://doi.org/10.1093/mnras/272.4.821
@@ -344,7 +344,7 @@ def get_corrected_gaussian_orientations(
 
     Returns
     -------
-    numpy.ndarray
+    orientations : numpy.ndarray
         The corrected Gaussian orientations in radians, defined with respect
         to the NCP.
 

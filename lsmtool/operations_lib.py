@@ -74,7 +74,7 @@ def radec_to_xyz(ra, dec, time):
 
     Returns
     -------
-    pointing_xyz: array
+    pointing_xyz: numpy.ndarray
         NumPy array containing the ITRS X, Y and Z coordinates
     """
     from astropy.coordinates import SkyCoord, ITRS
@@ -116,7 +116,7 @@ def apply_beam(beamMS, fluxes, RADeg, DecDeg, timeIndx=0.5, invert=False):
 
     Returns
     -------
-    attFluxes : numpy array
+    attFluxes : numpy.ndarray
         Attenuated fluxes
 
     """
@@ -220,7 +220,7 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
 
     Returns
     -------
-    matches1, matches2 : np.array, np.array
+    matches1, matches2 : numpy.ndarray
         matches1 is the array of indices of LSM1 that have matches in LSM2
         within the specified radius. matches2 is the array of indices of LSM2
         for the same sources.
@@ -277,9 +277,9 @@ def calculateSeparation(ra1, dec1, ra2, dec2):
 
     Parameters
     ----------
-    ra1 : float or numpy array
+    ra1 : float or numpy.ndarray
         RA of coordinate 1 in degrees
-    dec1 : float or numpy array
+    dec1 : float or numpy.ndarray
         Dec of coordinate 1 in degrees
     ra2 : float
         RA of coordinate 2 in degrees
@@ -288,7 +288,7 @@ def calculateSeparation(ra1, dec1, ra2, dec2):
 
     Returns
     -------
-    separation : astropy Angle or numpy array
+    separation : astropy.angle.Angle or numpy.ndarray
         Angular separation in degrees
 
     """
@@ -317,7 +317,7 @@ def getFluxAtSingleFrequency(LSM, targetFreq=None, aggregate=None):
 
     Returns
     -------
-    fluxes : numpy array
+    fluxes : numpy.ndarray
         Flux densities in Jy
 
     """
@@ -446,14 +446,15 @@ def gaussian_fcn(g, x1, x2, const=False):
     g: list
         List of Gaussian parameters:
         [peak_flux, xcen, ycen, FWHMmaj, FWHMmin, PA_E_of_N]
-    x1, x2: grid (as produced by numpy.mgrid)
-        Grid coordinates on which to evaluate the Gaussian
+    x1, x2: numpy.ndarray
+        Grid coordinates on which to evaluate the Gaussian (as produced by
+        :py:data:`numpy.mgrid`)
     const : bool, optional
         If True, all values are set to the peak_flux
 
     Returns
     -------
-    img : array
+    img : numpy.ndarray
         Image of Gaussian
     """
     from math import radians, sin, cos
@@ -487,9 +488,9 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width):
 
     Parameters
     ----------
-    ra_cal : array
+    ra_cal : numpy.ndarray
         RA values in degrees of calibration directions
-    dec_cal : array
+    dec_cal : numpy.ndarray
         Dec values in degrees of calibration directions
     ra_mid : float
         RA in degrees of bounding box center
@@ -542,9 +543,9 @@ def voronoi(cal_coords, bounding_box):
 
     Parameters
     ----------
-    cal_coords : array
+    cal_coords : numpy.ndarray
         Array of x, y coordinates
-    bounding_box : array
+    bounding_box : numpy.ndarray
         Array defining the bounding box as [minx, maxx, miny, maxy]
 
     Returns
