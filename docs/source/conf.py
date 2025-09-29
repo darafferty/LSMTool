@@ -192,6 +192,14 @@ htmlhelp_basename = "LSMTooldoc"
 # line.
 maximum_signature_line_length = 80
 
+# Ensure API docs for functions with multiple return values get formatted
+# correctly
+napoleon_custom_sections = [("Returns", "params_style")]
+
+# Pre-process type hints in docstrings so they get rendered as cross references
+# linking to the documentation of the object type
+napoleon_preprocess_types = True
+
 
 # -- Options for LaTeX output ---------------------------------------------
 
