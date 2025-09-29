@@ -151,7 +151,8 @@ def test_make_wcs_custom():
 
 def test_tessellate():
     """
-    Test the tessellate function, using a region that encompasses the NCP.
+    Test the tessellate function, using a region that encompasses the North 
+    Celestial Pole (NCP).
     """
 
     # Test a region that encompasses the NCP.

@@ -491,6 +491,11 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec,
     Makes a Voronoi tessellation and returns the resulting facet centers
     and polygons.
 
+    This function partitions an image region using Voronoi tessellation seeded
+    with the input calibration directions. It filters points that fall
+    outside the given dimensions of the bounding box and returns the facet
+    centers and polygons that enscribe these points in celestial coordinates.
+
     Parameters
     ----------
     ra_cal : numpy.ndarray
