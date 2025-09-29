@@ -319,17 +319,17 @@ def filter_sources(
         The PyBDSF image object.
     vertices_file : str or pathlib.Path
         Filename of file with vertices, which determine the imaging field.
-    input_true_skymodel : str or pathlib.Path
+    input_true_skymodel : str or pathlib.Path, optional
         Filename of input makesourcedb sky model with true fluxes.
-    input_apparent_skymodel : str or Path
+    input_apparent_skymodel : str or Path, optional
         Filename of input makesourcedb sky model with apparent fluxes.
-    input_bright_skymodel : str or pathlib.Path
+    input_bright_skymodel : str or pathlib.Path, optional
         Filename of input makesourcedb sky model of bright sources only.
-    beam_ms : str or pathlib.Path
+    beam_ms : str or pathlib.Path, optional
         The filename of the MS for deriving the beam attenuation.
-    filter_by_mask : bool
+    filter_by_mask : bool, optional
         If True, filter the input sky model by the PyBDSF-derived mask.
-    keep_mask : bool
+    keep_mask : bool, optional
         If True, keep the PyBDSF-derived mask file instead of deleting it.
     output_true_sky : str or pathlib.Path
         Output file name for the generated true sky model.
@@ -434,7 +434,6 @@ def select_midpoint(beam_ms: ListOfPathLike) -> str:
     mid_time = ms_times[n // 2]
     beam_ind = ms_times.index(mid_time)
     return beam_ms[beam_ind]
-
 
 
 def add_bright_sources(
