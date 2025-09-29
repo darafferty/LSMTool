@@ -2045,7 +2045,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        LSM : SkyModel object
+        LSM : SkyModel
             Input sky model.
         algorithm : str
             Algorithm to use for grouping:
@@ -2151,7 +2151,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        patchSkyModel : str or SkyModel object
+        patchSkyModel : str or SkyModel
             Input sky model from which to transfer patches.
         matchBy : str, optional
             Determines how matching sources are determined:
@@ -2191,7 +2191,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        LSM : SkyModel object
+        LSM : SkyModel
             Input sky model
         name : str or list
             Source name or list of names (can include wildcards)
@@ -2276,7 +2276,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        LSM2 : str or SkyModel object
+        LSM2 : str or SkyModel
             Secondary sky model to concatenate with the parent sky model
         matchBy : str, optional
             Determines how duplicate sources are determined:
@@ -2351,7 +2351,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        LSM2 : SkyModel object
+        LSM2 : SkyModel
             Secondary sky model to compare to the parent sky model
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')

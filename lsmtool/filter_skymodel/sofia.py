@@ -227,7 +227,7 @@ def get_source_parameters(
 
     Returns
     -------
-    dict
+    params : dict
         A dictionary containing the source parameters: RA strings, Dec strings,
         semimajor and semiminor axes in arcseconds, orientations wrt NCP in
         degrees, and fluxes in the image units.

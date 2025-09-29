@@ -45,7 +45,7 @@ def temp_storage(trial_paths: PathLikeOrListOptional = TRIAL_TMP_PATHS):
         A tuple of paths to try setting as the TMPDIR environment variable.
         The first existing path in the tuple will be used. Defaults to
         TRIAL_TMP_PATHS, which uses the same locations used by the
-        :py::mod:`tempfile` library.
+        :mod:`tempfile` library.
     """
     if isinstance(trial_paths, (str, Path)):
         trial_paths = [trial_paths]
@@ -93,7 +93,7 @@ def check_file_exists(path: PathLike):
 
     Returns
     -------
-    Path
+    path : pathlib.Path
         The path to the file.
 
     Raises
@@ -255,7 +255,7 @@ def read_vertices_x_y(filename, wcs):
 
     Returns
     -------
-    vertices: list of (x, y) tuples of float
+    vertices: list of tuple of float
         The converted coordinates.
     """
     # The input file always contains vertices as RA,Dec coordinates.
@@ -280,7 +280,7 @@ def convert_coordinates_to_pixels(coordinates, wcs):
 
     Returns
     -------
-    list of tuple
+    vertices : list of tuple
         List of (x, y) pixel coordinate tuples.
     """
 

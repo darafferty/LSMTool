@@ -67,13 +67,13 @@ def rasterize(vertices, data, blank_value=0):
 
     Parameters
     ----------
-    vertices : list of tuples
+    vertices : list of tuple
         List of input vertices of polygon to rasterize. Each item in the list
         should be a (x, y) coordinate point, where x and y are float or int.
     data : numpy.ndarray
         A 2-D numpy array into which to rasterize the polygon. Note that the
         data are updated in-place.
-    blank_value : int or float, optional
+    blank_value : numbers.Real, optional
         Value to use for filling regions outside the polygon. The data type of
         the fill value should be compatible with the dtype of the data array.
 
@@ -156,7 +156,7 @@ def rotation_matrix_2d(theta):
 
     Parameters
     ----------
-    theta: float or numpy.ndarray
+    theta: numbers.Real or numpy.ndarray
         The angle of rotation in radians. If theta is a number (float or int),
         the resulting array will have shape (2, 2). If theta is a numpy array
         of shape (n, m, ...), the resulting array will have dimensions
