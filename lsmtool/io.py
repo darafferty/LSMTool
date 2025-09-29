@@ -250,7 +250,7 @@ def read_vertices_x_y(filename, wcs):
     ----------
     filename: str or pathlib.Path
         Path to file containing the vertices to read.
-    wcs : astropy.wcs.WCS object
+    wcs : astropy.wcs.WCS
         WCS object for converting the vertices to pixel coordinates.
 
     Returns

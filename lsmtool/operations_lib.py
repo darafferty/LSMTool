@@ -30,9 +30,9 @@ def normalize_ra_dec(ra, dec):
 
     Parameters
     ----------
-    ra : float or astropy.coordinates.Angle object
+    ra : float or astropy.coordinates.Angle
         The RA in degrees to be normalized.
-    dec : float or astropy.coordinates.Angle object
+    dec : float or astropy.coordinates.Angle
         The Dec in degrees to be normalized.
 
     Returns
@@ -183,7 +183,7 @@ def make_wcs(refRA, refDec, crdelt=None):
 
     Returns
     -------
-    w : astropy.wcs.WCS object
+    w : astropy.wcs.WCS
         A simple TAN-projection WCS object for specified reference position
 
     """
@@ -288,7 +288,7 @@ def calculateSeparation(ra1, dec1, ra2, dec2):
 
     Returns
     -------
-    separation : astropy.angle.Angle or numpy.ndarray
+    separation : astropy.coordinates.Angle or numpy.ndarray
         Angular separation in degrees
 
     """

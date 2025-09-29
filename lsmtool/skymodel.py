@@ -1570,7 +1570,7 @@ class SkyModel(object):
 
         Returns
         -------
-        separation : Angle object or numpy.ndarray
+        separation : astropy.coordinates.Angle or numpy.ndarray
             Angular separation in degrees
 
         """
