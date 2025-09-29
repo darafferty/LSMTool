@@ -202,9 +202,9 @@ def transfer_patches(from_skymodel, to_skymodel, patch_dict=None):
 
     Parameters
     ----------
-    from_skymodel : LSMTool skymodel.SkyModel object
+    from_skymodel : lsmtool.skymodel.SkyModel
         Sky model from which to transfer patches.
-    to_skymodel : LSMTool skymodel.SkyModel object
+    to_skymodel : lsmtool.skymodel.SkyModel
         Sky model to which to transfer patches.
     patch_dict : dict, optional
         Dict of patch positions.

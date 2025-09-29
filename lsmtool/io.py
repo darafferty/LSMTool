@@ -160,12 +160,12 @@ def load(
 
     Parameters
     ----------
-    fileName : str
+    fileName : str or pathlib.Path
         Input ASCII file from which the sky model is read (must respect the
         makesourcedb format), name of VO service to query (must be one of
         'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'), or dict (single
         source only).
-    beamMS : str, optional
+    beamMS : str or pathlib.Path, optional
         Measurement set from which the primary beam will be estimated. A
         column of attenuated Stokes I fluxes will be added to the table.
     VOPosition : list of floats
@@ -178,7 +178,7 @@ def load(
 
     Returns
     -------
-    SkyModel object
+    skymodel : lsmtool.skymodel.SkyModel
         A SkyModel object that stores the sky model and provides methods for
         accessing it.
 

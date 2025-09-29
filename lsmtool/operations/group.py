@@ -67,7 +67,7 @@ def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
 
     Parameters
     ----------
-    LSM : SkyModel object
+    LSM : lsmtool.skymodel.SkyModel
         Input sky model
     algorithm : str
         Algorithm to use for grouping:

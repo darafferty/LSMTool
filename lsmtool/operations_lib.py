@@ -23,6 +23,9 @@ import numpy as np
 import scipy as sp
 
 
+NormalizedRADec = namedtuple('NormalizedRADec', ['ra', 'dec'])
+
+
 def normalize_ra_dec(ra, dec):
     """
     Normalize RA to be in the range [0, 360) and Dec to be in the
@@ -37,7 +40,7 @@ def normalize_ra_dec(ra, dec):
 
     Returns
     -------
-    NormalizedRADec : namedtuple
+    normalized_ra_dec : NormalizedRADec
         The normalized RA in degrees in the range [0, 360) and the
         Dec in degrees in the range [-90, 90], with the following
         elements:
@@ -45,7 +48,6 @@ def normalize_ra_dec(ra, dec):
             - NormalizedRADec.ra: RA in degrees
             - NormalizedRADec.dec: Dec in degrees
     """
-    NormalizedRADec = namedtuple('NormalizedRADec', ['ra', 'dec'])
     ra = ra.value if type(ra) is Angle else ra
     dec = dec.value if type(dec) is Angle else dec
     normalized_dec = (dec + 180) % 360 - 180
@@ -206,9 +208,9 @@ def matchSky(LSM1, LSM2, radius=0.1, byPatch=False, nearestOnly=False):
 
     Parameters
     ----------
-    LSM1 : SkyModel object
+    LSM1 : lsmtool.skymodel.SkyModel
         Sky model for which match indices are desired
-    LSM2 : SkyModel object
+    LSM2 : lsmtool.skymodel.SkyModel
         Sky model to match against
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
@@ -308,7 +310,7 @@ def getFluxAtSingleFrequency(LSM, targetFreq=None, aggregate=None):
 
     Parameters
     ----------
-    LSM : sky model object
+    LSM : lsmtool.skymodel.SkyModel
         RA of coordinate 1 in degrees
     targetFreq : float, optional
         Frequency in Hz. If None, the median is used

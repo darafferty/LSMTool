@@ -58,9 +58,9 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
 
     Parameters
     ----------
-    LSM1 : SkyModel object
+    LSM1 : lsmtool.skymodel.SkyModel
         Parent sky model
-    LSM2 : SkyModel object
+    LSM2 : lsmtool.skymodel.SkyModel
         Sky model to concatenate with the parent sky model
     matchBy : str, optional
         Determines how duplicate sources are determined:

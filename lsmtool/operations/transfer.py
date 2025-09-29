@@ -54,9 +54,9 @@ def transfer(LSM, patchSkyModel, matchBy='name', radius=0.1):
 
     Parameters
     ----------
-    LSM : SkyModel object
+    LSM : lsmtool.skymodel.SkyModel
         Input sky model
-    patchSkyModel : str or SkyModel object
+    patchSkyModel : str or lsmtool.skymodel.SkyModel
         Input sky model from which to transfer patches
     matchBy : str, optional
         Determines how matching sources are determined:
