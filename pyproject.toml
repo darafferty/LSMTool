@@ -153,6 +153,14 @@ ignore = ["PLR2004", "N803"]
 
 
 ###########################
+# coverage settings       #
+###########################
+
+[tool.coverage.run]
+omit = ["lsmtool/_changelog.py", "lsmtool/_version.py"]
+
+
+###########################
 # tox settings            #
 ###########################
 # Adapted from: https://git.astron.nl/templates/python-package/-/blob/9ccee1fed6796b6784e8814cc83ee4e5d34bba3d/%7B%7Bcookiecutter.project_slug%7D%7D/pyproject.toml
@@ -164,7 +172,7 @@ env_list = ["fix", "coverage", "lint", "format", "py{10,11,12,13}"]
 [tool.tox.env_run_base]
 description = "run unit tests"
 deps = [{ replace = "ref", of = ["dependency-groups", "tests"], extend = true }]
-extras = ["sofia"]
+extras = ["tests"]
 package = "editable"
 set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning" }
 commands = [
