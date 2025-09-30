@@ -212,14 +212,14 @@ commands = [
 
 [tool.tox.env.docs]
 deps = [{ replace = "ref", of = ["dependency-groups", "docs"], extend = true }]
-extras = ["sofia"]
+extras = ["docs"]
 # unset LC_ALL / LANGUAGE from testenv, would fail sphinx otherwise
 set_env = ""
 changedir = "{tox_root}"
-allowlist_externals = ["rm", "sphinx-build"]
+allowlist_externals = ["rm"]
 commands = [
     ["rm", "-rf", "docs/build/html"],
-    ["sphinx-build", "-b", "html", "docs/source", "docs/build/html"]
+    ["python", "-m", "sphinx.cmd.build", "docs/source", "docs/build/html"]
 ]
 
 [tool.tox.env.build]
