@@ -227,7 +227,7 @@ def get_source_parameters(
 
     Returns
     -------
-    dict
+    params : dict
         A dictionary containing the source parameters: RA strings, Dec strings,
         semimajor and semiminor axes in arcseconds, orientations wrt NCP in
         degrees, and fluxes in the image units.
@@ -269,12 +269,14 @@ def get_source_fwhm(
     sources in arcseconds.
 
     SoFiA-2 computes the full major and minor axes of the source ellipses
-    following approach of [Banks+]_. This is equivalent to measuring twice the
+    following approach of `[Banks+]`_. This is equivalent to measuring twice the
     standard deviation along each axes of the Gaussian sources. The
     makesourcedb format expects the axes to be in units of the FWHM of the
     Gaussians. The conversion between the two parametrisations is handled by
     this function. In addition, converting from pixel values to arcseconds in
     the case of non-square pixels is also handled.
+
+    .. _[Banks+]: https://doi.org/10.1093/mnras/272.4.821
 
     Parameters
     ----------
@@ -288,10 +290,8 @@ def get_source_fwhm(
 
     Returns
     -------
-    numpy.ndarray
+    fwhm : numpy.ndarray
         The ellipse semimajor and semiminor axes in arcseconds.
-
-    .. [Banks+]: https://doi.org/10.1093/mnras/272.4.821
     """
     # Get gaussian major and minor axes in arcseconds
     ellipse_fwhm_pixels = (
@@ -344,7 +344,7 @@ def get_corrected_gaussian_orientations(
 
     Returns
     -------
-    numpy.ndarray
+    orientations : numpy.ndarray
         The corrected Gaussian orientations in radians, defined with respect
         to the NCP.
 

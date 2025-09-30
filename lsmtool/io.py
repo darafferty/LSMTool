@@ -45,7 +45,7 @@ def temp_storage(trial_paths: PathLikeOrListOptional = TRIAL_TMP_PATHS):
         A tuple of paths to try setting as the TMPDIR environment variable.
         The first existing path in the tuple will be used. Defaults to
         TRIAL_TMP_PATHS, which uses the same locations used by the
-        :py::mod:`tempfile` library.
+        :mod:`tempfile` library.
     """
     if isinstance(trial_paths, (str, Path)):
         trial_paths = [trial_paths]
@@ -93,7 +93,7 @@ def check_file_exists(path: PathLike):
 
     Returns
     -------
-    Path
+    path : pathlib.Path
         The path to the file.
 
     Raises
@@ -160,12 +160,12 @@ def load(
 
     Parameters
     ----------
-    fileName : str
+    fileName : str or pathlib.Path
         Input ASCII file from which the sky model is read (must respect the
         makesourcedb format), name of VO service to query (must be one of
         'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'), or dict (single
         source only).
-    beamMS : str, optional
+    beamMS : str or pathlib.Path, optional
         Measurement set from which the primary beam will be estimated. A
         column of attenuated Stokes I fluxes will be added to the table.
     VOPosition : list of floats
@@ -178,7 +178,7 @@ def load(
 
     Returns
     -------
-    SkyModel object
+    skymodel : lsmtool.skymodel.SkyModel
         A SkyModel object that stores the sky model and provides methods for
         accessing it.
 
@@ -228,7 +228,7 @@ def read_vertices_ra_dec(filename: PathLike):
 
     Returns
     -------
-    numpy.ndarray
+    vertices : numpy.ndarray
         Array of shape (N, 2) containing RA and Dec vertices as columns.
     """
     data = np.load(Path(filename), allow_pickle=False)
@@ -250,12 +250,12 @@ def read_vertices_x_y(filename, wcs):
     ----------
     filename: str or pathlib.Path
         Path to file containing the vertices to read.
-    wcs : astropy.wcs.WCS object
+    wcs : astropy.wcs.WCS
         WCS object for converting the vertices to pixel coordinates.
 
     Returns
     -------
-    vertices: list of (x, y) tuples of float
+    vertices: list of tuple of float
         The converted coordinates.
     """
     # The input file always contains vertices as RA,Dec coordinates.
@@ -280,7 +280,7 @@ def convert_coordinates_to_pixels(coordinates, wcs):
 
     Returns
     -------
-    list of tuple
+    vertices : list of tuple
         List of (x, y) pixel coordinate tuples.
     """
 

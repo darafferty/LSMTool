@@ -71,9 +71,9 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
 
     Parameters
     ----------
-    LSM1 : SkyModel object
+    LSM1 : lsmtool.skymodel.SkyModel
         Parent sky model
-    LSM2 : SkyModel object
+    LSM2 : lsmtool.skymodel.SkyModel
         Sky model to compare to the parent sky model
     radius : float or str, optional
         Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')

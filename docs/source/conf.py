@@ -100,8 +100,8 @@ pygments_style = "sphinx"
 
 # This value contains a list of modules to be mocked up. This is useful when
 # some external dependencies are not met at build time and break the building
-# process. 
-autodoc_mock_imports = ["sofia2"]
+# process.
+autodoc_mock_imports = ["sofia2", "bdsf"]
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -192,6 +192,14 @@ htmlhelp_basename = "LSMTooldoc"
 # line.
 maximum_signature_line_length = 80
 
+# Ensure API docs for functions with multiple return values get formatted
+# correctly
+napoleon_custom_sections = [("Returns", "params_style")]
+
+# Pre-process type hints in docstrings so they get rendered as cross references
+# linking to the documentation of the object type
+napoleon_preprocess_types = True
+
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -281,4 +289,9 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {"python": ("https://docs.python.org/3/", None)}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    "astropy": ("https://docs.astropy.org/en/stable/", None)
+}

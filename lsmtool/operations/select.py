@@ -59,7 +59,7 @@ def select(LSM, filterExpression, aggregate=None, applyBeam=False,
 
     Parameters
     ----------
-    LSM : SkyModel object
+    LSM : lsmtool.skymodel.SkyModel
         Input sky model
     filterExpression : str, dict, list, or numpy array
         - If string:
