@@ -51,14 +51,15 @@ dependencies = [
 ]
 [project.optional-dependencies]
 sofia = ["sofia2 @ git+https://gitlab.com/SoFiA-Admin/SoFiA-2.git@b10ab4ef"]
+docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
+tests = ["pytest", "pytest-cov"]
+dev = ["ruff", "lsmtool[docs,tests,sofia]"]
 
 [dependency-groups]
-docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
-tests = ["pytest", "coverage"]
-dev = ["ruff",
-       "lsmtool[sofia]",
-       {include-group = "docs"},
-       {include-group = "tests"}]
+sofia = ["lsmtool[sofia]"]
+docs = ["lsmtool[docs]"]
+tests = ["lsmtool[tests]"]
+dev = ["lsmtool[dev]"]
 
 [project.scripts]
 lsmtool = "lsmtool.lsmtool:main"
@@ -178,6 +179,7 @@ commands = [
 # commands = [["pre-commit", "run", "--all-files", "--show-diff-on-failure"]]
 
 [tool.tox.env.coverage]
+extras = ["tests"]
 commands = [
     ["python", "--version"],
     ["python", "-m", "pytest", "--cov-report", "term", "--cov-report", "xml",
