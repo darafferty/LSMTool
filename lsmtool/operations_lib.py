@@ -18,9 +18,8 @@
 
 from astropy.coordinates import Angle
 from collections import namedtuple
-from math import floor, ceil
 import numpy as np
-import scipy as sp
+import scipy
 
 from lsmtool.constants import WCS_ORIGIN, WCS_PIXEL_SCALE
 
