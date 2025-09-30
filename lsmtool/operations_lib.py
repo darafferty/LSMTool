@@ -567,8 +567,7 @@ def in_box(cal_coords, bounding_box):
     minx, maxx = sorted([minx, maxx])
     miny, maxy = sorted([miny, maxy])
     x, y = np.transpose(cal_coords)
-    return np.logical_and(np.logical_and(minx <= x, x <= maxx),
-                          np.logical_and(miny <= y, y <= maxy))
+    return (minx <= x) & (x <= maxx) & (miny <= y) & (y <= maxy)
 
 
 def voronoi(cal_coords, bounding_box):
