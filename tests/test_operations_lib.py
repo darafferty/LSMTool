@@ -387,7 +387,7 @@ def test_voronoi(
 ):
     # Arrange
     with context:
-        # Act & Assert
+        # Act
         vor = voronoi(cal_coords, bounding_box)
 
         # Assert
