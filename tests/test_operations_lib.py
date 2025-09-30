@@ -19,6 +19,7 @@ from lsmtool.operations_lib import (
     normalize_ra_dec,
     in_box,
     tessellate,
+    voronoi
 )
 
 
@@ -342,6 +343,60 @@ def test_tessellate(
 
 def _flatten(iterable):
     return {tuple(point) for item in iterable for point in item}
+
+
+@pytest.mark.parametrize(
+    "cal_coords, bounding_box, in_box_expected, filtered_regions, context",
+    [
+        # 4 points in a square
+        pytest.param(
+            np.array([[0, 0], [1, 0], [1, 1], [0, 1]]),
+            [0, 1, 0, 1],
+            ...,
+            [],
+            null_context,
+            id="square",
+        ),
+        # Edge case: only one point inside bounding box
+        pytest.param(
+            np.array([[0.5, 0.5], [2, 2]]),
+            [0, 1, 0, 1],
+            np.array([True, False]),
+            [[3, 1, 0, 2]],
+            null_context,
+            id="edge_case_one_inside",
+        ),
+        # -------------------------------------------------------------------- #
+        # Edge case: all points outside bounding box
+        pytest.param(
+            np.array([[2, 2], [3, 3]]),
+            [0, 1, 0, 1],
+            ...,
+            [],
+            pytest.raises(ValueError),
+            id="edge_case_all_outside",
+        ),
+    ],
+)
+def test_voronoi(
+    cal_coords,
+    bounding_box,
+    in_box_expected,
+    filtered_regions,
+    context
+):
+    # Arrange
+    with context:
+        # Act & Assert
+        vor = voronoi(cal_coords, bounding_box)
+
+        # Assert
+        # filtered_points should match the points inside the bounding box
+        expected_points = cal_coords[in_box_expected]
+        assert_array_equal(vor.filtered_points, expected_points)
+
+        # check filtered_regions matches expected
+        assert vor.filtered_regions == filtered_regions
 
 
 if __name__ == "__main__":
