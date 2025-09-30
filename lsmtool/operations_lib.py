@@ -549,19 +549,19 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec,
 
 def in_box(cal_coords, bounding_box):
     """
-    Checks if coordinates are inside the bounding box
+    Check if coordinates are inside the bounding box.
 
     Parameters
     ----------
-    cal_coords : array
-        Array of x, y coordinates
-    bounding_box : array
-        Array defining the bounding box as [minx, maxx, miny, maxy]
+    cal_coords : numpy.ndarray
+        Array of x, y coordinates.
+    bounding_box : numpy.ndarray
+        Array defining the bounding box as [minx, maxx, miny, maxy].
 
     Returns
     -------
-    inside : array
-        Bool array with True for inside and False if not
+    inside : numpy.ndarray
+        Boolean array with True for inside and False if not.
     """
     minx, maxx, miny, maxy = bounding_box
     minx, maxx = sorted([minx, maxx])
@@ -572,19 +572,19 @@ def in_box(cal_coords, bounding_box):
 
 def voronoi(cal_coords, bounding_box):
     """
-    Produces a Voronoi tessellation for the given coordinates and bounding box
+    Produce a Voronoi tessellation for the given coordinates and bounding box.
 
     Parameters
     ----------
     cal_coords : numpy.ndarray
-        Array of x, y coordinates
+        Array of x, y coordinates.
     bounding_box : numpy.ndarray
         Array defining the bounding box as [minx, maxx, miny, maxy]
 
     Returns
     -------
     vor : scipy.spatial.Voronoi
-        The resulting Voronoi object
+        The resulting Voronoi object.
     """
     eps = 1e-6
 
