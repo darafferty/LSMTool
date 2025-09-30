@@ -54,7 +54,7 @@ def plot(LSM, fileName=None, labelBy=None):
 
     Parameters
     ----------
-    LSM : SkyModel object
+    LSM : lsmtool.skymodel.SkyModel
         Input sky model
     fileName : str, optional
         If given, the plot is saved to a file instead of displayed

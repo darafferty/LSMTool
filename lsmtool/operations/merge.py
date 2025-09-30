@@ -51,7 +51,7 @@ def merge(LSM, patches, name=None):
 
     Parameters
     ----------
-    LSM : SkyModel object
+    LSM : lsmtool.skymodel.SkyModel
         Input sky model
     patches : list of str
         List of patches to merge

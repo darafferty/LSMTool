@@ -463,7 +463,7 @@ class SkyModel(object):
 
         Returns
         -------
-        positions : numpy array or dict
+        positions : numpy.ndarray or dict
             (RA, Dec) arrays (if asArray is False) of patch positions or a
             dictionary of {'patchName':(RA, Dec)}.
 
@@ -663,9 +663,10 @@ class SkyModel(object):
 
         Returns
         -------
-        x, y, midRA, midDec : numpy array, numpy array, float, float
-            arrays of x and y values and the midpoint RA and
-            Dec values
+        x, y : numpy.ndarray
+            Arrays of x and y values 
+        midRA, midDec : float
+            Midpoint RA and Dec values
 
         """
         import numpy as np
@@ -827,7 +828,7 @@ class SkyModel(object):
 
         Returns
         -------
-        colValues : numpy array
+        colValues : numpy.ndarray
             Array of column values. None is returned if column is not found.
 
         Examples
@@ -893,12 +894,12 @@ class SkyModel(object):
         colName : str
             Name of column. If not already present in the table, a new column
             will be created.
-        values : list, numpy array, or dict
+        values : list, numpy.ndarray, or dict
             Array of values or dict of {sourceName:value} pairs. If list or
             array, the length must match the number of rows in the table. If
             dict, missing values will be masked unless already present. Values
             are assumed to be in units required by makesourcedb.
-        mask : list or array of bools, optional
+        mask : list or numpy.ndarray of bool, optional
             If values is a list or array, a mask can be specified (True means
             the value is masked).
         index : int, optional
@@ -1062,12 +1063,12 @@ class SkyModel(object):
 
         Parameters
         ----------
-        values : list, numpy array, or dict
+        values : list, numpy.ndarray, or dict
             Array of values or dict of {colName:value} pairs. If list or
             array, the length must match the number and order of the columns in
             the table. If dict, missing values will be masked unless already
             present.
-        mask : list or array of bools, optional
+        mask : list or numpy.ndarray of bool, optional
             If values is a list or array, a mask can be specified (True means
             the value is masked).
         returnVerified : bool, optional
@@ -1111,7 +1112,7 @@ class SkyModel(object):
 
         Returns
         -------
-        data : numpy array
+        data : numpy.ndarray
             Array of patch sizes. None is returned if the sky model
             does not have patches
 
@@ -1133,7 +1134,7 @@ class SkyModel(object):
 
         Returns
         -------
-        names : numpy array
+        names : numpy.ndarray
             Array of patch names. None is returned if the sky model
             does not have patches
 
@@ -1558,9 +1559,9 @@ class SkyModel(object):
 
         Parameters
         ----------
-        ra1 : float or array
+        ra1 : float or numpy.ndarray
             RA of coordinate 1 in degrees
-        dec1 : float or array
+        dec1 : float or numpy.ndarray
             Dec of coordinate 1 in degrees
         ra2 : float
             RA of coordinate 2 in degrees
@@ -1569,7 +1570,7 @@ class SkyModel(object):
 
         Returns
         -------
-        separation : Angle object or array
+        separation : astropy.coordinates.Angle or numpy.ndarray
             Angular separation in degrees
 
         """
@@ -1844,7 +1845,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        filterExpression : str, dict, list, or numpy array
+        filterExpression : str, dict, list, or numpy.ndarray
 
             - If string:
               A string specifying the filter expression in the form:
@@ -1858,10 +1859,10 @@ class SkyModel(object):
               The filter can also be given as a list of:
               [property, operator, value] or
               [property, operator, value, units]
-            - If numpy array:
+            - If `numpy.ndarray`:
               The indices to filter on can be specified directly as a numpy array
               of row or patch indices such as:
-              ``array([ 0,  2, 19, 20, 31, 37])``
+              ``np.array([ 0,  2, 19, 20, 31, 37])``
               or as a numpy array of bools with the same length as the sky model.
               If a numpy array is given and the indices correspond to patches, then
               set aggregate=True.
@@ -1944,7 +1945,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        filterExpression : str, dict, list, or numpy array
+        filterExpression : str, dict, list, or numpy.ndarray
 
             - If string:
               A string specifying the filter expression in the form:
@@ -1958,7 +1959,7 @@ class SkyModel(object):
               The filter can also be given as a list of:
               [property, operator, value] or
               [property, operator, value, units]
-            - If numpy array:
+            - If `numpy.ndarray`:
               The indices to filter on can be specified directly as a numpy array
               of row or patch indices such as:
               ``array([ 0,  2, 19, 20, 31, 37])``
@@ -2044,7 +2045,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        LSM : SkyModel object
+        LSM : SkyModel
             Input sky model.
         algorithm : str
             Algorithm to use for grouping:
@@ -2150,7 +2151,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        patchSkyModel : str or SkyModel object
+        patchSkyModel : str or SkyModel
             Input sky model from which to transfer patches.
         matchBy : str, optional
             Determines how matching sources are determined:
@@ -2190,7 +2191,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        LSM : SkyModel object
+        LSM : SkyModel
             Input sky model
         name : str or list
             Source name or list of names (can include wildcards)
@@ -2275,7 +2276,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        LSM2 : str or SkyModel object
+        LSM2 : str or SkyModel
             Secondary sky model to concatenate with the parent sky model
         matchBy : str, optional
             Determines how duplicate sources are determined:
@@ -2350,7 +2351,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        LSM2 : SkyModel object
+        LSM2 : SkyModel
             Secondary sky model to compare to the parent sky model
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')

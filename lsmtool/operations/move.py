@@ -64,7 +64,7 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
 
     Parameters
     ----------
-    LSM : SkyModel object
+    LSM : lsmtool.skymodel.SkyModel
         Input sky model
     name : str or list
         Source name or list of names (can include wildcards)

@@ -190,7 +190,7 @@ def skyModelReader(fileName, header_start=0):
 
     Returns
     -------
-    table : astropy.table.Table object
+    table : astropy.table.Table
 
     """
     log = logging.getLogger('LSMTool.Load')
@@ -244,7 +244,7 @@ def createTable(outlines, metaDict, colNames, colDefaults):
 
     Returns
     -------
-    table : astropy.table.Table object
+    table : astropy.table.Table
 
     """
     log = logging.getLogger('LSMTool.Load')
@@ -579,17 +579,17 @@ def RADec2Angle(RA, Dec):
     Parameters
     ----------
     RA : str, float or list of str, float
-        Values of RA to convert. Can be strings in makesourcedb format or floats
-        in degrees (astropy.coordinates.Angle are also supported)
+        Values of RA to convert. Can be strings in makesourcedb format or
+        floats in degrees (`astropy.coordinates.Angle` are also supported)
     Dec : str, float or list of str, float
-        Values of Dec to convert. Can be strings in makesourcedb format or floats
-        in degrees (astropy.coordinates.Angle are also supported)
+        Values of Dec to convert. Can be strings in makesourcedb format or
+        floats in degrees (`astropy.coordinates.Angle` are also supported)
 
     Returns
     -------
-    RAAngle : list of astropy.coordinates.Angle objects
+    RAAngle : list of astropy.coordinates.Angle
         The RA, normalized to [0, 360)
-    DecAngle : list of astropy.coordinates.Angle objects
+    DecAngle : list of astropy.coordinates.Angle
         The Dec, normalized to [-90, 90].
     """
     import astropy.units as u
@@ -741,7 +741,7 @@ def rowStr(row, metaDict):
 
     Parameters
     ----------
-    row : astropy.table.Row object
+    row : astropy.table.Row
         Row to process
     metaDict : dict
         Table meta dictionary
@@ -814,7 +814,7 @@ def ds9RegionWriter(table, fileName):
 
     Parameters
     ----------
-    table : astropy.table.Table object
+    table : astropy.table.Table
         Input sky model table
     fileName : str
         Output file to which the sky model is written
@@ -866,7 +866,7 @@ def kvisAnnWriter(table, fileName):
 
     Parameters
     ----------
-    table : astropy.table.Table object
+    table : astropy.table.Table
         Input sky model table
     fileName : str
         Output file to which the sky model is written
@@ -908,7 +908,7 @@ def casaRegionWriter(table, fileName):
 
     Parameters
     ----------
-    table : astropy.table.Table object
+    table : astropy.table.Table
         Input sky model table
     fileName : str
         Output file to which the sky model is written
@@ -962,7 +962,7 @@ def factorDirectionsWriter(table, fileName):
 
     Parameters
     ----------
-    table : astropy.table.Table object
+    table : astropy.table.Table
         Input sky model table; must have patches defined
     fileName : str
         Output file to which the sky model is written
@@ -1026,7 +1026,7 @@ def facetRegionWriter(table, fileName):
 
     Parameters
     ----------
-    table : astropy.table.Table object
+    table : astropy.table.Table
         Input sky model table; must have patches defined
     fileName : str
         Output file to which the sky model is written
