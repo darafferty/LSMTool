@@ -563,10 +563,12 @@ def in_box(cal_coords, bounding_box):
     inside : array
         Bool array with True for inside and False if not
     """
-    return np.logical_and(np.logical_and(bounding_box[0] <= cal_coords[:, 0],
-                                         cal_coords[:, 0] <= bounding_box[1]),
-                          np.logical_and(bounding_box[2] <= cal_coords[:, 1],
-                                         cal_coords[:, 1] <= bounding_box[3]))
+    minx, maxx, miny, maxy = bounding_box
+    minx, maxx = sorted([minx, maxx])
+    miny, maxy = sorted([miny, maxy])
+    x, y = np.transpose(cal_coords)
+    return np.logical_and(np.logical_and(minx <= x, x <= maxx),
+                          np.logical_and(miny <= y, y <= maxy))
 
 
 def voronoi(cal_coords, bounding_box):

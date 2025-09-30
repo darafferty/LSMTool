@@ -4,11 +4,12 @@ import filecmp
 import pathlib
 import tarfile
 import tempfile
-import unittest
-
-import numpy as np
-import pytest
 import requests
+import unittest
+import contextlib
+
+import pytest
+import numpy as np
 from numpy.testing import assert_array_equal
 
 import lsmtool
@@ -16,6 +17,7 @@ from lsmtool.operations_lib import (
     apply_beam,
     make_wcs,
     normalize_ra_dec,
+    in_box,
     tessellate,
 )
 
@@ -101,11 +103,7 @@ class TestOperationsLib(unittest.TestCase):
         outfile = str(self.temp_path / "test_apply_beam_invert.out")
         reffile = str(self.resource_path / "test_apply_beam_invert.out")
         result = apply_beam(
-            str(self.ms_path),
-            self.flux,
-            self.ra,
-            self.dec,
-            invert=True
+            str(self.ms_path), self.flux, self.ra, self.dec, invert=True
         )
         np.set_printoptions(precision=6)
         with open(outfile, "w") as f:
@@ -119,7 +117,7 @@ class TestOperationsLib(unittest.TestCase):
         ra = 450.0
         dec = 95.0
         result = normalize_ra_dec(ra, dec)
-        assert (result.ra == 270.0 and result.dec == 85.0)
+        assert result.ra == 270.0 and result.dec == 85.0
 
 
 def test_make_wcs_default():
@@ -148,6 +146,109 @@ def test_make_wcs_custom():
     assert_array_equal(w.wcs.cdelt, [-crdelt, crdelt])
     assert_array_equal(w.wcs.crval, [ref_ra, ref_dec])
     assert_array_equal(w.wcs.ctype, ["RA---TAN", "DEC--TAN"])
+
+
+@pytest.mark.parametrize(
+    "cal_coords, bounding_box, expected, context",
+    [
+        # All points inside boundary
+        pytest.param(
+            np.array([[1, 1], [2, 2], [3, 3]]),
+            np.array([0, 4, 0, 4]),
+            np.array([True, True, True]),
+            null_context := contextlib.nullcontext(),
+            id="all_inside",
+        ),
+        # Some points inside, some outside boundary
+        pytest.param(
+            np.array([[0, 0], [5, 5], [2, 2]]),
+            np.array([1, 4, 1, 4]),
+            np.array([False, False, True]),
+            null_context,
+            id="some_inside_some_outside",
+        ),
+        # Points exactly on the boundary
+        pytest.param(
+            np.array([[1, 1], [4, 4], [1, 4], [4, 1]]),
+            np.array([1, 4, 1, 4]),
+            np.array([True, True, True, True]),
+            null_context,
+            id="on_boundary",
+        ),
+        # Empty `cal_coords`
+        pytest.param(
+            np.empty((0, 2)),
+            np.array([0, 1, 0, 1]),
+            np.array([], dtype=bool),
+            null_context,
+            id="empty_coords",
+        ),
+        # Bounding box with zero area (min == max)
+        pytest.param(
+            np.array([[1, 1], [1, 2], [2, 1]]),
+            np.array([1, 1, 1, 1]),
+            np.array([True, False, False]),
+            null_context,
+            id="zero_area_box",
+        ),
+        # Negative coordinates
+        pytest.param(
+            np.array([[-2, -2], [-1, -1], [0, 0]]),
+            np.array([-2, 0, -2, 0]),
+            np.array([True, True, True]),
+            null_context,
+            id="negative_coords",
+        ),
+        # Bounding box with min > max (inverted box)
+        pytest.param(
+            np.array([[0, 0], [1, 1]]),
+            np.array([2, 0, 2, 0]),
+            np.array([True, True]),
+            null_context,
+            id="inverted_box",
+        ),
+        # -------------------------------------------------------------------- #
+        # Error: `cal_coords` not 2D
+        pytest.param(
+            np.array([1, 2, 3]),
+            np.array([0, 1, 0, 1]),
+            None,
+            pytest.raises(ValueError),
+            id="cal_coords_not_2d",
+        ),
+        # Error: `cal_coords` with wrong number of columns
+        pytest.param(
+            np.array([[1, 1, 1], [2, 2, 2]]),
+            np.array([0, 2, 0, 2]),
+            None,
+            pytest.raises(ValueError),
+            id="cal_coords_wrong_columns",
+        ),
+        # Error: `bounding_box` wrong shape (too small)
+        pytest.param(
+            np.array([[1, 1]]),
+            np.array([0, 1, 0]),
+            None,
+            pytest.raises(ValueError),
+            id="bounding_box_too_short",
+        ),
+        # Error: `bounding_box` wrong shape (too big)
+        pytest.param(
+            np.array([[1, 1]]),
+            np.array([0, 1, 0, 1, 2]),
+            None,
+            pytest.raises(ValueError),
+            id="bounding_box_too_long",
+        ),
+    ],
+)
+def test_in_box(cal_coords, bounding_box, expected, context):
+    # Act
+    with context:
+        result = in_box(cal_coords, bounding_box)
+
+        # Assert
+        assert_array_equal(result, expected)
 
 
 @pytest.mark.parametrize(
