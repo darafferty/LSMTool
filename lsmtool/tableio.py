@@ -1047,7 +1047,8 @@ def facetRegionWriter(table, fileName):
 
     # Do the tessellation
     facet_points, facet_polys = tessellate(patchRA, patchDec, table.meta['refRA'],
-                                           table.meta['refDec'], table.meta['width'])
+                                           table.meta['refDec'], table.meta['width'],
+                                           table.meta['width'])
 
     # For each facet, match the correct name (some patches in the sky model may have
     # been filtered out if they lie outside the bounding box)
