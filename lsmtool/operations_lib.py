@@ -488,8 +488,7 @@ def gaussian_fcn(g, x1, x2, const=False):
 def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec,
                wcs_pixel_scale=WCS_PIXEL_SCALE):
     """
-    Makes a Voronoi tessellation and returns the resulting facet centers
-    and polygons.
+    Make a Voronoi tessellation.
 
     This function partitions an image region using Voronoi tessellation seeded
     with the input calibration directions. It filters points that fall
