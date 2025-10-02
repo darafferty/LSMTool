@@ -10,3 +10,4 @@ API Reference
    skymodel
    tableio
    filter_skymodel
+   facet
