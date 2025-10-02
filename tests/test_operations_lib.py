@@ -352,7 +352,7 @@ def _flatten(iterable):
         pytest.param(
             np.array([[0, 0], [1, 0], [1, 1], [0, 1]]),
             [0, 1, 0, 1],
-            ...,
+            np.array([True, True, True, True]),
             [],
             null_context,
             id="square",
