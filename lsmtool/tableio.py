@@ -30,7 +30,8 @@ import re
 import logging
 import os
 from copy import deepcopy
-from .operations_lib import normalize_ra_dec, tessellate
+from .operations_lib import normalize_ra_dec
+from .facet import tessellate
 
 # Python 3 compatibility
 try:
