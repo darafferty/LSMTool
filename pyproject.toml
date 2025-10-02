@@ -51,14 +51,15 @@ dependencies = [
 ]
 [project.optional-dependencies]
 sofia = ["sofia2 @ git+https://gitlab.com/SoFiA-Admin/SoFiA-2.git@b10ab4ef"]
+docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
+tests = ["pytest", "pytest-cov"]
+dev = ["ruff", "lsmtool[docs,tests,sofia]"]
 
 [dependency-groups]
-docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
-tests = ["pytest", "coverage"]
-dev = ["ruff",
-       "lsmtool[sofia]",
-       {include-group = "docs"},
-       {include-group = "tests"}]
+sofia = ["lsmtool[sofia]"]
+docs = ["lsmtool[docs]"]
+tests = ["lsmtool[tests]"]
+dev = ["lsmtool[dev]"]
 
 [project.scripts]
 lsmtool = "lsmtool.lsmtool:main"
@@ -152,6 +153,14 @@ ignore = ["PLR2004", "N803"]
 
 
 ###########################
+# coverage settings       #
+###########################
+
+[tool.coverage.run]
+omit = ["lsmtool/_changelog.py", "lsmtool/_version.py"]
+
+
+###########################
 # tox settings            #
 ###########################
 # Adapted from: https://git.astron.nl/templates/python-package/-/blob/9ccee1fed6796b6784e8814cc83ee4e5d34bba3d/%7B%7Bcookiecutter.project_slug%7D%7D/pyproject.toml
@@ -163,7 +172,7 @@ env_list = ["fix", "coverage", "lint", "format", "py{10,11,12,13}"]
 [tool.tox.env_run_base]
 description = "run unit tests"
 deps = [{ replace = "ref", of = ["dependency-groups", "tests"], extend = true }]
-extras = ["sofia"]
+extras = ["tests"]
 package = "editable"
 set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning" }
 commands = [
@@ -178,6 +187,7 @@ commands = [
 # commands = [["pre-commit", "run", "--all-files", "--show-diff-on-failure"]]
 
 [tool.tox.env.coverage]
+extras = ["tests"]
 commands = [
     ["python", "--version"],
     ["python", "-m", "pytest", "--cov-report", "term", "--cov-report", "xml",
@@ -202,14 +212,14 @@ commands = [
 
 [tool.tox.env.docs]
 deps = [{ replace = "ref", of = ["dependency-groups", "docs"], extend = true }]
-extras = ["sofia"]
+extras = ["docs"]
 # unset LC_ALL / LANGUAGE from testenv, would fail sphinx otherwise
 set_env = ""
 changedir = "{tox_root}"
-allowlist_externals = ["rm", "sphinx-build"]
+allowlist_externals = ["rm"]
 commands = [
     ["rm", "-rf", "docs/build/html"],
-    ["sphinx-build", "-b", "html", "docs/source", "docs/build/html"]
+    ["python", "-m", "sphinx.cmd.build", "docs/source", "docs/build/html"]
 ]
 
 [tool.tox.env.build]
