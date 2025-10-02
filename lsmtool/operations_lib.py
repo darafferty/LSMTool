@@ -589,10 +589,10 @@ def voronoi(cal_coords, bounding_box):
     eps = 1e-6
 
     # Select calibrators inside the bounding box
-    i = in_box(cal_coords, bounding_box)
+    points_inside = in_box(cal_coords, bounding_box)
 
     # Mirror points
-    points_center = cal_coords[i, :]
+    points_center = cal_coords[points_inside, :]
     points_left = np.copy(points_center)
     points_left[:, 0] = bounding_box[0] - (points_left[:, 0] - bounding_box[0])
     points_right = np.copy(points_center)
