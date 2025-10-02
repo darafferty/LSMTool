@@ -19,7 +19,7 @@ from lsmtool.operations_lib import (
     normalize_ra_dec,
     in_box,
     tessellate,
-    voronoi
+    voronoi,
 )
 
 
@@ -346,13 +346,36 @@ def _flatten(iterable):
 
 
 @pytest.mark.parametrize(
-    "cal_coords, bounding_box, in_box_expected, filtered_regions, context",
+    "cal_coords, bounding_box, in_box_expected, expected_regions, "
+    "filtered_regions, context",
     [
         # 4 points in a square
         pytest.param(
             np.array([[0, 0], [1, 0], [1, 1], [0, 1]]),
             [0, 1, 0, 1],
             np.array([True, True, True, True]),
+            [
+                [7, 6, 0, 2],
+                [7, 2, 1, 4],
+                [3, 4, 7, 8],
+                [8, 5, 6, 7],
+                [7, 6, 0, 2],
+                [0, -1, 6],
+                [5, -1, 6],
+                [8, 5, 6, 7],
+                [1, -1, 4],
+                [7, 2, 1, 4],
+                [3, 4, 7, 8],
+                [3, -1, 4],
+                [7, 6, 0, 2],
+                [7, 2, 1, 4],
+                [1, -1, 2],
+                [2, -1, 0],
+                [5, -1, 8],
+                [3, -1, 8],
+                [3, 4, 7, 8],
+                [8, 5, 6, 7],
+            ],
             [],
             null_context,
             id="square",
@@ -362,6 +385,7 @@ def _flatten(iterable):
             np.array([[0.5, 0.5], [2, 2]]),
             [0, 1, 0, 1],
             np.array([True, False]),
+            [[3, 1, 0, 2], [3, -1, 1], [2, -1, 0], [1, -1, 0], [3, -1, 2]],
             [[3, 1, 0, 2]],
             null_context,
             id="edge_case_one_inside",
@@ -373,6 +397,7 @@ def _flatten(iterable):
             [0, 1, 0, 1],
             ...,
             [],
+            [],
             pytest.raises(ValueError),
             id="edge_case_all_outside",
         ),
@@ -382,8 +407,9 @@ def test_voronoi(
     cal_coords,
     bounding_box,
     in_box_expected,
+    expected_regions,
     filtered_regions,
-    context
+    context,
 ):
     # Arrange
     with context:
@@ -394,6 +420,9 @@ def test_voronoi(
         # filtered_points should match the points inside the bounding box
         expected_points = cal_coords[in_box_expected]
         assert_array_equal(vor.filtered_points, expected_points)
+
+        # check regions are as expected
+        assert vor.regions == expected_regions
 
         # check filtered_regions matches expected
         assert vor.filtered_regions == filtered_regions
