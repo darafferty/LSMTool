@@ -612,15 +612,15 @@ def voronoi(cal_coords, bounding_box):
     points_down[:, 1] = bounding_box[2] - (points_down[:, 1] - bounding_box[2])
     points_up = np.copy(points_center)
     points_up[:, 1] = bounding_box[3] + (bounding_box[3] - points_up[:, 1])
-    points = np.append(points_center,
-                       np.append(np.append(points_left,
-                                           points_right,
-                                           axis=0),
-                                 np.append(points_down,
-                                           points_up,
-                                           axis=0),
-                                 axis=0),
-                       axis=0)
+    points = np.append(
+        points_center,
+        np.append(
+            np.append(points_left, points_right, axis=0),
+            np.append(points_down, points_up, axis=0),
+            axis=0,
+        ),
+        axis=0,
+    )
 
     # Compute Voronoi, sorting the output regions to match the order of the
     # input coordinates
@@ -639,8 +639,12 @@ def voronoi(cal_coords, bounding_box):
             else:
                 x = vor.vertices[index, 0]
                 y = vor.vertices[index, 1]
-                if not (bounding_box[0] - eps <= x and x <= bounding_box[1] + eps and
-                        bounding_box[2] - eps <= y and y <= bounding_box[3] + eps):
+                if not (
+                    bounding_box[0] - eps <= x
+                    and x <= bounding_box[1] + eps
+                    and bounding_box[2] - eps <= y
+                    and y <= bounding_box[3] + eps
+                ):
                     flag = False
                     break
         if region and flag:
