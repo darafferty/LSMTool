@@ -159,6 +159,7 @@ def voronoi(cal_coords, bounding_box):
     sorted_regions = np.array(vor.regions, dtype=object)[vor.point_region]
 
     # Filter regions
+    bounding_box = np.ravel(np.reshape(bounding_box, (2,2)) + (-eps, eps))
     filtered_regions = []
     for region in sorted_regions.tolist():
         flag = True
@@ -166,17 +167,10 @@ def voronoi(cal_coords, bounding_box):
             if index == -1:
                 flag = False
                 break
-            else:
-                x = vor.vertices[index, 0]
-                y = vor.vertices[index, 1]
-                if not (
-                    bounding_box[0] - eps <= x
-                    and x <= bounding_box[1] + eps
-                    and bounding_box[2] - eps <= y
-                    and y <= bounding_box[3] + eps
-                ):
-                    flag = False
-                    break
+
+            if not (flag := in_box(vor.vertices[index], bounding_box)):
+                break
+
         if region and flag:
             filtered_regions.append(region)
 
