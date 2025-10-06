@@ -129,29 +129,7 @@ def voronoi(cal_coords, bounding_box):
         points that fall within the `bounding_box` are retained.
     """
     eps = 1e-6
-
-    # Select calibrators inside the bounding box
-    points_inside = in_box(cal_coords, bounding_box)
-
-    # Mirror points
-    points_center = cal_coords[points_inside, :]
-    points_left = np.copy(points_center)
-    points_left[:, 0] = bounding_box[0] - (points_left[:, 0] - bounding_box[0])
-    points_right = np.copy(points_center)
-    points_right[:, 0] = bounding_box[1] + (bounding_box[1] - points_right[:, 0])
-    points_down = np.copy(points_center)
-    points_down[:, 1] = bounding_box[2] - (points_down[:, 1] - bounding_box[2])
-    points_up = np.copy(points_center)
-    points_up[:, 1] = bounding_box[3] + (bounding_box[3] - points_up[:, 1])
-    points = np.append(
-        points_center,
-        np.append(
-            np.append(points_left, points_right, axis=0),
-            np.append(points_down, points_up, axis=0),
-            axis=0,
-        ),
-        axis=0,
-    )
+    points_center, points = mirror_points(cal_coords, bounding_box)
 
     # Compute Voronoi, sorting the output regions to match the order of the
     # input coordinates
@@ -168,3 +146,36 @@ def voronoi(cal_coords, bounding_box):
         and all(in_box(vor.vertices[region], bounding_box))
     ]
     return points_center, vor.vertices, filtered_regions
+
+
+def mirror_points(cal_coords, bounding_box):
+    # Select calibrators inside the bounding box
+    points_inside = in_box(cal_coords, bounding_box)
+    minx, maxx, miny, maxy = bounding_box
+
+    # Mirror points
+    points_center = cal_coords[points_inside, :]
+
+    points_left = np.copy(points_center)
+    points_left[:, 0] = minx - (points_center[:, 0] - minx)
+
+    points_right = np.copy(points_center)
+    points_right[:, 0] = maxx + (maxx - points_center[:, 0])
+
+    points_down = np.copy(points_center)
+    points_down[:, 1] = miny - (points_center[:, 1] - miny)
+
+    points_up = np.copy(points_center)
+    points_up[:, 1] = maxy + (maxy - points_center[:, 1])
+
+    points = np.append(
+        points_center,
+        np.append(
+            np.append(points_left, points_right, axis=0),
+            np.append(points_down, points_up, axis=0),
+            axis=0,
+        ),
+        axis=0,
+    )
+
+    return points_center, points
