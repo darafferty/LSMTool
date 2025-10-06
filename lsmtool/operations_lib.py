@@ -537,10 +537,10 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec,
     points, vertices, regions = voronoi(np.stack((x_cal, y_cal)).T, bounding_box)
     facet_polys = []
     for region in regions:
-        vertices = vertices[region + [region[0]], :]
-        ra, dec = wcs.wcs_pix2world(vertices[:, 0], vertices[:, 1], WCS_ORIGIN)
-        vertices = np.stack((ra, dec)).T
-        facet_polys.append(vertices)
+        polygon = vertices[region + [region[0]], :]
+        ra, dec = wcs.wcs_pix2world(polygon[:, 0], polygon[:, 1], WCS_ORIGIN)
+        polygon = np.stack((ra, dec)).T
+        facet_polys.append(polygon)
 
     facet_points = list(map(
         tuple, wcs.wcs_pix2world(points, WCS_ORIGIN)

@@ -253,7 +253,7 @@ def test_in_box(cal_coords, bounding_box, expected, context):
 
 
 @pytest.mark.parametrize(
-    "ra_cal, ra_dec, ra_mid, dec_mid, width_ra, width_dec, "
+    "ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec, "
     "expected_facet_points, expected_facet_polygons",
     [
         pytest.param(
@@ -303,7 +303,7 @@ def test_in_box(cal_coords, bounding_box, expected, context):
 )
 def test_tessellate(
     ra_cal,
-    ra_dec,
+    dec_cal,
     ra_mid,
     dec_mid,
     width_ra,
@@ -319,7 +319,7 @@ def test_tessellate(
     # Tessellate a region that encompasses the NCP.
     facet_points, facet_polys = tessellate(
         ra_cal,
-        ra_dec,
+        dec_cal,
         ra_mid,
         dec_mid,
         width_ra,
