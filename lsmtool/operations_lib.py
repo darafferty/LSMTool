@@ -534,15 +534,16 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec,
                              y_mid - width_y, y_mid + width_y])
 
     # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
-    vor = voronoi(np.stack((x_cal, y_cal)).T, bounding_box)
+    points, vertices, regions = voronoi(np.stack((x_cal, y_cal)).T, bounding_box)
     facet_polys = []
-    for region in vor.filtered_regions:
-        vertices = vor.vertices[region + [region[0]], :]
+    for region in regions:
+        vertices = vertices[region + [region[0]], :]
         ra, dec = wcs.wcs_pix2world(vertices[:, 0], vertices[:, 1], WCS_ORIGIN)
         vertices = np.stack((ra, dec)).T
         facet_polys.append(vertices)
+
     facet_points = list(map(
-        tuple, wcs.wcs_pix2world(vor.filtered_points, WCS_ORIGIN)
+        tuple, wcs.wcs_pix2world(points, WCS_ORIGIN)
     ))
     return facet_points, facet_polys
 
@@ -618,7 +619,7 @@ def voronoi(cal_coords, bounding_box):
     vor.regions = sorted_regions.tolist()
 
     # Filter regions
-    regions = []
+    filtered_regions = []
     for region in vor.regions:
         flag = True
         for index in region:
@@ -633,8 +634,6 @@ def voronoi(cal_coords, bounding_box):
                     flag = False
                     break
         if region and flag:
-            regions.append(region)
-    vor.filtered_points = points_center
-    vor.filtered_regions = regions
+            filtered_regions.append(region)
 
-    return vor
+    return points_center, vor.vertices, filtered_regions
