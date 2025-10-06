@@ -626,11 +626,10 @@ def voronoi(cal_coords, bounding_box):
     # input coordinates
     vor = scipy.spatial.Voronoi(points)
     sorted_regions = np.array(vor.regions, dtype=object)[np.array(vor.point_region)]
-    vor.regions = sorted_regions.tolist()
 
     # Filter regions
     filtered_regions = []
-    for region in vor.regions:
+    for region in sorted_regions.tolist():
         flag = True
         for index in region:
             if index == -1:
