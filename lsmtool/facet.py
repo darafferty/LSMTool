@@ -102,7 +102,7 @@ def in_box(cal_coords, bounding_box):
     return (minx <= x) & (x <= maxx) & (miny <= y) & (y <= maxy)
 
 
-def voronoi(cal_coords, bounding_box):
+def voronoi(cal_coords, bounding_box, eps=1e-6):
     """
     Produce a Voronoi tessellation for the given coordinates and bounding box.
 
@@ -128,7 +128,7 @@ def voronoi(cal_coords, bounding_box):
         `vertices[filtered_regions[0]]` are the vertices of the first cell. Only
         points that fall within the `bounding_box` are retained.
     """
-    eps = 1e-6
+
     points_center, points = mirror_points(cal_coords, bounding_box)
 
     # Compute Voronoi, sorting the output regions to match the order of the
