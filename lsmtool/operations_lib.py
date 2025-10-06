@@ -584,8 +584,18 @@ def voronoi(cal_coords, bounding_box):
 
     Returns
     -------
-    vor : scipy.spatial.Voronoi
-        The resulting Voronoi object.
+    points_center : numpy.ndarray
+        Centre points of the Voronoi cells.
+    vertices : numpy.ndarray
+        Vertices of the Voronoi grid. To obtain the vertices of the polygon that
+        encloses any particular point, use the indices provided in the return
+        value `filtered_regions` to select the corresponding vertices for a
+        given cell.
+    filtered_regions : list of list of int
+        For each cell in the tesselation, a list of index points for the
+        vertices that enclose the cell. For example
+        `vertices[filtered_regions[0]]` are the vertices of the first cell. Only
+        points that fall within the `bounding_box` are retained.
     """
     eps = 1e-6
 
