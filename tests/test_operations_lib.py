@@ -349,6 +349,8 @@ def _flatten(iterable):
     "cal_coords, bounding_box, expected_in_box, expected_vertices, "
     "expected_regions, context",
     [
+        # Regular input cases
+        # -------------------------------------------------------------------- #
         # 4 points in a square
         pytest.param(
             np.array([[0, 0], [1, 0], [1, 1], [0, 1]]),
@@ -371,7 +373,9 @@ def _flatten(iterable):
             null_context,
             id="square",
         ),
-        # Edge case: only one point inside bounding box
+        # Edge cases
+        # -------------------------------------------------------------------- #
+        # Only one point inside bounding box
         pytest.param(
             np.array([[0.5, 0.5], [2, 2]]),
             [0, 1, 0, 1],
@@ -381,8 +385,62 @@ def _flatten(iterable):
             null_context,
             id="edge_case_one_inside",
         ),
+        # All points on the boundary
+        pytest.param(
+            np.array([[0, 0], [1, 0], [1, 1], [0, 1]]),
+            [0, 1, 0, 1],
+            np.array([True, True, True, True]),
+            np.array(
+                [
+                    [-0.5, -0.5],
+                    [1.5, -0.5],
+                    [0.5, -0.5],
+                    [1.5, 1.5],
+                    [1.5, 0.5],
+                    [-0.5, 1.5],
+                    [-0.5, 0.5],
+                    [0.5, 0.5],
+                    [0.5, 1.5],
+                ]
+            ),
+            [],
+            null_context,
+            id="all_on_boundary",
+        ),
+        # Degenerate: all points colinear
+        pytest.param(
+            np.array([[0, 0], [0.5, 0.5], [1, 1]]),
+            [0, 1, 0, 1],
+            np.array([True, True, True]),
+            np.array(
+                [
+                    [-0.25, 1.25],
+                    [1.25, -0.25],
+                    [0.0, 1.0],
+                    [0.0, 0.5],
+                    [0.5, 0.0],
+                    [1.0, 0.0],
+                    [0.5, 1.0],
+                    [1.0, 0.5],
+                ]
+            ),
+            [[7, 5, 4, 3, 2, 6]],
+            null_context,
+            id="colinear_points",
+        ),
+        # Duplicate points
+        pytest.param(
+            np.array([[0, 0], [0, 0], [1, 1], [1, 1]]),
+            [0, 1, 0, 1],
+            np.array([True, True, True, True]),
+            np.array([[1.0, 0.0], [0.0, 1.0]]),
+            [],
+            null_context,
+            id="duplicate_points",
+        ),
+        # Error cases
         # -------------------------------------------------------------------- #
-        # Edge case: all points outside bounding box
+        # All points outside bounding box
         pytest.param(
             np.array([[2, 2], [3, 3]]),
             [0, 1, 0, 1],
