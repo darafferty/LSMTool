@@ -415,7 +415,7 @@ def test_voronoi(
         # check regions are as expected
         assert regions == expected_regions
 
-        # check filtered_regions matches expected
+        # check vertices are as expected
         assert_array_equal(vertices, expected_vertices)
 
 
