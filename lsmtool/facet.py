@@ -156,7 +156,7 @@ def voronoi(cal_coords, bounding_box):
     # Compute Voronoi, sorting the output regions to match the order of the
     # input coordinates
     vor = scipy.spatial.Voronoi(points)
-    sorted_regions = np.array(vor.regions, dtype=object)[np.array(vor.point_region)]
+    sorted_regions = np.array(vor.regions, dtype=object)[vor.point_region]
 
     # Filter regions
     filtered_regions = []
