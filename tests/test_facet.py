@@ -4,12 +4,9 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
-from lsmtool.facet import (
-    in_box,
-    tessellate,
-    voronoi,
-)
+from lsmtool.facet import in_box, tessellate, voronoi, prepare_points
 
+null_context = contextlib.nullcontext()
 
 @pytest.mark.parametrize(
     "cal_coords, bounding_box, expected, context",
@@ -208,8 +205,7 @@ def _flatten(iterable):
 
 
 @pytest.mark.parametrize(
-    "cal_coords, bounding_box, expected_in_box, expected_vertices, "
-    "expected_regions, context",
+    "cal_coords, bounding_box, expected_in_box, expected_vertices, expected_regions, context",
     [
         # Regular input cases
         # -------------------------------------------------------------------- #
@@ -337,3 +333,144 @@ def test_voronoi(
 
         # check vertices are as expected
         assert_array_equal(vertices, expected_vertices)
+
+
+@pytest.mark.parametrize(
+    "cal_coords, bounding_box, expected_centre, context",
+    [
+        # Nominal cases
+        # -------------------------------------------------------------------- #
+        # All points inside the bounding box
+        pytest.param(
+            np.array([[0, 0], [1, 1], [0.5, 0.5]]),
+            [0, 1, 0, 1],
+            np.array([[0, 0], [1, 1], [0.5, 0.5]]),
+            null_context,
+            id="all_inside",
+        ),
+        # Some points inside, some outside
+        pytest.param(
+            np.array([[0, 0], [2, 2], [1, 1]]),
+            [0, 1, 0, 1],
+            np.array([[0, 0], [1, 1]]),
+            null_context,
+            id="some_inside_some_outside",
+        ),
+        # All points outside
+        pytest.param(
+            np.array([[2, 2], [3, 3]]),
+            [0, 1, 0, 1],
+            np.empty((0, 2)),
+            null_context,
+            id="all_outside",
+        ),
+        # Points on the boundary
+        pytest.param(
+            np.array([[0, 0], [1, 1], [0, 1], [1, 0]]),
+            [0, 1, 0, 1],
+            np.array([[0, 0], [1, 1], [0, 1], [1, 0]]),
+            null_context,
+            id="on_boundary",
+        ),
+        # Empty input
+        pytest.param(
+            np.empty((0, 2)),
+            [0, 1, 0, 1],
+            np.empty((0, 2)),
+            null_context,
+            id="empty_input",
+        ),
+        # Negative coordinates
+        pytest.param(
+            np.array([[-1, -1], [0, 0], [1, 1]]),
+            [-1, 1, -1, 1],
+            np.array([[-1, -1], [0, 0], [1, 1]]),
+            null_context,
+            id="negative_coords",
+        ),
+        # Inverted bounding box (min > max)
+        pytest.param(
+            np.array([[0, 0], [1, 1]]),
+            [1, 0, 1, 0],
+            np.array([[0, 0], [1, 1]]),
+            null_context,
+            id="inverted_box",
+        ),
+        # Duplicate points
+        pytest.param(
+            np.array([[0, 0], [0, 0], [1, 1], [1, 1]]),
+            [0, 1, 0, 1],
+            np.array([[0, 0], [0, 0], [1, 1], [1, 1]]),
+            null_context,
+            id="duplicate_points",
+        ),
+        # Single point inside
+        pytest.param(
+            np.array([[0.5, 0.5]]),
+            [0, 1, 0, 1],
+            np.array([[0.5, 0.5]]),
+            null_context,
+            id="single_point_inside",
+        ),
+        # Single point outside
+        pytest.param(
+            np.array([[2, 2]]),
+            [0, 1, 0, 1],
+            np.empty((0, 2)),
+            null_context,
+            id="single_point_outside",
+        ),
+        # Error cases
+        # -------------------------------------------------------------------- #
+        # cal_coords not 2D
+        pytest.param(
+            np.array([1, 2, 3]),
+            [0, 1, 0, 1],
+            None,
+            pytest.raises(ValueError),
+            id="cal_coords_not_2d",
+        ),
+        # cal_coords wrong number of columns
+        pytest.param(
+            np.array([[1, 2, 3], [4, 5, 6]]),
+            [0, 1, 0, 1],
+            None,
+            pytest.raises(ValueError),
+            id="cal_coords_wrong_columns",
+        ),
+        # bounding_box wrong shape (too short)
+        pytest.param(
+            np.array([[1, 1]]),
+            [0, 1, 0],
+            None,
+            pytest.raises(ValueError),
+            id="bounding_box_too_short",
+        ),
+        # bounding_box wrong shape (too long)
+        pytest.param(
+            np.array([[1, 1]]),
+            [0, 1, 0, 1, 2],
+            None,
+            pytest.raises(ValueError),
+            id="bounding_box_too_long",
+        ),
+    ],
+)
+def test_prepare_points(cal_coords, bounding_box, expected_centre, context):
+    # Act
+    with context:
+        points_centre, points = prepare_points(cal_coords, bounding_box)
+
+        # If there are N points_centre, there should be N*5 points in total
+        # (original + 4 mirrored)
+        expected_points = [*points_centre]
+        for i, interval in enumerate(np.reshape(bounding_box, (2, 2))):
+            for edge in interval:
+                check = points_centre.copy()
+                check[:, i] = 2 * edge - points_centre[:, i]
+                expected_points.extend(check)
+
+        # Assert
+        assert set(map(tuple, expected_points)) == set(map(tuple, points))
+
+        np.testing.assert_array_equal(points_centre, expected_centre)
