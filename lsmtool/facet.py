@@ -129,7 +129,7 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
         points that fall within the `bounding_box` are retained.
     """
 
-    points_center, points = mirror_points(cal_coords, bounding_box)
+    points_center, points = prepare_points(cal_coords, bounding_box)
 
     # Compute Voronoi, sorting the output regions to match the order of the
     # input coordinates
@@ -148,34 +148,16 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     return points_center, vor.vertices, filtered_regions
 
 
-def mirror_points(cal_coords, bounding_box):
+def prepare_points(cal_coords, bounding_box):
     # Select calibrators inside the bounding box
-    points_inside = in_box(cal_coords, bounding_box)
-    minx, maxx, miny, maxy = bounding_box
+    points_center = cal_coords[in_box(cal_coords, bounding_box)]
 
     # Mirror points
-    points_center = cal_coords[points_inside, :]
+    points_mirror = np.tile(points_center, (2, 2, 1, 1))
+    intervals = np.reshape(bounding_box, (2, 1, 2))
+    xy = 2 * intervals - points_center.T[..., None]
+    points_mirror[0, ..., 0] = xy[0].T
+    points_mirror[1, ..., 1] = xy[1].T
 
-    points_left = np.copy(points_center)
-    points_left[:, 0] = minx - (points_center[:, 0] - minx)
-
-    points_right = np.copy(points_center)
-    points_right[:, 0] = maxx + (maxx - points_center[:, 0])
-
-    points_down = np.copy(points_center)
-    points_down[:, 1] = miny - (points_center[:, 1] - miny)
-
-    points_up = np.copy(points_center)
-    points_up[:, 1] = maxy + (maxy - points_center[:, 1])
-
-    points = np.append(
-        points_center,
-        np.append(
-            np.append(points_left, points_right, axis=0),
-            np.append(points_down, points_up, axis=0),
-            axis=0,
-        ),
-        axis=0,
-    )
-
+    points = np.vstack([points_center, points_mirror.reshape(-1, 2)])
     return points_center, points
