@@ -115,7 +115,7 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
 
     Returns
     -------
-    points_center : numpy.ndarray
+    points_centre : numpy.ndarray
         Centre points of the Voronoi cells.
     vertices : numpy.ndarray
         Vertices of the Voronoi grid. To obtain the vertices of the polygon that
@@ -129,7 +129,7 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
         points that fall within the `bounding_box` are retained.
     """
 
-    points_center, points = prepare_points(cal_coords, bounding_box)
+    points_centre, points = prepare_points(cal_coords, bounding_box)
 
     # Compute Voronoi, sorting the output regions to match the order of the
     # input coordinates
@@ -145,19 +145,19 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
         and (-1 not in region)
         and all(in_box(vor.vertices[region], bounding_box))
     ]
-    return points_center, vor.vertices, filtered_regions
+    return points_centre, vor.vertices, filtered_regions
 
 
 def prepare_points(cal_coords, bounding_box):
     # Select calibrators inside the bounding box
-    points_center = cal_coords[in_box(cal_coords, bounding_box)]
+    points_centre = cal_coords[in_box(cal_coords, bounding_box)]
 
     # Mirror points
-    points_mirror = np.tile(points_center, (2, 2, 1, 1))
+    points_mirror = np.tile(points_centre, (2, 2, 1, 1))
     intervals = np.reshape(bounding_box, (2, 1, 2))
-    xy = 2 * intervals - points_center.T[..., None]
+    xy = 2 * intervals - points_centre.T[..., None]
     points_mirror[0, ..., 0] = xy[0].T
     points_mirror[1, ..., 1] = xy[1].T
 
-    points = np.vstack([points_center, points_mirror.reshape(-1, 2)])
-    return points_center, points
+    points = np.vstack([points_centre, points_mirror.reshape(-1, 2)])
+    return points_centre, points
