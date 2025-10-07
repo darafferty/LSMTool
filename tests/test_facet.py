@@ -6,7 +6,8 @@ from numpy.testing import assert_array_equal
 
 from lsmtool.facet import in_box, tessellate, voronoi, prepare_points
 
-null_context = contextlib.nullcontext()
+NULL_CONTEXT = contextlib.nullcontext()
+
 
 @pytest.mark.parametrize(
     "cal_coords, bounding_box, expected, context",
@@ -16,7 +17,7 @@ null_context = contextlib.nullcontext()
             np.array([[1, 1], [2, 2], [3, 3]]),
             np.array([0, 4, 0, 4]),
             np.array([True, True, True]),
-            null_context := contextlib.nullcontext(),
+            NULL_CONTEXT,
             id="all_inside",
         ),
         # Some points inside, some outside boundary
@@ -24,7 +25,7 @@ null_context = contextlib.nullcontext()
             np.array([[0, 0], [5, 5], [2, 2]]),
             np.array([1, 4, 1, 4]),
             np.array([False, False, True]),
-            null_context,
+            NULL_CONTEXT,
             id="some_inside_some_outside",
         ),
         # Points exactly on the boundary
@@ -32,7 +33,7 @@ null_context = contextlib.nullcontext()
             np.array([[1, 1], [4, 4], [1, 4], [4, 1]]),
             np.array([1, 4, 1, 4]),
             np.array([True, True, True, True]),
-            null_context,
+            NULL_CONTEXT,
             id="on_boundary",
         ),
         # Empty `cal_coords`
@@ -40,7 +41,7 @@ null_context = contextlib.nullcontext()
             np.empty((0, 2)),
             np.array([0, 1, 0, 1]),
             np.array([], dtype=bool),
-            null_context,
+            NULL_CONTEXT,
             id="empty_coords",
         ),
         # Bounding box with zero area (min == max)
@@ -48,7 +49,7 @@ null_context = contextlib.nullcontext()
             np.array([[1, 1], [1, 2], [2, 1]]),
             np.array([1, 1, 1, 1]),
             np.array([True, False, False]),
-            null_context,
+            NULL_CONTEXT,
             id="zero_area_box",
         ),
         # Negative coordinates
@@ -56,7 +57,7 @@ null_context = contextlib.nullcontext()
             np.array([[-2, -2], [-1, -1], [0, 0]]),
             np.array([-2, 0, -2, 0]),
             np.array([True, True, True]),
-            null_context,
+            NULL_CONTEXT,
             id="negative_coords",
         ),
         # Bounding box with min > max (inverted box)
@@ -64,7 +65,7 @@ null_context = contextlib.nullcontext()
             np.array([[0, 0], [1, 1]]),
             np.array([2, 0, 2, 0]),
             np.array([True, True]),
-            null_context,
+            NULL_CONTEXT,
             id="inverted_box",
         ),
         # -------------------------------------------------------------------- #
@@ -228,7 +229,7 @@ def _flatten(iterable):
                 ]
             ),
             [],
-            null_context,
+            NULL_CONTEXT,
             id="square",
         ),
         # Edge cases
@@ -240,7 +241,7 @@ def _flatten(iterable):
             np.array([True, False]),
             np.array([[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]]),
             [[3, 1, 0, 2]],
-            null_context,
+            NULL_CONTEXT,
             id="edge_case_one_inside",
         ),
         # All points on the boundary
@@ -262,7 +263,7 @@ def _flatten(iterable):
                 ]
             ),
             [],
-            null_context,
+            NULL_CONTEXT,
             id="all_on_boundary",
         ),
         # Degenerate: all points colinear
@@ -283,7 +284,7 @@ def _flatten(iterable):
                 ]
             ),
             [[7, 5, 4, 3, 2, 6]],
-            null_context,
+            NULL_CONTEXT,
             id="colinear_points",
         ),
         # Duplicate points
@@ -293,7 +294,7 @@ def _flatten(iterable):
             np.array([True, True, True, True]),
             np.array([[1.0, 0.0], [0.0, 1.0]]),
             [],
-            null_context,
+            NULL_CONTEXT,
             id="duplicate_points",
         ),
         # Error cases
@@ -345,7 +346,7 @@ def test_voronoi(
             np.array([[0, 0], [1, 1], [0.5, 0.5]]),
             [0, 1, 0, 1],
             np.array([[0, 0], [1, 1], [0.5, 0.5]]),
-            null_context,
+            NULL_CONTEXT,
             id="all_inside",
         ),
         # Some points inside, some outside
@@ -353,7 +354,7 @@ def test_voronoi(
             np.array([[0, 0], [2, 2], [1, 1]]),
             [0, 1, 0, 1],
             np.array([[0, 0], [1, 1]]),
-            null_context,
+            NULL_CONTEXT,
             id="some_inside_some_outside",
         ),
         # All points outside
@@ -361,7 +362,7 @@ def test_voronoi(
             np.array([[2, 2], [3, 3]]),
             [0, 1, 0, 1],
             np.empty((0, 2)),
-            null_context,
+            NULL_CONTEXT,
             id="all_outside",
         ),
         # Points on the boundary
@@ -369,7 +370,7 @@ def test_voronoi(
             np.array([[0, 0], [1, 1], [0, 1], [1, 0]]),
             [0, 1, 0, 1],
             np.array([[0, 0], [1, 1], [0, 1], [1, 0]]),
-            null_context,
+            NULL_CONTEXT,
             id="on_boundary",
         ),
         # Empty input
@@ -377,7 +378,7 @@ def test_voronoi(
             np.empty((0, 2)),
             [0, 1, 0, 1],
             np.empty((0, 2)),
-            null_context,
+            NULL_CONTEXT,
             id="empty_input",
         ),
         # Negative coordinates
@@ -385,7 +386,7 @@ def test_voronoi(
             np.array([[-1, -1], [0, 0], [1, 1]]),
             [-1, 1, -1, 1],
             np.array([[-1, -1], [0, 0], [1, 1]]),
-            null_context,
+            NULL_CONTEXT,
             id="negative_coords",
         ),
         # Inverted bounding box (min > max)
@@ -393,7 +394,7 @@ def test_voronoi(
             np.array([[0, 0], [1, 1]]),
             [1, 0, 1, 0],
             np.array([[0, 0], [1, 1]]),
-            null_context,
+            NULL_CONTEXT,
             id="inverted_box",
         ),
         # Duplicate points
@@ -401,7 +402,7 @@ def test_voronoi(
             np.array([[0, 0], [0, 0], [1, 1], [1, 1]]),
             [0, 1, 0, 1],
             np.array([[0, 0], [0, 0], [1, 1], [1, 1]]),
-            null_context,
+            NULL_CONTEXT,
             id="duplicate_points",
         ),
         # Single point inside
@@ -409,7 +410,7 @@ def test_voronoi(
             np.array([[0.5, 0.5]]),
             [0, 1, 0, 1],
             np.array([[0.5, 0.5]]),
-            null_context,
+            NULL_CONTEXT,
             id="single_point_inside",
         ),
         # Single point outside
@@ -417,7 +418,7 @@ def test_voronoi(
             np.array([[2, 2]]),
             [0, 1, 0, 1],
             np.empty((0, 2)),
-            null_context,
+            NULL_CONTEXT,
             id="single_point_outside",
         ),
         # Error cases
