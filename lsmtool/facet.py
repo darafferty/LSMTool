@@ -67,7 +67,9 @@ def tessellate(
     )
 
     # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
-    points, vertices, regions = voronoi(np.stack((x_cal, y_cal)).T, bounding_box)
+    points, vertices, regions = voronoi(
+        np.stack((x_cal, y_cal)).T, bounding_box
+    )
     facet_polys = []
     for region in regions:
         polygon = vertices[region + [region[0]], :]
