@@ -18,9 +18,8 @@
 
 from astropy.coordinates import Angle
 from collections import namedtuple
-from math import floor, ceil
 import numpy as np
-import scipy as sp
+import scipy
 
 from lsmtool.constants import WCS_ORIGIN, WCS_PIXEL_SCALE
 
@@ -535,45 +534,76 @@ def tessellate(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec,
                              y_mid - width_y, y_mid + width_y])
 
     # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
-    vor = voronoi(np.stack((x_cal, y_cal)).T, bounding_box)
+    points, vertices, regions = voronoi(np.stack((x_cal, y_cal)).T, bounding_box)
     facet_polys = []
-    for region in vor.filtered_regions:
-        vertices = vor.vertices[region + [region[0]], :]
-        ra, dec = wcs.wcs_pix2world(vertices[:, 0], vertices[:, 1], WCS_ORIGIN)
-        vertices = np.stack((ra, dec)).T
-        facet_polys.append(vertices)
+    for region in regions:
+        polygon = vertices[region + [region[0]], :]
+        ra, dec = wcs.wcs_pix2world(polygon[:, 0], polygon[:, 1], WCS_ORIGIN)
+        polygon = np.stack((ra, dec)).T
+        facet_polys.append(polygon)
+
     facet_points = list(map(
-        tuple, wcs.wcs_pix2world(vor.filtered_points, WCS_ORIGIN)
+        tuple, wcs.wcs_pix2world(points, WCS_ORIGIN)
     ))
     return facet_points, facet_polys
 
 
-def voronoi(cal_coords, bounding_box):
+def in_box(cal_coords, bounding_box):
     """
-    Produces a Voronoi tessellation for the given coordinates and bounding box
+    Check if coordinates are inside the bounding box.
 
     Parameters
     ----------
     cal_coords : numpy.ndarray
-        Array of x, y coordinates
+        Array of x, y coordinates.
+    bounding_box : numpy.ndarray
+        Array defining the bounding box as [minx, maxx, miny, maxy].
+
+    Returns
+    -------
+    inside : numpy.ndarray
+        Boolean array with True for inside and False if not.
+    """
+    minx, maxx, miny, maxy = bounding_box
+    minx, maxx = sorted([minx, maxx])
+    miny, maxy = sorted([miny, maxy])
+    x, y = np.transpose(cal_coords)
+    return (minx <= x) & (x <= maxx) & (miny <= y) & (y <= maxy)
+
+
+def voronoi(cal_coords, bounding_box):
+    """
+    Produce a Voronoi tessellation for the given coordinates and bounding box.
+
+    Parameters
+    ----------
+    cal_coords : numpy.ndarray
+        Array of x, y coordinates.
     bounding_box : numpy.ndarray
         Array defining the bounding box as [minx, maxx, miny, maxy]
 
     Returns
     -------
-    vor : scipy.spatial.Voronoi
-        The resulting Voronoi object
+    points_center : numpy.ndarray
+        Centre points of the Voronoi cells.
+    vertices : numpy.ndarray
+        Vertices of the Voronoi grid. To obtain the vertices of the polygon that
+        encloses any particular point, use the indices provided in the return
+        value `filtered_regions` to select the corresponding vertices for a
+        given cell.
+    filtered_regions : list of list of int
+        For each cell in the tesselation, a list of index points for the
+        vertices that enclose the cell. For example
+        `vertices[filtered_regions[0]]` are the vertices of the first cell. Only
+        points that fall within the `bounding_box` are retained.
     """
     eps = 1e-6
 
     # Select calibrators inside the bounding box
-    inside_ind = np.logical_and(np.logical_and(bounding_box[0] <= cal_coords[:, 0],
-                                               cal_coords[:, 0] <= bounding_box[1]),
-                                np.logical_and(bounding_box[2] <= cal_coords[:, 1],
-                                               cal_coords[:, 1] <= bounding_box[3]))
-    points_center = cal_coords[inside_ind, :]
+    points_inside = in_box(cal_coords, bounding_box)
 
     # Mirror points
+    points_center = cal_coords[points_inside, :]
     points_left = np.copy(points_center)
     points_left[:, 0] = bounding_box[0] - (points_left[:, 0] - bounding_box[0])
     points_right = np.copy(points_center)
@@ -582,25 +612,24 @@ def voronoi(cal_coords, bounding_box):
     points_down[:, 1] = bounding_box[2] - (points_down[:, 1] - bounding_box[2])
     points_up = np.copy(points_center)
     points_up[:, 1] = bounding_box[3] + (bounding_box[3] - points_up[:, 1])
-    points = np.append(points_center,
-                       np.append(np.append(points_left,
-                                           points_right,
-                                           axis=0),
-                                 np.append(points_down,
-                                           points_up,
-                                           axis=0),
-                                 axis=0),
-                       axis=0)
+    points = np.append(
+        points_center,
+        np.append(
+            np.append(points_left, points_right, axis=0),
+            np.append(points_down, points_up, axis=0),
+            axis=0,
+        ),
+        axis=0,
+    )
 
     # Compute Voronoi, sorting the output regions to match the order of the
     # input coordinates
-    vor = sp.spatial.Voronoi(points)
+    vor = scipy.spatial.Voronoi(points)
     sorted_regions = np.array(vor.regions, dtype=object)[np.array(vor.point_region)]
-    vor.regions = sorted_regions.tolist()
 
     # Filter regions
-    regions = []
-    for region in vor.regions:
+    filtered_regions = []
+    for region in sorted_regions.tolist():
         flag = True
         for index in region:
             if index == -1:
@@ -609,13 +638,15 @@ def voronoi(cal_coords, bounding_box):
             else:
                 x = vor.vertices[index, 0]
                 y = vor.vertices[index, 1]
-                if not (bounding_box[0] - eps <= x and x <= bounding_box[1] + eps and
-                        bounding_box[2] - eps <= y and y <= bounding_box[3] + eps):
+                if not (
+                    bounding_box[0] - eps <= x
+                    and x <= bounding_box[1] + eps
+                    and bounding_box[2] - eps <= y
+                    and y <= bounding_box[3] + eps
+                ):
                     flag = False
                     break
         if region and flag:
-            regions.append(region)
-    vor.filtered_points = points_center
-    vor.filtered_regions = regions
+            filtered_regions.append(region)
 
-    return vor
+    return points_center, vor.vertices, filtered_regions
