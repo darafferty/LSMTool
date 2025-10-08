@@ -10,7 +10,7 @@ import contextlib
 
 import pytest
 import numpy as np
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_allclose
 
 import lsmtool
 from lsmtool.operations_lib import (
@@ -111,14 +111,17 @@ class TestOperationsLib(unittest.TestCase):
             f.write(str(result))
         assert filecmp.cmp(reffile, outfile, shallow=False)
 
-    def test_normalize_ra_dec(self):
-        """
-        Test `normalize_ra_dec` function
-        """
-        ra = 450.0
-        dec = 95.0
-        result = normalize_ra_dec(ra, dec)
-        assert result.ra == 270.0 and result.dec == 85.0
+
+@pytest.mark.parametrize(
+    "coords, expected",
+    [((450.0, 95.0), (270.0, 85.0)), ((190.75, -115.34), (10.75, -64.66))],
+)
+def test_normalize_ra_dec(coords, expected):
+    """
+    Test `normalize_ra_dec` function
+    """
+    result = normalize_ra_dec(*coords)
+    assert_allclose((result.ra, result.dec), expected)
 
 
 def test_make_wcs_default():
