@@ -2,13 +2,14 @@
 
 import filecmp
 import pathlib
+import requests
 import tarfile
 import tempfile
 import unittest
 
 import numpy as np
-import requests
-from numpy.testing import assert_array_equal
+import pytest
+from numpy.testing import assert_allclose, assert_array_equal
 
 import lsmtool
 from lsmtool.operations_lib import apply_beam, make_wcs, normalize_ra_dec
@@ -102,14 +103,17 @@ class TestOperationsLib(unittest.TestCase):
             f.write(str(result))
         assert filecmp.cmp(reffile, outfile, shallow=False)
 
-    def test_normalize_ra_dec(self):
-        """
-        Test `normalize_ra_dec` function
-        """
-        ra = 450.0
-        dec = 95.0
-        result = normalize_ra_dec(ra, dec)
-        assert result.ra == 270.0 and result.dec == 85.0
+
+@pytest.mark.parametrize(
+    "coords, expected",
+    [((450.0, 95.0), (270.0, 85.0)), ((190.75, -115.34), (10.75, -64.66))],
+)
+def test_normalize_ra_dec(coords, expected):
+    """
+    Test `normalize_ra_dec` function
+    """
+    result = normalize_ra_dec(*coords)
+    assert_allclose((result.ra, result.dec), expected)
 
 
 def test_make_wcs_default():
