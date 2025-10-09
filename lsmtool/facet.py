@@ -152,7 +152,7 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
 
 def prepare_points(cal_coords, bounding_box):
     """
-    Selects calibration points inside the bounding box and generates mirrored
+    Select calibration points inside the bounding box and generates mirrored
     points for Voronoi tessellation.
 
     This function filters the input coordinates to those within the bounding
