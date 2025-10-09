@@ -4,7 +4,12 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
-from lsmtool.facet import in_box, tessellate, voronoi, prepare_points
+from lsmtool.facet import (
+    in_box,
+    tessellate,
+    voronoi,
+    prepare_points_for_tessellate,
+)
 
 NULL_CONTEXT = contextlib.nullcontext()
 
@@ -457,19 +462,23 @@ def test_voronoi(
         ),
     ],
 )
-def test_prepare_points(cal_coords, bounding_box, expected_centre, context):
+def test_prepare_points_for_tessellate(
+    cal_coords, bounding_box, expected_centre, context
+):
     # Act
     with context:
-        points_centre, points = prepare_points(cal_coords, bounding_box)
+        points_centre, points = prepare_points_for_tessellate(
+            cal_coords, bounding_box
+        )
 
         # If there are N points_centre, there should be N*5 points in total
         # (original + 4 mirrored)
         expected_points = [*points_centre]
         for i, interval in enumerate(np.reshape(bounding_box, (2, 2))):
             for edge in interval:
-                check = points_centre.copy()
-                check[:, i] = 2 * edge - points_centre[:, i]
-                expected_points.extend(check)
+                mirrored_points = points_centre.copy()
+                mirrored_points[:, i] = 2 * edge - points_centre[:, i]
+                expected_points.extend(mirrored_points)
 
         # Assert
         assert set(map(tuple, expected_points)) == set(map(tuple, points))
