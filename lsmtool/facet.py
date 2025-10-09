@@ -144,7 +144,7 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     bounding_box = np.ravel(np.reshape(bounding_box, (2, 2)) + (-eps, eps))
     filtered_regions = [
         region
-        for region in sorted_regions.tolist()
+        for region in sorted_regions
         if region
         and (-1 not in region)
         and all(in_box(vor.vertices[region], bounding_box))
