@@ -131,7 +131,9 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
         points that fall within the `bounding_box` are retained.
     """
 
-    points_centre, points = prepare_points(cal_coords, bounding_box)
+    points_centre, points = prepare_points_for_tessellate(
+        cal_coords, bounding_box
+    )
 
     # Compute Voronoi, sorting the output regions to match the order of the
     # input coordinates
@@ -150,7 +152,7 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     return points_centre, vor.vertices, filtered_regions
 
 
-def prepare_points(cal_coords, bounding_box):
+def prepare_points_for_tessellate(cal_coords, bounding_box):
     """
     Select calibration points inside the bounding box and generates mirrored
     points for Voronoi tessellation.
