@@ -91,7 +91,7 @@ def in_box(cal_coords, bounding_box):
     Parameters
     ----------
     cal_coords : numpy.ndarray
-        Array of x, y coordinates.
+        Array of x, y coordinates with shape (n, 2).
     bounding_box : numpy.ndarray
         Array defining the bounding box as [minx, maxx, miny, maxy].
 
@@ -114,12 +114,12 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     Parameters
     ----------
     cal_coords : numpy.ndarray
-        Array of x, y coordinates.
+        Array of x, y coordinates with shape (n, 2).
     bounding_box : numpy.ndarray
         Array defining the bounding box as [minx, maxx, miny, maxy].
     eps : float
         Numerical tolerance value, used to expand the bounding box slightly to
-        avoid precision issues.
+        avoid issues related to numeric precision.
 
     Returns
     -------
@@ -133,8 +133,8 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     filtered_regions : list of list of int
         For each cell in the tesselation, a list of index points for the
         vertices that enclose the cell. For example
-        `vertices[filtered_regions[0]]` are the vertices of the first cell. Only
-        points that fall within the `bounding_box` are retained.
+        `vertices[filtered_regions[0]]` are the vertices of the first cell.
+        Only points that fall within the `bounding_box` are retained.
     """
 
     points_centre, points = prepare_points_for_tessellate(
@@ -173,7 +173,7 @@ def prepare_points_for_tessellate(cal_coords, bounding_box):
     Parameters
     ----------
     cal_coords : numpy.ndarray
-        Array of x, y coordinates.
+        Array of x, y coordinates with shape (n, 2).
     bounding_box : list or numpy.ndarray
         Array defining the bounding box as [minx, maxx, miny, maxy].
 
