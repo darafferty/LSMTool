@@ -8,6 +8,9 @@ import scipy
 from lsmtool.constants import WCS_ORIGIN, WCS_PIXEL_SCALE
 from lsmtool.operations_lib import make_wcs
 
+INDEX_OUTSIDE_DIAGRAM = -1
+BBOX_SHAPE_FOR_XY_RANGES = (2, 2)
+
 
 def tessellate(
     ra_cal,
@@ -140,13 +143,16 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     vor = scipy.spatial.Voronoi(points)
     sorted_regions = np.array(vor.regions, dtype=object)[vor.point_region]
 
+    # Add
+    bounding_box = np.ravel(
+        np.reshape(bounding_box, BBOX_SHAPE_FOR_XY_RANGES) + (-eps, eps)
+    )
     # Filter regions
-    bounding_box = np.ravel(np.reshape(bounding_box, (2, 2)) + (-eps, eps))
     filtered_regions = [
         region
         for region in sorted_regions
         if region
-        and (-1 not in region)
+        and (INDEX_OUTSIDE_DIAGRAM not in region)
         and all(in_box(vor.vertices[region], bounding_box))
     ]
     return points_centre, vor.vertices, filtered_regions
