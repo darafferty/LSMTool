@@ -125,6 +125,10 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     minx, maxx, miny, maxy = bounding_box
     bounding_box = (minx - eps, maxx + eps, miny - eps, maxy + eps)
 
+    # Add
+    bounding_box = np.ravel(
+        np.reshape(bounding_box, BBOX_SHAPE_FOR_XY_RANGES) + (-eps, eps)
+    )
     # Filter regions
     regions = vor.regions
     vertices = vor.vertices
