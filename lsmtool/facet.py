@@ -188,12 +188,24 @@ def prepare_points_for_tessellate(cal_coords, bounding_box):
     # Select calibrators inside the bounding box
     points_centre = cal_coords[in_box(cal_coords, bounding_box)]
 
-    # Mirror points
-    points_mirror = np.tile(points_centre, (2, 2, 1, 1))
-    intervals = np.reshape(bounding_box, (2, 1, 2))
-    xy = 2 * intervals - points_centre.T[..., None]
-    points_mirror[0, ..., 0] = xy[0].T
-    points_mirror[1, ..., 1] = xy[1].T
+    if len(points_centre) == 0:
+        return points_centre, points_centre
 
-    points = np.vstack([points_centre, points_mirror.reshape(-1, 2)])
+    # Extract bounding box coordinates
+    minx, maxx, miny, maxy = bounding_box
+
+    # Create mirrored points more efficiently
+    x_coords, y_coords = points_centre[..., 0], points_centre[..., 1]
+
+    # Mirror across each boundary
+    mirror_x_min = np.column_stack((2 * minx - x_coords, y_coords))
+    mirror_x_max = np.column_stack((2 * maxx - x_coords, y_coords))
+    mirror_y_min = np.column_stack((x_coords, 2 * miny - y_coords))
+    mirror_y_max = np.column_stack((x_coords, 2 * maxy - y_coords))
+
+    # Combine all points
+    points = np.vstack(
+        [points_centre, mirror_x_min, mirror_x_max, mirror_y_min, mirror_y_max]
+    )
+
     return points_centre, points
