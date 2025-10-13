@@ -103,7 +103,7 @@ def in_box(cal_coords, bounding_box):
     minx, maxx, miny, maxy = bounding_box
     minx, maxx = sorted([minx, maxx])
     miny, maxy = sorted([miny, maxy])
-    x, y = np.transpose(cal_coords)
+    x, y = cal_coords[..., 0], cal_coords[..., 1]
     return (minx <= x) & (x <= maxx) & (miny <= y) & (y <= maxy)
 
 
