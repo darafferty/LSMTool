@@ -11,6 +11,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from lsmtool.facet import in_box
+
 
 INDEX_OUTSIDE_DIAGRAM = -1
 BBOX_SHAPE_FOR_XY_RANGES = (2, 2)
@@ -64,6 +66,177 @@ def test_in_box_benchmark(version, size, benchmark):
 # ---------------------------------------------------------------------------- #
 
 
+def prepare_points_for_tessellate_v0(cal_coords, bounding_box):
+    # Select calibrators inside the bounding box
+    points_inside = in_box(cal_coords, bounding_box)
+
+    # Mirror points
+    points_center = cal_coords[points_inside, :]
+    points_left = np.copy(points_center)
+    points_left[:, 0] = bounding_box[0] - (points_left[:, 0] - bounding_box[0])
+    points_right = np.copy(points_center)
+    points_right[:, 0] = bounding_box[1] + (
+        bounding_box[1] - points_right[:, 0]
+    )
+    points_down = np.copy(points_center)
+    points_down[:, 1] = bounding_box[2] - (points_down[:, 1] - bounding_box[2])
+    points_up = np.copy(points_center)
+    points_up[:, 1] = bounding_box[3] + (bounding_box[3] - points_up[:, 1])
+    points = np.append(
+        points_center,
+        np.append(
+            np.append(points_left, points_right, axis=0),
+            np.append(points_down, points_up, axis=0),
+            axis=0,
+        ),
+        axis=0,
+    )
+    return points_center, points
+
+
+def prepare_points_for_tessellate_v1(cal_coords, bounding_box):
+    # Select calibrators inside the bounding box
+    points_centre = cal_coords[in_box(cal_coords, bounding_box)]
+
+    # Mirror points
+    points_mirror = np.tile(points_centre, (2, 2, 1, 1))
+    intervals = np.reshape(bounding_box, (2, 1, 2))
+    xy = 2 * intervals - points_centre.T[..., None]
+    points_mirror[0, ..., 0] = xy[0].T
+    points_mirror[1, ..., 1] = xy[1].T
+
+    points = np.vstack([points_centre, points_mirror.reshape(-1, 2)])
+    return points_centre, points
+
+
+def prepare_points_for_tessellate_v2(cal_coords, bounding_box):
+    # Select calibrators inside the bounding box
+    points_centre = cal_coords[in_box(cal_coords, bounding_box)]
+
+    # Mirror points
+    points_mirror = np.tile(points_centre, (2, 2, 1, 1))
+    intervals = np.reshape(bounding_box, (2, 1, 2))
+    xy = 2 * intervals - points_centre.T[..., None]
+    indices = [0, 1]
+    points_mirror[indices, ..., indices] = xy[indices].swapaxes(-1, 1)
+    points = np.vstack([points_centre, points_mirror.reshape(-1, 2)])
+    return points_centre, points
+
+
+def prepare_points_for_tessellate_v3(cal_coords, bounding_box):
+    # Select calibrators inside the bounding box
+    points_centre = cal_coords[in_box(cal_coords, bounding_box)]
+
+    if len(points_centre) == 0:
+        return points_centre, points_centre
+
+    # Extract bounding box coordinates
+    minx, maxx, miny, maxy = bounding_box
+
+    # Create mirrored points more efficiently
+    x_coords, y_coords = points_centre.T
+
+    # Mirror across each boundary
+    mirror_x_min = np.column_stack((2 * minx - x_coords, y_coords))
+    mirror_x_max = np.column_stack((2 * maxx - x_coords, y_coords))
+    mirror_y_min = np.column_stack((x_coords, 2 * miny - y_coords))
+    mirror_y_max = np.column_stack((x_coords, 2 * maxy - y_coords))
+
+    # Combine all points
+    points = np.vstack(
+        [points_centre, mirror_x_min, mirror_x_max, mirror_y_min, mirror_y_max]
+    )
+
+    return points_centre, points
+
+
+def prepare_points_for_tessellate_v4(cal_coords, bounding_box):
+    # Select calibrators inside the bounding box
+    points_centre = cal_coords[in_box(cal_coords, bounding_box)]
+
+    if len(points_centre) == 0:
+        return points_centre, points_centre
+
+    # Extract bounding box coordinates
+    minx, maxx, miny, maxy = bounding_box
+
+    # Create mirrored points more efficiently
+    x_coords, y_coords = points_centre[..., 0], points_centre[..., 1]
+
+    # Mirror across each boundary
+    mirror_x_min = np.column_stack((2 * minx - x_coords, y_coords))
+    mirror_x_max = np.column_stack((2 * maxx - x_coords, y_coords))
+    mirror_y_min = np.column_stack((x_coords, 2 * miny - y_coords))
+    mirror_y_max = np.column_stack((x_coords, 2 * maxy - y_coords))
+
+    # Combine all points
+    points = np.vstack(
+        [points_centre, mirror_x_min, mirror_x_max, mirror_y_min, mirror_y_max]
+    )
+
+    return points_centre, points
+
+
+def prepare_points_for_tessellate_v5(cal_coords, bounding_box):
+    # Select calibrators inside the bounding box
+    points_centre = cal_coords[in_box(cal_coords, bounding_box)]
+
+    if len(points_centre) == 0:
+        return points_centre, points_centre
+
+    # Extract bounding box coordinates
+    # from IPython import embed
+    # embed(header="Embedded interpreter at 'tests/test_facet.py':621")
+    minx, maxx, miny, maxy = bounding_box
+
+    # Create mirrored points more efficiently
+    x_coords, y_coords = points_centre[..., 0], points_centre[..., 1]
+
+    # Mirror across each boundary
+    points = np.column_stack(
+        [
+            (x_coords, y_coords),
+            (2 * minx - x_coords, y_coords),  # mirror_x_min
+            (2 * maxx - x_coords, y_coords),  # mirror_x_max
+            (x_coords, 2 * miny - y_coords),  # mirror_y_min
+            (x_coords, 2 * maxy - y_coords),  # mirror_y_max
+        ]
+    )
+
+    return points_centre, points.T
+
+
+def prepare_points_for_tessellate_v6(cal_coords, bounding_box):
+
+    # Select calibrators inside the bounding box
+    points_centre = cal_coords[in_box(cal_coords, bounding_box)]
+
+    # Mirror points
+    intervals = np.reshape(bounding_box, (1, 2, 2))
+    xy = 2 * intervals - points_centre[..., np.newaxis]
+    points_mirror = np.tile(points_centre, (3, 2, 1, 1))
+    points_mirror[[0, 1], ..., [0, 1]] = np.moveaxis(xy, 0, -1)
+    points_mirror = points_mirror.reshape(-1, 2)
+    return points_centre, points_mirror
+
+
+@pytest.mark.parametrize("version", range(7))
+@pytest.mark.parametrize(
+    "size", (10 ** np.linspace(1, 5.5, 10)).astype(int).tolist()
+)
+def test_prepare_benchmark(version, size, benchmark):
+    # Act
+    np.random.seed(0)
+    bounding_box = [0, 1, 0, 1]
+    data = np.random.rand(size, 2)
+
+    prepare = eval(f"prepare_points_for_tessellate_v{version}")
+    benchmark(prepare, data, bounding_box)
+
+
+# ---------------------------------------------------------------------------- #
+
+
 def collect_results(filename):
     path = Path(filename)
     data = json.loads(path.read_text())
@@ -96,6 +269,8 @@ def plot_benchmark_results(ax, db, **kws):
     ax.legend()
     ax.grid()
     ax.set(xscale="log", yscale="log")
+
+# ---------------------------------------------------------------------------- #
 
 
 def main():
