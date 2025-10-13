@@ -116,7 +116,10 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     cal_coords : numpy.ndarray
         Array of x, y coordinates.
     bounding_box : numpy.ndarray
-        Array defining the bounding box as [minx, maxx, miny, maxy]
+        Array defining the bounding box as [minx, maxx, miny, maxy].
+    eps : float
+        Numerical tolerance value, used to expand the bounding box slightly to
+        avoid precision issues.
 
     Returns
     -------
