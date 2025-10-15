@@ -37,7 +37,7 @@ def tessellate(
     wcs_pixel_scale : float
         The pixel scale to use for the conversion to pixel coordinates in
         degrees per pixel.
-
+`
     Returns
     -------
     facet_points : numpy.ndarray
