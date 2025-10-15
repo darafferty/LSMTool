@@ -8,10 +8,12 @@ from lsmtool.facet import (
     in_box,
     tessellate,
     voronoi,
-    prepare_points_for_tessellate,
+    prepare_points_for_tessellate
 )
 
 NULL_CONTEXT = contextlib.nullcontext()
+INDEX_OUTSIDE_DIAGRAM = -1
+BBOX_SHAPE_FOR_XY_RANGES = (2, 2)
 
 
 @pytest.mark.parametrize(
