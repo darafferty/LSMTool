@@ -13,10 +13,10 @@ import scipy
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
-from lsmtool.facet import in_box
+from astropy.coordinates import SkyCoord
 
-from lsmtool.facet import in_box
-
+from lsmtool.facet import in_box, voronoi, make_wcs
+from lsmtool.constants import WCS_PIXEL_SCALE, WCS_ORIGIN
 
 INDEX_OUTSIDE_DIAGRAM = -1
 BBOX_SHAPE_FOR_XY_RANGES = (2, 2)
@@ -282,6 +282,7 @@ def test_in_box_benchmark(version, data, benchmark):
 
 # ---------------------------------------------------------------------------- #
 
+
 def prepare_points_for_tessellate_v0(cal_coords, bounding_box):
     # Select calibrators inside the bounding box
     points_inside = in_box(cal_coords, bounding_box)
@@ -423,7 +424,6 @@ def prepare_points_for_tessellate_v5(cal_coords, bounding_box):
 
 
 def prepare_points_for_tessellate_v6(cal_coords, bounding_box):
-
     # Select calibrators inside the bounding box
     points_centre = cal_coords[in_box(cal_coords, bounding_box)]
 
@@ -451,6 +451,7 @@ def test_prepare_benchmark(version, size, benchmark):
 
 
 # ---------------------------------------------------------------------------- #
+
 
 def filter_points_v0(voronoi_data):
     eps = 1e-6
@@ -773,7 +774,6 @@ def filter_points_v9(voronoi_data, eps=1e-6):
 
 
 def keep_region10(position_index, region_index, regions, vertices, bbox):
-
     for region in regions[region_index]:
         if not keep_index(region, vertices, bbox):
             return position_index, False
@@ -787,8 +787,8 @@ def keep_index(index, vertices, bbox):
         return False
 
     if not (
-        (minx < vertices[index, 0] < maxx) and
-        (miny < vertices[index, 1] < maxy)
+        (minx < vertices[index, 0] < maxx)
+        and (miny < vertices[index, 1] < maxy)
     ):
         return False
 
@@ -804,17 +804,17 @@ def filter_points_v10(voronoi_data, eps=1e-6):
     # Filter regions
     vertices = vor.vertices
     regions = vor.regions
-    keep_region = ftl.partial(keep_region10,
-                              regions=regions,
-                              vertices=vertices,
-                              bbox=bounding_box)
+    keep_region = ftl.partial(
+        keep_region10, regions=regions, vertices=vertices, bbox=bounding_box
+    )
 
     with ThreadPoolExecutor() as executor:
         results = executor.map(
             keep_region, range(len(vor.point_region)), vor.point_region
         )
-    filtered_regions = [regions[vor.point_region[i]]
-                        for i, keep in results if keep]
+    filtered_regions = [
+        regions[vor.point_region[i]] for i, keep in results if keep
+    ]
 
     # filtered_regions = asyncio.run(filtered_regions_gen(vor, bounding_box))
     return points_centre, vertices, filtered_regions
@@ -839,7 +839,6 @@ def filter_points_v11(voronoi_data, eps=1e-6):
 
 
 def keep_region11(region, vertices, bbox):
-
     for index in region:
         if index == -1:
             return False
@@ -867,13 +866,327 @@ def voronoi_data(request):
     return len(cal_coords), vor, points_centre, bounding_box
 
 
-@pytest.mark.parametrize(
-    "version", np.arange(0, 12).astype(str)
-)
+@pytest.mark.parametrize("version", np.arange(0, 12).astype(str))
 def test_filter_points_benchmark(version, voronoi_data, benchmark):
     # Act
     filter_points_test = eval(f"filter_points_v{version}")
     benchmark(filter_points_test, voronoi_data)
+
+
+# ---------------------------------------------------------------------------- #
+
+
+def in_box0(cal_coords, bounding_box):
+    """
+    Checks if coordinates are inside the bounding box
+
+    Parameters
+    ----------
+    cal_coords : array
+        Array of x, y coordinates
+    bounding_box : array
+        Array defining the bounding box as [minx, maxx, miny, maxy]
+
+    Returns
+    -------
+    inside : array
+        Bool array with True for inside and False if not
+    """
+    return np.logical_and(
+        np.logical_and(
+            bounding_box[0] <= cal_coords[:, 0],
+            cal_coords[:, 0] <= bounding_box[1],
+        ),
+        np.logical_and(
+            bounding_box[2] <= cal_coords[:, 1],
+            cal_coords[:, 1] <= bounding_box[3],
+        ),
+    )
+
+
+def voronoi0(cal_coords, bounding_box):
+    """
+    Produces a Voronoi tessellation for the given coordinates and bounding box
+
+    Parameters
+    ----------
+    cal_coords : array
+        Array of x, y coordinates
+    bounding_box : array
+        Array defining the bounding box as [minx, maxx, miny, maxy]
+
+    Returns
+    -------
+    vor : Voronoi object
+        The resulting Voronoi object
+    """
+    eps = 1e-6
+
+    # Select calibrators inside the bounding box
+    i = in_box0(cal_coords, bounding_box)
+
+    # Mirror points
+    points_center = cal_coords[i, :]
+    points_left = np.copy(points_center)
+    points_left[:, 0] = bounding_box[0] - (points_left[:, 0] - bounding_box[0])
+    points_right = np.copy(points_center)
+    points_right[:, 0] = bounding_box[1] + (
+        bounding_box[1] - points_right[:, 0]
+    )
+    points_down = np.copy(points_center)
+    points_down[:, 1] = bounding_box[2] - (points_down[:, 1] - bounding_box[2])
+    points_up = np.copy(points_center)
+    points_up[:, 1] = bounding_box[3] + (bounding_box[3] - points_up[:, 1])
+    points = np.append(
+        points_center,
+        np.append(
+            np.append(points_left, points_right, axis=0),
+            np.append(points_down, points_up, axis=0),
+            axis=0,
+        ),
+        axis=0,
+    )
+
+    # Compute Voronoi, sorting the output regions to match the order of the
+    # input coordinates
+    vor = scipy.spatial.Voronoi(points)
+    sorted_regions = np.array(vor.regions, dtype=object)[
+        np.array(vor.point_region)
+    ]
+    vor.regions = sorted_regions.tolist()
+
+    # Filter regions
+    regions = []
+    for region in vor.regions:
+        flag = True
+        for index in region:
+            if index == -1:
+                flag = False
+                break
+            else:
+                x = vor.vertices[index, 0]
+                y = vor.vertices[index, 1]
+                if not (
+                    bounding_box[0] - eps <= x
+                    and x <= bounding_box[1] + eps
+                    and bounding_box[2] - eps <= y
+                    and y <= bounding_box[3] + eps
+                ):
+                    flag = False
+                    break
+        if region and flag:
+            regions.append(region)
+    vor.filtered_points = points_center
+    vor.filtered_regions = regions
+
+    return vor
+
+
+def tessellate_v0(ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec):
+    # Build the bounding box corner coordinates
+    if width_ra <= 0.0 or width_dec <= 0.0:
+        raise ValueError("The RA/Dec width cannot be zero or less")
+    wcs_pixel_scale = 20.0 / 3600.0  # 20"/pixel
+    wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
+    x_cal, y_cal = wcs.wcs_world2pix(ra_cal, dec_cal, WCS_ORIGIN)
+    x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
+    width_x = width_ra / wcs_pixel_scale / 2.0
+    width_y = width_dec / wcs_pixel_scale / 2.0
+    bounding_box = np.array(
+        [x_mid - width_x, x_mid + width_x, y_mid - width_y, y_mid + width_y]
+    )
+
+    # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
+    vor = voronoi0(np.stack((x_cal, y_cal)).T, bounding_box)
+    facet_polys = []
+    for region in vor.filtered_regions:
+        vertices = vor.vertices[region + [region[0]], :]
+        ra, dec = wcs.wcs_pix2world(vertices[:, 0], vertices[:, 1], WCS_ORIGIN)
+        vertices = np.stack((ra, dec)).T
+        facet_polys.append(vertices)
+    facet_points = list(
+        map(tuple, wcs.wcs_pix2world(vor.filtered_points, WCS_ORIGIN))
+    )
+    return facet_points, facet_polys
+
+
+def tessellate_v1(
+    coordinates,
+    bbox_midpoint,
+    bbox_size,
+    wcs_pixel_scale=WCS_PIXEL_SCALE,
+):
+    width_ra, width_dec = bbox_size
+    if width_ra <= 0.0 or width_dec <= 0.0:
+        raise ValueError("The RA/Dec width cannot be zero or less")
+
+    # Build the bounding box corner coordinates
+    coords_sky = np.column_stack([coordinates.ra.deg, coordinates.dec.deg])
+    ra_mid, dec_mid = bbox_midpoint.ra.deg, bbox_midpoint.dec.deg
+
+    wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
+    coords_pixel = wcs.wcs_world2pix(coords_sky, WCS_ORIGIN)
+    x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
+    width_x = width_ra / wcs_pixel_scale / 2.0
+    width_y = width_dec / wcs_pixel_scale / 2.0
+    bounding_box = [
+        x_mid - width_x,
+        x_mid + width_x,
+        y_mid - width_y,
+        y_mid + width_y,
+    ]
+
+    # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
+    points, vertices, regions = voronoi(coords_pixel, bounding_box)
+    facet_polys = []
+    for region in regions:
+        polygon = vertices[region + [region[0]], :]
+        ra, dec = wcs.wcs_pix2world(polygon[:, 0], polygon[:, 1], WCS_ORIGIN)
+        polygon = np.stack((ra, dec)).T
+        facet_polys.append(polygon)
+
+    facet_points = list(map(tuple, wcs.wcs_pix2world(points, WCS_ORIGIN)))
+    return facet_points, facet_polys
+
+
+def tessellate_v2(
+    coordinates,
+    bbox_midpoint,
+    bbox_size,
+    wcs_pixel_scale=WCS_PIXEL_SCALE,
+):
+    width_ra, width_dec = bbox_size
+    if width_ra <= 0.0 or width_dec <= 0.0:
+        raise ValueError("The RA/Dec width cannot be zero or less")
+
+    # Build the bounding box corner coordinates
+    coords_sky = np.column_stack([coordinates.ra.deg, coordinates.dec.deg])
+    ra_mid, dec_mid = bbox_midpoint.ra.deg, bbox_midpoint.dec.deg
+
+    wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
+    coords_pixel = wcs.wcs_world2pix(coords_sky, WCS_ORIGIN)
+    x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
+    width_x = width_ra / wcs_pixel_scale / 2.0
+    width_y = width_dec / wcs_pixel_scale / 2.0
+    bounding_box = [
+        x_mid - width_x,
+        x_mid + width_x,
+        y_mid - width_y,
+        y_mid + width_y,
+    ]
+
+    # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
+    points, vertices, regions = voronoi(coords_pixel, bounding_box)
+
+    facet_polys = []
+    for region in regions:
+        polygon = vertices[region + [region[0]], :]
+        coords = wcs.wcs_pix2world(polygon, WCS_ORIGIN)
+        facet_polys.append(coords)
+
+    facet_points = wcs.wcs_pix2world(points, WCS_ORIGIN)
+    return facet_points, facet_polys
+
+
+def tessellate_v3(
+    coordinates,
+    bbox_midpoint,
+    bbox_size,
+    wcs_pixel_scale=WCS_PIXEL_SCALE,
+):
+    width_ra, width_dec = bbox_size
+    if width_ra <= 0.0 or width_dec <= 0.0:
+        raise ValueError("The RA/Dec width cannot be zero or less")
+
+    # Build the bounding box corner coordinates
+    coords_sky = np.column_stack([coordinates.ra.deg, coordinates.dec.deg])
+    ra_mid, dec_mid = bbox_midpoint.ra.deg, bbox_midpoint.dec.deg
+
+    wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
+    coords_pixel = wcs.wcs_world2pix(coords_sky, WCS_ORIGIN)
+    x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
+    width_x = width_ra / wcs_pixel_scale / 2.0
+    width_y = width_dec / wcs_pixel_scale / 2.0
+    bounding_box = [
+        x_mid - width_x,
+        x_mid + width_x,
+        y_mid - width_y,
+        y_mid + width_y,
+    ]
+
+    # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
+    points, vertices, regions = voronoi(coords_pixel, bounding_box)
+
+    # Close each region's polygon by adding the first point to the end.
+    # Convert to celestial coordinates. In general, each polygon may consist of
+    # a different number of vertices.
+    facet_polys = [
+        wcs.wcs_pix2world(vertices[[*region, region[0]]], WCS_ORIGIN)
+        for region in regions
+    ]
+
+    facet_points = wcs.wcs_pix2world(points, WCS_ORIGIN)
+    return facet_points, facet_polys
+
+
+def tessellate_v4(
+    coordinates,
+    bbox_midpoint,
+    bbox_size,
+    wcs_pixel_scale=WCS_PIXEL_SCALE,
+):
+    width_ra, width_dec = bbox_size
+    if width_ra <= 0.0 or width_dec <= 0.0:
+        raise ValueError("The RA/Dec width cannot be zero or less")
+
+    # Build the bounding box corner coordinates
+    coords_sky = np.column_stack([coordinates.ra.deg, coordinates.dec.deg])
+    ra_mid, dec_mid = bbox_midpoint.ra.deg, bbox_midpoint.dec.deg
+
+    wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
+    coords_pixel = wcs.wcs_world2pix(coords_sky, WCS_ORIGIN)
+    x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
+    width_x = width_ra / wcs_pixel_scale / 2.0
+    width_y = width_dec / wcs_pixel_scale / 2.0
+    bounding_box = [
+        x_mid - width_x,
+        x_mid + width_x,
+        y_mid - width_y,
+        y_mid + width_y,
+    ]
+
+    # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
+    points, vertices, regions = voronoi(coords_pixel, bounding_box)
+
+    # Close the regions by adding the first point to the end
+    list(map(list.append, regions, next(zip(*regions))))
+
+    facet_polys = [
+        wcs.wcs_pix2world(vertices[region], WCS_ORIGIN) for region in regions
+    ]
+
+    facet_points = wcs.wcs_pix2world(points, WCS_ORIGIN)
+    return facet_points, facet_polys
+
+
+@pytest.mark.parametrize("version", range(5))
+@pytest.mark.parametrize(
+    "size", (10 ** np.linspace(1, 5.5, 10)).astype(int).tolist()
+)
+def test_tessellate_benchmark(version, size, benchmark):
+    # Act
+    np.random.seed(90909)
+    coords = (np.random.rand(size, 2) * [360.0, 180.0] - [0.0, 90.0]).T
+    mid = (0, 0)
+    size = (90, 180)
+
+    tess = eval(f"tessellate_v{version}")
+    if version:
+        coords = [SkyCoord(coords.T, unit="deg")]
+        mid = [SkyCoord(*mid, unit="deg")]
+        size = [size]
+
+    benchmark(tess, *coords, *mid, *size)
 
 
 # ---------------------------------------------------------------------------- #
@@ -912,6 +1225,7 @@ def plot_benchmark_results(ax, db, **kws):
     ax.grid()
     ax.set(xscale="log", yscale="log")
 
+
 # ---------------------------------------------------------------------------- #
 
 
@@ -936,21 +1250,19 @@ def main():
         fastest_version_by_size, score = np.unique(
             versions[fastest], return_counts=True
         )
-        print(name)
         print(
-            "\n".join(
-                map(
-                    "{0:<9}|{1:<9}".format,
-                    *zip(
-                        *[
-                            ("version", "score"),
-                            *(zip(fastest_version_by_size, score)),
-                        ]
-                    ),
-                )
-            )
+            name,
+            *map(
+                "{0:<9}|{1:<9}".format,
+                *zip(
+                    *[
+                        ("version", "score"),
+                        *(zip(fastest_version_by_size, score)),
+                    ]
+                ),
+            ),
+            sep="\n",
         )
-        print()
         fig.savefig(test_folder / f"benchmark/{name}.pdf")
 
 

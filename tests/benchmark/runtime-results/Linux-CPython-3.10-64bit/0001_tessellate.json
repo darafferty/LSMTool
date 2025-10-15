@@ -1,0 +1,2088 @@
+{
+    "machine_info": {
+        "node": "calypso",
+        "processor": "x86_64",
+        "machine": "x86_64",
+        "python_compiler": "GCC 13.3.0",
+        "python_implementation": "CPython",
+        "python_implementation_version": "3.10.16+",
+        "python_version": "3.10.16+",
+        "python_build": [
+            "heads/3.10:8773554",
+            "Jan 20 2025 17:01:30"
+        ],
+        "release": "6.11.0-29-generic",
+        "system": "Linux",
+        "cpu": {
+            "python_version": "3.10.16.final.0 (64 bit)",
+            "cpuinfo_version": [
+                9,
+                0,
+                0
+            ],
+            "cpuinfo_version_string": "9.0.0",
+            "arch": "X86_64",
+            "bits": 64,
+            "count": 8,
+            "arch_string_raw": "x86_64",
+            "vendor_id_raw": "GenuineIntel",
+            "brand_raw": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
+            "hz_advertised_friendly": "1.6000 GHz",
+            "hz_actual_friendly": "2.7997 GHz",
+            "hz_advertised": [
+                1600000000,
+                0
+            ],
+            "hz_actual": [
+                2799656000,
+                0
+            ],
+            "stepping": 12,
+            "model": 142,
+            "family": 6,
+            "flags": [
+                "3dnowprefetch",
+                "abm",
+                "acpi",
+                "adx",
+                "aes",
+                "aperfmperf",
+                "apic",
+                "arat",
+                "arch_capabilities",
+                "arch_perfmon",
+                "art",
+                "avx",
+                "avx2",
+                "bmi1",
+                "bmi2",
+                "bts",
+                "clflush",
+                "clflushopt",
+                "cmov",
+                "constant_tsc",
+                "cpuid",
+                "cpuid_fault",
+                "cx16",
+                "cx8",
+                "de",
+                "ds_cpl",
+                "dtes64",
+                "dtherm",
+                "dts",
+                "epb",
+                "ept",
+                "ept_ad",
+                "erms",
+                "est",
+                "f16c",
+                "flexpriority",
+                "flush_l1d",
+                "fma",
+                "fpu",
+                "fsgsbase",
+                "fxsr",
+                "hle",
+                "ht",
+                "hwp",
+                "hwp_act_window",
+                "hwp_epp",
+                "hwp_notify",
+                "ibpb",
+                "ibrs",
+                "ibrs_enhanced",
+                "ida",
+                "intel_pt",
+                "invpcid",
+                "lahf_lm",
+                "lm",
+                "mca",
+                "mce",
+                "md_clear",
+                "mmx",
+                "monitor",
+                "movbe",
+                "mpx",
+                "msr",
+                "mtrr",
+                "nonstop_tsc",
+                "nopl",
+                "nx",
+                "osxsave",
+                "pae",
+                "pat",
+                "pbe",
+                "pcid",
+                "pclmulqdq",
+                "pdcm",
+                "pdpe1gb",
+                "pebs",
+                "pge",
+                "pln",
+                "pni",
+                "popcnt",
+                "pse",
+                "pse36",
+                "pts",
+                "rdrand",
+                "rdrnd",
+                "rdseed",
+                "rdtscp",
+                "rep_good",
+                "rtm",
+                "sdbg",
+                "sep",
+                "sgx",
+                "smap",
+                "smep",
+                "smx",
+                "ss",
+                "ssbd",
+                "sse",
+                "sse2",
+                "sse4_1",
+                "sse4_2",
+                "ssse3",
+                "stibp",
+                "syscall",
+                "tm",
+                "tm2",
+                "tpr_shadow",
+                "tsc",
+                "tsc_adjust",
+                "tsc_deadline_timer",
+                "tscdeadline",
+                "vme",
+                "vmx",
+                "vnmi",
+                "vpid",
+                "x2apic",
+                "xgetbv1",
+                "xsave",
+                "xsavec",
+                "xsaveopt",
+                "xsaves",
+                "xtopology",
+                "xtpr"
+            ],
+            "l3_cache_size": 6291456,
+            "l2_cache_size": 1048576,
+            "l1_data_cache_size": 131072,
+            "l1_instruction_cache_size": 131072,
+            "l2_cache_line_size": 256,
+            "l2_cache_associativity": 6
+        }
+    },
+    "commit_info": {
+        "id": "cbd5fcfd4518c2b0c4a1f21ebbf8240be00edf05",
+        "time": "2025-10-15T16:20:18+02:00",
+        "author_time": "2025-10-15T15:48:27+02:00",
+        "dirty": true,
+        "project": "LSMTool",
+        "branch": "gec-115-tessellate-benchmark"
+    },
+    "benchmarks": [
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[10-0]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[10-0]",
+            "params": {
+                "size": 10,
+                "version": 0
+            },
+            "param": "10-0",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.00044975100172450766,
+                "max": 0.0005318350013112649,
+                "mean": 0.000463898300222354,
+                "stddev": 2.4352226165836256e-05,
+                "rounds": 10,
+                "median": 0.00045933600085845683,
+                "iqr": 1.0112999007105827e-05,
+                "q1": 0.00045028599924989976,
+                "q3": 0.0004603989982570056,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 0.00044975100172450766,
+                "hd15iqr": 0.0005318350013112649,
+                "ops": 2155.6448892368944,
+                "total": 0.00463898300222354,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[10-1]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[10-1]",
+            "params": {
+                "size": 10,
+                "version": 1
+            },
+            "param": "10-1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0004324530018493533,
+                "max": 0.0010414500029582996,
+                "mean": 0.0004928597545585944,
+                "stddev": 9.210610569255085e-05,
+                "rounds": 652,
+                "median": 0.00044367699956637807,
+                "iqr": 7.182500121416524e-05,
+                "q1": 0.00043806599933304824,
+                "q3": 0.0005098910005472135,
+                "iqr_outliers": 100,
+                "stddev_outliers": 107,
+                "outliers": "107;100",
+                "ld15iqr": 0.0004324530018493533,
+                "hd15iqr": 0.0006215620014700107,
+                "ops": 2028.9747554973337,
+                "total": 0.32134455997220357,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[10-2]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[10-2]",
+            "params": {
+                "size": 10,
+                "version": 2
+            },
+            "param": "10-2",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.00039550300061819144,
+                "max": 0.0009546780020173173,
+                "mean": 0.0004199807400579624,
+                "stddev": 4.571213621927217e-05,
+                "rounds": 958,
+                "median": 0.0004042569999000989,
+                "iqr": 1.1931002518394962e-05,
+                "q1": 0.00040057499791146256,
+                "q3": 0.0004125060004298575,
+                "iqr_outliers": 192,
+                "stddev_outliers": 69,
+                "outliers": "69;192",
+                "ld15iqr": 0.00039550300061819144,
+                "hd15iqr": 0.0004308220013626851,
+                "ops": 2381.061569304316,
+                "total": 0.402341548975528,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[10-3]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[10-3]",
+            "params": {
+                "size": 10,
+                "version": 3
+            },
+            "param": "10-3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.00039581500095664524,
+                "max": 0.0012845839992223773,
+                "mean": 0.0004298436920250642,
+                "stddev": 6.650031209456694e-05,
+                "rounds": 971,
+                "median": 0.00040525300209992565,
+                "iqr": 4.532000093604438e-05,
+                "q1": 0.00040027274735621177,
+                "q3": 0.00044559274829225615,
+                "iqr_outliers": 49,
+                "stddev_outliers": 63,
+                "outliers": "63;49",
+                "ld15iqr": 0.00039581500095664524,
+                "hd15iqr": 0.0005154539976501837,
+                "ops": 2326.4270676832216,
+                "total": 0.41737822495633736,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[10-4]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[10-4]",
+            "params": {
+                "size": 10,
+                "version": 4
+            },
+            "param": "10-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.00039544099854538217,
+                "max": 0.00342439700034447,
+                "mean": 0.0004471364229582157,
+                "stddev": 0.00012180568631617215,
+                "rounds": 948,
+                "median": 0.0004061920008098241,
+                "iqr": 6.84475016896613e-05,
+                "q1": 0.0004009339991171146,
+                "q3": 0.0004693815008067759,
+                "iqr_outliers": 41,
+                "stddev_outliers": 41,
+                "outliers": "41;41",
+                "ld15iqr": 0.00039544099854538217,
+                "hd15iqr": 0.0005722469977627043,
+                "ops": 2236.453906805639,
+                "total": 0.42388532896438846,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[31-0]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[31-0]",
+            "params": {
+                "size": 31,
+                "version": 0
+            },
+            "param": "31-0",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0004625750007107854,
+                "max": 0.0011034539966203738,
+                "mean": 0.0005361288246181886,
+                "stddev": 7.989914913008192e-05,
+                "rounds": 1579,
+                "median": 0.0005167329982214142,
+                "iqr": 0.00010106900026585208,
+                "q1": 0.00047301549875555793,
+                "q3": 0.00057408449902141,
+                "iqr_outliers": 33,
+                "stddev_outliers": 253,
+                "outliers": "253;33",
+                "ld15iqr": 0.0004625750007107854,
+                "hd15iqr": 0.0007259160011017229,
+                "ops": 1865.2233457362854,
+                "total": 0.8465474140721199,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[31-1]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[31-1]",
+            "params": {
+                "size": 31,
+                "version": 1
+            },
+            "param": "31-1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0005767090005974751,
+                "max": 0.0012502110002969857,
+                "mean": 0.0006004359080531773,
+                "stddev": 5.2907735180373116e-05,
+                "rounds": 620,
+                "median": 0.0005866475021321094,
+                "iqr": 7.020000339252874e-06,
+                "q1": 0.0005827660006616497,
+                "q3": 0.0005897860010009026,
+                "iqr_outliers": 119,
+                "stddev_outliers": 31,
+                "outliers": "31;119",
+                "ld15iqr": 0.0005767090005974751,
+                "hd15iqr": 0.0006024229987815488,
+                "ops": 1665.4566900276648,
+                "total": 0.37227026299296995,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[31-2]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[31-2]",
+            "params": {
+                "size": 31,
+                "version": 2
+            },
+            "param": "31-2",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0004893279983662069,
+                "max": 0.0031408510003529955,
+                "mean": 0.0005780842930085126,
+                "stddev": 0.00015907821647100776,
+                "rounds": 809,
+                "median": 0.000520241999765858,
+                "iqr": 9.322375353804091e-05,
+                "q1": 0.0004976254977009376,
+                "q3": 0.0005908492512389785,
+                "iqr_outliers": 74,
+                "stddev_outliers": 74,
+                "outliers": "74;74",
+                "ld15iqr": 0.0004893279983662069,
+                "hd15iqr": 0.0007404190000670496,
+                "ops": 1729.8515321973546,
+                "total": 0.4676701930438867,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[31-3]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[31-3]",
+            "params": {
+                "size": 31,
+                "version": 3
+            },
+            "param": "31-3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.00048302799768862315,
+                "max": 0.0011021210011676885,
+                "mean": 0.0005486894951801204,
+                "stddev": 0.00010039431161458512,
+                "rounds": 733,
+                "median": 0.00050800000099116,
+                "iqr": 5.1789752433251124e-05,
+                "q1": 0.0004934227490593912,
+                "q3": 0.0005452125014926423,
+                "iqr_outliers": 94,
+                "stddev_outliers": 80,
+                "outliers": "80;94",
+                "ld15iqr": 0.00048302799768862315,
+                "hd15iqr": 0.0006274090010265354,
+                "ops": 1822.524412776895,
+                "total": 0.4021893999670283,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[31-4]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[31-4]",
+            "params": {
+                "size": 31,
+                "version": 4
+            },
+            "param": "31-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.00048664899804862216,
+                "max": 0.0010415760007163044,
+                "mean": 0.0005323494254019935,
+                "stddev": 6.262490376608679e-05,
+                "rounds": 865,
+                "median": 0.0005244909989414737,
+                "iqr": 4.5735248932032846e-05,
+                "q1": 0.00049423825021222,
+                "q3": 0.0005399734991442529,
+                "iqr_outliers": 62,
+                "stddev_outliers": 68,
+                "outliers": "68;62",
+                "ld15iqr": 0.00048664899804862216,
+                "hd15iqr": 0.000609389000601368,
+                "ops": 1878.4654444679245,
+                "total": 0.4604822529727244,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[100-0]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[100-0]",
+            "params": {
+                "size": 100,
+                "version": 0
+            },
+            "param": "100-0",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0011320889971102588,
+                "max": 0.001989113003219245,
+                "mean": 0.0011894874136760337,
+                "stddev": 0.0001017500424845909,
+                "rounds": 800,
+                "median": 0.0011438870005804347,
+                "iqr": 4.511400038609281e-05,
+                "q1": 0.0011396504996810108,
+                "q3": 0.0011847645000671037,
+                "iqr_outliers": 136,
+                "stddev_outliers": 111,
+                "outliers": "111;136",
+                "ld15iqr": 0.0011320889971102588,
+                "hd15iqr": 0.0012533079971035477,
+                "ops": 840.6982608664727,
+                "total": 0.9515899309408269,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[100-1]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[100-1]",
+            "params": {
+                "size": 100,
+                "version": 1
+            },
+            "param": "100-1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0012062970017723273,
+                "max": 0.0021105720006744377,
+                "mean": 0.0012963992954508877,
+                "stddev": 0.0001151575792612653,
+                "rounds": 467,
+                "median": 0.0012528599982033484,
+                "iqr": 0.00013091425171296578,
+                "q1": 0.001214982498822792,
+                "q3": 0.0013458967505357577,
+                "iqr_outliers": 17,
+                "stddev_outliers": 59,
+                "outliers": "59;17",
+                "ld15iqr": 0.0012062970017723273,
+                "hd15iqr": 0.0015432170002895873,
+                "ops": 771.3672812913709,
+                "total": 0.6054184709755646,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[100-2]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[100-2]",
+            "params": {
+                "size": 100,
+                "version": 2
+            },
+            "param": "100-2",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0008844340009090956,
+                "max": 0.0016071019999799319,
+                "mean": 0.0009434039108110228,
+                "stddev": 8.451532985092157e-05,
+                "rounds": 583,
+                "median": 0.0008973580006568227,
+                "iqr": 7.320550321310293e-05,
+                "q1": 0.0008940512489061803,
+                "q3": 0.0009672567521192832,
+                "iqr_outliers": 35,
+                "stddev_outliers": 78,
+                "outliers": "78;35",
+                "ld15iqr": 0.0008844340009090956,
+                "hd15iqr": 0.0010788330000650603,
+                "ops": 1059.9913658830635,
+                "total": 0.5500044800028263,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[100-3]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[100-3]",
+            "params": {
+                "size": 100,
+                "version": 3
+            },
+            "param": "100-3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0008798369999567512,
+                "max": 0.001714474998152582,
+                "mean": 0.0009162512816222291,
+                "stddev": 7.541934882051534e-05,
+                "rounds": 554,
+                "median": 0.000890350500412751,
+                "iqr": 3.395099702174775e-05,
+                "q1": 0.0008875230014382396,
+                "q3": 0.0009214739984599873,
+                "iqr_outliers": 51,
+                "stddev_outliers": 41,
+                "outliers": "41;51",
+                "ld15iqr": 0.0008798369999567512,
+                "hd15iqr": 0.0009764460010046605,
+                "ops": 1091.403657552864,
+                "total": 0.5076032100187149,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[100-4]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[100-4]",
+            "params": {
+                "size": 100,
+                "version": 4
+            },
+            "param": "100-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0008789989988144953,
+                "max": 0.0017914640011440497,
+                "mean": 0.0009337972013223428,
+                "stddev": 9.727898187926966e-05,
+                "rounds": 601,
+                "median": 0.0008899969980120659,
+                "iqr": 4.727550003735814e-05,
+                "q1": 0.0008875257499312283,
+                "q3": 0.0009348012499685865,
+                "iqr_outliers": 102,
+                "stddev_outliers": 83,
+                "outliers": "83;102",
+                "ld15iqr": 0.0008789989988144953,
+                "hd15iqr": 0.001006284001050517,
+                "ops": 1070.8963344331166,
+                "total": 0.561212117994728,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[316-0]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[316-0]",
+            "params": {
+                "size": 316,
+                "version": 0
+            },
+            "param": "316-0",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0029558399983216077,
+                "max": 0.05237008300173329,
+                "mean": 0.003761603528407873,
+                "stddev": 0.0032588714581011694,
+                "rounds": 229,
+                "median": 0.0035873930028174073,
+                "iqr": 0.0004884832478637691,
+                "q1": 0.003207549501894391,
+                "q3": 0.00369603274975816,
+                "iqr_outliers": 8,
+                "stddev_outliers": 1,
+                "outliers": "1;8",
+                "ld15iqr": 0.0029558399983216077,
+                "hd15iqr": 0.004582474997732788,
+                "ops": 265.8440722016383,
+                "total": 0.8614072080054029,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[316-1]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[316-1]",
+            "params": {
+                "size": 316,
+                "version": 1
+            },
+            "param": "316-1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0036368479995871894,
+                "max": 0.005372694002289791,
+                "mean": 0.004020414100407057,
+                "stddev": 0.0002271005573882919,
+                "rounds": 219,
+                "median": 0.003974491999542806,
+                "iqr": 0.0002594487514215871,
+                "q1": 0.0038580712498514913,
+                "q3": 0.004117520001273078,
+                "iqr_outliers": 8,
+                "stddev_outliers": 24,
+                "outliers": "24;8",
+                "ld15iqr": 0.0036368479995871894,
+                "hd15iqr": 0.004519244997936767,
+                "ops": 248.73059715384852,
+                "total": 0.8804706879891455,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[316-2]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[316-2]",
+            "params": {
+                "size": 316,
+                "version": 2
+            },
+            "param": "316-2",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0026110830003744923,
+                "max": 0.05095531199913239,
+                "mean": 0.0030483146263940012,
+                "stddev": 0.002886971284213241,
+                "rounds": 281,
+                "median": 0.0028036540024913847,
+                "iqr": 0.0002019282519540866,
+                "q1": 0.0027131277483931626,
+                "q3": 0.002915056000347249,
+                "iqr_outliers": 24,
+                "stddev_outliers": 1,
+                "outliers": "1;24",
+                "ld15iqr": 0.0026110830003744923,
+                "hd15iqr": 0.0032489510012965184,
+                "ops": 328.0501268935446,
+                "total": 0.8565764100167144,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[316-3]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[316-3]",
+            "params": {
+                "size": 316,
+                "version": 3
+            },
+            "param": "316-3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0025951720017474145,
+                "max": 0.004661791001126403,
+                "mean": 0.002788993589635552,
+                "stddev": 0.00026248631057421346,
+                "rounds": 268,
+                "median": 0.0027088209990324685,
+                "iqr": 0.00020182049775030464,
+                "q1": 0.002629149501444772,
+                "q3": 0.0028309699991950765,
+                "iqr_outliers": 14,
+                "stddev_outliers": 19,
+                "outliers": "19;14",
+                "ld15iqr": 0.0025951720017474145,
+                "hd15iqr": 0.0031602119997842237,
+                "ops": 358.5522762462404,
+                "total": 0.7474502820223279,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[316-4]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[316-4]",
+            "params": {
+                "size": 316,
+                "version": 4
+            },
+            "param": "316-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0025078660000872333,
+                "max": 0.004919773000437999,
+                "mean": 0.0027621373107008206,
+                "stddev": 0.0003816341268024266,
+                "rounds": 251,
+                "median": 0.00261502300054417,
+                "iqr": 0.00015448025169462198,
+                "q1": 0.0025942619977286085,
+                "q3": 0.0027487422494232305,
+                "iqr_outliers": 38,
+                "stddev_outliers": 19,
+                "outliers": "19;38",
+                "ld15iqr": 0.0025078660000872333,
+                "hd15iqr": 0.00298094800018589,
+                "ops": 362.03848234694607,
+                "total": 0.6932964649859059,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[1000-0]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[1000-0]",
+            "params": {
+                "size": 1000,
+                "version": 0
+            },
+            "param": "1000-0",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.011099862000264693,
+                "max": 0.06378078600027948,
+                "mean": 0.012966134851405907,
+                "stddev": 0.006171301642000424,
+                "rounds": 74,
+                "median": 0.011908459000551375,
+                "iqr": 0.0010394359997007996,
+                "q1": 0.011344687998644076,
+                "q3": 0.012384123998344876,
+                "iqr_outliers": 9,
+                "stddev_outliers": 1,
+                "outliers": "1;9",
+                "ld15iqr": 0.011099862000264693,
+                "hd15iqr": 0.014076727999054128,
+                "ops": 77.12398578760508,
+                "total": 0.9594939790040371,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[1000-1]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[1000-1]",
+            "params": {
+                "size": 1000,
+                "version": 1
+            },
+            "param": "1000-1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.010565922999376198,
+                "max": 0.06072571099866764,
+                "mean": 0.012159983187586931,
+                "stddev": 0.006223381376075128,
+                "rounds": 64,
+                "median": 0.011030498499167152,
+                "iqr": 0.0011131489991385024,
+                "q1": 0.010711098500905791,
+                "q3": 0.011824247500044294,
+                "iqr_outliers": 3,
+                "stddev_outliers": 1,
+                "outliers": "1;3",
+                "ld15iqr": 0.010565922999376198,
+                "hd15iqr": 0.013496612999006175,
+                "ops": 82.23695580605843,
+                "total": 0.7782389240055636,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[1000-2]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[1000-2]",
+            "params": {
+                "size": 1000,
+                "version": 2
+            },
+            "param": "1000-2",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.007223153999802889,
+                "max": 0.011644398000498768,
+                "mean": 0.00822646529177291,
+                "stddev": 0.0006179331702686277,
+                "rounds": 120,
+                "median": 0.008197469000151614,
+                "iqr": 0.0005370899998524692,
+                "q1": 0.007860030500523862,
+                "q3": 0.008397120500376332,
+                "iqr_outliers": 6,
+                "stddev_outliers": 18,
+                "outliers": "18;6",
+                "ld15iqr": 0.007223153999802889,
+                "hd15iqr": 0.009240460996807087,
+                "ops": 121.55889127740876,
+                "total": 0.9871758350127493,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[1000-3]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[1000-3]",
+            "params": {
+                "size": 1000,
+                "version": 3
+            },
+            "param": "1000-3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.006837486998847453,
+                "max": 0.05529509500047425,
+                "mean": 0.008552354739398046,
+                "stddev": 0.004982256870568334,
+                "rounds": 96,
+                "median": 0.007867465999879641,
+                "iqr": 0.0016348380013369024,
+                "q1": 0.007052473498333711,
+                "q3": 0.008687311499670614,
+                "iqr_outliers": 3,
+                "stddev_outliers": 2,
+                "outliers": "2;3",
+                "ld15iqr": 0.006837486998847453,
+                "hd15iqr": 0.01269580200096243,
+                "ops": 116.92686172070367,
+                "total": 0.8210260549822124,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[1000-4]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[1000-4]",
+            "params": {
+                "size": 1000,
+                "version": 4
+            },
+            "param": "1000-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0066900959973281715,
+                "max": 0.054909170998143964,
+                "mean": 0.007745081764029252,
+                "stddev": 0.004324691386747717,
+                "rounds": 123,
+                "median": 0.007267291002790444,
+                "iqr": 0.0006618485022045206,
+                "q1": 0.006943092748770141,
+                "q3": 0.007604941250974662,
+                "iqr_outliers": 7,
+                "stddev_outliers": 1,
+                "outliers": "1;7",
+                "ld15iqr": 0.0066900959973281715,
+                "hd15iqr": 0.008666188001370756,
+                "ops": 129.1141953651586,
+                "total": 0.952645056975598,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[3162-0]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[3162-0]",
+            "params": {
+                "size": 3162,
+                "version": 0
+            },
+            "param": "3162-0",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.03283823599849711,
+                "max": 0.08674174000043422,
+                "mean": 0.038491455888611706,
+                "stddev": 0.013784590539515319,
+                "rounds": 27,
+                "median": 0.03434637900136295,
+                "iqr": 0.00246186125332315,
+                "q1": 0.033703237497320515,
+                "q3": 0.036165098750643665,
+                "iqr_outliers": 2,
+                "stddev_outliers": 2,
+                "outliers": "2;2",
+                "ld15iqr": 0.03283823599849711,
+                "hd15iqr": 0.0854435020009987,
+                "ops": 25.97979153851298,
+                "total": 1.039269308992516,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[3162-1]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[3162-1]",
+            "params": {
+                "size": 3162,
+                "version": 1
+            },
+            "param": "3162-1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.030840421000903007,
+                "max": 0.08199692999914987,
+                "mean": 0.03593136003448684,
+                "stddev": 0.012515620479494059,
+                "rounds": 29,
+                "median": 0.032058876000519376,
+                "iqr": 0.002625478500704048,
+                "q1": 0.03129972100123268,
+                "q3": 0.03392519950193673,
+                "iqr_outliers": 2,
+                "stddev_outliers": 2,
+                "outliers": "2;2",
+                "ld15iqr": 0.030840421000903007,
+                "hd15iqr": 0.07944259500072803,
+                "ops": 27.830841889652998,
+                "total": 1.0420094410001184,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[3162-2]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[3162-2]",
+            "params": {
+                "size": 3162,
+                "version": 2
+            },
+            "param": "3162-2",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.019555470000341302,
+                "max": 0.07146918199941865,
+                "mean": 0.024404277454447187,
+                "stddev": 0.012654139127229257,
+                "rounds": 44,
+                "median": 0.020858608499111142,
+                "iqr": 0.002151996497559594,
+                "q1": 0.020145702501395135,
+                "q3": 0.02229769899895473,
+                "iqr_outliers": 3,
+                "stddev_outliers": 3,
+                "outliers": "3;3",
+                "ld15iqr": 0.019555470000341302,
+                "hd15iqr": 0.06967852800153196,
+                "ops": 40.97642316461085,
+                "total": 1.0737882079956762,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[3162-3]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[3162-3]",
+            "params": {
+                "size": 3162,
+                "version": 3
+            },
+            "param": "3162-3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.019557199000701075,
+                "max": 0.07181624499935424,
+                "mean": 0.025290569209806393,
+                "stddev": 0.01271096200586384,
+                "rounds": 43,
+                "median": 0.021517506000236608,
+                "iqr": 0.0021780850020149956,
+                "q1": 0.02059306974933861,
+                "q3": 0.022771154751353606,
+                "iqr_outliers": 5,
+                "stddev_outliers": 3,
+                "outliers": "3;5",
+                "ld15iqr": 0.019557199000701075,
+                "hd15iqr": 0.02810247700108448,
+                "ops": 39.540430731478,
+                "total": 1.087494476021675,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[3162-4]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[3162-4]",
+            "params": {
+                "size": 3162,
+                "version": 4
+            },
+            "param": "3162-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.0192172449969803,
+                "max": 0.07181147200026317,
+                "mean": 0.024122241975419456,
+                "stddev": 0.012874350322478344,
+                "rounds": 41,
+                "median": 0.02064958000119077,
+                "iqr": 0.0016936039974098094,
+                "q1": 0.019717457251317683,
+                "q3": 0.021411061248727492,
+                "iqr_outliers": 3,
+                "stddev_outliers": 3,
+                "outliers": "3;3",
+                "ld15iqr": 0.0192172449969803,
+                "hd15iqr": 0.0672776379979041,
+                "ops": 41.455516490506945,
+                "total": 0.9890119209921977,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[10000-0]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[10000-0]",
+            "params": {
+                "size": 10000,
+                "version": 0
+            },
+            "param": "10000-0",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.10951437900075689,
+                "max": 0.16524224800014053,
+                "mean": 0.12272520883379912,
+                "stddev": 0.02110052595844992,
+                "rounds": 6,
+                "median": 0.11580443200000445,
+                "iqr": 0.00650861000031,
+                "q1": 0.11173857600078918,
+                "q3": 0.11824718600109918,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 0.10951437900075689,
+                "hd15iqr": 0.16524224800014053,
+                "ops": 8.148285177124874,
+                "total": 0.7363512530027947,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[10000-1]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[10000-1]",
+            "params": {
+                "size": 10000,
+                "version": 1
+            },
+            "param": "10000-1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.1030062009995163,
+                "max": 0.16107490600188612,
+                "mean": 0.11503998049981116,
+                "stddev": 0.02265663001086245,
+                "rounds": 6,
+                "median": 0.10687506249996659,
+                "iqr": 0.005016402999899583,
+                "q1": 0.10369612399881589,
+                "q3": 0.10871252699871548,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 0.1030062009995163,
+                "hd15iqr": 0.16107490600188612,
+                "ops": 8.692630124373514,
+                "total": 0.690239882998867,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[10000-2]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[10000-2]",
+            "params": {
+                "size": 10000,
+                "version": 2
+            },
+            "param": "10000-2",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.08540149200052838,
+                "max": 0.1360402360005537,
+                "mean": 0.10091780599925021,
+                "stddev": 0.020999178307461983,
+                "rounds": 11,
+                "median": 0.09049453599800472,
+                "iqr": 0.03257131850205042,
+                "q1": 0.08733989724805724,
+                "q3": 0.11991121575010766,
+                "iqr_outliers": 0,
+                "stddev_outliers": 3,
+                "outliers": "3;0",
+                "ld15iqr": 0.08540149200052838,
+                "hd15iqr": 0.1360402360005537,
+                "ops": 9.909054106937576,
+                "total": 1.1100958659917524,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[10000-3]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[10000-3]",
+            "params": {
+                "size": 10000,
+                "version": 3
+            },
+            "param": "10000-3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.07136602399987169,
+                "max": 0.1272387820026779,
+                "mean": 0.09081260892316305,
+                "stddev": 0.024200907509356374,
+                "rounds": 13,
+                "median": 0.07785810099812807,
+                "iqr": 0.05009329849963251,
+                "q1": 0.07206155300082173,
+                "q3": 0.12215485150045424,
+                "iqr_outliers": 0,
+                "stddev_outliers": 4,
+                "outliers": "4;0",
+                "ld15iqr": 0.07136602399987169,
+                "hd15iqr": 0.1272387820026779,
+                "ops": 11.011686723438421,
+                "total": 1.1805639160011197,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[10000-4]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[10000-4]",
+            "params": {
+                "size": 10000,
+                "version": 4
+            },
+            "param": "10000-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.06767203200070071,
+                "max": 0.12300672799756285,
+                "mean": 0.08592178399963554,
+                "stddev": 0.023525360341315367,
+                "rounds": 14,
+                "median": 0.07324793850057176,
+                "iqr": 0.04955042200526805,
+                "q1": 0.07000538499778486,
+                "q3": 0.1195558070030529,
+                "iqr_outliers": 0,
+                "stddev_outliers": 4,
+                "outliers": "4;0",
+                "ld15iqr": 0.06767203200070071,
+                "hd15iqr": 0.12300672799756285,
+                "ops": 11.638492049981664,
+                "total": 1.2029049759948975,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[31622-0]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[31622-0]",
+            "params": {
+                "size": 31622,
+                "version": 0
+            },
+            "param": "31622-0",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.4620502990001114,
+                "max": 0.4961309819991584,
+                "mean": 0.47727377519913716,
+                "stddev": 0.015671088352050253,
+                "rounds": 5,
+                "median": 0.4698527349974029,
+                "iqr": 0.027867841248735203,
+                "q1": 0.46521431200017105,
+                "q3": 0.49308215324890625,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.4620502990001114,
+                "hd15iqr": 0.4961309819991584,
+                "ops": 2.0952334948274944,
+                "total": 2.386368875995686,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[31622-1]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[31622-1]",
+            "params": {
+                "size": 31622,
+                "version": 1
+            },
+            "param": "31622-1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.43318937300136895,
+                "max": 0.4773726429993985,
+                "mean": 0.45346228359921953,
+                "stddev": 0.016227827622468223,
+                "rounds": 5,
+                "median": 0.4515071899986651,
+                "iqr": 0.019625752996944357,
+                "q1": 0.4434732050003731,
+                "q3": 0.4630989579973175,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.43318937300136895,
+                "hd15iqr": 0.4773726429993985,
+                "ops": 2.2052550700861007,
+                "total": 2.2673114179960976,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[31622-2]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[31622-2]",
+            "params": {
+                "size": 31622,
+                "version": 2
+            },
+            "param": "31622-2",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.2823967470030766,
+                "max": 0.40415681100057554,
+                "mean": 0.35386516920043504,
+                "stddev": 0.045089102337669655,
+                "rounds": 5,
+                "median": 0.3562487509989296,
+                "iqr": 0.04920052424949972,
+                "q1": 0.3336652590005542,
+                "q3": 0.38286578325005394,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.2823967470030766,
+                "hd15iqr": 0.40415681100057554,
+                "ops": 2.82593509346941,
+                "total": 1.7693258460021752,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[31622-3]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[31622-3]",
+            "params": {
+                "size": 31622,
+                "version": 3
+            },
+            "param": "31622-3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.30636986500030616,
+                "max": 0.39312952799809864,
+                "mean": 0.3433584016005625,
+                "stddev": 0.03191470647030009,
+                "rounds": 5,
+                "median": 0.34163153500048793,
+                "iqr": 0.03530527774910297,
+                "q1": 0.32315769025171903,
+                "q3": 0.358462968000822,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.30636986500030616,
+                "hd15iqr": 0.39312952799809864,
+                "ops": 2.9124087115343844,
+                "total": 1.7167920080028125,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[31622-4]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[31622-4]",
+            "params": {
+                "size": 31622,
+                "version": 4
+            },
+            "param": "31622-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.3068059709985391,
+                "max": 0.5950224139996863,
+                "mean": 0.45172942619901735,
+                "stddev": 0.10520096571322479,
+                "rounds": 5,
+                "median": 0.4642543410009239,
+                "iqr": 0.12526782949953486,
+                "q1": 0.38480628524848726,
+                "q3": 0.5100741147480221,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 0.3068059709985391,
+                "hd15iqr": 0.5950224139996863,
+                "ops": 2.2137145423850084,
+                "total": 2.2586471309950866,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[100000-0]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[100000-0]",
+            "params": {
+                "size": 100000,
+                "version": 0
+            },
+            "param": "100000-0",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 4.8251895400026115,
+                "max": 5.068145445999107,
+                "mean": 4.946194216000731,
+                "stddev": 0.10771876107838652,
+                "rounds": 5,
+                "median": 4.90829154200037,
+                "iqr": 0.18968490299630503,
+                "q1": 4.86532862875265,
+                "q3": 5.055013531748955,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 4.8251895400026115,
+                "hd15iqr": 5.068145445999107,
+                "ops": 0.20217564380408717,
+                "total": 24.730971080003656,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[100000-1]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[100000-1]",
+            "params": {
+                "size": 100000,
+                "version": 1
+            },
+            "param": "100000-1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 3.259509783001704,
+                "max": 4.667056178997882,
+                "mean": 3.92865165300027,
+                "stddev": 0.6113064744825816,
+                "rounds": 5,
+                "median": 3.8189426280005137,
+                "iqr": 1.0935424162471463,
+                "q1": 3.405705665251844,
+                "q3": 4.49924808149899,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 3.259509783001704,
+                "hd15iqr": 4.667056178997882,
+                "ops": 0.2545402566390203,
+                "total": 19.64325826500135,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[100000-2]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[100000-2]",
+            "params": {
+                "size": 100000,
+                "version": 2
+            },
+            "param": "100000-2",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 2.419109495000157,
+                "max": 3.14696808699955,
+                "mean": 2.9384345093996673,
+                "stddev": 0.2974410217909583,
+                "rounds": 5,
+                "median": 3.0661476619970927,
+                "iqr": 0.2746158717509388,
+                "q1": 2.83093200050007,
+                "q3": 3.105547872251009,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 2.419109495000157,
+                "hd15iqr": 3.14696808699955,
+                "ops": 0.34031726649041555,
+                "total": 14.692172546998336,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[100000-3]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[100000-3]",
+            "params": {
+                "size": 100000,
+                "version": 3
+            },
+            "param": "100000-3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 1.3648920680025185,
+                "max": 1.7343062100007955,
+                "mean": 1.4946396142004232,
+                "stddev": 0.14419409618089896,
+                "rounds": 5,
+                "median": 1.435045700000046,
+                "iqr": 0.1600657217495609,
+                "q1": 1.4094747087501673,
+                "q3": 1.5695404304997282,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 1.3648920680025185,
+                "hd15iqr": 1.7343062100007955,
+                "ops": 0.66905760458849,
+                "total": 7.473198071002116,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[100000-4]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[100000-4]",
+            "params": {
+                "size": 100000,
+                "version": 4
+            },
+            "param": "100000-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 1.2476451870024903,
+                "max": 1.4734338589987601,
+                "mean": 1.3410943160000897,
+                "stddev": 0.10653262153615907,
+                "rounds": 5,
+                "median": 1.2970927030000894,
+                "iqr": 0.19555589075207536,
+                "q1": 1.2500943719987845,
+                "q3": 1.4456502627508598,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 1.2476451870024903,
+                "hd15iqr": 1.4734338589987601,
+                "ops": 0.7456597109311237,
+                "total": 6.705471580000449,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[316227-0]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[316227-0]",
+            "params": {
+                "size": 316227,
+                "version": 0
+            },
+            "param": "316227-0",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 8.085850463001407,
+                "max": 14.711406422000437,
+                "mean": 10.766049060999649,
+                "stddev": 3.3125515163718915,
+                "rounds": 5,
+                "median": 8.72350418499991,
+                "iqr": 5.986757641499935,
+                "q1": 8.222334877998946,
+                "q3": 14.209092519498881,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 8.085850463001407,
+                "hd15iqr": 14.711406422000437,
+                "ops": 0.09288458508168344,
+                "total": 53.83024530499824,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[316227-1]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[316227-1]",
+            "params": {
+                "size": 316227,
+                "version": 1
+            },
+            "param": "316227-1",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 8.593839591001597,
+                "max": 15.357643611998355,
+                "mean": 12.157026028799738,
+                "stddev": 2.576383969954707,
+                "rounds": 5,
+                "median": 12.446862502998556,
+                "iqr": 3.682089210250524,
+                "q1": 10.297934959499798,
+                "q3": 13.980024169750322,
+                "iqr_outliers": 0,
+                "stddev_outliers": 2,
+                "outliers": "2;0",
+                "ld15iqr": 8.593839591001597,
+                "hd15iqr": 15.357643611998355,
+                "ops": 0.0822569596898963,
+                "total": 60.785130143998686,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[316227-2]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[316227-2]",
+            "params": {
+                "size": 316227,
+                "version": 2
+            },
+            "param": "316227-2",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 3.7796926539995184,
+                "max": 8.25341637800011,
+                "mean": 4.85624227119988,
+                "stddev": 1.906639628118361,
+                "rounds": 5,
+                "median": 4.000933920000534,
+                "iqr": 1.3202899930010972,
+                "q1": 3.93668178399912,
+                "q3": 5.256971777000217,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 3.7796926539995184,
+                "hd15iqr": 8.25341637800011,
+                "ops": 0.20592053364605303,
+                "total": 24.281211355999403,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[316227-3]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[316227-3]",
+            "params": {
+                "size": 316227,
+                "version": 3
+            },
+            "param": "316227-3",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 3.738611022999976,
+                "max": 4.066086841001379,
+                "mean": 3.860458116600057,
+                "stddev": 0.1264028389272571,
+                "rounds": 5,
+                "median": 3.8070442210009787,
+                "iqr": 0.1443190574991604,
+                "q1": 3.787383390999821,
+                "q3": 3.9317024484989815,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 3.738611022999976,
+                "hd15iqr": 4.066086841001379,
+                "ops": 0.2590366142556961,
+                "total": 19.302290583000286,
+                "iterations": 1
+            }
+        },
+        {
+            "group": null,
+            "name": "test_tessellate_benchmark[316227-4]",
+            "fullname": "tests/test_facet_benchmarks.py::test_tessellate_benchmark[316227-4]",
+            "params": {
+                "size": 316227,
+                "version": 4
+            },
+            "param": "316227-4",
+            "extra_info": {},
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 5,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "warmup": false
+            },
+            "stats": {
+                "min": 3.8225171480007702,
+                "max": 4.130513371001143,
+                "mean": 3.909107709201635,
+                "stddev": 0.12627934219557962,
+                "rounds": 5,
+                "median": 3.8657794400023704,
+                "iqr": 0.11382149899964134,
+                "q1": 3.8347412855018774,
+                "q3": 3.9485627845015188,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 3.8225171480007702,
+                "hd15iqr": 4.130513371001143,
+                "ops": 0.2558128540807672,
+                "total": 19.545538546008174,
+                "iterations": 1
+            }
+        }
+    ],
+    "datetime": "2025-10-15T15:18:59.106300+00:00",
+    "version": "5.1.0"
+}
