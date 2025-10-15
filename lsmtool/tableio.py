@@ -20,7 +20,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 import astropy
 from astropy.table import Table, Column, MaskedColumn
-from astropy.coordinates import Angle
+from astropy.coordinates import Angle, SkyCoord
 from astropy.io import registry
 import astropy.io.ascii as ascii
 from packaging.version import Version
@@ -1047,9 +1047,11 @@ def facetRegionWriter(table, fileName):
         patchDec.append(gRADec.dec)
 
     # Do the tessellation
-    facet_points, facet_polys = tessellate(patchRA, patchDec, table.meta['refRA'],
-                                           table.meta['refDec'], table.meta['width'],
-                                           table.meta['width'])
+    facet_points, facet_polys = tessellate(
+        SkyCoord(patchRA, patchDec, unit='deg'),
+        SkyCoord(table.meta['refRA'], table.meta['refDec'], unit='deg'),
+        [table.meta['width'], table.meta['width']]
+    )
 
     # For each facet, match the correct name (some patches in the sky model may have
     # been filtered out if they lie outside the bounding box)
