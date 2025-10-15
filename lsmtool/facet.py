@@ -9,7 +9,6 @@ from lsmtool.constants import WCS_ORIGIN, WCS_PIXEL_SCALE
 from lsmtool.operations_lib import make_wcs
 
 INDEX_OUTSIDE_DIAGRAM = -1
-BBOX_SHAPE_FOR_XY_RANGES = (2, 2)
 
 
 def tessellate(
@@ -84,29 +83,6 @@ def tessellate(
     return facet_points, facet_polys
 
 
-def in_box(cal_coords, bounding_box):
-    """
-    Check if coordinates are inside the bounding box.
-
-    Parameters
-    ----------
-    cal_coords : numpy.ndarray
-        Array of x, y coordinates with shape (n, 2).
-    bounding_box : numpy.ndarray
-        Array defining the bounding box as [minx, maxx, miny, maxy].
-
-    Returns
-    -------
-    inside : numpy.ndarray
-        Boolean array with True for inside and False if not.
-    """
-    minx, maxx, miny, maxy = bounding_box
-    minx, maxx = sorted([minx, maxx])
-    miny, maxy = sorted([miny, maxy])
-    x, y = cal_coords[..., 0], cal_coords[..., 1]
-    return (minx <= x) & (x <= maxx) & (miny <= y) & (y <= maxy)
-
-
 def voronoi(cal_coords, bounding_box, eps=1e-6):
     """
     Produce a Voronoi tessellation for the given coordinates and bounding box.
@@ -144,19 +120,18 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     # Compute Voronoi, sorting the output regions to match the order of the
     # input coordinates
     vor = scipy.spatial.Voronoi(points)
-    sorted_regions = np.array(vor.regions, dtype=object)[vor.point_region]
 
     # Add
-    bounding_box = np.ravel(
-        np.reshape(bounding_box, BBOX_SHAPE_FOR_XY_RANGES) + (-eps, eps)
-    )
+    minx, maxx, miny, maxy = bounding_box
+    bounding_box = (minx - eps, maxx + eps, miny - eps, maxy + eps)
+
     # Filter regions
+    regions = vor.regions
+    vertices = vor.vertices
     filtered_regions = [
         region
-        for region in sorted_regions
-        if region
-        and (INDEX_OUTSIDE_DIAGRAM not in region)
-        and all(in_box(vor.vertices[region], bounding_box))
+        for index in vor.point_region
+        if is_valid_region((region := regions[index]), vertices, bounding_box)
     ]
     return points_centre, vor.vertices, filtered_regions
 
@@ -209,3 +184,61 @@ def prepare_points_for_tessellate(cal_coords, bounding_box):
     )
 
     return points_centre, points
+
+
+def in_box(cal_coords, bounding_box):
+    """
+    Check if coordinates are inside the bounding box.
+
+    Parameters
+    ----------
+    cal_coords : numpy.ndarray
+        Array of x, y coordinates with shape (n, 2).
+    bounding_box : numpy.ndarray
+        Array defining the bounding box as [minx, maxx, miny, maxy].
+
+    Returns
+    -------
+    inside : numpy.ndarray
+        Boolean array with True for inside and False if not.
+    """
+    minx, maxx, miny, maxy = bounding_box
+    minx, maxx = sorted([minx, maxx])
+    miny, maxy = sorted([miny, maxy])
+    x, y = np.transpose(cal_coords)
+    return (minx <= x) & (x <= maxx) & (miny <= y) & (y <= maxy)
+
+
+def is_valid_region(region, vertices, bounding_box):
+    """
+    Check if a Voronoi region is valid by verifying all its vertices are within
+    the bounding box.
+
+    Parameters
+    ----------
+    region : list of int
+        Indices of the vertices forming the region.
+    vertices : numpy.ndarray
+        Array of vertex coordinates with shape (n, 2).
+    bounding_box : list
+        Bounding box defined as [minx, maxx, miny, maxy].
+
+    Returns
+    -------
+    bool
+        True if all vertices are inside the bounding box and the region is not
+        empty, False otherwise.
+    """
+    minx, maxx, miny, maxy = bounding_box
+
+    for index in region:
+        if index == INDEX_OUTSIDE_DIAGRAM:
+            return False
+
+        if not (
+            (minx < vertices[index, 0] < maxx)
+            and (miny < vertices[index, 1] < maxy)
+        ):
+            return False
+
+    return bool(region)
