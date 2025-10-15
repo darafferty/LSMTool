@@ -119,11 +119,11 @@ def test_in_box(cal_coords, bounding_box, expected, context):
 
 
 @pytest.mark.parametrize(
-    "coordinates, bbox_midpoint, bbox_size, "
+    "directions, bbox_midpoint, bbox_size, "
     "expected_facet_points, expected_facet_polygons",
     [
         pytest.param(
-            coordinates := SkyCoord(
+            directions := SkyCoord(
                 ra=[119.73, 138.08, 124.13, 115.74],
                 dec=[89.92, 89.91, 89.89, 89.89],
                 unit="deg"
@@ -135,7 +135,7 @@ def test_in_box(cal_coords, bounding_box, expected, context):
             ),
             bbox_size := (0.3, 0.3),
             # expected_facet_points
-            np.transpose([coordinates.ra.deg, coordinates.dec.deg]),
+            np.transpose([directions.ra.deg, directions.dec.deg]),
             #
             [
                 [
@@ -173,7 +173,7 @@ def test_in_box(cal_coords, bounding_box, expected, context):
     ],
 )
 def test_tessellate(
-    coordinates,
+    directions,
     bbox_midpoint,
     bbox_size,
     expected_facet_points,
@@ -186,7 +186,7 @@ def test_tessellate(
 
     # Tessellate a region that encompasses the NCP.
     facet_points, facet_polys = tessellate(
-        coordinates,
+        directions,
         bbox_midpoint,
         bbox_size,
     )

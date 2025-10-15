@@ -12,7 +12,7 @@ INDEX_OUTSIDE_DIAGRAM = -1
 
 
 def tessellate(
-    coordinates,
+    directions,
     bbox_midpoint,
     bbox_size,
     wcs_pixel_scale=WCS_PIXEL_SCALE,
@@ -27,7 +27,7 @@ def tessellate(
 
     Parameters
     ----------
-    coordinates : astropy.coordinates.SkyCoord
+    directions : astropy.coordinates.SkyCoord
         Coordinates of input calibration directions.
     bbox_midpoint : astropy.coordinates.SkyCoord
         Coordinates of bounding box centre.
@@ -53,7 +53,7 @@ def tessellate(
         raise ValueError("The RA/Dec width cannot be zero or less")
 
     # Build the bounding box corner coordinates
-    coords_sky = np.column_stack([coordinates.ra.deg, coordinates.dec.deg])
+    coords_sky = np.column_stack([directions.ra.deg, directions.dec.deg])
     ra_mid, dec_mid = bbox_midpoint.ra.deg, bbox_midpoint.dec.deg
 
     wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
