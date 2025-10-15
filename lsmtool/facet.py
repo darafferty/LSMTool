@@ -12,12 +12,9 @@ INDEX_OUTSIDE_DIAGRAM = -1
 
 
 def tessellate(
-    ra_cal,
-    dec_cal,
-    ra_mid,
-    dec_mid,
-    width_ra,
-    width_dec,
+    coordinates,
+    bbox_midpoint,
+    bbox_size,
     wcs_pixel_scale=WCS_PIXEL_SCALE,
 ):
     """
@@ -26,22 +23,17 @@ def tessellate(
     This function partitions an image region using Voronoi tessellation seeded
     with the input calibration directions. It filters points that fall
     outside the given dimensions of the bounding box and returns the facet
-    centers and polygons that enscribe these points in celestial coordinates.
+    centres and polygons that enscribe these points in celestial coordinates.
 
     Parameters
     ----------
-    ra_cal : numpy.ndarray
-        RA values in degrees of calibration directions.
-    dec_cal : numpy.ndarray
-        Dec values in degrees of calibration directions.
-    ra_mid : float
-        RA in degrees of bounding box center.
-    dec_mid : float
-        Dec in degrees of bounding box center.
-    width_ra : float
-        Width of bounding box in RA in degrees, corrected to Dec = 0.
-    width_dec : float
-        Width of bounding box in Dec in degrees.
+    coordinates : astropy.coordinates.SkyCoord
+        Coordinates of input calibration directions.
+    bbox_midpoint : astropy.coordinates.SkyCoord
+        Coordinates of bounding box centre.
+    bbox_size : tuple of float
+        Size of bounding box (RA, Dec). Should be a 2-tuple of numbers  in
+        degrees.
     wcs_pixel_scale : float
         The pixel scale to use for the conversion to pixel coordinates in
         degrees per pixel.
@@ -49,24 +41,31 @@ def tessellate(
     Returns
     -------
     facet_points : list of tuple
-        List of facet points (centers) as (RA, Dec) tuples in degrees.
+        List of facet points (centres) as (RA, Dec) tuples in degrees.
     facet_polys : list of numpy.ndarray
         List of facet polygons (vertices) as [RA, Dec] arrays in degrees
         (each of shape N x 2, where N is the number of vertices in a given
         facet).
     """
-    # Build the bounding box corner coordinates
+    width_ra, width_dec = bbox_size
     if width_ra <= 0.0 or width_dec <= 0.0:
         raise ValueError("The RA/Dec width cannot be zero or less")
+
+    # Build the bounding box corner coordinates
+    ra_cal, dec_cal = coordinates.ra.deg, coordinates.dec.deg
+    ra_mid, dec_mid = bbox_midpoint.ra.deg, bbox_midpoint.dec.deg
 
     wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
     x_cal, y_cal = wcs.wcs_world2pix(ra_cal, dec_cal, WCS_ORIGIN)
     x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
     width_x = width_ra / wcs_pixel_scale / 2.0
     width_y = width_dec / wcs_pixel_scale / 2.0
-    bounding_box = np.array(
-        [x_mid - width_x, x_mid + width_x, y_mid - width_y, y_mid + width_y]
-    )
+    bounding_box = [
+        x_mid - width_x,
+        x_mid + width_x,
+        y_mid - width_y,
+        y_mid + width_y,
+    ]
 
     # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
     points, vertices, regions = voronoi(

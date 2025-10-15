@@ -1,3 +1,4 @@
+from astropy.coordinates import SkyCoord
 import contextlib
 
 import numpy as np
@@ -120,18 +121,23 @@ def test_in_box(cal_coords, bounding_box, expected, context):
 
 
 @pytest.mark.parametrize(
-    "ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec, "
+    "coordinates, bbox_midpoint, bbox_size, "
     "expected_facet_points, expected_facet_polygons",
     [
         pytest.param(
-            RA_CAL := [119.73, 138.08, 124.13, 115.74],
-            DEC_CAL := [89.92, 89.91, 89.89, 89.89],
-            126.52,
-            90.0,
-            0.3,
-            0.3,
+            coordinates := SkyCoord(
+                ra=[119.73, 138.08, 124.13, 115.74],
+                dec=[89.92, 89.91, 89.89, 89.89],
+                unit="deg"
+            ),
+            bbox_midpoint := SkyCoord(
+                ra=126.52,
+                dec=90.0,
+                unit="deg"
+            ),
+            bbox_size := (0.3, 0.3),
             # expected_facet_points
-            np.transpose([RA_CAL, DEC_CAL]),
+            np.transpose([coordinates.ra.deg, coordinates.dec.deg]),
             #
             [
                 [
@@ -169,12 +175,9 @@ def test_in_box(cal_coords, bounding_box, expected, context):
     ],
 )
 def test_tessellate(
-    ra_cal,
-    dec_cal,
-    ra_mid,
-    dec_mid,
-    width_ra,
-    width_dec,
+    coordinates,
+    bbox_midpoint,
+    bbox_size,
     expected_facet_points,
     expected_facet_polygons,
 ):
@@ -185,12 +188,9 @@ def test_tessellate(
 
     # Tessellate a region that encompasses the NCP.
     facet_points, facet_polys = tessellate(
-        ra_cal,
-        dec_cal,
-        ra_mid,
-        dec_mid,
-        width_ra,
-        width_dec,
+        coordinates,
+        bbox_midpoint,
+        bbox_size,
     )
 
     # Check the facet points

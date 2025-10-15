@@ -20,7 +20,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 import astropy
 from astropy.table import Table, Column, MaskedColumn
-from astropy.coordinates import Angle
+from astropy.coordinates import Angle, SkyCoord
 from astropy.io import registry
 import astropy.io.ascii as ascii
 from packaging.version import Version
@@ -717,8 +717,10 @@ def skyModelWriter(table, fileName):
                 gRA = 0.0
                 gDec = 0.0
             gRADec = normalize_ra_dec(gRA, gDec)
-            gRAStr = Angle(gRADec.ra, unit='degree').to_string(unit='hourangle', sep=':', precision=4)
-            gDecStr = Angle(gRADec.dec, unit='degree').to_string(unit='degree', sep='.', precision=4)
+            gRAStr = Angle(gRADec.ra, unit='degree').to_string(
+                unit='hourangle', sep=':', precision=4)
+            gDecStr = Angle(gRADec.dec, unit='degree').to_string(
+                unit='degree', sep='.', precision=4)
 
             outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRAStr,
                                                           gDecStr))
@@ -1047,9 +1049,11 @@ def facetRegionWriter(table, fileName):
         patchDec.append(gRADec.dec)
 
     # Do the tessellation
-    facet_points, facet_polys = tessellate(patchRA, patchDec, table.meta['refRA'],
-                                           table.meta['refDec'], table.meta['width'],
-                                           table.meta['width'])
+    facet_points, facet_polys = tessellate(
+        SkyCoord(patchRA, patchDec, unit='deg'),
+        SkyCoord(table.meta['refRA'], table.meta['refDec'], unit='deg'),
+        [table.meta['width'], table.meta['width']]
+    )
 
     # For each facet, match the correct name (some patches in the sky model may have
     # been filtered out if they lie outside the bounding box)
@@ -1075,7 +1079,8 @@ def facetRegionWriter(table, fileName):
         if name is None:
             lines.append('point({0}, {1})\n'.format(center_coord[0], center_coord[1]))
         else:
-            lines.append('point({0}, {1}) # text={{{2}}}\n'.format(center_coord[0], center_coord[1], name))
+            lines.append('point({0}, {1}) # text={{{2}}}\n'.format(
+                center_coord[0], center_coord[1], name))
 
     log.debug('Writing facet region file to {0}'.format(fileName))
     with open(fileName, 'w') as f:
@@ -1142,7 +1147,7 @@ def coneSearch(VOService, position, radius):
                   'MajAxis': 'majoraxis', 'MinAxis': 'minoraxis', 'PA': 'orientation'},
         'vlssr': {'Name': 'name', 'RAJ2000': 'ra', 'DEJ2000': 'dec', 'Sp': 'i',
                   'MajAx': 'majoraxis', 'MinAx': 'minoraxis', 'PA': 'orientation'}
-        }
+    }
 
     # Define various properties of the VO catalog:
     #   fluxtype - type of flux density: "int" for total integrated flux,
@@ -1158,7 +1163,7 @@ def coneSearch(VOService, position, radius):
                   'referencefrequency': 325e6},
         'vlssr': {'fluxtype': 'peak', 'fluxunits': 'Jy', 'deconvolved': False, 'psf': 0.0208,
                   'referencefrequency': 74e6}
-        }
+    }
 
     if VOService.lower() in allowedVOServices:
         url = allowedVOServices[VOService.lower()]
@@ -1223,7 +1228,8 @@ def convertExternalTable(table, columnMapping, catalogProperties):
         if tableColname not in table.colnames:
             if colName.lower() == 'name':
                 # If the "name" column is missing, generate simple source names
-                col = Column(name=tableColname, data=[f'source_{indx}' for indx in range(len(table))])
+                col = Column(name=tableColname, data=[
+                             f'source_{indx}' for indx in range(len(table))])
                 table.add_column(col)
             elif colName.lower() != 'type':
                 # If any other column is missing (except "type", which is set
@@ -1292,7 +1298,8 @@ def convertExternalTable(table, columnMapping, catalogProperties):
                 if catalogProperties['fluxtype'] == 'peak':
                     # For extended sources in catalogs with peak flux, we need
                     # to correct from peak to total flux using the source size
-                    table.columns[allowedColumnNames['i']][i] *= minor * major / catalogProperties['psf']**2
+                    table.columns[allowedColumnNames['i']][i] *= minor * \
+                        major / catalogProperties['psf']**2
             else:
                 # Make sure semimajor and semiminor axes and orientation are 0 for POINT type
                 table[allowedColumnNames['minoraxis']][i] = 0.0
