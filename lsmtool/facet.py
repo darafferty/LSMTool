@@ -37,26 +37,27 @@ def tessellate(
     wcs_pixel_scale : float
         The pixel scale to use for the conversion to pixel coordinates in
         degrees per pixel.
-
+`
     Returns
     -------
-    facet_points : list of tuple
-        List of facet points (centres) as (RA, Dec) tuples in degrees.
+    facet_points : numpy.ndarray
+        Array of facet points centres with (RA, Dec) in degrees along the
+        columns.
     facet_polys : list of numpy.ndarray
-        List of facet polygons (vertices) as [RA, Dec] arrays in degrees
-        (each of shape N x 2, where N is the number of vertices in a given
-        facet).
+        Array of facet polygons (vertices) with (RA, Dec) in degrees along the
+        columns (each array has shape (n, 2), where n is the number of vertices
+        in a given facet).
     """
     width_ra, width_dec = bbox_size
     if width_ra <= 0.0 or width_dec <= 0.0:
         raise ValueError("The RA/Dec width cannot be zero or less")
 
     # Build the bounding box corner coordinates
-    ra_cal, dec_cal = coordinates.ra.deg, coordinates.dec.deg
+    coords_sky = np.column_stack([coordinates.ra.deg, coordinates.dec.deg])
     ra_mid, dec_mid = bbox_midpoint.ra.deg, bbox_midpoint.dec.deg
 
     wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
-    x_cal, y_cal = wcs.wcs_world2pix(ra_cal, dec_cal, WCS_ORIGIN)
+    coords_pixel = wcs.wcs_world2pix(coords_sky, WCS_ORIGIN)
     x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
     width_x = width_ra / wcs_pixel_scale / 2.0
     width_y = width_dec / wcs_pixel_scale / 2.0
@@ -68,17 +69,17 @@ def tessellate(
     ]
 
     # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
-    points, vertices, regions = voronoi(
-        np.stack((x_cal, y_cal)).T, bounding_box
-    )
-    facet_polys = []
-    for region in regions:
-        polygon = vertices[region + [region[0]], :]
-        ra, dec = wcs.wcs_pix2world(polygon[:, 0], polygon[:, 1], WCS_ORIGIN)
-        polygon = np.stack((ra, dec)).T
-        facet_polys.append(polygon)
+    points, vertices, regions = voronoi(coords_pixel, bounding_box)
 
-    facet_points = list(map(tuple, wcs.wcs_pix2world(points, WCS_ORIGIN)))
+    # Close each region's polygon by adding the first point to the end.
+    # Convert to celestial coordinates. In general, each polygon may consist of
+    # a different number of vertices.
+    facet_polys = [
+        wcs.wcs_pix2world(vertices[[*region, region[0]]], WCS_ORIGIN)
+        for region in regions
+    ]
+
+    facet_points = wcs.wcs_pix2world(points, WCS_ORIGIN)
     return facet_points, facet_polys
 
 
