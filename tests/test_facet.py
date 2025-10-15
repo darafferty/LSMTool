@@ -1,3 +1,4 @@
+from astropy.coordinates import SkyCoord
 import contextlib
 
 import numpy as np
