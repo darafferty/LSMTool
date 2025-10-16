@@ -3,10 +3,11 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 
+import lsmtool
 import numpy as np
 import pytest
 from astropy.wcs import WCS
-from conftest import TEST_DATA_PATH
+from conftest import TEST_DATA_PATH, copy_test_data
 
 from lsmtool.io import (
     _restore_tmpdir,
@@ -182,12 +183,53 @@ def test_convert_coordinates_to_pixels(coordinates, pixels_expected, wcs):
 
 @pytest.mark.parametrize("ra", (10.75,))
 @pytest.mark.parametrize("dec", (5.34,))
-@pytest.mark.parametrize("skymodel_path", ("/tmp/sky.model",))
 @pytest.mark.parametrize("radius", (5.0,))
 @pytest.mark.parametrize("overwrite", (False,))
 @pytest.mark.parametrize("source", ("TGSS",))
 @pytest.mark.parametrize("targetname", ("Patch",))
-def test_download_skymodel(
-    ra, dec, skymodel_path, radius, overwrite, source, targetname
-):
-    download_skymodel(ra, dec, skymodel_path, radius, overwrite, source, targetname)
+def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetname):
+    """Test downloading a sky model."""
+
+    # Arrange
+    copy_test_data("expected.tgss.sky.model", tmp_path)
+    downloaded_skymodel_path = tmp_path / "sky.model"
+    expected_skymodel_path = tmp_path / "expected.tgss.sky.model"
+    skymodel_expected = lsmtool.load(str(expected_skymodel_path))
+
+    # Act
+    download_skymodel(
+        ra, dec, str(downloaded_skymodel_path), radius, overwrite, source, targetname
+    )
+    skymodel_downloaded = lsmtool.load(str(downloaded_skymodel_path))
+
+    # Assert
+    assert list(skymodel_downloaded.table.columns) == list(
+        skymodel_expected.table.columns
+    )
+    assert len(skymodel_downloaded) == len(skymodel_expected)
+    for col in skymodel_expected.table.columns:
+        assert col in skymodel_downloaded.table.columns
+        assert all(
+            skymodel_downloaded.getColValues(col) == skymodel_expected.getColValues(col)
+        )
+
+    # Test that attempting to download again without overwrite logs a warning
+    with patch("lsmtool.io.logging.Logger.warning") as mock_warning:
+        download_skymodel(
+            ra,
+            dec,
+            str(downloaded_skymodel_path),
+            radius,
+            overwrite,
+            source,
+            targetname,
+        )
+        mock_warning.assert_called_once()
+
+    # Test that attempting to download again with overwrite logs a warning
+    with patch("lsmtool.io.logging.Logger.warning") as mock_warning:
+        download_skymodel(
+            ra, dec, str(downloaded_skymodel_path), radius, True, source, targetname
+        )
+        mock_warning.assert_called_once()
+        assert downloaded_skymodel_path.is_file()
