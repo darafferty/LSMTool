@@ -12,6 +12,7 @@ from lsmtool.io import (
     _restore_tmpdir,
     _set_tmpdir,
     convert_coordinates_to_pixels,
+    download_skymodel,
     read_vertices_ra_dec,
     read_vertices_x_y,
     temp_storage,
@@ -23,9 +24,7 @@ from lsmtool.io import (
     [
         # Nominal test cases
         pytest.param(["/tmp"], "/tmp", None, id="path_tmp"),
-        pytest.param(
-            ["/var/tmp", "/tmp"], "/var/tmp", None, id="path_var_tmp"
-        ),
+        pytest.param(["/var/tmp", "/tmp"], "/var/tmp", None, id="path_var_tmp"),
         pytest.param(
             ["/usr/tmp", "/var/tmp", "/tmp"],
             "/usr/tmp" if Path("/usr/tmp").exists() else "/var/tmp",
@@ -179,3 +178,16 @@ def wcs(request):
 def test_convert_coordinates_to_pixels(coordinates, pixels_expected, wcs):
     result = convert_coordinates_to_pixels(coordinates, wcs)
     np.testing.assert_equal(result, pixels_expected)
+
+
+@pytest.mark.parametrize("ra", (10.75,))
+@pytest.mark.parametrize("dec", (5.34,))
+@pytest.mark.parametrize("skymodel_path", ("/tmp/sky.model",))
+@pytest.mark.parametrize("radius", (5.0,))
+@pytest.mark.parametrize("overwrite", (False,))
+@pytest.mark.parametrize("source", ("TGSS",))
+@pytest.mark.parametrize("targetname", ("Patch",))
+def test_download_skymodel(
+    ra, dec, skymodel_path, radius, overwrite, source, targetname
+):
+    download_skymodel(ra, dec, skymodel_path, radius, overwrite, source, targetname)
