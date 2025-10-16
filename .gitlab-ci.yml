@@ -69,7 +69,7 @@ run_unit_tests_coverage:
   extends: .run_unit_test_version_base
   script:
    - tox -e coverage
-  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  coverage: '/TOTAL.+?(\d+%(\.\d*)?)$/'
   artifacts:
     reports:
       coverage_report:
