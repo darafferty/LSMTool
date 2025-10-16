@@ -13,7 +13,7 @@ from typing import Sequence, Union
 import numpy as np
 import requests
 
-from lsmtool import lsmtool
+import lsmtool
 from lsmtool.constants import WCS_ORIGIN
 from lsmtool.skymodel import SkyModel
 
