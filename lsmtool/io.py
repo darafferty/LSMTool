@@ -322,14 +322,13 @@ def download_skymodel(
     target_name : str, optional
         Give the patch a certain name
     """
-    logger = logging.getLogger("rapthor:skymodel")
+    logger = logging.getLogger("lsmtool.io.download_skymodel")
 
     file_exists = os.path.isfile(skymodel_path)
     if file_exists and not overwrite:
         logger.warning(
-            'Sky model "{}" exists and overwrite is set to False! Not '
-            "downloading sky model. If this is a restart this may be "
-            "intentional.".format(skymodel_path)
+            'Sky model "%s" exists and overwrite is set to False! '
+            'Not downloading sky model.', skymodel_path
         )
         return
 
