@@ -159,6 +159,8 @@ ignore = ["PLR2004", "N803"]
 [tool.coverage.run]
 omit = ["lsmtool/_changelog.py", "lsmtool/_version.py"]
 
+[tool.coverage.report]
+sort = "cover"
 
 ###########################
 # tox settings            #
@@ -190,9 +192,16 @@ commands = [
 extras = ["tests"]
 commands = [
     ["python", "--version"],
-    ["python", "-m", "pytest", "--cov-report", "term", "--cov-report", "xml",
-     "--cov-report", "html", "--cov=lsmtool", "tests/{posargs}"]
+    [
+        "python", "-m", "pytest",
+        { replace = "posargs", default = [], extend = true },
+        "--cov=lsmtool",
+        "--cov-report", "term",
+        "--cov-report", "xml",
+        "--cov-report", "html"
+    ]
 ]
+
 
 # Command prefixes to reuse the same virtualenv for all linting jobs.
 [tool.tox.env.lint]
