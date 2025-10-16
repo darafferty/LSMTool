@@ -7,9 +7,12 @@ import logging
 import numbers
 import os
 import tempfile
+import time
 from pathlib import Path
 from typing import Sequence, Union
 
+import astropy.units as u
+import mocpy
 import numpy as np
 import requests
 
@@ -346,8 +349,8 @@ def download_skymodel(
 
     if file_exists and overwrite:
         logger.warning(
-            'Found existing sky model "{}" and overwrite is True. Deleting '
-            "existing sky model!".format(skymodel_path)
+            'Found existing sky model "%s" and overwrite is True. Deleting '
+            "existing sky model!", skymodel_path
         )
         os.remove(skymodel_path)
 
@@ -360,16 +363,18 @@ def download_skymodel(
     if source == "LOTSS":
         logger.info("Checking LoTSS coverage for the requested centre and radius.")
         mocpath = os.path.join(os.path.dirname(skymodel_path), "dr2-moc.moc")
-        subprocess.run(
-            [
-                "wget",
-                "https://lofar-surveys.org/public/DR2/catalogues/dr2-moc.moc",
-                "-O",
-                mocpath,
-            ],
-            capture_output=True,
-            check=True,
-        )
+        # Securely download the MOC file without spawning an external process.
+        # (Fix for security lint S607: avoid subprocess with partial executable path.)
+        moc_url = "https://lofar-surveys.org/public/DR2/catalogues/dr2-moc.moc"
+        try:
+            response = requests.get(moc_url, timeout=300)
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            raise ConnectionError(
+                f"Failed to download LoTSS MOC file from {moc_url}: {exc}"
+            ) from exc
+        with open(mocpath, "wb") as fh:
+            fh.write(response.content)
         moc = mocpy.MOC.from_fits(mocpath)
         covers_centre = moc.contains(ra * u.deg, dec * u.deg)
 
@@ -399,11 +404,11 @@ def download_skymodel(
         else:
             logger.info("Complete LoTSS coverage for the requested centre and radius.")
 
-    logger.info("Downloading skymodel for the target into " + skymodel_path)
+    logger.info("Downloading skymodel for the target into %s", skymodel_path)
     max_tries = 5
     for tries in range(1, 1 + max_tries):
         retry = False
-        if source == "LOTSS" or source == "TGSS" or source == "GSM":
+        if source in ("LOTSS", "TGSS", "GSM"):
             try:
                 skymodel = SkyModel(source, VOPosition=[ra, dec], VORadius=radius)
                 skymodel.write(skymodel_path)
@@ -427,8 +432,9 @@ def download_skymodel(
             try:
                 result = requests.get(url, params=search_params, timeout=300)
                 if result.ok:
-                    # Convert the result to makesourcedb format and write to the output file
-                    lines = result.text.split("\n")[1:]  # split and remove header line
+                    # Convert the result to makesourcedb format and write to
+                    # the output file. Split and remove header line.
+                    lines = result.text.split("\n")[1:]
                     out_lines = [
                         "FORMAT = Name, Ra, Dec, Type, I, ReferenceFrequency=1e6\n"
                     ]
@@ -436,11 +442,10 @@ def download_skymodel(
                         # Add entries for type and Stokes I flux density
                         if line.strip():
                             out_lines.append(line.strip() + ",POINT,0.0,\n")
-                    with open(skymodel_path, "w") as f:
+                    with open(skymodel_path, "w", encoding="utf-8") as f:
                         f.writelines(out_lines)
                     break
-                else:
-                    retry = True
+                retry = True
             except requests.exceptions.Timeout:
                 retry = True
         else:
@@ -452,29 +457,23 @@ def download_skymodel(
         if retry:
             if tries == max_tries:
                 logger.error(
-                    "Attempt #{0:d} to download {1} sky model failed.".format(
-                        tries, source
-                    )
+                    "Attempt #%d to download %s sky model failed.", tries, source
                 )
                 raise IOError(
-                    "Download of {0} sky model failed after {1} attempts.".format(
-                        source, max_tries
-                    )
+                    f"Download of {source} sky model failed after {max_tries}"
+                    " attempts."
                 )
-            else:
-                suffix = "s" if max_tries - tries > 1 else ""
-                logger.error(
-                    "Attempt #{0:d} to download {1} sky model failed. Attempting "
-                    "{2:d} more time{3}.".format(
-                        tries, source, max_tries - tries, suffix
-                    )
-                )
-                time.sleep(5)
+            suffix = "s" if max_tries - tries > 1 else ""
+            logger.error(
+                "Attempt #%d to download %s sky model failed. Attempting "
+                "%d more time%s.", tries, source, max_tries - tries, suffix
+            )
+            time.sleep(5)
 
     if not os.path.isfile(skymodel_path):
         raise IOError(
-            'Sky model file "{}" does not exist after trying to download the '
-            "sky model.".format(skymodel_path)
+            f'Sky model file "{skymodel_path}" does not exist after trying to '
+            "download the sky model."
         )
 
     # Treat all sources as one group (direction)
