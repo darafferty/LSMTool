@@ -322,7 +322,7 @@ def download_skymodel(
     target_name : str, optional
         Give the patch a certain name
     """
-    logger = logging.getLogger("lsmtool.io.download_skymodel")
+    logger = logging.getLogger("LSMTool")
 
     file_exists = os.path.isfile(skymodel_path)
     if file_exists and not overwrite:
