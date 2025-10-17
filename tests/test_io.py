@@ -26,7 +26,7 @@ from lsmtool.io import (
     read_vertices_ra_dec,
     read_vertices_x_y,
     temp_storage,
-    check_lotss_coverage
+    check_lotss_coverage,
 )
 
 
@@ -205,10 +205,11 @@ def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetn
     downloaded_skymodel_path = tmp_path / "sky.model"
     expected_skymodel_path = tmp_path / "expected.tgss.sky.model"
     skymodel_expected = lsmtool.load(str(expected_skymodel_path))
+    cone_params = {"ra": ra, "dec": dec, "radius": radius}
 
     # Act
     download_skymodel(
-        ra, dec, str(downloaded_skymodel_path), radius, overwrite, source, targetname
+        cone_params, str(downloaded_skymodel_path), overwrite, source, targetname
     )
     skymodel_downloaded = lsmtool.load(str(downloaded_skymodel_path))
 
@@ -227,10 +228,8 @@ def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetn
     # First for existing sky model, second for skipping download
     with patch("lsmtool.io.logging.Logger.warning") as mock_warning:
         download_skymodel(
-            ra,
-            dec,
+            cone_params,
             str(downloaded_skymodel_path),
-            radius,
             overwrite,
             source,
             targetname,
@@ -241,7 +240,23 @@ def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetn
     # First that sky model exists, second that it is being overwritten
     with patch("lsmtool.io.logging.Logger.warning") as mock_warning:
         download_skymodel(
-            ra, dec, str(downloaded_skymodel_path), radius, True, source, targetname
+            cone_params,
+            str(downloaded_skymodel_path),
+            overwrite,
+            source,
+            targetname,
+        )
+        assert mock_warning.call_count == 2
+
+    # Test that attempting to download again with overwrite logs a warning
+    # First that sky model exists, second that it is being overwritten
+    with patch("lsmtool.io.logging.Logger.warning") as mock_warning:
+        download_skymodel(
+            cone_params,
+            str(downloaded_skymodel_path),
+            True,
+            source,
+            targetname,
         )
         assert mock_warning.call_count == 2
     assert downloaded_skymodel_path.is_file()
@@ -255,6 +270,7 @@ def test_sky_model_exists_existing_skymodel(existing_skymodel_filepath):
         mock_warning.assert_called_once()
     assert result is True
 
+
 def test_sky_model_exists_no_existing_skymodel(tmp_path):
     """Test the _sky_model_exists function when the sky model does not exist."""
 
@@ -264,6 +280,7 @@ def test_sky_model_exists_no_existing_skymodel(tmp_path):
         mock_warning.assert_not_called()
     assert result is False
 
+
 def test_new_directory_required_existing_directory(tmp_path):
     """Test the _new_directory_required function."""
 
@@ -271,11 +288,13 @@ def test_new_directory_required_existing_directory(tmp_path):
     existing_dir_path.mkdir()
     assert _new_directory_required(str(existing_dir_path)) is False
 
+
 def test_new_directory_required_non_existent_directory(tmp_path):
     """Test the _new_directory_required function."""
 
     non_existent_path = tmp_path / "non_existent_directory"
     assert _new_directory_required(str(non_existent_path)) is False
+
 
 def test_new_directory_required_file_in_existing_directory(tmp_path):
     """Test the _new_directory_required function."""
@@ -284,11 +303,13 @@ def test_new_directory_required_file_in_existing_directory(tmp_path):
     file_in_existing_dir.parent.mkdir()
     assert _new_directory_required(str(file_in_existing_dir)) is False
 
+
 def test_new_directory_required_file_in_non_existent_directory(tmp_path):
     """Test the _new_directory_required function."""
 
     file_in_non_existent_dir = tmp_path / "non_existent_directory" / "file.model"
     assert _new_directory_required(str(file_in_non_existent_dir)) is True
+
 
 def test_validate_skymodel_path_existing_file(tmp_path):
     """Test the _validate_skymodel_path function when the sky model file exists."""
@@ -296,6 +317,7 @@ def test_validate_skymodel_path_existing_file(tmp_path):
     existing_file_path = tmp_path / "existing_sky.model"
     existing_file_path.touch()
     _validate_skymodel_path(str(existing_file_path))
+
 
 def test_validate_skymodel_path_not_a_file(tmp_path):
     """Test the _validate_skymodel_path function with invalid file."""
@@ -305,21 +327,31 @@ def test_validate_skymodel_path_not_a_file(tmp_path):
     with pytest.raises(ValueError):
         _validate_skymodel_path(str(existing_dir_path))
 
-@pytest.mark.parametrize("overwrite, skymodel_exists, expected",
-                         [(True, True, True),
-                          (False, True, False),
-                          (True, False, False),
-                          (False, False, False)])
+
+@pytest.mark.parametrize(
+    "overwrite, skymodel_exists, expected",
+    [
+        (True, True, True),
+        (False, True, False),
+        (True, False, False),
+        (False, False, False),
+    ],
+)
 def test_overwrite_required_existing_file(overwrite, skymodel_exists, expected):
     """Test the _overwrite_required function when the sky model file exists."""
 
     assert _overwrite_required(skymodel_exists, overwrite) is expected
 
-@pytest.mark.parametrize("overwrite, skymodel_exists, expected",
-                         [(True, True, False),
-                          (False, True, True),
-                          (True, False, False),
-                          (False, False, False)])
+
+@pytest.mark.parametrize(
+    "overwrite, skymodel_exists, expected",
+    [
+        (True, True, False),
+        (False, True, True),
+        (True, False, False),
+        (False, False, False),
+    ],
+)
 def test_download_not_required(overwrite, skymodel_exists, expected):
     """Test the _download_not_required function when the sky model file exists."""
 
@@ -330,16 +362,19 @@ def test_check_lotss_coverage_within_coverage(tmp_path):
     """Test the check_lotss_coverage function for coordinates within LoTSS coverage."""
     ra_within = 190.0  # RA within LoTSS coverage
     dec_within = 44.0  # DEC within LoTSS coverage
-    radius = 1.0    # radius in degrees
-    check_lotss_coverage(ra_within, dec_within, radius, tmp_path)
+    radius = 1.0  # radius in degrees
+    cone_params = {"ra": ra_within, "dec": dec_within, "radius": radius}
+    check_lotss_coverage(cone_params, tmp_path)
+
 
 def test_check_lotss_coverage_outside_coverage(tmp_path):
     """Test the check_lotss_coverage function for coordinates outside LoTSS coverage."""
     ra_outside = 30.0  # RA outside LoTSS coverage
     dec_outside = -30.0  # DEC outside LoTSS coverage
-    radius = 1.0    # radius in degrees
+    radius = 1.0  # radius in degrees
+    cone_params = {"ra": ra_outside, "dec": dec_outside, "radius": radius}
     with pytest.raises(ValueError):
-        assert check_lotss_coverage(ra_outside, dec_outside, radius, tmp_path) is False
+        assert check_lotss_coverage(cone_params, tmp_path) is False
 
 
 def test_get_panstarrs_request():
@@ -349,17 +384,19 @@ def test_get_panstarrs_request():
     ra = 10.75
     dec = 5.34
     radius = 0.1
+    cone_params = {"ra": ra, "dec": dec, "radius": radius}
 
-    expected_url = (
-        "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
-    )
-    expected_search_params = {"ra": ra, "dec": dec, "radius": radius,
-                             "nDetections.min": "5",
-                             "columns": ["objID", "ramean", "decmean"]
-                             }
+    expected_url = "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
+    expected_search_params = {
+        "ra": ra,
+        "dec": dec,
+        "radius": radius,
+        "nDetections.min": "5",
+        "columns": ["objID", "ramean", "decmean"],
+    }
 
     # Act
-    request_url, search_params = get_panstarrs_request(ra, dec, radius)
+    request_url, search_params = get_panstarrs_request(cone_params)
 
     # Assert
     assert request_url == expected_url
@@ -370,21 +407,23 @@ def test_get_panstarrs_request_raises_error_large_radius():
     """Test the get_panstarrs_request function."""
 
     radius_limit = 0.5
+    cone_params = {"ra": 10.0, "dec": 10.0, "radius": radius_limit + 0.001}
     with pytest.raises(ValueError):
-        _, _ = get_panstarrs_request(10.0, 10.0, radius_limit + 0.001)
+        _, _ = get_panstarrs_request(cone_params)
 
 
 def test_download_skymodel_panstarrs(tmp_path):
     """Test downloading a sky model from Pan-STARRS."""
 
     # Arrange
-    url = (
-        "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
-    )
-    search_params = {"ra": 10.75, "dec": 5.34, "radius": 0.1,
-                     "nDetections.min": "5",
-                     "columns": ["objID", "ramean", "decmean"]
-                     }
+    url = "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
+    search_params = {
+        "ra": 10.75,
+        "dec": 5.34,
+        "radius": 0.1,
+        "nDetections.min": "5",
+        "columns": ["objID", "ramean", "decmean"],
+    }
     skymodel_path = tmp_path / "panstarrs_sky.model"
 
     # Act
@@ -394,33 +433,46 @@ def test_download_skymodel_panstarrs(tmp_path):
     assert skymodel_path.is_file()
 
 
-@pytest.mark.parametrize("source,ra,dec,radius", [("LOTSS", 190.0, 30.0, 1.0),
-                                                  ("TGSS", 12.34, 56.78, 1.0),
-                                                  ("GSM", 123.23, 23.34, 1.0)])
+@pytest.mark.parametrize(
+    "source,ra,dec,radius",
+    [
+        ("LOTSS", 190.0, 30.0, 1.0),
+        ("TGSS", 12.34, 56.78, 1.0),
+        ("GSM", 123.23, 23.34, 1.0),
+    ],
+)
 def test_download_skymodel_catalog(source, ra, dec, radius, tmp_path):
     """Test downloading a sky model from a catalog source."""
 
     # Arrange
     skymodel_path = tmp_path / f"catalog_sky_{source}.model"
+    cone_params = {"ra": ra, "dec": dec, "radius": radius}
 
     # Act
-    download_skymodel_catalog(ra, dec, radius, source, str(skymodel_path))
+    download_skymodel_catalog(cone_params, source, str(skymodel_path))
 
     # Assert
     assert skymodel_path.is_file()
 
-@pytest.mark.parametrize("source,ra,dec,radius", [("LOTSS", 190.0, 30.0, 1.0),
-                                                  ("TGSS", 12.34, 56.78, 1.0),
-                                                  ("GSM", 123.23, 23.34, 1.0),
-                                                  ("PANSTARRS", 10.75, 5.34, 0.1)])
+
+@pytest.mark.parametrize(
+    "source,ra,dec,radius",
+    [
+        ("LOTSS", 190.0, 30.0, 1.0),
+        ("TGSS", 12.34, 56.78, 1.0),
+        ("GSM", 123.23, 23.34, 1.0),
+        ("PANSTARRS", 10.75, 5.34, 0.1),
+    ],
+)
 def test_download_skymodel_from_source(source, ra, dec, radius, tmp_path):
     """Test downloading a sky model from a source."""
 
     # Arrange
     skymodel_path = tmp_path / f"source_sky_{source}.model"
+    cone_params = {"ra": ra, "dec": dec, "radius": radius}
 
     # Act
-    download_skymodel_from_source(ra, dec, radius, source, str(skymodel_path))
+    download_skymodel_from_source(cone_params, source, str(skymodel_path))
 
     # Assert
     assert skymodel_path.is_file()
