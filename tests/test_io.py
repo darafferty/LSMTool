@@ -12,6 +12,11 @@ from conftest import TEST_DATA_PATH, copy_test_data
 from lsmtool.io import (
     _restore_tmpdir,
     _set_tmpdir,
+    _sky_model_exists,
+    _new_directory_required,
+    _validate_skymodel_path,
+    _overwrite_required,
+    _download_not_required,
     convert_coordinates_to_pixels,
     download_skymodel,
     read_vertices_ra_dec,
@@ -213,7 +218,8 @@ def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetn
             skymodel_downloaded.getColValues(col) == skymodel_expected.getColValues(col)
         )
 
-    # Test that attempting to download again without overwrite logs a warning
+    # Test that attempting to download again without overwrite logs two warnings
+    # First for existing sky model, second for skipping download
     with patch("lsmtool.io.logging.Logger.warning") as mock_warning:
         download_skymodel(
             ra,
@@ -224,12 +230,92 @@ def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetn
             source,
             targetname,
         )
-        mock_warning.assert_called_once()
+        assert mock_warning.call_count == 2
 
     # Test that attempting to download again with overwrite logs a warning
+    # First that sky model exists, second that it is being overwritten
     with patch("lsmtool.io.logging.Logger.warning") as mock_warning:
         download_skymodel(
             ra, dec, str(downloaded_skymodel_path), radius, True, source, targetname
         )
+        assert mock_warning.call_count == 2
+    assert downloaded_skymodel_path.is_file()
+
+
+def test_sky_model_exists_existing_skymodel(existing_skymodel_filepath):
+    """Test the _sky_model_exists function when the sky model exists."""
+
+    with patch("lsmtool.io.logging.Logger.warning") as mock_warning:
+        result = _sky_model_exists(str(existing_skymodel_filepath))
         mock_warning.assert_called_once()
-        assert downloaded_skymodel_path.is_file()
+    assert result is True
+
+def test_sky_model_exists_no_existing_skymodel(tmp_path):
+    """Test the _sky_model_exists function when the sky model does not exist."""
+
+    skymodel_path = tmp_path / "non_existent_sky.model"
+    with patch("lsmtool.io.logging.Logger.warning") as mock_warning:
+        result = _sky_model_exists(str(skymodel_path))
+        mock_warning.assert_not_called()
+    assert result is False
+
+def test_new_directory_required_existing_directory(tmp_path):
+    """Test the _new_directory_required function."""
+
+    existing_dir_path = tmp_path / "new_directory"
+    existing_dir_path.mkdir()
+    assert _new_directory_required(str(existing_dir_path)) is False
+
+def test_new_directory_required_non_existent_directory(tmp_path):
+    """Test the _new_directory_required function."""
+
+    non_existent_path = tmp_path / "non_existent_directory"
+    assert _new_directory_required(str(non_existent_path)) is False
+
+def test_new_directory_required_file_in_existing_directory(tmp_path):
+    """Test the _new_directory_required function."""
+
+    file_in_existing_dir = tmp_path / "existing_directory" / "file.model"
+    file_in_existing_dir.parent.mkdir()
+    assert _new_directory_required(str(file_in_existing_dir)) is False
+
+def test_new_directory_required_file_in_non_existent_directory(tmp_path):
+    """Test the _new_directory_required function."""
+
+    file_in_non_existent_dir = tmp_path / "non_existent_directory" / "file.model"
+    assert _new_directory_required(str(file_in_non_existent_dir)) is True
+
+def test_validate_skymodel_path_existing_file(tmp_path):
+    """Test the _validate_skymodel_path function when the sky model file exists."""
+
+    existing_file_path = tmp_path / "existing_sky.model"
+    existing_file_path.touch()
+    _validate_skymodel_path(str(existing_file_path))
+
+def test_validate_skymodel_path_not_a_file(tmp_path):
+    """Test the _validate_skymodel_path function with invalid file."""
+
+    existing_dir_path = tmp_path / "existing_directory"
+    existing_dir_path.mkdir()
+    with pytest.raises(ValueError):
+        _validate_skymodel_path(str(existing_dir_path))
+
+@pytest.mark.parametrize("overwrite, skymodel_exists, expected",
+                         [(True, True, True),
+                          (False, True, False),
+                          (True, False, False),
+                          (False, False, False)])
+def test_overwrite_required_existing_file(overwrite, skymodel_exists, expected):
+    """Test the _overwrite_required function when the sky model file exists."""
+
+    assert _overwrite_required(skymodel_exists, overwrite) is expected
+
+@pytest.mark.parametrize("overwrite, skymodel_exists, expected",
+                         [(True, True, False),
+                          (False, True, True),
+                          (True, False, False),
+                          (False, False, False)])
+def test_download_not_required(overwrite, skymodel_exists, expected):
+    """Test the _download_not_required function when the sky model file exists."""
+
+    assert _download_not_required(skymodel_exists, overwrite) is expected
