@@ -300,13 +300,13 @@ def check_lotss_coverage(cone_params, skymodel_path):
         fh.write(response.content)
 
     moc = mocpy.MOC.from_fits(mocpath)
-    covers_centre = moc.contains(ra * u.deg, dec * u.deg)
+    covers_centre = moc.contains_lonlat(ra * u.deg, dec * u.deg)
 
     # Checking single coordinates, so get rid of the array
-    covers_left = moc.contains(ra * u.deg - radius * u.deg, dec * u.deg)[0]
-    covers_right = moc.contains(ra * u.deg + radius * u.deg, dec * u.deg)[0]
-    covers_bottom = moc.contains(ra * u.deg, dec * u.deg - radius * u.deg)[0]
-    covers_top = moc.contains(ra * u.deg, dec * u.deg + radius * u.deg)[0]
+    covers_left = moc.contains_lonlat(ra * u.deg - radius * u.deg, dec * u.deg)[0]
+    covers_right = moc.contains_lonlat(ra * u.deg + radius * u.deg, dec * u.deg)[0]
+    covers_bottom = moc.contains_lonlat(ra * u.deg, dec * u.deg - radius * u.deg)[0]
+    covers_top = moc.contains_lonlat(ra * u.deg, dec * u.deg + radius * u.deg)[0]
     if covers_centre and not (
         covers_left and covers_right and covers_bottom and covers_top
     ):
