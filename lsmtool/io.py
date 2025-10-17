@@ -293,6 +293,118 @@ def convert_coordinates_to_pixels(coordinates, wcs):
     return list(zip(vertices_x, vertices_y, strict=True))
 
 
+def _download_not_required(skymodel_exists: bool, overwrite: bool):
+    """
+    Check if sky model exists and should not be overwritten.
+
+    Parameters
+    ----------
+    skymodel_exists : bool
+        Whether the sky model exists
+    overwrite : bool, optional
+        Overwrite the existing skymodel pointed to by skymodel_path
+
+    Returns
+    -------
+    bool
+        True if sky model download not required, False otherwise.
+    """
+    logger = logging.getLogger("LSMTool")
+    if skymodel_exists and not overwrite:
+        logger.warning(
+            "Download skipped! Sky model already exists and overwrite is set to False."
+        )
+        return True
+    return False
+
+
+def _sky_model_exists(skymodel_path: str):
+    """
+    Check if the sky model file exists.
+
+    Parameters
+    ----------
+    skymodel_path : str
+        Full name (with path) to the output skymodel
+
+    Returns
+    -------
+    bool
+        True if the sky model file exists, False otherwise.
+    """
+    logger = logging.getLogger("LSMTool")
+    file_exists = os.path.isfile(skymodel_path)
+    if file_exists:
+        logger.warning('Sky model "%s" exists!', skymodel_path)
+    return file_exists
+
+
+def _new_directory_required(skymodel_path: str):
+    """
+    Check if the given path is a new directory that needs to be created.
+
+    Parameters
+    ----------
+    skymodel_path : str
+        The path to check.
+
+    Returns
+    -------
+    bool
+        True if the skymodel_path is a valid directory, False otherwise.
+    """
+    # Empty strings are False. Only attempt directory creation if there is a
+    # directory path involved.
+    return (
+        not os.path.isfile(skymodel_path)
+        and os.path.dirname(skymodel_path)
+        and not os.path.exists(os.path.dirname(skymodel_path))
+    )
+
+
+def _overwrite_required(skymodel_exists: bool, overwrite: bool):
+    """
+    Remove existing sky model file if overwrite is True.
+
+    Parameters
+    ----------
+    skymodel_exists : bool
+        Whether the sky model exists
+    overwrite : bool, optional
+        Overwrite the existing skymodel pointed to by skymodel_path
+
+    Returns
+    -------
+    bool
+        True if existing sky model should be removed, False otherwise.
+    """
+    logger = logging.getLogger("LSMTool")
+    if skymodel_exists and overwrite:
+        logger.warning(
+            "Found existing sky model and overwrite is True. Deleting "
+            "existing sky model!"
+        )
+        return True
+    return False
+
+
+def _validate_skymodel_path(skymodel_path: str):
+    """Validate the sky model path.
+
+    Parameters
+    ----------
+    skymodel_path : str
+        Full name (with path) to the output skymodel
+
+    Raises
+    ------
+    ValueError
+        If the skymodel_path exists but is not a file.
+    """
+    if not os.path.isfile(skymodel_path) and os.path.exists(skymodel_path):
+        raise ValueError(f'Path "{skymodel_path}" exists but is not a file!')
+
+
 def download_skymodel(
     ra,
     dec,
@@ -326,33 +438,18 @@ def download_skymodel(
         Give the patch a certain name
     """
     logger = logging.getLogger("LSMTool")
+    skymodel_exists = _sky_model_exists(skymodel_path)
 
-    file_exists = os.path.isfile(skymodel_path)
-    if file_exists and not overwrite:
-        logger.warning(
-            'Sky model "%s" exists and overwrite is set to False! '
-            'Not downloading sky model.', skymodel_path
-        )
+    if _download_not_required(skymodel_exists, overwrite):
         return
 
-    if not file_exists and os.path.exists(skymodel_path):
-        raise ValueError('Path "%s" exists but is not a file!' % skymodel_path)
+    _validate_skymodel_path(skymodel_path)
 
-    # Empty strings are False. Only attempt directory creation if there is a
-    # directory path involved.
-    if (
-        not file_exists
-        and os.path.dirname(skymodel_path)
-        and not os.path.exists(os.path.dirname(skymodel_path))
-    ):
-        os.makedirs(os.path.dirname(skymodel_path))
-
-    if file_exists and overwrite:
-        logger.warning(
-            'Found existing sky model "%s" and overwrite is True. Deleting '
-            "existing sky model!", skymodel_path
-        )
+    if _overwrite_required(skymodel_exists, overwrite):
         os.remove(skymodel_path)
+
+    if _new_directory_required(skymodel_path):
+        os.makedirs(os.path.dirname(skymodel_path))
 
     # Check the radius for Pan-STARRS (it must be <= 0.5 degrees)
     source = source.upper().strip()
@@ -460,13 +557,16 @@ def download_skymodel(
                     "Attempt #%d to download %s sky model failed.", tries, source
                 )
                 raise IOError(
-                    f"Download of {source} sky model failed after {max_tries}"
-                    " attempts."
+                    f"Download of {source} sky model failed after {max_tries} attempts."
                 )
             suffix = "s" if max_tries - tries > 1 else ""
             logger.error(
                 "Attempt #%d to download %s sky model failed. Attempting "
-                "%d more time%s.", tries, source, max_tries - tries, suffix
+                "%d more time%s.",
+                tries,
+                source,
+                max_tries - tries,
+                suffix,
             )
             time.sleep(5)
 
