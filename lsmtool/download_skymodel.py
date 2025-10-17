@@ -277,10 +277,29 @@ def check_lotss_coverage(cone_params, skymodel_path):
     logger = logging.getLogger("LSMTool")
     logger.info("Checking LoTSS coverage for the requested centre and radius.")
 
-    ra = cone_params["ra"]
-    dec = cone_params["dec"]
-    radius = cone_params["radius"]
+    moc = _get_lotss_moc(skymodel_path)
+    _check_coverage(cone_params, moc)
 
+
+def _get_lotss_moc(skymodel_path):
+    """
+    Download and return the LoTSS MOC (Multi-Order Coverage map).
+
+    Parameters
+    ----------
+    skymodel_path : str
+        Full name (with path) to the output skymodel
+
+    Returns
+    -------
+    moc : mocpy.MOC
+        The LoTSS MOC object.
+
+    Raises
+    ------
+    ConnectionError
+        If the LoTSS MOC file cannot be downloaded.
+    """
     mocpath = os.path.join(os.path.dirname(skymodel_path), "dr2-moc.moc")
     # Securely download the MOC file without spawning an external process.
     # (Fix for security lint S607: avoid subprocess with partial executable path.)
@@ -296,6 +315,36 @@ def check_lotss_coverage(cone_params, skymodel_path):
         fh.write(response.content)
 
     moc = mocpy.MOC.from_fits(mocpath)
+    return moc
+
+
+def _check_coverage(
+    cone_params,
+    moc,
+):
+    """
+    Check if the MOC has coverage for the given position and radius.
+
+    Parameters
+    ----------
+    cone_params : dict
+        Dictionary containing the cone search parameters:
+            'ra': Right ascension of the target position.
+            'dec': Declination of the target position.
+            'radius': Search radius in degrees.
+    moc : mocpy.MOC
+        The MOC object to check coverage against.
+
+    Raises
+    ------
+    ValueError
+        If there is no LoTSS coverage for the requested centre and radius.
+    """
+    logger = logging.getLogger("LSMTool")
+    ra = cone_params["ra"]
+    dec = cone_params["dec"]
+    radius = cone_params["radius"]
+
     covers_centre = moc.contains_lonlat(ra * u.deg, dec * u.deg)
 
     # Checking single coordinates, so get rid of the array
@@ -303,23 +352,20 @@ def check_lotss_coverage(cone_params, skymodel_path):
     covers_right = moc.contains_lonlat(ra * u.deg + radius * u.deg, dec * u.deg)[0]
     covers_bottom = moc.contains_lonlat(ra * u.deg, dec * u.deg - radius * u.deg)[0]
     covers_top = moc.contains_lonlat(ra * u.deg, dec * u.deg + radius * u.deg)[0]
-    if covers_centre and not (
-        covers_left and covers_right and covers_bottom and covers_top
-    ):
-        logger.warning(
-            "Incomplete LoTSS coverage for the requested centre and radius! "
-            "Please check the field coverage in plots/field_coverage.png!"
-        )
-    elif not covers_centre and (
+
+    covers_all = (
+        covers_centre and covers_left and covers_right and covers_bottom and covers_top
+    )
+    covers_zero = not covers_centre and not (
         covers_left or covers_right or covers_bottom or covers_top
-    ):
+    )
+    covers_partial = not covers_all and not covers_zero
+    if covers_partial:
         logger.warning(
             "Incomplete LoTSS coverage for the requested centre and radius! "
             "Please check the field coverage in plots/field_coverage.png!"
         )
-    elif not covers_centre and not (
-        covers_left and covers_right and covers_bottom and covers_top
-    ):
+    elif covers_zero:
         raise ValueError("No LoTSS coverage for the requested centre and radius!")
     else:
         logger.info("Complete LoTSS coverage for the requested centre and radius.")
