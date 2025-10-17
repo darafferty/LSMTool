@@ -1,3 +1,4 @@
+from astropy.coordinates import SkyCoord
 import contextlib
 
 import numpy as np
@@ -8,7 +9,10 @@ from lsmtool.facet import (
     in_box,
     tessellate,
     voronoi,
+    prepare_points_for_tessellate,
 )
+
+NULL_CONTEXT = contextlib.nullcontext()
 
 
 @pytest.mark.parametrize(
@@ -19,7 +23,7 @@ from lsmtool.facet import (
             np.array([[1, 1], [2, 2], [3, 3]]),
             np.array([0, 4, 0, 4]),
             np.array([True, True, True]),
-            null_context := contextlib.nullcontext(),
+            NULL_CONTEXT,
             id="all_inside",
         ),
         # Some points inside, some outside boundary
@@ -27,7 +31,7 @@ from lsmtool.facet import (
             np.array([[0, 0], [5, 5], [2, 2]]),
             np.array([1, 4, 1, 4]),
             np.array([False, False, True]),
-            null_context,
+            NULL_CONTEXT,
             id="some_inside_some_outside",
         ),
         # Points exactly on the boundary
@@ -35,7 +39,7 @@ from lsmtool.facet import (
             np.array([[1, 1], [4, 4], [1, 4], [4, 1]]),
             np.array([1, 4, 1, 4]),
             np.array([True, True, True, True]),
-            null_context,
+            NULL_CONTEXT,
             id="on_boundary",
         ),
         # Empty `cal_coords`
@@ -43,7 +47,7 @@ from lsmtool.facet import (
             np.empty((0, 2)),
             np.array([0, 1, 0, 1]),
             np.array([], dtype=bool),
-            null_context,
+            NULL_CONTEXT,
             id="empty_coords",
         ),
         # Bounding box with zero area (min == max)
@@ -51,7 +55,7 @@ from lsmtool.facet import (
             np.array([[1, 1], [1, 2], [2, 1]]),
             np.array([1, 1, 1, 1]),
             np.array([True, False, False]),
-            null_context,
+            NULL_CONTEXT,
             id="zero_area_box",
         ),
         # Negative coordinates
@@ -59,7 +63,7 @@ from lsmtool.facet import (
             np.array([[-2, -2], [-1, -1], [0, 0]]),
             np.array([-2, 0, -2, 0]),
             np.array([True, True, True]),
-            null_context,
+            NULL_CONTEXT,
             id="negative_coords",
         ),
         # Bounding box with min > max (inverted box)
@@ -67,7 +71,7 @@ from lsmtool.facet import (
             np.array([[0, 0], [1, 1]]),
             np.array([2, 0, 2, 0]),
             np.array([True, True]),
-            null_context,
+            NULL_CONTEXT,
             id="inverted_box",
         ),
         # -------------------------------------------------------------------- #
@@ -115,18 +119,23 @@ def test_in_box(cal_coords, bounding_box, expected, context):
 
 
 @pytest.mark.parametrize(
-    "ra_cal, dec_cal, ra_mid, dec_mid, width_ra, width_dec, "
+    "directions, bbox_midpoint, bbox_size, "
     "expected_facet_points, expected_facet_polygons",
     [
         pytest.param(
-            RA_CAL := [119.73, 138.08, 124.13, 115.74],
-            DEC_CAL := [89.92, 89.91, 89.89, 89.89],
-            126.52,
-            90.0,
-            0.3,
-            0.3,
+            directions := SkyCoord(
+                ra=[119.73, 138.08, 124.13, 115.74],
+                dec=[89.92, 89.91, 89.89, 89.89],
+                unit="deg"
+            ),
+            bbox_midpoint := SkyCoord(
+                ra=126.52,
+                dec=90.0,
+                unit="deg"
+            ),
+            bbox_size := (0.3, 0.3),
             # expected_facet_points
-            np.transpose([RA_CAL, DEC_CAL]),
+            np.transpose([directions.ra.deg, directions.dec.deg]),
             #
             [
                 [
@@ -164,12 +173,9 @@ def test_in_box(cal_coords, bounding_box, expected, context):
     ],
 )
 def test_tessellate(
-    ra_cal,
-    dec_cal,
-    ra_mid,
-    dec_mid,
-    width_ra,
-    width_dec,
+    directions,
+    bbox_midpoint,
+    bbox_size,
     expected_facet_points,
     expected_facet_polygons,
 ):
@@ -180,12 +186,9 @@ def test_tessellate(
 
     # Tessellate a region that encompasses the NCP.
     facet_points, facet_polys = tessellate(
-        ra_cal,
-        dec_cal,
-        ra_mid,
-        dec_mid,
-        width_ra,
-        width_dec,
+        directions,
+        bbox_midpoint,
+        bbox_size,
     )
 
     # Check the facet points
@@ -208,8 +211,7 @@ def _flatten(iterable):
 
 
 @pytest.mark.parametrize(
-    "cal_coords, bounding_box, expected_in_box, expected_vertices, "
-    "expected_regions, context",
+    "cal_coords, bounding_box, expected_in_box, expected_vertices, expected_regions, context",
     [
         # Regular input cases
         # -------------------------------------------------------------------- #
@@ -232,7 +234,7 @@ def _flatten(iterable):
                 ]
             ),
             [],
-            null_context,
+            NULL_CONTEXT,
             id="square",
         ),
         # Edge cases
@@ -244,7 +246,7 @@ def _flatten(iterable):
             np.array([True, False]),
             np.array([[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]]),
             [[3, 1, 0, 2]],
-            null_context,
+            NULL_CONTEXT,
             id="edge_case_one_inside",
         ),
         # All points on the boundary
@@ -266,7 +268,7 @@ def _flatten(iterable):
                 ]
             ),
             [],
-            null_context,
+            NULL_CONTEXT,
             id="all_on_boundary",
         ),
         # Degenerate: all points colinear
@@ -287,7 +289,7 @@ def _flatten(iterable):
                 ]
             ),
             [[7, 5, 4, 3, 2, 6]],
-            null_context,
+            NULL_CONTEXT,
             id="colinear_points",
         ),
         # Duplicate points
@@ -297,7 +299,7 @@ def _flatten(iterable):
             np.array([True, True, True, True]),
             np.array([[1.0, 0.0], [0.0, 1.0]]),
             [],
-            null_context,
+            NULL_CONTEXT,
             id="duplicate_points",
         ),
         # Error cases
@@ -337,3 +339,148 @@ def test_voronoi(
 
         # check vertices are as expected
         assert_array_equal(vertices, expected_vertices)
+
+
+@pytest.mark.parametrize(
+    "cal_coords, bounding_box, expected_centre, context",
+    [
+        # Nominal cases
+        # -------------------------------------------------------------------- #
+        # All points inside the bounding box
+        pytest.param(
+            np.array([[0, 0], [1, 1], [0.5, 0.5]]),
+            [0, 1, 0, 1],
+            np.array([[0, 0], [1, 1], [0.5, 0.5]]),
+            NULL_CONTEXT,
+            id="all_inside",
+        ),
+        # Some points inside, some outside
+        pytest.param(
+            np.array([[0, 0], [2, 2], [1, 1]]),
+            [0, 1, 0, 1],
+            np.array([[0, 0], [1, 1]]),
+            NULL_CONTEXT,
+            id="some_inside_some_outside",
+        ),
+        # All points outside
+        pytest.param(
+            np.array([[2, 2], [3, 3]]),
+            [0, 1, 0, 1],
+            np.empty((0, 2)),
+            NULL_CONTEXT,
+            id="all_outside",
+        ),
+        # Points on the boundary
+        pytest.param(
+            np.array([[0, 0], [1, 1], [0, 1], [1, 0]]),
+            [0, 1, 0, 1],
+            np.array([[0, 0], [1, 1], [0, 1], [1, 0]]),
+            NULL_CONTEXT,
+            id="on_boundary",
+        ),
+        # Empty input
+        pytest.param(
+            np.empty((0, 2)),
+            [0, 1, 0, 1],
+            np.empty((0, 2)),
+            NULL_CONTEXT,
+            id="empty_input",
+        ),
+        # Negative coordinates
+        pytest.param(
+            np.array([[-1, -1], [0, 0], [1, 1]]),
+            [-1, 1, -1, 1],
+            np.array([[-1, -1], [0, 0], [1, 1]]),
+            NULL_CONTEXT,
+            id="negative_coords",
+        ),
+        # Inverted bounding box (min > max)
+        pytest.param(
+            np.array([[0, 0], [1, 1]]),
+            [1, 0, 1, 0],
+            np.array([[0, 0], [1, 1]]),
+            NULL_CONTEXT,
+            id="inverted_box",
+        ),
+        # Duplicate points
+        pytest.param(
+            np.array([[0, 0], [0, 0], [1, 1], [1, 1]]),
+            [0, 1, 0, 1],
+            np.array([[0, 0], [0, 0], [1, 1], [1, 1]]),
+            NULL_CONTEXT,
+            id="duplicate_points",
+        ),
+        # Single point inside
+        pytest.param(
+            np.array([[0.5, 0.5]]),
+            [0, 1, 0, 1],
+            np.array([[0.5, 0.5]]),
+            NULL_CONTEXT,
+            id="single_point_inside",
+        ),
+        # Single point outside
+        pytest.param(
+            np.array([[2, 2]]),
+            [0, 1, 0, 1],
+            np.empty((0, 2)),
+            NULL_CONTEXT,
+            id="single_point_outside",
+        ),
+        # Error cases
+        # -------------------------------------------------------------------- #
+        # cal_coords not 2D
+        pytest.param(
+            np.array([1, 2, 3]),
+            [0, 1, 0, 1],
+            None,
+            pytest.raises(ValueError),
+            id="cal_coords_not_2d",
+        ),
+        # cal_coords wrong number of columns
+        pytest.param(
+            np.array([[1, 2, 3], [4, 5, 6]]),
+            [0, 1, 0, 1],
+            None,
+            pytest.raises(ValueError),
+            id="cal_coords_wrong_columns",
+        ),
+        # bounding_box wrong shape (too short)
+        pytest.param(
+            np.array([[1, 1]]),
+            [0, 1, 0],
+            None,
+            pytest.raises(ValueError),
+            id="bounding_box_too_short",
+        ),
+        # bounding_box wrong shape (too long)
+        pytest.param(
+            np.array([[1, 1]]),
+            [0, 1, 0, 1, 2],
+            None,
+            pytest.raises(ValueError),
+            id="bounding_box_too_long",
+        ),
+    ],
+)
+def test_prepare_points_for_tessellate(
+    cal_coords, bounding_box, expected_centre, context
+):
+    # Act
+    with context:
+        points_centre, points = prepare_points_for_tessellate(
+            cal_coords, bounding_box
+        )
+
+        # If there are N points_centre, there should be N*5 points in total
+        # (original + 4 mirrored)
+        expected_points = [*points_centre]
+        for i, interval in enumerate(np.reshape(bounding_box, (2, 2))):
+            for edge in interval:
+                mirrored_points = points_centre.copy()
+                mirrored_points[:, i] = 2 * edge - points_centre[:, i]
+                expected_points.extend(mirrored_points)
+
+        # Assert
+        assert set(map(tuple, expected_points)) == set(map(tuple, points))
+
+        np.testing.assert_array_equal(points_centre, expected_centre)
