@@ -5,6 +5,7 @@ Unit tests for the download_skymodel module.
 from unittest.mock import patch
 
 import lsmtool
+import mocpy
 import pytest
 from conftest import TEST_DATA_PATH, copy_test_data
 
@@ -20,6 +21,8 @@ from lsmtool.download_skymodel import (
     download_skymodel_catalog,
     download_skymodel_from_source,
     check_lotss_coverage,
+    _get_lotss_moc,
+    _check_coverage,
 )
 
 
@@ -308,3 +311,37 @@ def test_download_skymodel_from_source(source, ra, dec, radius, tmp_path):
 
     # Assert
     assert skymodel_path.is_file()
+
+
+def test_get_lotss_moc(tmp_path):
+    """Test the _get_lotss_moc function."""
+
+    skymodel_path = tmp_path / "lotss_sky.model"
+    expected_moc_path = tmp_path / "dr2-moc.moc"
+    moc = _get_lotss_moc(skymodel_path)
+
+    # Assert
+    assert moc is not None
+    assert isinstance(moc, mocpy.MOC)
+    assert expected_moc_path.is_file()
+
+
+def test_check_coverage_within_coverage(tmp_path):
+    """Test the _check_coverage function for coordinates within LoTSS coverage."""
+    ra_within = 190.0  # RA within LoTSS coverage
+    dec_within = 44.0  # DEC within LoTSS coverage
+    radius = 1.0  # radius in degrees
+    cone_params = {"ra": ra_within, "dec": dec_within, "radius": radius}
+    moc = _get_lotss_moc(tmp_path / "lotss_sky.model")
+    _check_coverage(cone_params, moc)
+
+
+def test_check_coverage_outside_coverage(tmp_path):
+    """Test the _check_coverage function for coordinates outside LoTSS coverage."""
+    ra_outside = 30.0  # RA outside LoTSS coverage
+    dec_outside = -30.0  # DEC outside LoTSS coverage
+    radius = 1.0  # radius in degrees
+    cone_params = {"ra": ra_outside, "dec": dec_outside, "radius": radius}
+    moc = _get_lotss_moc(tmp_path / "lotss_sky.model")
+    with pytest.raises(ValueError):
+        _check_coverage(cone_params, moc)
