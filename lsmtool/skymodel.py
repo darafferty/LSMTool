@@ -2607,7 +2607,11 @@ class SkyModel(object):
                 y_pix_list.append(y_pix)
             dist_pix = np.sqrt(xsize**2 + ysize**2)
             width_pix = dist_pix * cellsize
-            _, vertices = tessellate(RA, Dec, refRA[0], refDec[0], width_pix, width_pix)
+            _, vertices = tessellate(
+                SkyCoord(RA, Dec, unit='deg'),
+                SkyCoord(refRA[0], refDec[0], unit='deg'),
+                [width_pix, width_pix]
+            )
             lines = []
             lines.append('# Region file format: DS9 version 4.0\nglobal color=green '
                          'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
