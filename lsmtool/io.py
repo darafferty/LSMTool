@@ -405,18 +405,17 @@ def _validate_skymodel_path(skymodel_path: str):
         raise ValueError(f'Path "{skymodel_path}" exists but is not a file!')
 
 
-def check_lotss_coverage(ra, dec, radius, skymodel_path):
+def check_lotss_coverage(cone_params, skymodel_path):
     """
     Check if LoTSS has coverage for the given position and radius.
 
     Parameters
     ----------
-    ra : float
-        Right ascension in degrees of the skymodel centre
-    dec : float
-        Declination in degrees of the skymodel centre
-    radius : float
-        Radius for the cone search in degrees
+    cone_params : dict
+        Dictionary containing the cone search parameters:
+            'ra': Right ascension of the target position.
+            'dec': Declination of the target position.
+            'radius': Search radius in degrees.
     skymodel_path : str
         Full name (with path) to the output skymodel
 
@@ -430,6 +429,11 @@ def check_lotss_coverage(ra, dec, radius, skymodel_path):
     """
     logger = logging.getLogger("LSMTool")
     logger.info("Checking LoTSS coverage for the requested centre and radius.")
+
+    ra = cone_params["ra"]
+    dec = cone_params["dec"]
+    radius = cone_params["radius"]
+
     mocpath = os.path.join(os.path.dirname(skymodel_path), "dr2-moc.moc")
     # Securely download the MOC file without spawning an external process.
     # (Fix for security lint S607: avoid subprocess with partial executable path.)
@@ -443,6 +447,7 @@ def check_lotss_coverage(ra, dec, radius, skymodel_path):
         ) from exc
     with open(mocpath, "wb") as fh:
         fh.write(response.content)
+
     moc = mocpy.MOC.from_fits(mocpath)
     covers_centre = moc.contains(ra * u.deg, dec * u.deg)
 
@@ -473,18 +478,17 @@ def check_lotss_coverage(ra, dec, radius, skymodel_path):
         logger.info("Complete LoTSS coverage for the requested centre and radius.")
 
 
-def get_panstarrs_request(ra, dec, radius):
+def get_panstarrs_request(cone_params):
     """
     Create a Pan-STARRS request URL and parameters.
 
     Parameters
     ----------
-    ra : float
-        Right ascension of the target position.
-    dec : float
-        Declination of the target position.
-    radius : float
-        Search radius in degrees.
+    cone_params : dict
+        Dictionary containing the cone search parameters:
+        'ra': Right ascension of the target position.
+        'dec': Declination of the target position.
+        'radius': Search radius in degrees.
 
     Returns
     -------
@@ -498,7 +502,7 @@ def get_panstarrs_request(ra, dec, radius):
     ValueError
         If the radius is greater than 0.5 degrees.
     """
-    if radius > 0.5:
+    if cone_params["radius"] > 0.5:
         raise ValueError("The radius for Pan-STARRS must be <= 0.5 deg")
     baseurl = "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs"
     release = "dr1"  # the release with the mean data
@@ -506,9 +510,9 @@ def get_panstarrs_request(ra, dec, radius):
     cat_format = "csv"  # use csv format for the intermediate file
     url = f"{baseurl}/{release}/{table}.{cat_format}"
     search_params = {
-        "ra": ra,
-        "dec": dec,
-        "radius": radius,
+        "ra": cone_params["ra"],
+        "dec": cone_params["dec"],
+        "radius": cone_params["radius"],
         "nDetections.min": "5",  # require detection in at least 5 epochs
         "columns": ["objID", "ramean", "decmean"],  # get only the info we need
     }
@@ -521,12 +525,10 @@ def download_skymodel_panstarrs(url, search_params, skymodel_path):
 
     Parameters
     ----------
-    ra : float
-        Right ascension of the target position.
-    dec : float
-        Declination of the target position.
-    radius : float
-        Search radius in degrees.
+    url : str
+        The Pan-STARRS API URL.
+    search_params : dict
+        The search parameters for the request.
     skymodel_path : str
         Path to the output skymodel file.
 
@@ -563,17 +565,16 @@ def download_skymodel_panstarrs(url, search_params, skymodel_path):
         return False
 
 
-def download_skymodel_catalog(ra, dec, radius, source, skymodel_path):
+def download_skymodel_catalog(cone_params, source, skymodel_path):
     """
     Download a skymodel from the specified source catalog.
     Parameters
     ----------
-    ra : float
-        Right ascension of the target position.
-    dec : float
-        Declination of the target position.
-    radius : float
-        Search radius in degrees.
+    cone_params : dict
+        Dictionary containing the cone search parameters:
+        'ra': Right ascension of the target position.
+        'dec': Declination of the target position.
+        'radius': Search radius in degrees.
     skymodel_path : str
         Path to the output skymodel file.
     source : str
@@ -587,7 +588,11 @@ def download_skymodel_catalog(ra, dec, radius, source, skymodel_path):
     logger = logging.getLogger("LSMTool")
     logger.info("Downloading skymodel from %s into %s", source, skymodel_path)
     try:
-        skymodel = SkyModel(source, VOPosition=[ra, dec], VORadius=radius)
+        skymodel = SkyModel(
+            source,
+            VOPosition=[cone_params["ra"], cone_params["dec"]],
+            VORadius=cone_params["radius"],
+        )
         skymodel.write(skymodel_path)
         if len(skymodel) > 0:
             return True
@@ -596,18 +601,17 @@ def download_skymodel_catalog(ra, dec, radius, source, skymodel_path):
     return False
 
 
-def download_skymodel_from_source(ra, dec, radius, source, skymodel_path, max_tries=5):
+def download_skymodel_from_source(cone_params, source, skymodel_path, max_tries=5):
     """
     Download a skymodel from the specified source.
 
     Parameters
     ----------
-    ra : float
-        Right ascension of the target position.
-    dec : float
-        Declination of the target position.
-    radius : float
-        Search radius in degrees.
+    cone_params : dict
+        Dictionary containing the cone search parameters:
+            'ra': Right ascension of the target position.
+            'dec': Declination of the target position.
+            'radius': Search radius in degrees.
     skymodel_path : str
         Path to the output skymodel file.
     overwrite : bool
@@ -618,15 +622,15 @@ def download_skymodel_from_source(ra, dec, radius, source, skymodel_path, max_tr
     logger = logging.getLogger("LSMTool")
 
     if source == "LOTSS":
-        check_lotss_coverage(ra, dec, radius, skymodel_path)
+        check_lotss_coverage(cone_params, skymodel_path)
 
     logger.info("Downloading skymodel for the target into %s", skymodel_path)
     for tries in range(1, 1 + max_tries):
         if source in ("LOTSS", "TGSS", "GSM"):
-            success = download_skymodel_catalog(ra, dec, radius, source, skymodel_path)
+            success = download_skymodel_catalog(cone_params, source, skymodel_path)
 
         elif source == "PANSTARRS":
-            url, search_params = get_panstarrs_request(ra, dec, radius)
+            url, search_params = get_panstarrs_request(cone_params)
             success = download_skymodel_panstarrs(url, search_params, skymodel_path)
 
         else:
@@ -655,10 +659,8 @@ def download_skymodel_from_source(ra, dec, radius, source, skymodel_path, max_tr
 
 
 def download_skymodel(
-    ra,
-    dec,
+    cone_params,
     skymodel_path,
-    radius=5.0,
     overwrite=False,
     source="TGSS",
     targetname="Patch",
@@ -668,6 +670,8 @@ def download_skymodel(
 
     Parameters
     ----------
+    cone_params : dict
+        Dictionary containing the cone search parameters: 'ra', 'dec', and 'radius'
     ra : float
         Right ascension in degrees of the skymodel centre
     dec : float
@@ -701,7 +705,7 @@ def download_skymodel(
 
     source = source.upper().strip()
 
-    download_skymodel_from_source(ra, dec, radius, source, skymodel_path)
+    download_skymodel_from_source(cone_params, source, skymodel_path)
 
     if not os.path.isfile(skymodel_path):
         raise IOError(
