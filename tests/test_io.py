@@ -19,9 +19,14 @@ from lsmtool.io import (
     _download_not_required,
     convert_coordinates_to_pixels,
     download_skymodel,
+    download_skymodel_panstarrs,
+    get_panstarrs_request,
+    download_skymodel_catalog,
+    download_skymodel_from_source,
     read_vertices_ra_dec,
     read_vertices_x_y,
     temp_storage,
+    check_lotss_coverage
 )
 
 
@@ -319,3 +324,103 @@ def test_download_not_required(overwrite, skymodel_exists, expected):
     """Test the _download_not_required function when the sky model file exists."""
 
     assert _download_not_required(skymodel_exists, overwrite) is expected
+
+
+def test_check_lotss_coverage_within_coverage(tmp_path):
+    """Test the check_lotss_coverage function for coordinates within LoTSS coverage."""
+    ra_within = 190.0  # RA within LoTSS coverage
+    dec_within = 44.0  # DEC within LoTSS coverage
+    radius = 1.0    # radius in degrees
+    check_lotss_coverage(ra_within, dec_within, radius, tmp_path)
+
+def test_check_lotss_coverage_outside_coverage(tmp_path):
+    """Test the check_lotss_coverage function for coordinates outside LoTSS coverage."""
+    ra_outside = 30.0  # RA outside LoTSS coverage
+    dec_outside = -30.0  # DEC outside LoTSS coverage
+    radius = 1.0    # radius in degrees
+    with pytest.raises(ValueError):
+        assert check_lotss_coverage(ra_outside, dec_outside, radius, tmp_path) is False
+
+
+def test_get_panstarrs_request():
+    """Test the get_panstarrs_request function."""
+
+    # Arrange
+    ra = 10.75
+    dec = 5.34
+    radius = 0.1
+
+    expected_url = (
+        "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
+    )
+    expected_search_params = {"ra": ra, "dec": dec, "radius": radius,
+                             "nDetections.min": "5",
+                             "columns": ["objID", "ramean", "decmean"]
+                             }
+
+    # Act
+    request_url, search_params = get_panstarrs_request(ra, dec, radius)
+
+    # Assert
+    assert request_url == expected_url
+    assert search_params == expected_search_params
+
+
+def test_get_panstarrs_request_raises_error_large_radius():
+    """Test the get_panstarrs_request function."""
+
+    radius_limit = 0.5
+    with pytest.raises(ValueError):
+        _, _ = get_panstarrs_request(10.0, 10.0, radius_limit + 0.001)
+
+
+def test_download_skymodel_panstarrs(tmp_path):
+    """Test downloading a sky model from Pan-STARRS."""
+
+    # Arrange
+    url = (
+        "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
+    )
+    search_params = {"ra": 10.75, "dec": 5.34, "radius": 0.1,
+                     "nDetections.min": "5",
+                     "columns": ["objID", "ramean", "decmean"]
+                     }
+    skymodel_path = tmp_path / "panstarrs_sky.model"
+
+    # Act
+    download_skymodel_panstarrs(url, search_params, str(skymodel_path))
+
+    # Assert
+    assert skymodel_path.is_file()
+
+
+@pytest.mark.parametrize("source,ra,dec,radius", [("LOTSS", 190.0, 30.0, 1.0),
+                                                  ("TGSS", 12.34, 56.78, 1.0),
+                                                  ("GSM", 123.23, 23.34, 1.0)])
+def test_download_skymodel_catalog(source, ra, dec, radius, tmp_path):
+    """Test downloading a sky model from a catalog source."""
+
+    # Arrange
+    skymodel_path = tmp_path / f"catalog_sky_{source}.model"
+
+    # Act
+    download_skymodel_catalog(ra, dec, radius, source, str(skymodel_path))
+
+    # Assert
+    assert skymodel_path.is_file()
+
+@pytest.mark.parametrize("source,ra,dec,radius", [("LOTSS", 190.0, 30.0, 1.0),
+                                                  ("TGSS", 12.34, 56.78, 1.0),
+                                                  ("GSM", 123.23, 23.34, 1.0),
+                                                  ("PANSTARRS", 10.75, 5.34, 0.1)])
+def test_download_skymodel_from_source(source, ra, dec, radius, tmp_path):
+    """Test downloading a sky model from a source."""
+
+    # Arrange
+    skymodel_path = tmp_path / f"source_sky_{source}.model"
+
+    # Act
+    download_skymodel_from_source(ra, dec, radius, source, str(skymodel_path))
+
+    # Assert
+    assert skymodel_path.is_file()
