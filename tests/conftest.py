@@ -52,7 +52,7 @@ def untar(
 
     # Uncompress the tgz file.
     with tarfile.open(path, "r:gz") as file:
-        file.extractall(destination)
+        file.extractall(destination, filter="data")
 
     # Remove the compressed archive if requested
     if remove_archive:

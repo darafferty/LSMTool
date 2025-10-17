@@ -19,7 +19,7 @@ name = "lsmtool"
 dynamic = ["version"]
 description = "The LOFAR Local Sky Model Tool"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10.12"
 authors = [
     { name = "David Rafferty", email = "drafferty@hs.uni-hamburg.de" },
 ]
