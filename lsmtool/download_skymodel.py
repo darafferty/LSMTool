@@ -104,20 +104,16 @@ def download_skymodel_from_source(cone_params, source, skymodel_path, max_tries=
     for tries in range(1, 1 + max_tries):
         if source in ("LOTSS", "TGSS", "GSM"):
             success = download_skymodel_catalog(cone_params, source, skymodel_path)
-
         elif source == "PANSTARRS":
             url, search_params = get_panstarrs_request(cone_params)
             success = download_skymodel_panstarrs(url, search_params, skymodel_path)
-
         else:
             raise ValueError(
                 "Unsupported sky model source specified! Please use LOTSS, TGSS, "
                 "GSM, or PANSTARRS."
             )
-
         if success:
             break
-
         if tries == max_tries:
             logger.error("Attempt #%d to download %s sky model failed.", tries, source)
             raise IOError(
