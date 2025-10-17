@@ -136,6 +136,7 @@ exclude = [
     "lsmtool/_version.py",
     "lsmtool/_changelog.py",
     "tests/test_lsmtool.py",
+    "tests/test_operations_lib.py",
 ]
 
 [tool.ruff.lint]
