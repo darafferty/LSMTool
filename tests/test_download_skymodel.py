@@ -5,6 +5,7 @@ Unit tests for the download_skymodel module.
 from unittest.mock import patch
 
 import lsmtool
+import numpy as np
 import mocpy
 import pytest
 from conftest import TEST_DATA_PATH, copy_test_data
@@ -345,3 +346,49 @@ def test_check_coverage_outside_coverage(tmp_path):
     moc = _get_lotss_moc(tmp_path / "lotss_sky.model")
     with pytest.raises(ValueError):
         _check_coverage(cone_params, moc)
+
+
+@pytest.mark.parametrize(
+    "contains_lonlat_return",
+    (
+        [[False], [True], [True], [True], [True]],
+        [[True], [False], [True], [True], [True]],
+        [[True], [True], [False], [True], [True]],
+        [[True], [True], [True], [False], [True]],
+        [[True], [True], [True], [True], [False]],
+    ),
+)
+def test_check_coverage_partial(
+    mocker, mock_moc, cone_params, caplog, contains_lonlat_return
+):
+    """Test the _check_coverage function for some coordinates within MOC."""
+
+    mocker.patch.object(mock_moc, "contains_lonlat", side_effect=contains_lonlat_return)
+    with caplog.at_level("WARNING"):
+        _check_coverage(cone_params, mock_moc)
+    assert "Incomplete LoTSS coverage" in caplog.text
+
+
+def test_check_coverage_full(mocker, mock_moc, cone_params, caplog):
+    """Test the _check_coverage function for all coordinates within MOC."""
+
+    mocker.patch.object(
+        mock_moc,
+        "contains_lonlat",
+        side_effect=[[True], [True], [True], [True], [True]],
+    )
+    with caplog.at_level("INFO"):
+        _check_coverage(cone_params, mock_moc)
+    assert "Complete LoTSS coverage" in caplog.text
+
+
+def test_check_coverage_zero(mocker, mock_moc, cone_params):
+    """Test the _check_coverage function for all coordinates outside MOC."""
+
+    mocker.patch.object(
+        mock_moc,
+        "contains_lonlat",
+        side_effect=[[False], [False], [False], [False], [False]],
+    )
+    with pytest.raises(ValueError):
+        _check_coverage(cone_params, mock_moc)

@@ -5,8 +5,11 @@ Configuration for python tests.
 import shutil
 import tarfile
 from pathlib import Path
-
+from astropy.coordinates import Latitude, Longitude
+import astropy.units as u
 import pytest
+import mocpy
+from lsmtool.io import check_file_exists, PathLike, PathLikeOptional
 from astropy.io import fits
 from astropy.wcs import WCS
 
@@ -77,9 +80,24 @@ def copy_test_data(files_to_copy, target):
         path = check_file_exists(TEST_DATA_PATH / filename)
         shutil.copy(path, target)
 
+
 @pytest.fixture
 def existing_skymodel_filepath(tmp_path):
     """Fixture that provides a path to an existing sky model file."""
     file_path = tmp_path / "existing_sky.model"
     file_path.write_text("This is a test sky model.")
     return file_path
+
+
+@pytest.fixture
+def mock_moc():
+    """Fixture that provides a mock MOC object for testing."""
+    lon = Longitude([5, -5, -5, 5], u.deg)
+    lat = Latitude([5, 5, -5, -5], u.deg)
+    return mocpy.MOC.from_polygon(lon, lat)
+
+
+@pytest.fixture
+def cone_params():
+    """Fixture that provides cone search parameters for testing."""
+    return {"ra": 190.0, "dec": 44.0, "radius": 1.0}
