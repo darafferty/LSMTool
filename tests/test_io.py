@@ -6,7 +6,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from astropy.wcs import WCS
-from conftest import TEST_DATA_PATH, copy_test_data
+from conftest import TEST_DATA_PATH
 
 from lsmtool.io import (
     _restore_tmpdir,
