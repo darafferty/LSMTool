@@ -340,25 +340,29 @@ def _check_coverage(
         If there is no LoTSS coverage for the requested centre and radius.
     """
     logger = logging.getLogger("LSMTool")
-    ra = cone_params["ra"]
-    dec = cone_params["dec"]
-    radius = cone_params["radius"]
-
-    covers_centre = moc.contains_lonlat(ra * u.deg, dec * u.deg)
+    ra = cone_params["ra"] * u.deg
+    dec = cone_params["dec"] * u.deg
+    radius = cone_params["radius"] * u.deg
 
     # Checking single coordinates, so get rid of the array
-    covers_left = moc.contains_lonlat(ra * u.deg - radius * u.deg, dec * u.deg)[0]
-    covers_right = moc.contains_lonlat(ra * u.deg + radius * u.deg, dec * u.deg)[0]
-    covers_bottom = moc.contains_lonlat(ra * u.deg, dec * u.deg - radius * u.deg)[0]
-    covers_top = moc.contains_lonlat(ra * u.deg, dec * u.deg + radius * u.deg)[0]
+    covers_centre = moc.contains_lonlat(ra, dec)[0]
+    covers_left = moc.contains_lonlat(ra - radius, dec)[0]
+    covers_right = moc.contains_lonlat(ra + radius, dec)[0]
+    covers_bottom = moc.contains_lonlat(ra, dec - radius)[0]
+    covers_top = moc.contains_lonlat(ra, dec + radius)[0]
 
     covers_all = (
         covers_centre and covers_left and covers_right and covers_bottom and covers_top
     )
-    covers_zero = not covers_centre and not (
-        covers_left or covers_right or covers_bottom or covers_top
+    covers_zero = (
+        not covers_centre
+        and not covers_left
+        and not covers_right
+        and not covers_bottom
+        and not covers_top
     )
     covers_partial = not covers_all and not covers_zero
+
     if covers_partial:
         logger.warning(
             "Incomplete LoTSS coverage for the requested centre and radius! "
