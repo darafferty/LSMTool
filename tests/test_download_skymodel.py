@@ -33,7 +33,9 @@ from lsmtool.download_skymodel import (
 @pytest.mark.parametrize("overwrite", (False,))
 @pytest.mark.parametrize("source", ("TGSS",))
 @pytest.mark.parametrize("targetname", ("Patch",))
-def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetname):
+def test_download_skymodel(
+    ra, dec, tmp_path, radius, overwrite, source, targetname
+):
     """Test downloading a sky model."""
 
     # Arrange
@@ -45,7 +47,11 @@ def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetn
 
     # Act
     download_skymodel(
-        cone_params, str(downloaded_skymodel_path), overwrite, source, targetname
+        cone_params,
+        str(downloaded_skymodel_path),
+        overwrite,
+        source,
+        targetname,
     )
     skymodel_downloaded = lsmtool.load(str(downloaded_skymodel_path))
 
@@ -57,12 +63,15 @@ def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetn
     for col in skymodel_expected.table.columns:
         assert col in skymodel_downloaded.table.columns
         assert all(
-            skymodel_downloaded.getColValues(col) == skymodel_expected.getColValues(col)
+            skymodel_downloaded.getColValues(col)
+            == skymodel_expected.getColValues(col)
         )
 
     # Test that attempting to download again without overwrite logs two warnings
     # First for existing sky model, second for skipping download
-    with patch("lsmtool.download_skymodel.logging.Logger.warning") as mock_warning:
+    with patch(
+        "lsmtool.download_skymodel.logging.Logger.warning"
+    ) as mock_warning:
         download_skymodel(
             cone_params,
             str(downloaded_skymodel_path),
@@ -74,7 +83,9 @@ def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetn
 
     # Test that attempting to download again with overwrite logs a warning
     # First that sky model exists, second that it is being overwritten
-    with patch("lsmtool.download_skymodel.logging.Logger.warning") as mock_warning:
+    with patch(
+        "lsmtool.download_skymodel.logging.Logger.warning"
+    ) as mock_warning:
         download_skymodel(
             cone_params,
             str(downloaded_skymodel_path),
@@ -86,7 +97,9 @@ def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetn
 
     # Test that attempting to download again with overwrite logs a warning
     # First that sky model exists, second that it is being overwritten
-    with patch("lsmtool.download_skymodel.logging.Logger.warning") as mock_warning:
+    with patch(
+        "lsmtool.download_skymodel.logging.Logger.warning"
+    ) as mock_warning:
         download_skymodel(
             cone_params,
             str(downloaded_skymodel_path),
@@ -101,7 +114,9 @@ def test_download_skymodel(ra, dec, tmp_path, radius, overwrite, source, targetn
 def test_sky_model_exists_existing_skymodel(existing_skymodel_filepath):
     """Test the _sky_model_exists function when the sky model exists."""
 
-    with patch("lsmtool.download_skymodel.logging.Logger.warning") as mock_warning:
+    with patch(
+        "lsmtool.download_skymodel.logging.Logger.warning"
+    ) as mock_warning:
         result = _sky_model_exists(str(existing_skymodel_filepath))
         mock_warning.assert_called_once()
     assert result is True
@@ -111,7 +126,9 @@ def test_sky_model_exists_no_existing_skymodel(tmp_path):
     """Test the _sky_model_exists function when the sky model does not exist."""
 
     skymodel_path = tmp_path / "non_existent_sky.model"
-    with patch("lsmtool.download_skymodel.logging.Logger.warning") as mock_warning:
+    with patch(
+        "lsmtool.download_skymodel.logging.Logger.warning"
+    ) as mock_warning:
         result = _sky_model_exists(str(skymodel_path))
         mock_warning.assert_not_called()
     assert result is False
@@ -143,7 +160,9 @@ def test_new_directory_required_file_in_existing_directory(tmp_path):
 def test_new_directory_required_file_in_non_existent_directory(tmp_path):
     """Test the _new_directory_required function."""
 
-    file_in_non_existent_dir = tmp_path / "non_existent_directory" / "file.model"
+    file_in_non_existent_dir = (
+        tmp_path / "non_existent_directory" / "file.model"
+    )
     assert _new_directory_required(str(file_in_non_existent_dir)) is True
 
 
@@ -222,7 +241,9 @@ def test_get_panstarrs_request():
     radius = 0.1
     cone_params = {"ra": ra, "dec": dec, "radius": radius}
 
-    expected_url = "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
+    expected_url = (
+        "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
+    )
     expected_search_params = {
         "ra": ra,
         "dec": dec,
@@ -363,7 +384,9 @@ def test_check_coverage_partial(
 ):
     """Test the _check_coverage function for some coordinates within MOC."""
 
-    mocker.patch.object(mock_moc, "contains_lonlat", side_effect=contains_lonlat_return)
+    mocker.patch.object(
+        mock_moc, "contains_lonlat", side_effect=contains_lonlat_return
+    )
     with caplog.at_level("WARNING"):
         _check_coverage(cone_params, mock_moc)
     assert "Incomplete LoTSS coverage" in caplog.text
