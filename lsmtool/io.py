@@ -81,8 +81,8 @@ def check_file_exists(path: PathLike):
     Check if a file exists at the given path.
 
     This function checks if a file exists at the specified path. It raises
-    exceptions if the path is not a string or pathlib.Path object, or if the file
-    does not exist.
+    exceptions if the path is not a string or pathlib.Path object, or if the
+    file does not exist.
 
     Parameters
     ----------

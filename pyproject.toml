@@ -19,7 +19,7 @@ name = "lsmtool"
 dynamic = ["version"]
 description = "The LOFAR Local Sky Model Tool"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10.12"
 authors = [
     { name = "David Rafferty", email = "drafferty@hs.uni-hamburg.de" },
 ]
@@ -116,6 +116,7 @@ write_to = "lsmtool/_version.py"
 ###########################
 # Copied from https://git.astron.nl/templates/python-package/-/blob/9ccee1fed6796b6784e8814cc83ee4e5d34bba3d/%7B%7Bcookiecutter.project_slug%7D%7D/pyproject.toml
 [tool.ruff]
+line-length = 80
 exclude = [
     ".venv",
     ".git",
@@ -133,7 +134,9 @@ exclude = [
     "lsmtool/skymodel.py",
     "lsmtool/tableio.py",
     "lsmtool/_version.py",
-    "tests"
+    "lsmtool/_changelog.py",
+    "tests/test_lsmtool.py",
+    "tests/test_operations_lib.py",
 ]
 
 [tool.ruff.lint]
@@ -150,8 +153,11 @@ ignore = ["PLR2004", "N803"]
 [tool.ruff.lint.per-file-ignores]
 "lsmtool/filter_skymodel/*.py" = ["PLR0913"]  # Too many arguments in function definition
 "lsmtool/testing.py" = ["PLR0911"] # Too many return statements
-
-
+"tests/*.py" = [
+    "S101",     # Use of `assert` detected
+    "S108",     # Probable insecure usage of temporary file or directory
+    "PLR0913"   # Too many arguments in function definition
+]
 ###########################
 # coverage settings       #
 ###########################
@@ -208,6 +214,7 @@ commands = [
 deps = ["ruff"]
 commands = [
     ["python", "-m", "ruff", "--version"],
+    ["python", "-m", "ruff", "format", "--check"],
     ["python", "-m", "ruff", "check",
      { replace = "posargs", default = [], extend = true }]
 ]
