@@ -5,11 +5,11 @@ Configuration for python tests.
 import shutil
 import tarfile
 from pathlib import Path
-from astropy.coordinates import Latitude, Longitude
+
 import astropy.units as u
-import pytest
 import mocpy
-from lsmtool.io import check_file_exists, PathLike, PathLikeOptional
+import pytest
+from astropy.coordinates import Latitude, Longitude
 from astropy.io import fits
 from astropy.wcs import WCS
 
