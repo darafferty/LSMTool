@@ -69,7 +69,9 @@ def download_skymodel(
     skymodel.write(clobber=True)
 
 
-def download_skymodel_from_source(cone_params, source, skymodel_path, max_tries=5):
+def download_skymodel_from_source(
+    cone_params, source, skymodel_path, max_tries=5
+):
     """
     Download a skymodel from the specified source.
 
@@ -103,10 +105,14 @@ def download_skymodel_from_source(cone_params, source, skymodel_path, max_tries=
     logger.info("Downloading skymodel for the target into %s", skymodel_path)
     for tries in range(1, 1 + max_tries):
         if source in ("LOTSS", "TGSS", "GSM"):
-            success = download_skymodel_catalog(cone_params, source, skymodel_path)
+            success = download_skymodel_catalog(
+                cone_params, source, skymodel_path
+            )
         elif source == "PANSTARRS":
             url, search_params = get_panstarrs_request(cone_params)
-            success = download_skymodel_panstarrs(url, search_params, skymodel_path)
+            success = download_skymodel_panstarrs(
+                url, search_params, skymodel_path
+            )
         else:
             raise ValueError(
                 "Unsupported sky model source specified! Please use LOTSS, TGSS, "
@@ -115,7 +121,9 @@ def download_skymodel_from_source(cone_params, source, skymodel_path, max_tries=
         if success:
             break
         if tries == max_tries:
-            logger.error("Attempt #%d to download %s sky model failed.", tries, source)
+            logger.error(
+                "Attempt #%d to download %s sky model failed.", tries, source
+            )
             raise IOError(
                 f"Download of {source} sky model failed after {max_tries} attempts."
             )
@@ -239,7 +247,9 @@ def download_skymodel_panstarrs(url, search_params, skymodel_path):
             # Convert the result to makesourcedb format and write to
             # the output file. Split and remove header line.
             lines = result.text.split("\n")[1:]
-            out_lines = ["FORMAT = Name, Ra, Dec, Type, I, ReferenceFrequency=1e6\n"]
+            out_lines = [
+                "FORMAT = Name, Ra, Dec, Type, I, ReferenceFrequency=1e6\n"
+            ]
             for line in lines:
                 # Add entries for type and Stokes I flux density
                 if line.strip():
@@ -352,7 +362,11 @@ def _check_coverage(
     covers_top = moc.contains_lonlat(ra, dec + radius)[0]
 
     covers_all = (
-        covers_centre and covers_left and covers_right and covers_bottom and covers_top
+        covers_centre
+        and covers_left
+        and covers_right
+        and covers_bottom
+        and covers_top
     )
     covers_zero = (
         not covers_centre
@@ -369,9 +383,13 @@ def _check_coverage(
             "Please check the field coverage in plots/field_coverage.png!"
         )
     elif covers_zero:
-        raise ValueError("No LoTSS coverage for the requested centre and radius!")
+        raise ValueError(
+            "No LoTSS coverage for the requested centre and radius!"
+        )
     else:
-        logger.info("Complete LoTSS coverage for the requested centre and radius.")
+        logger.info(
+            "Complete LoTSS coverage for the requested centre and radius."
+        )
 
 
 def _download_not_required(skymodel_exists: bool, overwrite: bool):

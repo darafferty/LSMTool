@@ -11,8 +11,8 @@ from typing import Sequence, Union
 
 import numpy as np
 
-from lsmtool.constants import WCS_ORIGIN
-from lsmtool.skymodel import SkyModel
+from .constants import WCS_ORIGIN
+from .skymodel import SkyModel
 
 # save original tmp path if defined
 ORIGINAL_TMPDIR = os.environ.get("TMPDIR")
@@ -282,6 +282,8 @@ def convert_coordinates_to_pixels(coordinates, wcs):
         List of (x, y) pixel coordinate tuples.
     """
 
-    vertices_x, vertices_y = wcs.celestial.wcs_world2pix(*coordinates.T, WCS_ORIGIN)
+    vertices_x, vertices_y = wcs.celestial.wcs_world2pix(
+        *coordinates.T, WCS_ORIGIN
+    )
     # Convert to a list of (x, y) tuples.
     return list(zip(vertices_x, vertices_y, strict=True))
