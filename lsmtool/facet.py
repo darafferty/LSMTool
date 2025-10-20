@@ -37,7 +37,7 @@ def tessellate(
     wcs_pixel_scale : float
         The pixel scale to use for the conversion to pixel coordinates in
         degrees per pixel.
-`
+
     Returns
     -------
     facet_points : numpy.ndarray
@@ -120,10 +120,6 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     # Compute Voronoi, sorting the output regions to match the order of the
     # input coordinates
     vor = scipy.spatial.Voronoi(points)
-
-    # Add
-    minx, maxx, miny, maxy = bounding_box
-    bounding_box = (minx - eps, maxx + eps, miny - eps, maxy + eps)
 
     # Add
     minx, maxx, miny, maxy = bounding_box
