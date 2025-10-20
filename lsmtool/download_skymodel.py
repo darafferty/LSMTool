@@ -36,9 +36,9 @@ def download_skymodel(
     overwrite : bool, optional
         Overwrite the existing skymodel pointed to by skymodel_path
     source : str, optional
-        Source where to obtain a skymodel from. Can be one of: TGSS, GSM, LOTSS, or
-        PANSTARRS. Note: the PANSTARRS sky model is only suitable for use in
-        astrometry checks and should not be used for calibration
+        Source where to obtain a skymodel from. Can be one of: TGSS, GSM,
+        LOTSS, or PANSTARRS. Note: the PANSTARRS sky model is only suitable
+        for use in astrometry checks and should not be used for calibration
     target_name : str, default="Patch"
         Give the patch a certain name
     """
@@ -115,8 +115,8 @@ def download_skymodel_from_source(
             )
         else:
             raise ValueError(
-                "Unsupported sky model source specified! Please use LOTSS, TGSS, "
-                "GSM, or PANSTARRS."
+                "Unsupported sky model source specified! "
+                "Please use LOTSS, TGSS, GSM, or PANSTARRS."
             )
         if success:
             break
@@ -125,11 +125,13 @@ def download_skymodel_from_source(
                 "Attempt #%d to download %s sky model failed.", tries, source
             )
             raise IOError(
-                f"Download of {source} sky model failed after {max_tries} attempts."
+                f"Download of {source} sky model failed after "
+                f"{max_tries} attempts."
             )
         suffix = "s" if max_tries - tries > 1 else ""
         logger.error(
-            "Attempt #%d to download %s sky model failed. Attempting %d more time%s.",
+            "Attempt #%d to download %s sky model failed. "
+            "Attempting %d more time%s.",
             tries,
             source,
             max_tries - tries,
@@ -312,7 +314,8 @@ def _get_lotss_moc(skymodel_path):
     """
     mocpath = os.path.join(os.path.dirname(skymodel_path), "dr2-moc.moc")
     # Securely download the MOC file without spawning an external process.
-    # (Fix for security lint S607: avoid subprocess with partial executable path.)
+    # (Fix for security lint S607: avoid subprocess with partial
+    # executable path.)
     moc_url = "https://lofar-surveys.org/public/DR2/catalogues/dr2-moc.moc"
     try:
         response = requests.get(moc_url, timeout=300)
@@ -411,7 +414,8 @@ def _download_not_required(skymodel_exists: bool, overwrite: bool):
     logger = logging.getLogger("LSMTool")
     if skymodel_exists and not overwrite:
         logger.warning(
-            "Download skipped! Sky model already exists and overwrite is set to False."
+            "Download skipped! "
+            "Sky model already exists and overwrite is set to False."
         )
         return True
     return False

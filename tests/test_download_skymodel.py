@@ -4,26 +4,25 @@ Unit tests for the download_skymodel module.
 
 from unittest.mock import patch
 
-import lsmtool
-import numpy as np
 import mocpy
 import pytest
-from conftest import TEST_DATA_PATH, copy_test_data
+from conftest import copy_test_data
 
+import lsmtool
 from lsmtool.download_skymodel import (
-    _sky_model_exists,
-    _new_directory_required,
-    _validate_skymodel_path,
-    _overwrite_required,
+    _check_coverage,
     _download_not_required,
+    _get_lotss_moc,
+    _new_directory_required,
+    _overwrite_required,
+    _sky_model_exists,
+    _validate_skymodel_path,
+    check_lotss_coverage,
     download_skymodel,
-    download_skymodel_panstarrs,
-    get_panstarrs_request,
     download_skymodel_catalog,
     download_skymodel_from_source,
-    check_lotss_coverage,
-    _get_lotss_moc,
-    _check_coverage,
+    download_skymodel_panstarrs,
+    get_panstarrs_request,
 )
 
 
@@ -67,8 +66,8 @@ def test_download_skymodel(
             == skymodel_expected.getColValues(col)
         )
 
-    # Test that attempting to download again without overwrite logs two warnings
-    # First for existing sky model, second for skipping download
+    # Test that attempting to download again without overwrite logs two
+    # warnings: first for existing sky model, second for skipping download
     with patch(
         "lsmtool.download_skymodel.logging.Logger.warning"
     ) as mock_warning:
@@ -123,7 +122,7 @@ def test_sky_model_exists_existing_skymodel(existing_skymodel_filepath):
 
 
 def test_sky_model_exists_no_existing_skymodel(tmp_path):
-    """Test the _sky_model_exists function when the sky model does not exist."""
+    """Test the _sky_model_exists function when sky model does not exist."""
 
     skymodel_path = tmp_path / "non_existent_sky.model"
     with patch(
@@ -167,7 +166,7 @@ def test_new_directory_required_file_in_non_existent_directory(tmp_path):
 
 
 def test_validate_skymodel_path_existing_file(tmp_path):
-    """Test the _validate_skymodel_path function when the sky model file exists."""
+    """Test the _validate_skymodel_path function when sky model file exists."""
 
     existing_file_path = tmp_path / "existing_sky.model"
     existing_file_path.touch()
@@ -208,13 +207,13 @@ def test_overwrite_required_existing_file(overwrite, skymodel_exists, expected):
     ],
 )
 def test_download_not_required(overwrite, skymodel_exists, expected):
-    """Test the _download_not_required function when the sky model file exists."""
+    """Test the _download_not_required function when sky model file exists."""
 
     assert _download_not_required(skymodel_exists, overwrite) is expected
 
 
 def test_check_lotss_coverage_within_coverage(tmp_path):
-    """Test the check_lotss_coverage function for coordinates within LoTSS coverage."""
+    """Test the check_lotss_coverage function within LoTSS coverage."""
     ra_within = 190.0  # RA within LoTSS coverage
     dec_within = 44.0  # DEC within LoTSS coverage
     radius = 1.0  # radius in degrees
@@ -223,7 +222,7 @@ def test_check_lotss_coverage_within_coverage(tmp_path):
 
 
 def test_check_lotss_coverage_outside_coverage(tmp_path):
-    """Test the check_lotss_coverage function for coordinates outside LoTSS coverage."""
+    """Test the check_lotss_coverage function outside LoTSS coverage."""
     ra_outside = 30.0  # RA outside LoTSS coverage
     dec_outside = -30.0  # DEC outside LoTSS coverage
     radius = 1.0  # radius in degrees
@@ -349,7 +348,7 @@ def test_get_lotss_moc(tmp_path):
 
 
 def test_check_coverage_within_coverage(tmp_path):
-    """Test the _check_coverage function for coordinates within LoTSS coverage."""
+    """Test the _check_coverage function within LoTSS coverage."""
     ra_within = 190.0  # RA within LoTSS coverage
     dec_within = 44.0  # DEC within LoTSS coverage
     radius = 1.0  # radius in degrees
@@ -359,7 +358,7 @@ def test_check_coverage_within_coverage(tmp_path):
 
 
 def test_check_coverage_outside_coverage(tmp_path):
-    """Test the _check_coverage function for coordinates outside LoTSS coverage."""
+    """Test the _check_coverage function outside LoTSS coverage."""
     ra_outside = 30.0  # RA outside LoTSS coverage
     dec_outside = -30.0  # DEC outside LoTSS coverage
     radius = 1.0  # radius in degrees
