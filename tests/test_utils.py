@@ -7,7 +7,6 @@ import pytest
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.table import Table
-from astropy.wcs import WCS
 from conftest import TEST_DATA_PATH
 
 from lsmtool.io import WCS_ORIGIN
@@ -389,5 +388,5 @@ def test_transfer_patches_with_patch_dict():
     ra, dec = format_coordinates(coords.ra, coords.dec, precision=4)
 
     # Check that the patch positions match
-    ra_in, dec_in = zip(*patch_dict.values())
+    ra_in, dec_in = zip(*patch_dict.values(), strict=True)
     assert np.all([ra.ravel() == ra_in, dec.ravel() == dec_in])

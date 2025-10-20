@@ -7,9 +7,10 @@ import tarfile
 from pathlib import Path
 
 import pytest
-from lsmtool.io import check_file_exists, PathLike, PathLikeOptional
 from astropy.io import fits
 from astropy.wcs import WCS
+
+from lsmtool.io import PathLike, PathLikeOptional, check_file_exists
 
 TEST_PATH = Path(__file__).parent
 TEST_DATA_PATH = TEST_PATH / "resources"
@@ -51,7 +52,7 @@ def untar(
 
     # Uncompress the tgz file.
     with tarfile.open(path, "r:gz") as file:
-        file.extractall(destination)
+        file.extractall(destination, filter="data")
 
     # Remove the compressed archive if requested
     if remove_archive:

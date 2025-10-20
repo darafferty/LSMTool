@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import filecmp
-import pathlib
 import requests
 import tarfile
 import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -23,7 +23,8 @@ class TestOperationsLib(unittest.TestCase):
     `tests/resources` directory. The skymodel was generated, using the pointing
     information in this MS, using the following commands:
     ```
-    s = lsmtool.load('TGSS', VOPosition=["08:13:36.067800", "+48.13.02.58100"], VORadius=1.0)
+    s = lsmtool.load('TGSS', VOPosition=["08:13:36.067800", "+48.13.02.58100"],
+                     VORadius=1.0)
     s.write('tests/resources/LOFAR_HBA_MOCK.sky')
     ```
     """
@@ -34,7 +35,7 @@ class TestOperationsLib(unittest.TestCase):
         Download and unpack Measurement Set used for testing
         """
         # Path to directory containing test resources
-        cls.resource_path = pathlib.Path(__file__).parent / "resources"
+        cls.resource_path = Path(__file__).parent / "resources"
 
         # Path to the input Measurement Set (will be downloaded if non-existent)
         cls.ms_path = cls.resource_path / "LOFAR_HBA_MOCK.ms"
@@ -47,7 +48,7 @@ class TestOperationsLib(unittest.TestCase):
 
         # Create a temporary test directory
         cls.temp_dir = tempfile.TemporaryDirectory()
-        cls.temp_path = pathlib.Path(cls.temp_dir.name)
+        cls.temp_path = Path(cls.temp_dir.name)
 
         # Download MS if it's not available in resource directory
         if not cls.ms_path.exists():
@@ -58,13 +59,14 @@ class TestOperationsLib(unittest.TestCase):
         """
         Download and unpack MS in our temporary test directory
         """
-        # Filter to strip leading component from file names (like `tar --strip-components=1`)
-        filter = lambda member, path: member.replace(
-            name=pathlib.Path(*pathlib.Path(member.path).parts[1:])
+        # Filter to strip leading component from file names
+        # (like `tar --strip-components=1`)
+        filter_ = lambda member, path: member.replace(
+            name=Path(*Path(member.path).parts[1:])
         )
         with requests.get(cls.ms_url, stream=True) as req:
             with tarfile.open(fileobj=req.raw, mode="r|bz2") as tarobj:
-                tarobj.extractall(path=cls.ms_path, filter=filter)
+                tarobj.extractall(path=cls.ms_path, filter=filter_)
 
     def setUp(self):
         self.skymodel = lsmtool.load(str(self.skymodel_path))

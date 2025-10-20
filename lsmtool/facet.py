@@ -32,12 +32,12 @@ def tessellate(
     bbox_midpoint : astropy.coordinates.SkyCoord
         Coordinates of bounding box centre.
     bbox_size : tuple of float
-        Size of bounding box (RA, Dec). Should be a 2-tuple of numbers  in
+        Size of bounding box (RA, Dec). Should be a 2-tuple of numbers in
         degrees.
     wcs_pixel_scale : float
         The pixel scale to use for the conversion to pixel coordinates in
         degrees per pixel.
-`
+
     Returns
     -------
     facet_points : numpy.ndarray
