@@ -292,7 +292,7 @@ def _get_lotss_moc(skymodel_path):
 
     Returns
     -------
-    moc : mocpy.MOC
+    mocpy.MOC
         The LoTSS MOC object.
 
     Raises
@@ -314,8 +314,7 @@ def _get_lotss_moc(skymodel_path):
     with open(mocpath, "wb") as fh:
         fh.write(response.content)
 
-    moc = mocpy.MOC.from_fits(mocpath)
-    return moc
+    return mocpy.MOC.from_fits(mocpath)
 
 
 def _check_coverage(
