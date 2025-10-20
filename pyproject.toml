@@ -53,7 +53,7 @@ dependencies = [
 [project.optional-dependencies]
 sofia = ["sofia2 @ git+https://gitlab.com/SoFiA-Admin/SoFiA-2.git@b10ab4ef"]
 docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
-tests = ["pytest", "pytest-cov"]
+tests = ["pytest", "pytest-cov", "pytest-mock"]
 dev = ["ruff", "lsmtool[docs,tests,sofia]"]
 
 [dependency-groups]
