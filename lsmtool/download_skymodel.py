@@ -461,14 +461,14 @@ def _new_directory_required(skymodel_path: str):
 
 def _overwrite_required(skymodel_exists: bool, overwrite: bool):
     """
-    Remove existing sky model file if overwrite is True.
+    Check if existing sky model file should be removed.
 
     Parameters
     ----------
     skymodel_exists : bool
         Whether the sky model exists
     overwrite : bool, optional
-        Overwrite the existing skymodel pointed to by skymodel_path.
+        Whether to overwrite the existing skymodel.
 
     Returns
     -------
