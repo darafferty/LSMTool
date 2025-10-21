@@ -120,6 +120,8 @@ package_docs:
 deploy_on_gitlab:
 extends: .deploy_package
 environment: gitlab
+script:
+  - python -m twine upload --verbose dist/*
 variables:
   TWINE_USERNAME: gitlab-ci-token
   TWINE_PASSWORD: ${CI_JOB_TOKEN}
