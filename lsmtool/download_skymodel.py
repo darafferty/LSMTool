@@ -22,7 +22,7 @@ def download_skymodel(
     targetname="Patch",
 ):
     """
-    Download a skymodel for the given position and radius
+    Download a skymodel for the given position and radius.
 
     Parameters
     ----------
@@ -32,15 +32,15 @@ def download_skymodel(
         'dec': Declination of the target position.
         'radius': Search radius in degrees.
     skymodel_path : str
-        Full name (with path) to the output skymodel
+        Full name (with path) to the output skymodel.
     overwrite : bool, optional
-        Overwrite the existing skymodel pointed to by skymodel_path
+        Overwrite the existing skymodel pointed to by skymodel_path.
     source : str, optional
         Source where to obtain a skymodel from. Can be one of: TGSS, GSM,
         LOTSS, or PANSTARRS. Note: the PANSTARRS sky model is only suitable
-        for use in astrometry checks and should not be used for calibration
+        for use in astrometry checks and should not be used for calibration.
     target_name : str, default="Patch"
-        Give the patch a certain name
+        Give the patch a certain name.
     """
     skymodel_exists = _sky_model_exists(skymodel_path)
 
@@ -277,7 +277,7 @@ def check_lotss_coverage(cone_params, skymodel_path):
             'dec': Declination of the target position.
             'radius': Search radius in degrees.
     skymodel_path : str
-        Full name (with path) to the output skymodel
+        Full name (with path) to the output skymodel.
 
     Raises
     ------
@@ -300,7 +300,7 @@ def _get_lotss_moc(skymodel_path):
     Parameters
     ----------
     skymodel_path : str
-        Full name (with path) to the output skymodel
+        Full name (with path) to the output skymodel.
 
     Returns
     -------
@@ -402,9 +402,9 @@ def _download_not_required(skymodel_exists: bool, overwrite: bool):
     Parameters
     ----------
     skymodel_exists : bool
-        Whether the sky model exists
+        Whether the sky model exists.
     overwrite : bool, optional
-        Overwrite the existing skymodel pointed to by skymodel_path
+        Overwrite the existing skymodel pointed to by skymodel_path.
 
     Returns
     -------
@@ -428,7 +428,7 @@ def _sky_model_exists(skymodel_path: str):
     Parameters
     ----------
     skymodel_path : str
-        Full name (with path) to the output skymodel
+        Full name (with path) to the output skymodel.
 
     Returns
     -------
@@ -474,7 +474,7 @@ def _overwrite_required(skymodel_exists: bool, overwrite: bool):
     skymodel_exists : bool
         Whether the sky model exists
     overwrite : bool, optional
-        Overwrite the existing skymodel pointed to by skymodel_path
+        Overwrite the existing skymodel pointed to by skymodel_path.
 
     Returns
     -------
@@ -497,7 +497,7 @@ def _validate_skymodel_path(skymodel_path: str):
     Parameters
     ----------
     skymodel_path : str
-        Full name (with path) to the output skymodel
+        Full name (with path) to the output skymodel.
 
     Raises
     ------
