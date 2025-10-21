@@ -133,10 +133,10 @@ deploy_on_test_pypi:
     TWINE_PASSWORD: ${TESTPYPI_TOKEN}
     TWINE_REPOSITORY_URL: https://test.pypi.org/legacy/
 
-deploy_on_pypi:
-  extends: .deploy_package
-  environment: pypi
-  variables:
-    TWINE_USERNAME: __token__
-    TWINE_PASSWORD: ${PYPI_TOKEN}
-    TWINE_REPOSITORY_URL: https://upload.pypi.org/legacy/
+# deploy_on_pypi:
+#   extends: .deploy_package
+#   environment: pypi
+#   variables:
+#     TWINE_USERNAME: __token__
+#     TWINE_PASSWORD: ${PYPI_TOKEN}
+#     TWINE_REPOSITORY_URL: https://upload.pypi.org/legacy/
