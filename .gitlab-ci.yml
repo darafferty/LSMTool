@@ -118,14 +118,12 @@ package_docs:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"'
 
 deploy_on_gitlab:
-extends: .deploy_package
-environment: gitlab
-script:
-  - python -m twine upload --verbose dist/*
-variables:
-  TWINE_USERNAME: gitlab-ci-token
-  TWINE_PASSWORD: ${CI_JOB_TOKEN}
-  TWINE_REPOSITORY_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
+  extends: .deploy_package
+  environment: gitlab
+  variables:
+    TWINE_USERNAME: gitlab-ci-token
+    TWINE_PASSWORD: ${CI_JOB_TOKEN}
+    TWINE_REPOSITORY_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
 
 deploy_on_test_pypi:
   extends: .deploy_package
