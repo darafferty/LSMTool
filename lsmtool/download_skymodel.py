@@ -13,6 +13,8 @@ import requests
 import lsmtool
 from lsmtool.skymodel import SkyModel
 
+logger = logging.getLogger("LSMTool")
+
 
 def download_skymodel(
     cone_params,
@@ -96,8 +98,6 @@ def download_skymodel_from_source(
     ValueError
         If an unsupported sky model source is specified.
     """
-    logger = logging.getLogger("LSMTool")
-
     source = source.upper().strip()
     if source == "LOTSS":
         check_lotss_coverage(cone_params, skymodel_path)
@@ -160,7 +160,6 @@ def download_skymodel_catalog(cone_params, source, skymodel_path):
     bool
         True if download was successful, False otherwise.
     """
-    logger = logging.getLogger("LSMTool")
     logger.info("Downloading skymodel from %s into %s", source, skymodel_path)
     try:
         skymodel = SkyModel(
@@ -240,7 +239,6 @@ def download_skymodel_panstarrs(url, search_params, skymodel_path):
     requests.exceptions.Timeout
         If the request times out.
     """
-    logger = logging.getLogger("LSMTool")
     logger.info("Downloading skymodel from Pan-STARRS into %s", skymodel_path)
     timeout = 300
     try:
@@ -286,7 +284,6 @@ def check_lotss_coverage(cone_params, skymodel_path):
     ConnectionError
         If the LoTSS MOC file cannot be downloaded.
     """
-    logger = logging.getLogger("LSMTool")
     logger.info("Checking LoTSS coverage for the requested centre and radius.")
 
     moc = _get_lotss_moc(skymodel_path)
@@ -352,7 +349,6 @@ def _check_coverage(
     ValueError
         If there is no LoTSS coverage for the requested centre and radius.
     """
-    logger = logging.getLogger("LSMTool")
     ra = cone_params["ra"] * u.deg
     dec = cone_params["dec"] * u.deg
     radius = cone_params["radius"] * u.deg
@@ -411,7 +407,6 @@ def _download_not_required(skymodel_exists: bool, overwrite: bool):
     bool
         True if sky model download not required, False otherwise.
     """
-    logger = logging.getLogger("LSMTool")
     if skymodel_exists and not overwrite:
         logger.warning(
             "Download skipped! "
@@ -435,7 +430,6 @@ def _sky_model_exists(skymodel_path: str):
     bool
         True if the sky model file exists, False otherwise.
     """
-    logger = logging.getLogger("LSMTool")
     file_exists = os.path.isfile(skymodel_path)
     if file_exists:
         logger.warning('Sky model "%s" exists!', skymodel_path)
@@ -481,7 +475,6 @@ def _overwrite_required(skymodel_exists: bool, overwrite: bool):
     bool
         True if existing sky model should be removed, False otherwise.
     """
-    logger = logging.getLogger("LSMTool")
     if skymodel_exists and overwrite:
         logger.warning(
             "Found existing sky model and overwrite is True. Deleting "
