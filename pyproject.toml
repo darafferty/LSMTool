@@ -242,3 +242,11 @@ commands = [
 package = "wheel"
 deps = ["build>=0.8.0"]
 commands = [["python", "-m", "build"]]
+
+[tool.tox.env.deploy]
+deps = ["build>=0.8.0", "twine"]
+pass_env = ["TWINE_*"]
+commands = [
+    ["python", "-m", "build"],
+    ["python", "-m", "twine", "upload", "--verbose", "dist/*"]
+]
