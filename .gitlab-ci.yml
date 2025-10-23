@@ -109,6 +109,8 @@ package_docs:
   needs:
     - package_files
   image: python:3.12
+  before_script:
+    - *install_dependencies
   script:
     - tox -e deploy
   rules:
