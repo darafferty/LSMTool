@@ -14,6 +14,7 @@ stages:
   # - build_extensions
   - test
   - package
+  - deploy
 
 # Caching of dependencies to speed up builds
 variables:
@@ -102,3 +103,40 @@ package_docs:
     - *install_dependencies
   script:
     - tox -e docs
+
+.deploy_package:
+  stage: deploy
+  needs:
+    - package_files
+  image: python:3.12
+  before_script:
+    - pip install tox
+  script:
+    - tox -e deploy
+  rules:
+    # Only deploy when building a release tag, or when requested explicitly.
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"'
+
+deploy_on_gitlab:
+  extends: .deploy_package
+  environment: gitlab
+  variables:
+    TWINE_USERNAME: gitlab-ci-token
+    TWINE_PASSWORD: ${CI_JOB_TOKEN}
+    TWINE_REPOSITORY_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
+
+deploy_on_test_pypi:
+  extends: .deploy_package
+  environment: pypi-test
+  variables:
+    TWINE_USERNAME: __token__
+    TWINE_PASSWORD: ${TESTPYPI_TOKEN}
+    TWINE_REPOSITORY_URL: https://test.pypi.org/legacy/
+
+deploy_on_pypi:
+  extends: .deploy_package
+  environment: pypi
+  variables:
+    TWINE_USERNAME: __token__
+    TWINE_PASSWORD: ${PYPI_TOKEN}
+    TWINE_REPOSITORY_URL: https://upload.pypi.org/legacy/
