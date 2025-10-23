@@ -110,7 +110,7 @@ package_docs:
     - package_files
   image: python:3.12
   before_script:
-    - *install_dependencies
+    - pip install tox
   script:
     - tox -e deploy
   rules:
