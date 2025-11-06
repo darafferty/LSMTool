@@ -186,7 +186,7 @@ package = "editable"
 set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning" }
 commands = [
     ["python", "--version"],
-    ["python", "-m", "pytest -n auto", { replace = "posargs", default = [], extend = true }]
+    ["python", "-m", "pytest", "-n", "auto", { replace = "posargs", default = [], extend = true }]
 ]
 
 # [tool.tox.env.fix]
