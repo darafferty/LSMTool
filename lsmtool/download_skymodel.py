@@ -361,28 +361,22 @@ def _check_coverage(
     covers_bottom = moc.contains_lonlat(ra, dec - radius)[0]
     covers_top = moc.contains_lonlat(ra, dec + radius)[0]
 
-    covers_all = (
-        covers_centre
-        and covers_left
-        and covers_right
-        and covers_bottom
-        and covers_top
+    covers_all = all(
+        [covers_centre, covers_left, covers_right, covers_bottom, covers_top]
     )
-    covers_zero = (
-        not covers_centre
-        and not covers_left
-        and not covers_right
-        and not covers_bottom
-        and not covers_top
+
+    covers_none = not any(
+        [covers_centre, covers_left, covers_right, covers_bottom, covers_top]
     )
-    covers_partial = not covers_all and not covers_zero
+
+    covers_partial = not (covers_all or covers_none)
 
     if covers_partial:
         logger.warning(
             "Incomplete LoTSS coverage for the requested centre and radius! "
             "Please check the field coverage in plots/field_coverage.png!"
         )
-    elif covers_zero:
+    elif covers_none:
         raise ValueError(
             "No LoTSS coverage for the requested centre and radius!"
         )
