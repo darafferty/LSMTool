@@ -105,20 +105,21 @@ def download_skymodel_from_survey(
 
     logger.info("Downloading skymodel for the target into %s", skymodel_path)
     for tries in range(1, 1 + max_tries):
-        if survey in ("LOTSS", "TGSS", "GSM"):
-            success = download_skymodel_catalog(
-                cone_params, survey, skymodel_path
-            )
-        elif survey == "PANSTARRS":
-            url, search_params = get_panstarrs_request(cone_params)
-            success = download_skymodel_panstarrs(
-                url, search_params, skymodel_path
-            )
-        else:
-            raise ValueError(
-                "Unsupported sky model survey specified! "
-                "Please use LOTSS, TGSS, GSM, or PANSTARRS."
-            )
+        match survey:
+            case "LOTSS" | "TGSS" | "GSM":
+                success = download_skymodel_catalog(
+                    cone_params, survey, skymodel_path
+                )
+            case "PANSTARRS":
+                url, search_params = get_panstarrs_request(cone_params)
+                success = download_skymodel_panstarrs(
+                    url, search_params, skymodel_path
+                )
+            case _:
+                raise ValueError(
+                    "Unsupported sky model survey specified! "
+                    "Please use LOTSS, TGSS, GSM, or PANSTARRS."
+                )
         if success:
             break
         if tries == max_tries:
@@ -253,7 +254,11 @@ def download_skymodel_panstarrs(url, search_params, skymodel_path):
             ]
             # Add entries for type and Stokes I flux density
             out_lines.extend(
-                [f"{l},POINT,0.0,\n" for line in lines if (l := line.strip())]
+                [
+                    f"{clean_line},POINT,0.0,\n"
+                    for raw_line in lines
+                    if (clean_line := raw_line.strip())
+                ]
             )
             with open(skymodel_path, "w", encoding="utf-8") as f:
                 f.writelines(out_lines)
