@@ -73,7 +73,7 @@ def download_skymodel(
 
 
 def download_skymodel_from_survey(
-    cone_params, survey, skymodel_path, max_tries=5
+    cone_params, survey, skymodel_path, retries=5
 ):
     """
     Download a skymodel from the specified source.
@@ -89,7 +89,7 @@ def download_skymodel_from_survey(
         Source of the skymodel (e.g. "LOTSS", "TGSS", "GSM", "PANSTARRS").
     skymodel_path : str
         Path to the output skymodel file.
-    max_tries : int, default=5
+    retries : int, default=5
         Maximum number of attempts to download the skymodel.
 
     Raises
@@ -102,9 +102,22 @@ def download_skymodel_from_survey(
     survey = survey.upper().strip()
     if survey == "LOTSS":
         check_lotss_coverage(cone_params, skymodel_path)
-
     logger.info("Downloading skymodel for the target into %s", skymodel_path)
-    for tries in range(1, 1 + max_tries):
+
+    success = False
+    attempt = 0
+    time_between_retries = 5  # seconds
+    while not success and retries > 0:
+        if attempt > 0:
+            logger.error(
+                "Attempt #%d to download %s sky model failed. "
+                "Attempting %d more time%s.",
+                attempt,
+                survey,
+                retries,
+                "s" if retries > 1 else "",
+            )
+            time.sleep(time_between_retries)
         match survey:
             case "LOTSS" | "TGSS" | "GSM":
                 success = download_skymodel_catalog(
@@ -120,26 +133,17 @@ def download_skymodel_from_survey(
                     "Unsupported sky model survey specified! "
                     "Please use LOTSS, TGSS, GSM, or PANSTARRS."
                 )
-        if success:
-            break
-        if tries == max_tries:
-            logger.error(
-                "Attempt #%d to download %s sky model failed.", tries, survey
-            )
-            raise IOError(
-                f"Download of {survey} sky model failed after "
-                f"{max_tries} attempts."
-            )
-        suffix = "s" if max_tries - tries > 1 else ""
+        attempt += 1
+        retries -= 1
+
+    if not success:
         logger.error(
-            "Attempt #%d to download %s sky model failed. "
-            "Attempting %d more time%s.",
-            tries,
-            survey,
-            max_tries - tries,
-            suffix,
+            "Attempt #%d to download %s sky model failed.", attempt, survey
         )
-        time.sleep(5)
+        raise IOError(
+            f"Download of {survey} sky model failed after {retries} attempts."
+        )
+    logger.info("Download of %s sky model completed successfully.", survey)
 
 
 def download_skymodel_catalog(cone_params, survey, skymodel_path):

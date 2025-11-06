@@ -334,6 +334,87 @@ def test_download_skymodel_from_survey(survey, ra, dec, radius, tmp_path):
     assert skymodel_path.is_file()
 
 
+@pytest.mark.parametrize(
+    "survey,ra,dec,radius",
+    [
+        ("LOTSS", 190.0, 30.0, 1.0),
+        ("PANSTARRS", 10.75, 5.34, 0.1),
+    ],
+)
+def test_download_skymodel_from_survey_retries(
+    survey, ra, dec, radius, tmp_path, mocker, caplog
+):
+    """Test downloading a sky model from a survey retries on failure."""
+
+    # Arrange
+    skymodel_path = tmp_path / f"survey_sky_{survey}.model"
+    cone_params = {"ra": ra, "dec": dec, "radius": radius}
+    max_tries = 3
+
+    # Mock failed download attempts for the first (max_tries - 1) tries
+    mocker.patch(
+        "lsmtool.download_skymodel.download_skymodel_catalog",
+        side_effect=[False] * (max_tries - 1) + [True],
+    )
+    mocker.patch(
+        "lsmtool.download_skymodel.download_skymodel_panstarrs",
+        side_effect=[False] * (max_tries - 1) + [True],
+    )
+    # Act
+    with caplog.at_level("INFO"):
+        download_skymodel_from_survey(
+            cone_params, survey, str(skymodel_path), retries=max_tries
+        )
+
+    # Assert
+    assert f"Attempt #2 to download {survey} sky model failed. " in caplog.text
+    assert "Attempting 1 more time." in caplog.text
+    assert "Attempting 2 more times." in caplog.text
+    assert (
+        f"Download of {survey} sky model completed successfully." in caplog.text
+    )
+
+
+@pytest.mark.parametrize(
+    "survey,ra,dec,radius",
+    [
+        ("LOTSS", 190.0, 30.0, 1.0),
+        ("PANSTARRS", 10.75, 5.34, 0.1),
+    ],
+)
+def test_download_skymodel_from_survey_all_retries_fail(
+    survey, ra, dec, radius, tmp_path, mocker, caplog
+):
+    """Test downloading a sky model from a survey retries on failure."""
+
+    # Arrange
+    skymodel_path = tmp_path / f"survey_sky_{survey}.model"
+    cone_params = {"ra": ra, "dec": dec, "radius": radius}
+    max_tries = 3
+
+    # Mock failed download attempts for all tries
+    mocker.patch(
+        "lsmtool.download_skymodel.download_skymodel_catalog",
+        side_effect=[False] * max_tries,
+    )
+    mocker.patch(
+        "lsmtool.download_skymodel.download_skymodel_panstarrs",
+        side_effect=[False] * max_tries,
+    )
+    # Act
+    with caplog.at_level("ERROR"):
+        with pytest.raises(IOError):
+            download_skymodel_from_survey(
+                cone_params, survey, str(skymodel_path), retries=max_tries
+            )
+
+    # Assert
+    assert (
+        f"Attempt #{max_tries} to download {survey} sky model failed."
+        in caplog.text
+    )
+
+
 def test_get_lotss_moc(tmp_path):
     """Test the _get_lotss_moc function."""
 
