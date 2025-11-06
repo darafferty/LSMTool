@@ -28,7 +28,7 @@ from lsmtool.download_skymodel import (
 
 @pytest.mark.parametrize("ra", (10.75,))
 @pytest.mark.parametrize("dec", (5.34,))
-@pytest.mark.parametrize("radius", (5.0,))
+@pytest.mark.parametrize("radius", (0.5,))
 @pytest.mark.parametrize("overwrite", (False,))
 @pytest.mark.parametrize("survey", ("TGSS",))
 @pytest.mark.parametrize("targetname", ("Patch",))
@@ -237,7 +237,7 @@ def test_get_panstarrs_request():
     # Arrange
     ra = 10.75
     dec = 5.34
-    radius = 0.1
+    radius = 0.01
     cone_params = {"ra": ra, "dec": dec, "radius": radius}
 
     expected_url = (
@@ -276,7 +276,7 @@ def test_download_skymodel_panstarrs(tmp_path):
     search_params = {
         "ra": 10.75,
         "dec": 5.34,
-        "radius": 0.1,
+        "radius": 0.01,
         "nDetections.min": "5",
         "columns": ["objID", "ramean", "decmean"],
     }
@@ -292,9 +292,9 @@ def test_download_skymodel_panstarrs(tmp_path):
 @pytest.mark.parametrize(
     "survey,ra,dec,radius",
     [
-        ("LOTSS", 190.0, 30.0, 1.0),
-        ("TGSS", 12.34, 56.78, 1.0),
-        ("GSM", 123.23, 23.34, 1.0),
+        ("LOTSS", 190.0, 30.0, 0.5),
+        ("TGSS", 12.34, 56.78, 0.6),
+        ("GSM", 123.23, 23.34, 0.6),
     ],
 )
 def test_download_skymodel_catalog(survey, ra, dec, radius, tmp_path):
@@ -314,10 +314,10 @@ def test_download_skymodel_catalog(survey, ra, dec, radius, tmp_path):
 @pytest.mark.parametrize(
     "survey,ra,dec,radius",
     [
-        ("LOTSS", 190.0, 30.0, 1.0),
-        ("TGSS", 12.34, 56.78, 1.0),
-        ("GSM", 123.23, 23.34, 1.0),
-        ("PANSTARRS", 10.75, 5.34, 0.1),
+        ("LOTSS", 190.0, 30.0, 0.5),
+        ("TGSS", 12.34, 56.78, 0.6),
+        ("GSM", 123.23, 23.34, 0.6),
+        ("PANSTARRS", 10.75, 5.34, 0.01),
     ],
 )
 def test_download_skymodel_from_survey(survey, ra, dec, radius, tmp_path):
@@ -338,7 +338,7 @@ def test_download_skymodel_from_survey(survey, ra, dec, radius, tmp_path):
     "survey,ra,dec,radius",
     [
         ("LOTSS", 190.0, 30.0, 1.0),
-        ("PANSTARRS", 10.75, 5.34, 0.1),
+        ("PANSTARRS", 10.75, 5.34, 0.01),
     ],
 )
 def test_download_skymodel_from_survey_retries(
@@ -383,7 +383,7 @@ def test_download_skymodel_from_survey_retries(
     "survey,ra,dec,radius",
     [
         ("LOTSS", 190.0, 30.0, 1.0),
-        ("PANSTARRS", 10.75, 5.34, 0.1),
+        ("PANSTARRS", 10.75, 5.34, 0.01),
     ],
 )
 def test_download_skymodel_from_survey_all_retries_fail(
