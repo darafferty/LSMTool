@@ -349,21 +349,25 @@ def test_download_skymodel_from_survey_retries(
     # Arrange
     skymodel_path = tmp_path / f"survey_sky_{survey}.model"
     cone_params = {"ra": ra, "dec": dec, "radius": radius}
-    max_tries = 3
+    retries = 2
 
     # Mock failed download attempts for the first (max_tries - 1) tries
     mocker.patch(
         "lsmtool.download_skymodel.download_skymodel_catalog",
-        side_effect=[False] * (max_tries - 1) + [True],
+        side_effect=[False] * retries + [True],
     )
     mocker.patch(
         "lsmtool.download_skymodel.download_skymodel_panstarrs",
-        side_effect=[False] * (max_tries - 1) + [True],
+        side_effect=[False] * retries + [True],
     )
     # Act
     with caplog.at_level("INFO"):
         download_skymodel_from_survey(
-            cone_params, survey, str(skymodel_path), retries=max_tries
+            cone_params,
+            survey,
+            str(skymodel_path),
+            retries=retries,
+            time_between_retries=0,
         )
 
     # Assert
@@ -390,27 +394,31 @@ def test_download_skymodel_from_survey_all_retries_fail(
     # Arrange
     skymodel_path = tmp_path / f"survey_sky_{survey}.model"
     cone_params = {"ra": ra, "dec": dec, "radius": radius}
-    max_tries = 3
+    retries = 2
 
     # Mock failed download attempts for all tries
     mocker.patch(
         "lsmtool.download_skymodel.download_skymodel_catalog",
-        side_effect=[False] * max_tries,
+        side_effect=[False] * (retries + 1),
     )
     mocker.patch(
         "lsmtool.download_skymodel.download_skymodel_panstarrs",
-        side_effect=[False] * max_tries,
+        side_effect=[False] * (retries + 1),
     )
     # Act
     with caplog.at_level("ERROR"):
         with pytest.raises(IOError):
             download_skymodel_from_survey(
-                cone_params, survey, str(skymodel_path), retries=max_tries
+                cone_params,
+                survey,
+                str(skymodel_path),
+                retries=retries,
+                time_between_retries=0,
             )
 
     # Assert
     assert (
-        f"Attempt #{max_tries} to download {survey} sky model failed."
+        f"Attempt #{retries + 1} to download {survey} sky model failed."
         in caplog.text
     )
 
