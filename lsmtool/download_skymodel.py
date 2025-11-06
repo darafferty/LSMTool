@@ -5,6 +5,7 @@ Module for functions to download sky models.
 import logging
 import os
 import time
+from contextlib import suppress
 from pathlib import Path
 
 import astropy.units as u
@@ -167,7 +168,7 @@ def download_skymodel_catalog(cone_params, survey, skymodel_path):
         True if download was successful, False otherwise.
     """
     logger.info("Downloading skymodel from %s into %s", survey, skymodel_path)
-    try:
+    with suppress(ConnectionError):
         skymodel = SkyModel(
             survey,
             VOPosition=[cone_params["ra"], cone_params["dec"]],
@@ -176,8 +177,6 @@ def download_skymodel_catalog(cone_params, survey, skymodel_path):
         skymodel.write(skymodel_path)
         if len(skymodel) > 0:
             return True
-    except ConnectionError:
-        return False
     return False
 
 
