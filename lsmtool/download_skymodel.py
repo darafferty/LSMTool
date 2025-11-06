@@ -251,10 +251,10 @@ def download_skymodel_panstarrs(url, search_params, skymodel_path):
             out_lines = [
                 "FORMAT = Name, Ra, Dec, Type, I, ReferenceFrequency=1e6\n"
             ]
-            for line in lines:
-                # Add entries for type and Stokes I flux density
-                if line.strip():
-                    out_lines.append(line.strip() + ",POINT,0.0,\n")
+            # Add entries for type and Stokes I flux density
+            out_lines.extend(
+                [f"{l},POINT,0.0,\n" for line in lines if (l := line.strip())]
+            )
             with open(skymodel_path, "w", encoding="utf-8") as f:
                 f.writelines(out_lines)
             return True
