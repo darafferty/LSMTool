@@ -21,7 +21,7 @@ def download_skymodel(
     cone_params,
     skymodel_path,
     overwrite=False,
-    source="TGSS",
+    survey="TGSS",
     targetname="Patch",
 ):
     """
@@ -38,8 +38,8 @@ def download_skymodel(
         Full name (with path) to the output skymodel.
     overwrite : bool, optional
         Overwrite the existing skymodel pointed to by skymodel_path.
-    source : str, optional
-        Source where to obtain a skymodel from. Can be one of: TGSS, GSM,
+    survey : str, optional
+        Survey to obtain a skymodel from. Can be one of: TGSS, GSM,
         LOTSS, or PANSTARRS. Note: the PANSTARRS sky model is only suitable
         for use in astrometry checks and should not be used for calibration.
     target_name : str, default="Patch"
@@ -58,7 +58,7 @@ def download_skymodel(
     if _new_directory_required(skymodel_path):
         Path(skymodel_path).parent.mkdir(parents=True, exist_ok=True)
 
-    download_skymodel_from_source(cone_params, source, skymodel_path)
+    download_skymodel_from_survey(cone_params, survey, skymodel_path)
 
     if not Path(skymodel_path).is_file():
         raise IOError(
@@ -72,8 +72,8 @@ def download_skymodel(
     skymodel.write(clobber=True)
 
 
-def download_skymodel_from_source(
-    cone_params, source, skymodel_path, max_tries=5
+def download_skymodel_from_survey(
+    cone_params, survey, skymodel_path, max_tries=5
 ):
     """
     Download a skymodel from the specified source.
@@ -85,7 +85,7 @@ def download_skymodel_from_source(
             'ra': Right ascension of the target position.
             'dec': Declination of the target position.
             'radius': Search radius in degrees.
-    source : str
+    survey : str
         Source of the skymodel (e.g. "LOTSS", "TGSS", "GSM", "PANSTARRS").
     skymodel_path : str
         Path to the output skymodel file.
@@ -99,34 +99,34 @@ def download_skymodel_from_source(
     ValueError
         If an unsupported sky model source is specified.
     """
-    source = source.upper().strip()
-    if source == "LOTSS":
+    survey = survey.upper().strip()
+    if survey == "LOTSS":
         check_lotss_coverage(cone_params, skymodel_path)
 
     logger.info("Downloading skymodel for the target into %s", skymodel_path)
     for tries in range(1, 1 + max_tries):
-        if source in ("LOTSS", "TGSS", "GSM"):
+        if survey in ("LOTSS", "TGSS", "GSM"):
             success = download_skymodel_catalog(
-                cone_params, source, skymodel_path
+                cone_params, survey, skymodel_path
             )
-        elif source == "PANSTARRS":
+        elif survey == "PANSTARRS":
             url, search_params = get_panstarrs_request(cone_params)
             success = download_skymodel_panstarrs(
                 url, search_params, skymodel_path
             )
         else:
             raise ValueError(
-                "Unsupported sky model source specified! "
+                "Unsupported sky model survey specified! "
                 "Please use LOTSS, TGSS, GSM, or PANSTARRS."
             )
         if success:
             break
         if tries == max_tries:
             logger.error(
-                "Attempt #%d to download %s sky model failed.", tries, source
+                "Attempt #%d to download %s sky model failed.", tries, survey
             )
             raise IOError(
-                f"Download of {source} sky model failed after "
+                f"Download of {survey} sky model failed after "
                 f"{max_tries} attempts."
             )
         suffix = "s" if max_tries - tries > 1 else ""
@@ -134,14 +134,14 @@ def download_skymodel_from_source(
             "Attempt #%d to download %s sky model failed. "
             "Attempting %d more time%s.",
             tries,
-            source,
+            survey,
             max_tries - tries,
             suffix,
         )
         time.sleep(5)
 
 
-def download_skymodel_catalog(cone_params, source, skymodel_path):
+def download_skymodel_catalog(cone_params, survey, skymodel_path):
     """
     Download a skymodel from the specified source catalog.
     Parameters
@@ -153,7 +153,7 @@ def download_skymodel_catalog(cone_params, source, skymodel_path):
         'radius': Search radius in degrees.
     skymodel_path : str
         Path to the output skymodel file.
-    source : str
+    survey : str
         Source of the skymodel (must be one of "LOTSS", "TGSS", "GSM").
 
     Returns
@@ -161,10 +161,10 @@ def download_skymodel_catalog(cone_params, source, skymodel_path):
     bool
         True if download was successful, False otherwise.
     """
-    logger.info("Downloading skymodel from %s into %s", source, skymodel_path)
+    logger.info("Downloading skymodel from %s into %s", survey, skymodel_path)
     try:
         skymodel = SkyModel(
-            source,
+            survey,
             VOPosition=[cone_params["ra"], cone_params["dec"]],
             VORadius=cone_params["radius"],
         )
