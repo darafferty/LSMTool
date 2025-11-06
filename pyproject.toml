@@ -53,7 +53,7 @@ dependencies = [
 [project.optional-dependencies]
 sofia = ["sofia2 @ git+https://gitlab.com/SoFiA-Admin/SoFiA-2.git@b10ab4ef"]
 docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
-tests = ["pytest", "pytest-cov", "pytest-mock"]
+tests = ["pytest", "pytest-cov", "pytest-mock", "pytest-xdist"]
 dev = ["ruff", "lsmtool[docs,tests,sofia]"]
 
 [dependency-groups]
@@ -186,7 +186,7 @@ package = "editable"
 set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning" }
 commands = [
     ["python", "--version"],
-    ["python", "-m", "pytest", { replace = "posargs", default = [], extend = true }]
+    ["python", "-m", "pytest -n auto", { replace = "posargs", default = [], extend = true }]
 ]
 
 # [tool.tox.env.fix]
