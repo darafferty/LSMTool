@@ -20,7 +20,7 @@ from lsmtool.download_skymodel import (
     check_lotss_coverage,
     download_skymodel,
     download_skymodel_catalog,
-    download_skymodel_from_source,
+    download_skymodel_from_survey,
     download_skymodel_panstarrs,
     get_panstarrs_request,
 )
@@ -30,10 +30,10 @@ from lsmtool.download_skymodel import (
 @pytest.mark.parametrize("dec", (5.34,))
 @pytest.mark.parametrize("radius", (5.0,))
 @pytest.mark.parametrize("overwrite", (False,))
-@pytest.mark.parametrize("source", ("TGSS",))
+@pytest.mark.parametrize("survey", ("TGSS",))
 @pytest.mark.parametrize("targetname", ("Patch",))
 def test_download_skymodel(
-    ra, dec, tmp_path, radius, overwrite, source, targetname
+    ra, dec, tmp_path, radius, overwrite, survey, targetname
 ):
     """Test downloading a sky model."""
 
@@ -49,7 +49,7 @@ def test_download_skymodel(
         cone_params,
         str(downloaded_skymodel_path),
         overwrite,
-        source,
+        survey,
         targetname,
     )
     skymodel_downloaded = lsmtool.load(str(downloaded_skymodel_path))
@@ -75,7 +75,7 @@ def test_download_skymodel(
             cone_params,
             str(downloaded_skymodel_path),
             overwrite,
-            source,
+            survey,
             targetname,
         )
         assert mock_warning.call_count == 2
@@ -89,7 +89,7 @@ def test_download_skymodel(
             cone_params,
             str(downloaded_skymodel_path),
             overwrite,
-            source,
+            survey,
             targetname,
         )
         assert mock_warning.call_count == 2
@@ -103,7 +103,7 @@ def test_download_skymodel(
             cone_params,
             str(downloaded_skymodel_path),
             True,
-            source,
+            survey,
             targetname,
         )
         assert mock_warning.call_count == 2
@@ -290,29 +290,29 @@ def test_download_skymodel_panstarrs(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "source,ra,dec,radius",
+    "survey,ra,dec,radius",
     [
         ("LOTSS", 190.0, 30.0, 1.0),
         ("TGSS", 12.34, 56.78, 1.0),
         ("GSM", 123.23, 23.34, 1.0),
     ],
 )
-def test_download_skymodel_catalog(source, ra, dec, radius, tmp_path):
-    """Test downloading a sky model from a catalog source."""
+def test_download_skymodel_catalog(survey, ra, dec, radius, tmp_path):
+    """Test downloading a sky model from a survey."""
 
     # Arrange
-    skymodel_path = tmp_path / f"catalog_sky_{source}.model"
+    skymodel_path = tmp_path / f"catalog_sky_{survey}.model"
     cone_params = {"ra": ra, "dec": dec, "radius": radius}
 
     # Act
-    download_skymodel_catalog(cone_params, source, str(skymodel_path))
+    download_skymodel_catalog(cone_params, survey, str(skymodel_path))
 
     # Assert
     assert skymodel_path.is_file()
 
 
 @pytest.mark.parametrize(
-    "source,ra,dec,radius",
+    "survey,ra,dec,radius",
     [
         ("LOTSS", 190.0, 30.0, 1.0),
         ("TGSS", 12.34, 56.78, 1.0),
@@ -320,15 +320,15 @@ def test_download_skymodel_catalog(source, ra, dec, radius, tmp_path):
         ("PANSTARRS", 10.75, 5.34, 0.1),
     ],
 )
-def test_download_skymodel_from_source(source, ra, dec, radius, tmp_path):
-    """Test downloading a sky model from a source."""
+def test_download_skymodel_from_survey(survey, ra, dec, radius, tmp_path):
+    """Test downloading a sky model from a survey."""
 
     # Arrange
-    skymodel_path = tmp_path / f"source_sky_{source}.model"
+    skymodel_path = tmp_path / f"survey_sky_{survey}.model"
     cone_params = {"ra": ra, "dec": dec, "radius": radius}
 
     # Act
-    download_skymodel_from_source(cone_params, source, str(skymodel_path))
+    download_skymodel_from_survey(cone_params, survey, str(skymodel_path))
 
     # Assert
     assert skymodel_path.is_file()
