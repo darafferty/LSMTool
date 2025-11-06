@@ -312,26 +312,41 @@ def test_download_skymodel_catalog(survey, ra, dec, radius, tmp_path):
 
 
 @pytest.mark.parametrize(
-    "survey,ra,dec,radius",
+    "survey",
     [
-        ("LOTSS", 190.0, 30.0, 0.5),
-        ("TGSS", 12.34, 56.78, 0.6),
-        ("GSM", 123.23, 23.34, 0.6),
-        ("PANSTARRS", 10.75, 5.34, 0.01),
+        "LOTSS",
+        "TGSS",
+        "GSM",
+        "PANSTARRS",
     ],
 )
-def test_download_skymodel_from_survey(survey, ra, dec, radius, tmp_path):
+def test_download_skymodel_from_survey(survey, tmp_path, mocker, caplog):
     """Test downloading a sky model from a survey."""
 
     # Arrange
     skymodel_path = tmp_path / f"survey_sky_{survey}.model"
-    cone_params = {"ra": ra, "dec": dec, "radius": radius}
+    cone_params = {"ra": 10.75, "dec": 5.34, "radius": 0.5}
 
+    # Mock sucessful download attempt on first try
+    mocker.patch(
+        "lsmtool.download_skymodel.download_skymodel_catalog",
+        side_effect=[True],
+    )
+    mocker.patch(
+        "lsmtool.download_skymodel.download_skymodel_panstarrs",
+        side_effect=[True],
+    )
+    mocker.patch(
+        "lsmtool.download_skymodel.check_lotss_coverage", side_effect=[True]
+    )
     # Act
-    download_skymodel_from_survey(cone_params, survey, str(skymodel_path))
+    with caplog.at_level("INFO"):
+        download_skymodel_from_survey(cone_params, survey, str(skymodel_path))
 
     # Assert
-    assert skymodel_path.is_file()
+    assert (
+        f"Download of {survey} sky model completed successfully." in caplog.text
+    )
 
 
 @pytest.mark.parametrize(
