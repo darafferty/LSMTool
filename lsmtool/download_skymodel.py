@@ -5,6 +5,7 @@ Module for functions to download sky models.
 import logging
 import os
 import time
+from pathlib import Path
 
 import astropy.units as u
 import mocpy
@@ -55,11 +56,11 @@ def download_skymodel(
         os.remove(skymodel_path)
 
     if _new_directory_required(skymodel_path):
-        os.makedirs(os.path.dirname(skymodel_path))
+        Path(skymodel_path).parent.mkdir(parents=True, exist_ok=True)
 
     download_skymodel_from_source(cone_params, source, skymodel_path)
 
-    if not os.path.isfile(skymodel_path):
+    if not Path(skymodel_path).is_file():
         raise IOError(
             f'Sky model file "{skymodel_path}" does not exist after trying to '
             "download the sky model."
@@ -309,7 +310,7 @@ def _get_lotss_moc(skymodel_path):
     ConnectionError
         If the LoTSS MOC file cannot be downloaded.
     """
-    mocpath = os.path.join(os.path.dirname(skymodel_path), "dr2-moc.moc")
+    mocpath = Path(skymodel_path).parent / "dr2-moc.moc"
     # Securely download the MOC file without spawning an external process.
     # (Fix for security lint S607: avoid subprocess with partial
     # executable path.)
@@ -430,7 +431,7 @@ def _sky_model_exists(skymodel_path: str):
     bool
         True if the sky model file exists, False otherwise.
     """
-    file_exists = os.path.isfile(skymodel_path)
+    file_exists = Path(skymodel_path).is_file()
     if file_exists:
         logger.warning('Sky model "%s" exists!', skymodel_path)
     return file_exists
@@ -453,9 +454,8 @@ def _new_directory_required(skymodel_path: str):
     # Empty strings are False. Only attempt directory creation if there is a
     # directory path involved.
     return (
-        not os.path.isfile(skymodel_path)
-        and os.path.dirname(skymodel_path)
-        and not os.path.exists(os.path.dirname(skymodel_path))
+        not Path(skymodel_path).is_file()
+        and not Path(skymodel_path).parent.exists()
     )
 
 
@@ -497,5 +497,5 @@ def _validate_skymodel_path(skymodel_path: str):
     ValueError
         If the skymodel_path exists but is not a file.
     """
-    if not os.path.isfile(skymodel_path) and os.path.exists(skymodel_path):
+    if not Path(skymodel_path).is_file() and Path(skymodel_path).exists():
         raise ValueError(f'Path "{skymodel_path}" exists but is not a file!')
