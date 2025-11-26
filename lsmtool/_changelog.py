@@ -6,10 +6,42 @@ This module records all the relevant changes made to the software.
 The change list must be kept up-to-date manually.
 """
 
+
 def changelog():
     log = """
     LSMTool Changelog.
     -----------------------------------------------
+
+    2025/11/25 - Version 1.8.0
+
+        Merge ICAL and Rapthor versions of filter_skymodel.py
+            RD/LSMTool!82, RD/LSMTool!83, RD/LSMTool!88, RD/LSMTool!92,
+            RD/LSMTool!93, RD/LSMTool!98
+        Enable linting in CI
+            RD/LSMTool!84, RD/LSMTool!87
+        Add support for SoFiA-2 (as alternative to PyBDSF)
+            RD/LSMTool!94, RD/LSMTool!104
+        Merge facet.py and make_region_file.py into LSMTool
+            RD/LSMTool!105, RD/LSMTool!107, RD/LSMTool!109, RD/LSMTool!110,
+            RD/LSMTool!112, RD/LSMTool!113, RD/LSMTool!114
+        Remove radec2xy and xy2radec
+            RD/LSMTool!91
+        Use new lofar-parameterset package
+            RD/LSMTool!96
+        Drop support for Python 3.9
+            RD/LSMTool!100
+        Fix rasterize function
+            RD/LSMTool!101
+        Add function for applying a polygon mask to a fits file
+            RD/LSMTool!102, RD/LSMTool!103
+        Update format of vertex files
+            RD/LSMTool!106
+        Add option to keep mask file
+            RD/LSMTool!108
+        Migrate download_skymodel from Rapthor to LSMTool
+            RD/LSMTool!116
+        Automatically deploy package upon release
+            RD/LSMTool!117
 
     2025/07/04 - Version 1.7.1
 
