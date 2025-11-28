@@ -237,11 +237,12 @@ commands = [
 ]
 
 [tool.tox.env.build]
-package = "wheel"
+package = "skip"
 deps = ["build>=0.8.0"]
-commands = [["python", "-m", "build"]]
+commands = [["python", "-m", "build", "--sdist"]]
 
 [tool.tox.env.deploy]
+package = "skip"
 deps = ["build>=0.8.0", "twine"]
 pass_env = ["TWINE_*"]
 commands = [
