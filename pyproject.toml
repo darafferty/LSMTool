@@ -50,13 +50,11 @@ dependencies = [
     "bdsf",
 ]
 [project.optional-dependencies]
-sofia = ["sofia2 @ git+https://gitlab.com/SoFiA-Admin/SoFiA-2.git@b10ab4ef"]
 docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
 tests = ["pytest", "pytest-cov"]
-dev = ["ruff", "lsmtool[docs,tests,sofia]"]
+dev = ["ruff", "lsmtool[docs,tests]"]
 
 [dependency-groups]
-sofia = ["lsmtool[sofia]"]
 docs = ["lsmtool[docs]"]
 tests = ["lsmtool[tests]"]
 dev = ["lsmtool[dev]"]
@@ -239,14 +237,15 @@ commands = [
 ]
 
 [tool.tox.env.build]
-package = "wheel"
+package = "skip"
 deps = ["build>=0.8.0"]
-commands = [["python", "-m", "build"]]
+commands = [["python", "-m", "build", "--sdist"]]
 
 [tool.tox.env.deploy]
+package = "skip"
 deps = ["build>=0.8.0", "twine"]
 pass_env = ["TWINE_*"]
 commands = [
-    ["python", "-m", "build"],
+    ["python", "-m", "build", "--sdist"],
     ["python", "-m", "twine", "upload", "--verbose", "dist/*"]
 ]

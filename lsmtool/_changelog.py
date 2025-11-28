@@ -38,8 +38,6 @@ def changelog():
             RD/LSMTool!106
         Add option to keep mask file
             RD/LSMTool!108
-        Migrate download_skymodel from Rapthor to LSMTool
-            RD/LSMTool!116
         Automatically deploy package upon release
             RD/LSMTool!117
 
