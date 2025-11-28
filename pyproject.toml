@@ -245,6 +245,6 @@ commands = [["python", "-m", "build"]]
 deps = ["build>=0.8.0", "twine"]
 pass_env = ["TWINE_*"]
 commands = [
-    ["python", "-m", "build"],
+    ["python", "-m", "build", "--sdist"],
     ["python", "-m", "twine", "upload", "--verbose", "dist/*"]
 ]
