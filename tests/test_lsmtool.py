@@ -163,3 +163,39 @@ def test_meanshift_with_nans():
     sky_nans  = lsmtool.load('tests/resources/nans.sky')
     sky_nans.group('meanshift', byPatch=True, lookDistance=0.075, groupingDistance=0.01)
     assert len(sky_nans.getPatchPositions()) == 7
+
+
+def test_export_image_basic(sky_no_patches, tmp_path):
+    """Export the sky model as a FITS image."""
+    image_path = tmp_path / "skymodel_image.fits"
+    sky_no_patches.export_image(cellsize=0.01, filename=str(image_path))
+    assert image_path.is_file()
+
+
+def test_export_image_with_frequency(sky_no_patches, tmp_path):
+    """Export the sky model as a FITS image at a specific frequency."""
+    image_path = tmp_path / "skymodel_image_freq.fits"
+    sky_no_patches.export_image(cellsize=0.01, filename=str(image_path), frequency=150e6)
+    assert image_path.is_file()
+
+
+def test_export_image_clobber(sky_no_patches, tmp_path):
+    """Test that export_image can overwrite existing files with clobber=True."""
+    image_path = tmp_path / "skymodel_image_clobber.fits"
+    # Create the file first
+    sky_no_patches.export_image(cellsize=0.01, filename=str(image_path))
+    assert image_path.is_file()
+    # Now overwrite it
+    sky_no_patches.export_image(cellsize=0.01, filename=str(image_path), clobber=True)
+    assert image_path.is_file()
+
+
+def test_export_image_no_clobber(sky_no_patches, tmp_path):
+    """Test that export_image raises an error when trying to overwrite without clobber."""
+    image_path = tmp_path / "skymodel_image_no_clobber.fits"
+    # Create the file first
+    sky_no_patches.export_image(cellsize=0.01, filename=str(image_path))
+    assert image_path.is_file()
+    # Now try to overwrite without clobber - should raise IOError
+    with pytest.raises(IOError, match="exists and clobber = False"):
+        sky_no_patches.export_image(cellsize=0.01, filename=str(image_path), clobber=False)

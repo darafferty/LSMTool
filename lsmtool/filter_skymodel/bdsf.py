@@ -68,6 +68,7 @@ def filter_skymodel(
     output_flat_noise_rms: PathLikeOptional = "",
     output_true_rms: PathLikeOptional = "",
     ncores: int = 8,
+    save_filtered_model_image: bool = False,
 ) -> int:
     """
     Filters the input sky model using PyBDSF.
@@ -121,7 +122,10 @@ def filter_skymodel(
         it.
     ncores : int
         Specify the number of cores that BDSF should use. Defaults to 8.
-
+    save_filtered_model_image : bool, optional
+        If True, save the filtered sky model image as a FITS file for
+        inspection. The filename will be derived from the output true sky model
+        filename by appending '_filtered_model.fits'.
     Raises
     ------
     FileNotFoundError
@@ -175,6 +179,12 @@ def filter_skymodel(
             quiet=True,
             ncores=ncores,
         )
+        if save_filtered_model_image:
+            filename = Path(output_true_sky).parent / Path(output_true_sky).stem
+            img_true_sky.export_image(
+                outfile=f"{filename}-pybdsf-model.fits",
+                img_type="gaus_model",
+            )
     # NOTE: The TMPDIR environmental variable is set back to its original value
     # once the with block above exits
 
@@ -194,12 +204,12 @@ def filter_skymodel(
             keep_mask,
             output_true_sky,
             output_apparent_sky,
+            save_filtered_model_image=save_filtered_model_image
         )
     else:
         create_dummy_skymodel(
             img_true_sky, output_true_sky, output_apparent_sky
         )
-
     return n_sources
 
 
@@ -305,6 +315,7 @@ def filter_sources(
     keep_mask: bool,
     output_true_sky: PathLikeOptional,
     output_apparent_sky: PathLikeOptional,
+    save_filtered_model_image: bool = False,
 ) -> SkyModel:
     """
     Filter and group sources based on a mask and other criteria.
@@ -336,7 +347,12 @@ def filter_sources(
     output_apparent_sky : str or pathlib.Path
         Output file name for the generated apparent sky model.
     """
-
+    if save_filtered_model_image:
+        wcs = img_true_sky.wcs_obj.copy()
+        cellsize = img_true_sky.wcs_obj.wcs.cdelt  # degrees
+        size = img_true_sky.shape[2:]
+        logger.debug("Filtered model image cellsize: %s deg - image_size: %s px", cellsize, size)
+        
     mask_file = f"{img_true_sky.filename}.mask.fits"
     img_true_sky.export_image(
         outfile=mask_file, clobber=True, img_type="island_mask"
@@ -392,7 +408,15 @@ def filter_sources(
         true_skymodel.write(
             output_apparent_sky, clobber=True, applyBeam=bool(beam_ms)
         )
-
+    if save_filtered_model_image:
+        filename = Path(output_true_sky).parent / Path(output_true_sky).stem
+        true_skymodel.export_image(
+            cellsize=cellsize,
+            wcs=wcs,
+            filename=f"{filename}-filtered-model.fits",
+            size=size,
+            clobber=True,
+        )
     # Write out true sky model
     true_skymodel.write(output_true_sky, clobber=True)
 

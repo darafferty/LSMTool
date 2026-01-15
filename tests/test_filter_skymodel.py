@@ -107,6 +107,7 @@ class TestBDSF:
             beam_ms=beam_ms,
             thresh_isl=4.0,
             thresh_pix=5.0,
+            save_filtered_model_image=True,
             **kws,
         )
 

@@ -18,15 +18,30 @@
 
 import logging
 import os
+import datetime
+import copy
+import fnmatch
+import tempfile
+import numpy as np
+
+from astropy.table import Column, Table
 from astropy.coordinates import Angle, SkyCoord
+from astropy.io.ascii import InconsistentTableError
+from astropy.io import fits as pyfits
+from astropy.wcs import WCS
 import astropy.units as u
+from typing import Union, List, Tuple
+
 from . import _logging
 from . import tableio
 from . import operations
-from .operations_lib import make_wcs, normalize_ra_dec
+from .operations_lib import make_wcs, normalize_ra_dec, apply_beam, calculateSeparation, make_template_image, gaussian_fcn
+from .facet import tessellate
+from .tableio import RADec2Angle, processFormatString, processLine, createTable
 
 # Python 3 compatibility
 try:
+    dict.itervalues
     dict.iteritems
 except AttributeError:
     # Python 3
@@ -93,10 +108,6 @@ class SkyModel(object):
                 VORadius=5.0)
 
         """
-        from astropy.table import Table
-        from astropy.io.ascii import InconsistentTableError
-        from .tableio import processFormatString, processLine, createTable
-
         self.log = logging.getLogger('LSMTool')
         self.history = []
         if type(fileName) is str:
@@ -233,7 +244,6 @@ class SkyModel(object):
             String to add to history
 
         """
-        import datetime
         current_time = str(datetime.datetime.now()).split('.')[0]
         self.history.append(current_time + ": " + str(entry))
 
@@ -241,7 +251,6 @@ class SkyModel(object):
         """
         Prints information about the sky model.
         """
-        import numpy as np
 
         if self.hasPatches:
             nPatches = len(set(self.getPatchNames()))
@@ -286,7 +295,6 @@ class SkyModel(object):
         """
         Returns a copy of the sky model.
         """
-        import copy
 
         # The logger's stream handlers are not copyable with deepcopy, so copy
         # them by hand:
@@ -487,9 +495,6 @@ class SkyModel(object):
             >>> s.getPatchPositions(method='wmean', asArray=True)
 
         """
-        import numpy as np
-        from astropy.table import Column
-        from .tableio import RADec2Angle
 
         if self.hasPatches:
             if patchName is None:
@@ -613,7 +618,6 @@ class SkyModel(object):
             >>> s.setPatchPositions({'bin0': [123.231, 23.4321]})
 
         """
-        from .tableio import RADec2Angle
 
         if self.hasPatches:
             if method not in ['mid', 'mean', 'wmean', 'zero']:
@@ -669,7 +673,6 @@ class SkyModel(object):
             Midpoint RA and Dec values
 
         """
-        import numpy as np
 
         if len(self.table) == 0:
             return [0], [0], 0, 0
@@ -914,8 +917,6 @@ class SkyModel(object):
                     False, False, True, False])
 
         """
-        from astropy.table import Column
-        import numpy as np
 
         colName = self._verifyColName(colName, onlyExisting=False)
         if colName is None:
@@ -1040,7 +1041,6 @@ class SkyModel(object):
             ['bin1', 'bin1', 'bin1']
 
         """
-        import numpy as np
 
         # Check first for the rowName as a patch name. If no patch matches (or
         # the model is not grouped into patches), Try it as a source name. This
@@ -1168,8 +1168,7 @@ class SkyModel(object):
             List of indices
 
         """
-        import numpy as np
-        import fnmatch
+        
 
         if patch:
             if self.hasPatches:
@@ -1297,8 +1296,6 @@ class SkyModel(object):
             Column object with flux values attenuated by the beam
 
         """
-        from .operations_lib import apply_beam
-
         if not self._hasBeam:
             self.log.warning('No beam MS has been specified. No beam attenuation applied.')
             return col
@@ -1338,8 +1335,6 @@ class SkyModel(object):
             Column object with aggregated sum of values
 
         """
-        import numpy as np
-
         def npsum(array):
             return np.sum(array, axis=0)
 
@@ -1371,8 +1366,6 @@ class SkyModel(object):
             Column object with aggregated min values
 
         """
-        import numpy as np
-
         def npmin(array):
             return np.min(array, axis=0)
 
@@ -1404,8 +1397,6 @@ class SkyModel(object):
             Column object with aggregated max values
 
         """
-        import numpy as np
-
         def npmax(array):
             return np.max(array, axis=0)
 
@@ -1439,9 +1430,6 @@ class SkyModel(object):
             Column object with aggregated mean values
 
         """
-        from astropy.table import Column
-        import numpy as np
-
         if weight:
             def npsum(array):
                 return np.sum(array, axis=0)
@@ -1494,8 +1482,6 @@ class SkyModel(object):
             the model has patches
 
         """
-        from astropy.table import Column
-        import numpy as np
 
         if weight:
             method = 'wmean'
@@ -1574,8 +1560,6 @@ class SkyModel(object):
             Angular separation in degrees
 
         """
-        from .operations_lib import calculateSeparation
-
         return calculateSeparation(ra1, dec1, ra2, dec2)
 
     def getDistance(self, RA, Dec, byPatch=False, units=None):
@@ -1616,8 +1600,6 @@ class SkyModel(object):
             >>> s.getDistance(94.0, 42.0, byPatch=True)
 
         """
-        from .tableio import RADec2Angle
-
         if byPatch and self.hasPatches:
             # Get patch positions
             sRA, sDec = self.getPatchPositions(asArray=True)
@@ -1697,10 +1679,6 @@ class SkyModel(object):
             >>> s.write('facets.reg', format='facet')
 
         """
-        import os
-        import numpy as np
-        from .operations_lib import apply_beam
-
         if fileName is None:
             if self._fileName is None:
                 raise IOError("No file name specified.")
@@ -1805,8 +1783,6 @@ class SkyModel(object):
         TOPCAT should then load the table.
 
         """
-        import tempfile
-
         tfile = tempfile.NamedTemporaryFile()
         self.table.write(tfile, format='votable')
         tableio.broadcastTable(tfile.name)
@@ -2480,11 +2456,6 @@ class SkyModel(object):
         clobber : bool, optional
             If True, existing files are overwritten.
         """
-        import numpy as np
-        from astropy.io import fits as pyfits
-        from astropy import wcs
-        from .operations_lib import make_template_image, gaussian_fcn, tessellate
-
         # Check inputs
         if writeRegionFile and not self.hasPatches:
             raise ValueError('writeRegionFile = True but sky model is not grouped into '
@@ -2580,8 +2551,9 @@ class SkyModel(object):
                 if type == 'POINT':
                     imdata[0, 0, int(np.round(ys)), int(np.round(xs))] += v
                 elif type == 'GAUSSIAN':
-                    S1 = self.getColValues('MajorAxis', units='degree')[i] / cellsize  # pixels
-                    S2 = self.getColValues('MinorAxis', units='degree')[i] / cellsize  # pixels
+                    # The MajorAxis and MinorAxis are FWHMs in arcseconds
+                    S1 = self.getColValues('MajorAxis', units='deg')[i] / cellsize * 3600  # pixels
+                    S2 = self.getColValues('MinorAxis', units='deg')[i] / cellsize * 3600  # pixels
                     Th = self.getColValues('Orientation')[i]  # degrees
                     C1, C2 = ys, xs
                     b = np.ceil(S1 * 2.5)
@@ -2634,3 +2606,160 @@ class SkyModel(object):
                                   format(outputfile))
             with open(outputfile, 'w') as f:
                 f.writelines(lines)
+
+    def _derive_image_size(self, types, x, y, cellsize):
+        """
+        Derive the image size for the skymodel image.
+
+        Returns
+        -------
+        image_size : tuple
+            Image size as (xsize, ysize) in pixels.
+        """
+        if 'GAUSSIAN' in types:
+            fwhm = np.max(self.getColValues('MajorAxis', units='degree') / np.max(cellsize))
+            max_source_size = int(np.ceil(fwhm * 1.5))
+        else:
+            max_source_size = 2
+        xpadding = int(0.2 * (np.max(x) - np.min(x)))
+        ypadding = int(0.2 * (np.max(y) - np.min(y)))
+        xpadding += max_source_size
+        if xpadding % 2:
+            xpadding += 1
+        ypadding += max_source_size
+        if ypadding % 2:
+            ypadding += 1
+        xsize = int(np.max(x) - np.min(x)) + xpadding
+        ysize = int(np.max(y) - np.min(y)) + ypadding
+
+        
+        return (xsize, ysize)
+        
+    def export_image(self, cellsize, filename, frequency=None,
+                     wcs=None,
+                     size:Union[None, List[float], Tuple[float, float]]=None, clobber=False):
+        """
+        Export the stokes I sky model to a FITS image.
+
+        Parameters
+        ----------
+        cellsize : float
+            The cellsize in degrees for the output image.
+        filename : str
+            Filename for the output FITS image.
+        frequency : float, optional
+            Frequency in Hz at which to evaluate the sky model. If None,
+            the mean ReferenceFrequency between the sources is used.
+        """
+        # Check inputs
+        if filename is None:
+            if self._fileName is None:
+                filename = 'skymodel'
+            else:
+                filename = os.path.splitext(self._fileName)[0]
+
+        # Make a blank image for each spectral term
+        referenceFrequency = self.getColValues('ReferenceFrequency')
+        if frequency is None:
+            frequency = np.mean(referenceFrequency)
+        
+        fluxes = self.getColValues('I') / 10
+        corrected_fluxes = fluxes.copy()
+        types = self.getColValues('Type')
+        nsources = len(fluxes)
+        if 'SpectralIndex' in self.getColNames():
+            spectral_indices = self.getColValues('SpectralIndex')
+        else:
+            spectral_indices = [[]] * nsources
+
+        # Check that LogarithmicSI = False for all entries
+        if 'LogarithmicSI' in self.getColNames() :
+            logsi = self.getColValues('LogarithmicSI')
+        else:
+            logsi = ['false'] * nsources
+        image_name = filename
+        
+        if os.path.exists(image_name):
+            if clobber:
+                os.remove(image_name)
+            else:
+                raise IOError("The output file '{0}' exists and clobber = False.".
+                              format(image_name))
+        Ra = self.getColValues('Ra')
+        Dec = self.getColValues('Dec')
+
+        if wcs is None:
+            x, y, refRA, refDec = self._getXY(crdelt=cellsize)
+            wcs = make_wcs(refRA, refDec, crdelt=np.max(cellsize))
+        else:
+            
+            w = make_wcs(wcs.wcs.crval[0], wcs.wcs.crval[1], crdelt=np.max(cellsize[:2]))
+            w.wcs.crpix = wcs.wcs.crpix[:2]
+            wcs = w
+            print(wcs)
+            x, y = wcs.wcs_world2pix(Ra, Dec, 0)
+            refRA = wcs.wcs.crval[0]
+            refDec = wcs.wcs.crval[1]
+            print("Reference RA, Dec: ", refRA, refDec)
+        if size is None:
+            xsize, ysize = self._derive_image_size(types, x, y, cellsize)
+            self.log.info("Derived image size: %s x %s pixels", xsize, ysize)
+        else:
+            xsize, ysize = size
+            self.log.info("Using user-specified image size: %s x %s pixels", xsize, ysize)    
+        
+        major_axis = self.getColValues('MajorAxis', units='degree')
+        minor_axis = self.getColValues('MinorAxis', units='degree')
+        orientation = self.getColValues('Orientation')
+        make_template_image(image_name, float(refRA), float(refDec), frequency,
+                            ximsize=xsize, yimsize=ysize, cellsize_deg=max(cellsize[0:2]))
+    
+        hdu = pyfits.open(image_name, memmap=False)
+        imdata = hdu[0].data
+        w = WCS(hdu[0].header)
+        scale = np.max(cellsize[0:2])
+
+        def evaluate_polynomial(base, spectral_terms):
+            partial_sum = 0.0
+            for t in spectral_terms[::-1]:
+                partial_sum += partial_sum * base + t
+            return partial_sum
+        # TODO: Refactor this to use numpy operations instead of loops
+        for i in range(nsources):
+            if logsi[i] == 'true':
+                spectral_correction = np.log10(frequency / referenceFrequency[i])
+            
+                spectral_correction = spectral_correction * evaluate_polynomial(spectral_correction, spectral_indices[i])
+            
+                spectral_correction = np.pow(10, spectral_correction)
+                corrected_fluxes[i] = fluxes[i] * spectral_correction
+            else: 
+                spectral_correction = frequency / referenceFrequency[i] - 1.0
+                spectral_correction = spectral_correction * evaluate_polynomial(spectral_correction, spectral_indices[i])
+                corrected_fluxes[i] = fluxes[i] + spectral_correction
+        for i, (ra_src, dec_src, val, type) in enumerate(zip(Ra, Dec, corrected_fluxes, types)):
+            
+            xs, ys = wcs.wcs_world2pix(ra_src, dec_src, 0)
+            if type == 'POINT':
+                imdata[0, 0, int(np.round(ys)), int(np.round(xs))] += val
+            elif type == 'GAUSSIAN':
+                scale_in_deg = scale  # degrees
+                S1 = major_axis[i] / scale_in_deg  # pixels
+                S2 = minor_axis[i] / scale_in_deg  # pixels
+                Th = orientation[i]  # degrees
+                C1, C2 = float(xs), float(ys)
+                b = np.ceil(S1 * 1.0)
+                
+                bbox = np.s_[
+                    max(0, int(C1-b)):min(xsize, int(C1+b+1)),
+                    max(0, int(C2-b)):min(ysize, int(C2+b+1)),
+                ]
+                x_ax, y_ax = np.mgrid[bbox]
+                g = [1.0, C1, C2, float(S1), float(S2), float(Th)]
+                ffimg = gaussian_fcn(g, x_ax, y_ax, const=False)
+                print(np.nansum(ffimg), val, g, y_ax, x_ax)
+                ffimg /= ffimg.size
+                ffimg *= val
+                imdata[0, 0, :, :][bbox] += ffimg
+        hdu[0].data = imdata
+        hdu.writeto(image_name, overwrite=True)
