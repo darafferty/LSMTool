@@ -2744,20 +2744,19 @@ class SkyModel(object):
                 imdata[0, 0, int(np.round(ys)), int(np.round(xs))] += val
             elif type == 'GAUSSIAN':
                 scale_in_deg = scale  # degrees
-                S1 = major_axis[i] / scale_in_deg  # pixels
-                S2 = minor_axis[i] / scale_in_deg  # pixels
+                S1 = major_axis[i] / scale_in_deg # pixels
+                S2 = minor_axis[i] / scale_in_deg # pixels
                 Th = orientation[i]  # degrees
                 C1, C2 = float(xs), float(ys)
-                b = np.ceil(S1 * 1.0)
+                b = np.ceil(S1 * 10)
                 
                 bbox = np.s_[
                     max(0, int(C1-b)):min(xsize, int(C1+b+1)),
                     max(0, int(C2-b)):min(ysize, int(C2+b+1)),
                 ]
                 x_ax, y_ax = np.mgrid[bbox]
-                g = [1.0, C1, C2, float(S1), float(S2), float(Th)]
+                g = [1.0, C1, C2, float(S1) * 10, float(S2) * 10, float(Th)]
                 ffimg = gaussian_fcn(g, x_ax, y_ax, const=False)
-                print(np.nansum(ffimg), val, g, y_ax, x_ax)
                 ffimg /= ffimg.size
                 ffimg *= val
                 imdata[0, 0, :, :][bbox] += ffimg

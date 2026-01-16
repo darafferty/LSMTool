@@ -489,7 +489,7 @@ def gaussian_fcn(g, x1, x2, const=False):
     from math import cos, radians, sin
 
     import numpy as np
-
+    x1, x2 = np.array(x1, dtype=float), np.array(x2, dtype=float)
     A, C1, C2, S1, S2, Th = g
     fwsig = 2.35482  # FWHM = fwsig * sigma
     S1 = S1 / fwsig
@@ -498,9 +498,13 @@ def gaussian_fcn(g, x1, x2, const=False):
     th = radians(Th)
     cs = cos(th)
     sn = sin(th)
+    print(((x1-C1)/S1).max(), S1, C1, x1[0])
+    print(((x2-C2)/S2).max(), S2, C2, x2[0])
+    
+    
     f1 = ((x1 - C1) * cs + (x2 - C2) * sn) / S1
     f2 = (-(x1 - C1) * sn + (x2 - C2) * cs) / S2
-    gimg = A * np.exp(-(f1 * f1 + f2 * f2) / 2)
+    gimg = A * np.exp(-(f1 * f1 + f2 * f2) / 2.0)
 
     if const:
         mask = np.where(gimg / A > 1e-5)
