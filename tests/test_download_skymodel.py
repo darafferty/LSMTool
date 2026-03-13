@@ -393,6 +393,7 @@ def test_download_skymodel_from_survey_retries(
         f"Download of {survey} sky model completed successfully." in caplog.text
     )
 
+
 @pytest.mark.parametrize(
     "survey,ra,dec,radius",
     [

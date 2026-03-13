@@ -183,7 +183,7 @@ description = "run unit tests"
 deps = [{ replace = "ref", of = ["dependency-groups", "tests"], extend = true }]
 extras = ["tests"]
 package = "editable"
-set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning" }
+set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning", PYTEST_XDIST_AUTO_NUM_WORKERS = "4" }
 commands = [
     ["python", "--version"],
     ["python", "-m", "pytest", "-n", "auto", { replace = "posargs", default = [], extend = true }]

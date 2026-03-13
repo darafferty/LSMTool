@@ -17,6 +17,9 @@ from lsmtool.skymodel import SkyModel
 
 logger = logging.getLogger("LSMTool")
 
+REQUEST_CONNECT_TIMEOUT = 10
+REQUEST_READ_TIMEOUT = 300
+
 
 def download_skymodel(
     cone_params,
@@ -247,9 +250,12 @@ def download_skymodel_panstarrs(url, search_params, skymodel_path):
         If the request times out.
     """
     logger.info("Downloading skymodel from Pan-STARRS into %s", skymodel_path)
-    timeout = 300
     try:
-        result = requests.get(url, params=search_params, timeout=timeout)
+        result = requests.get(
+            url,
+            params=search_params,
+            timeout=(REQUEST_CONNECT_TIMEOUT, REQUEST_READ_TIMEOUT),
+        )
         if result.ok:
             # Convert the result to makesourcedb format and write to
             # the output file. Split and remove header line.
@@ -269,8 +275,8 @@ def download_skymodel_panstarrs(url, search_params, skymodel_path):
                 f.writelines(out_lines)
             return True
         return False
-    except requests.exceptions.Timeout:
-        logger.warning("Request timed out after %d seconds", timeout)
+    except requests.exceptions.RequestException as exc:
+        logger.warning("Pan-STARRS request failed: %s", exc)
         return False
 
 
@@ -326,7 +332,10 @@ def _get_lotss_moc(skymodel_path):
     # executable path.)
     moc_url = "https://lofar-surveys.org/public/DR2/catalogues/dr2-moc.moc"
     try:
-        response = requests.get(moc_url, timeout=300)
+        response = requests.get(
+            moc_url,
+            timeout=(REQUEST_CONNECT_TIMEOUT, REQUEST_READ_TIMEOUT),
+        )
         response.raise_for_status()
     except requests.RequestException as exc:
         raise ConnectionError(
