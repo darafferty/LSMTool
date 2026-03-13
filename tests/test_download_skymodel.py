@@ -305,9 +305,10 @@ def test_download_skymodel_catalog(survey, ra, dec, radius, tmp_path):
     cone_params = {"ra": ra, "dec": dec, "radius": radius}
 
     # Act
-    download_skymodel_catalog(cone_params, survey, str(skymodel_path))
+    success = download_skymodel_catalog(cone_params, survey, str(skymodel_path))
 
     # Assert
+    assert success
     assert skymodel_path.is_file()
 
 
