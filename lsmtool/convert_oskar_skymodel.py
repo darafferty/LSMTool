@@ -3,6 +3,7 @@
 import argparse
 import itertools as itt
 from pathlib import Path
+from collections import defaultdict
 
 # ---------------------------------------------------------------------------- #
 
@@ -92,8 +93,7 @@ def filter_sources(
     point_size_threshold,
     min_flux_point,
     min_flux_extended,
-    input_source_counter,
-    removed_sources_counters,
+    source_counts=None,
 ):
     """
     Generator that filter sources from the skymodel and convert the remaining
@@ -117,23 +117,28 @@ def filter_sources(
         Minimum flux density in Jy for a point source to be included.
     min_flux_extended : float
         Minimum flux density in Jy for an extended source to be included.
-    input_source_counter : itertools.count, optional
-        Counter for keeping track of the number of sources in the input
-        skymodel. Will be incremented for each source read from the input data
-        generator.
-    removed_sources_counters : list[int], optional
-        List of integers for keeping track of the number of removed sources.
-        The first element counts the number of removed extended sources, and the
-        second element counts the number of removed point sources.
+    source_counts : dict, optional
+        Dict of integers for keeping track of the number of removed sources. If
+        provided, it should have the following form:
+        {"n_input_sources": 0, "n_point_removed": 0, "n_extended_removed": 0}.
+        These counts will be updated in place as the sources are processed. You
+        do not need to specify this if you don't care about knowing the number
+        of sources that are read or removed.
 
     Yields
     -------
     str
         Formatted data line for output makesourcedb skymodel.
     """
+    if source_counts is None:
+        # If no source_counts provided from outside, create a local source_counts dict.
+        # These counts will not be available outside the function, but we
+        # define it nonetheless to avoid having unnecessary conditionals in the
+        # loop below.
+        source_counts = defaultdict(int)
 
     for line in data_lines:
-        next(input_source_counter)
+        source_counts["n_input_sources"] += 1
         # ra, dec, I, Q, U, V, ref_freq, spix, rm, major, minor, orient
         cells = line.split(",")
         total_intensity = float(cells[2])
@@ -141,9 +146,10 @@ def filter_sources(
 
         # Apply filtering based on flux and size
         is_point_source = abs(major) < point_size_threshold
-        threshold = (min_flux_extended, min_flux_point)[is_point_source]
+        threshold = min_flux_point if is_point_source else min_flux_extended
         if total_intensity < threshold:
-            removed_sources_counters[is_point_source] += 1
+            category = "point" if is_point_source else "extended"
+            source_counts[f"n_{category}_removed"] += 1
             continue
 
         # reformat
@@ -229,27 +235,29 @@ def convert_skymodel(
     header_lines, data_lines = read_data(input_file)
 
     # Filter
+    source_counts = {
+        "n_input_sources": 0,
+        "n_extended_removed": 0,
+        "n_point_removed": 0,
+    }
     filtered_data = filter_sources(
         data_lines,
         point_size_threshold,
         min_flux_point,
         min_flux_extended,
-        (input_source_counter := itt.count()),
-        (removed_sources_counters := [0, 0]),
+        source_counts,
     )
 
     # Write
     output_source_count = write(output_file, header_lines, filtered_data)
 
     # Summary
-    input_source_count = next(input_source_counter)
-    n_extended_removed, n_point_removed = removed_sources_counters
     print(
         "Conversion complete.",
-        f"Total input sources: {input_source_count}",
+        f"Total input sources: {source_counts['n_input_sources']}",
         f"Total output sources: {output_source_count}",
-        f"Point sources removed: {n_point_removed}",
-        f"Extended sources removed: {n_extended_removed}",
+        f"Point sources removed: {source_counts['n_point_removed']}",
+        f"Extended sources removed: {source_counts['n_extended_removed']}",
         sep="\n",
     )
 
