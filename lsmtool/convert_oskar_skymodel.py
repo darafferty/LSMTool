@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
+import argparse
 import itertools as itt
 from pathlib import Path
-from urllib import parse
+
+# ---------------------------------------------------------------------------- #
 
 HEADER_FORMAT_LINE = (
     "FORMAT = Name, Type, Ra, Dec, I, Q, U, V, "
@@ -227,6 +229,8 @@ def write(output_file, header_lines, filtered_rows):
 
         # Write header lines
         for line in header_lines:
+            if line.startswith("# Number of sources:"):
+                continue  # Skip original number of sources line
             file.write(f"{line}\n")
 
         # Write required FORMAT line
@@ -244,9 +248,7 @@ def write(output_file, header_lines, filtered_rows):
     return n_sources
 
 
-if __name__ == "__main__":
-    import argparse
-
+def main():
     parser = argparse.ArgumentParser(
         description="Convert OSKAR skymodel to makesourcedb format. Optionally "
         "filter sources based on flux and size."
@@ -286,7 +288,7 @@ if __name__ == "__main__":
     convert_skymodel(
         args.input_file,
         args.output_file,
-        args.point_point_size_threshold,
+        args.point_size_threshold,
         args.min_flux_point,
         args.min_flux_extended,
     )
