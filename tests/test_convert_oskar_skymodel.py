@@ -1,22 +1,27 @@
-from unittest import mock
 import itertools as itt
-import contextlib as ctx
+import shlex
+import sys
+from pathlib import Path
+from textwrap import dedent
+from unittest import mock
+
+import numpy as np
+import pytest
+from conftest import TEST_DATA_PATH
+
 from lsmtool.convert_oskar_skymodel import (
+    HEADER_FORMAT_LINE,
+    convert_row,
     convert_skymodel,
     filter_sources,
     format_row,
+    main,
     read_data,
-    convert_row,
-    write, HEADER_FORMAT_LINE
+    write,
 )
-import numpy as np
-from pathlib import Path
-import pytest
-from textwrap import dedent
 
-from conftest import TEST_DATA_PATH
-
-TEST_RESOURCES_PATH = TEST_DATA_PATH / Path(__file__).stem
+TEST_RESOURCES_PATH = TEST_DATA_PATH
+TEST_DATA_PATH = TEST_RESOURCES_PATH / Path(__file__).stem
 
 
 @pytest.fixture()
@@ -145,7 +150,7 @@ def test_read_data(sample_csv_path, sample_csv_text):
 
 
 @pytest.mark.parametrize(
-    "size_threshold, min_flux_point, min_flux_extended, expected_removed, expected_indices_remain",
+    "point_size_threshold, min_flux_point, min_flux_extended, expected_removed, expected_indices_remain",
     [
         # Treat all sources as extended, test that none are filtered for small
         # `min_flux_point`
@@ -163,7 +168,7 @@ def test_read_data(sample_csv_path, sample_csv_text):
 )
 def test_filter_sources(
     sample_csv_text,
-    size_threshold,
+    point_size_threshold,
     min_flux_point,
     min_flux_extended,
     expected_removed,
@@ -178,7 +183,7 @@ def test_filter_sources(
         result = list(
             filter_sources(
                 data_lines,
-                size_threshold,
+                point_size_threshold,
                 min_flux_point,
                 min_flux_extended,
                 (input_source_counter := itt.count()),
@@ -237,14 +242,32 @@ def test_convert_skymodel(capsys, tmp_path, sample_csv_path):
     )
 
     captured = capsys.readouterr()
-    assert all(msg in captured.out for msg in (
-        "Conversion complete.",
-        "Total input sources: 5",
-        "Total output sources: 5",
-        "Point sources removed: 0",
-        "Extended sources removed: 0",
-    ))
+    assert all(
+        msg in captured.out
+        for msg in (
+            "Conversion complete.",
+            "Total input sources: 5",
+            "Total output sources: 5",
+            "Point sources removed: 0",
+            "Extended sources removed: 0",
+        )
+    )
 
+
+def test_convert_oskar_skymodel(tmp_path):
+    output_path = tmp_path / "makesourcedb_result.csv"
+    convert_skymodel(
+        TEST_DATA_PATH / "oskar_sky_model_example.csv",
+        output_path,
+        point_size_threshold=1e-8,
+        min_flux_point=0.005,
+        min_flux_extended=0.02,
+    )
+
+    result_text = output_path.read_text()
+    expected_path = TEST_DATA_PATH / "makesourcedb_sky_model_example.csv"
+    expected_text = expected_path.read_text()
+    assert result_text == expected_text
 
 
 @pytest.mark.parametrize(

@@ -1,5 +1,6 @@
-# Number of sources: 998
-# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), Ref. freq. (Hz), Spectral index, Rotation measure (rad/m^2), FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg)FORMAT = Name, Type, Ra, Dec, I, Q, U, V, MajorAxis, MinorAxis, Orientation, ReferenceFrequency, SpectralIndex='[]', RotationMeasure
+# Number of sources: 998    
+# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), Ref. freq. (Hz), Spectral index, Rotation measure (rad/m^2), FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg)
+FORMAT = Name, Type, Ra, Dec, I, Q, U, V, MajorAxis, MinorAxis, Orientation, ReferenceFrequency, SpectralIndex='[]', RotationMeasure
 
 src0, GAUSSIAN, 08:31:10.02954, -37.42.09.8825, 7.47779092195307, 0.0, 0.0, 0.0, 3.213814297896, 2.591157634759, 95.631590388522, 144000000.0, [-0.7], 0.0
 src1, GAUSSIAN, 08:27:25.39886, -29.18.45.2434, 5.10822163165834, 0.0, 0.0, 0.0, 18.247294862269, 9.742853599963, 12.065152620216, 144000000.0, [-0.7], 0.0
