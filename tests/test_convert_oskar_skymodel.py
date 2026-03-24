@@ -2,7 +2,6 @@ import itertools as itt
 import shlex
 import sys
 from pathlib import Path
-from textwrap import dedent
 from unittest import mock
 
 import numpy as np
@@ -28,14 +27,33 @@ TEST_DATA_PATH = TEST_RESOURCES_PATH / Path(__file__).stem
 def sample_csv_text():
     """Sample CSV data as text for testing."""
     return {
-        "header": "# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), Ref. freq. (Hz), Spectral index, Rotation measure (rad/m^2), FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg)",
-        "data": dedent("""
-        134.316584681925, -34.806858824585, 7.12299476324136e-01, 0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, 1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00,   2.552896197845,   1.705990053656, 115.020339486069
-        123.357884389652, -36.922300562525, 5.05840198469155e-01, 0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, 1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00,   3.381746257518,   2.676308575899,  37.727775657383
-        135.273082634371, -29.029007646589, 5.04116042438541e-01, 0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, 1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00,  14.702668401253,   1.319160550191,  28.175171030289
-        128.770281841595, -26.176730148372, 2.58824974285288e-01, 0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, 1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00,  12.861909842975,   2.246703463196,  74.249587537251
-        125.806642113852, -36.775065379826, 2.43444339899304e-01, 0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, 1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00,   8.852988859902,   6.332216807758,  96.100299655753
-        """).strip(),
+        "header": (
+            "# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), "
+            "Ref. freq. (Hz), Spectral index, Rotation measure (rad/m^2), "
+            "FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg)"
+        ),
+        "data": (
+            "134.316584681925, -34.806858824585, 7.12299476324136e-01, "
+            "0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, "
+            "1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00, "
+            "2.552896197845,   1.705990053656, 115.020339486069\n"
+            "123.357884389652, -36.922300562525, 5.05840198469155e-01, "
+            "0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, "
+            "1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00, "
+            "3.381746257518,   2.676308575899,  37.727775657383\n"
+            "135.273082634371, -29.029007646589, 5.04116042438541e-01, "
+            "0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, "
+            "1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00, "
+            "14.702668401253,   1.319160550191,  28.175171030289\n"
+            "128.770281841595, -26.176730148372, 2.58824974285288e-01, "
+            "0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, "
+            "1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00, "
+            "12.861909842975,   2.246703463196,  74.249587537251\n"
+            "125.806642113852, -36.775065379826, 2.43444339899304e-01, "
+            "0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, "
+            "1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00, "
+            "8.852988859902,   6.332216807758,  96.100299655753"
+        ),
     }
 
 
@@ -133,12 +151,21 @@ def expected_makesourcedb_lines():
     data.
     """
     return [
-        # Name, Type, Ra, Dec, I, Q, U, V, MajorAxis, MinorAxis, Orientation, ReferenceFrequency, SpectralIndex='[]', RotationMeasure
-        "src0, GAUSSIAN, 08:57:15.98032, -34.48.24.6918, 0.712299476324136, 0.0, 0.0, 0.0, 2.552896197845, 1.705990053656, 115.020339486069, 144000000.0, [-0.7], 0.0\n",
-        "src1, GAUSSIAN, 08:13:25.89225, -36.55.20.2820, 0.505840198469155, 0.0, 0.0, 0.0, 3.381746257518, 2.676308575899, 37.727775657383, 144000000.0, [-0.7], 0.0\n",
-        "src2, GAUSSIAN, 09:01:05.53983, -29.01.44.4275, 0.504116042438541, 0.0, 0.0, 0.0, 14.702668401253, 1.319160550191, 28.175171030289, 144000000.0, [-0.7], 0.0\n",
-        "src3, GAUSSIAN, 08:35:04.86764, -26.10.36.2285, 0.258824974285288, 0.0, 0.0, 0.0, 12.861909842975, 2.246703463196, 74.249587537251, 144000000.0, [-0.7], 0.0\n",
-        "src4, GAUSSIAN, 08:23:13.59411, -36.46.30.2354, 0.243444339899304, 0.0, 0.0, 0.0, 8.852988859902, 6.332216807758, 96.100299655753, 144000000.0, [-0.7], 0.0\n",
+        "src0, GAUSSIAN, 08:57:15.98032, -34.48.24.6918, 0.712299476324136,"
+        " 0.0, 0.0, 0.0, 2.552896197845, 1.705990053656, 115.020339486069, "
+        "144000000.0, [-0.7], 0.0\n",
+        "src1, GAUSSIAN, 08:13:25.89225, -36.55.20.2820, 0.505840198469155,"
+        " 0.0, 0.0, 0.0, 3.381746257518, 2.676308575899, 37.727775657383, 1"
+        "44000000.0, [-0.7], 0.0\n",
+        "src2, GAUSSIAN, 09:01:05.53983, -29.01.44.4275, 0.504116042438541,"
+        " 0.0, 0.0, 0.0, 14.702668401253, 1.319160550191, 28.175171030289, "
+        "144000000.0, [-0.7], 0.0\n",
+        "src3, GAUSSIAN, 08:35:04.86764, -26.10.36.2285, 0.258824974285288,"
+        " 0.0, 0.0, 0.0, 12.861909842975, 2.246703463196, 74.249587537251, "
+        "144000000.0, [-0.7], 0.0\n",
+        "src4, GAUSSIAN, 08:23:13.59411, -36.46.30.2354, 0.243444339899304,"
+        " 0.0, 0.0, 0.0, 8.852988859902, 6.332216807758, 96.100299655753, 1"
+        "44000000.0, [-0.7], 0.0\n",
     ]
 
 
@@ -150,7 +177,8 @@ def test_read_data(sample_csv_path, sample_csv_text):
 
 
 @pytest.mark.parametrize(
-    "point_size_threshold, min_flux_point, min_flux_extended, expected_removed, expected_indices_remain",
+    "point_size_threshold, min_flux_point, min_flux_extended, "
+    "expected_removed, expected_indices_remain",
     [
         # Treat all sources as extended, test that none are filtered for small
         # `min_flux_point`
@@ -229,7 +257,10 @@ def test_write(
 
 
 def test_convert_skymodel(capsys, tmp_path, sample_csv_path):
-    """Test full convertion from input file to output file."""
+    """
+    Test full conversion from input file to output file on small sample dataset,
+    check that the expected messages are printed.
+    """
 
     output_path = tmp_path / "converted_sample.skymodel"
 
@@ -254,8 +285,13 @@ def test_convert_skymodel(capsys, tmp_path, sample_csv_path):
     )
 
 
-def test_convert_oskar_skymodel(tmp_path):
+def test_convert_example_oskar_skymodel(tmp_path):
+    """
+    Test full conversion from input file to output file on example dataset and
+    compare output to expected output file.
+    """
     output_path = tmp_path / "makesourcedb_result.csv"
+
     convert_skymodel(
         TEST_DATA_PATH / "oskar_sky_model_example.csv",
         output_path,
@@ -274,17 +310,20 @@ def test_convert_oskar_skymodel(tmp_path):
     "command, expected_args",
     [
         (
-            "convert_oskar_skymodel input_test output_test",
-            ["input_test", "output_test", 1e-8, 0.005, 0.02],
+            "convert_oskar_skymodel input/test.skymodel output/test.skymodel",
+            ["input/test.skymodel", "output/test.skymodel", 1e-8, 0.005, 0.02],
         ),
         (
-            "convert_oskar_skymodel input_test output_test --point-size-threshold 12"
-            " --min-flux-point 1 --min-flux-extended 2",
-            ["input_test", "output_test", 12, 1, 2],
+            "convert_oskar_skymodel input/test.skymodel output/test.skymodel "
+            "--point-size-threshold 12 --min-flux-point 1 "
+            "--min-flux-extended 2",
+            ["input/test.skymodel", "output/test.skymodel", 12, 1, 2],
         ),
     ],
 )
 def test_cli(command, expected_args):
+    """Test command-line interface."""
+
     sys.argv[:] = shlex.split(command)
 
     with mock.patch(
