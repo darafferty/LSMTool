@@ -1,4 +1,3 @@
-import itertools as itt
 import shlex
 import sys
 from pathlib import Path
@@ -176,9 +175,22 @@ def test_read_data(sample_csv_path, sample_csv_text):
     assert list(data) == sample_csv_text["data"].splitlines()
 
 
+@pytest.fixture
+def counters(request):
+    """
+    Fixture for providing counters dict for testing `filter_sources` function.
+    """
+    if request.param:
+        return {
+            "n_input_sources": 0,
+            "n_extended_removed": 0,
+            "n_point_removed": 0,
+        }
+
+
 @pytest.mark.parametrize(
     "point_size_threshold, min_flux_point, min_flux_extended, "
-    "expected_removed, expected_indices_remain",
+    "expected_counts, expected_indices_remain",
     [
         # Treat all sources as extended, test that none are filtered for small
         # `min_flux_point`
@@ -194,12 +206,18 @@ def test_read_data(sample_csv_path, sample_csv_text):
         (10, 1, 0, [0, 3], [2, 3]),
     ],
 )
+@pytest.mark.parametrize(
+    "counters",
+    [False, True],
+    indirect=True,
+)
 def test_filter_sources(
     sample_csv_text,
     point_size_threshold,
     min_flux_point,
     min_flux_extended,
-    expected_removed,
+    counters,
+    expected_counts,
     expected_indices_remain,
 ):
     """Test source filtering"""
@@ -214,14 +232,20 @@ def test_filter_sources(
                 point_size_threshold,
                 min_flux_point,
                 min_flux_extended,
-                (input_source_counter := itt.count()),
-                (removed_sources_counters := [0, 0]),
+                source_counts=counters,
             )
         )
 
-    assert next(input_source_counter) == len(data_lines)
-    assert removed_sources_counters == expected_removed
-    assert sum(removed_sources_counters) == len(data_lines) - len(result)
+    # Check counter have correct values
+    if counters:
+        expected_counts = {
+            "n_input_sources": 5,
+            "n_extended_removed": expected_counts[0],
+            "n_point_removed": expected_counts[1],
+        }
+        assert counters == expected_counts
+
+    # Check that the expected lines remain in the output
     assert result == [data_lines[i] for i in expected_indices_remain]
 
 
