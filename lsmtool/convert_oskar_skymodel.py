@@ -32,6 +32,19 @@ def deg_to_dms(dec_deg):
 
 
 def is_header_line(line):
+    """
+    Check if a input line is a comment header.
+
+    Parameters
+    ----------
+    line : str
+        Input line from the skymodel file.
+
+    Returns
+    -------
+    bool
+        True if the line is a header line, False otherwise.
+    """
     return line.startswith("#") or line.isspace()
 
 
@@ -98,7 +111,8 @@ def filter_sources(
         Iterable of lines from the input skymodel file, where each line
         corresponds to a source.
     point_size_threshold : float
-        Threshold for categorising a source as a point source or extended source.
+        Threshold for categorising a source as a point source or extended
+        source.
     min_flux_point : float
         Minimum flux density in Jy for a point source to be included.
     min_flux_extended : float
@@ -164,19 +178,20 @@ def format_row(source_name, data):
         Source name.
     data : list of float
         Row of data values. The order of the data values should be:
-        ra, dec, I, Q, U, V, ref_freq, spix, rm, major, minor, orient
+        RA, Dec, I, Q, U, V, ReferenceFrequency, SpectralIndex, RotationMeasure,
+        MajorAxis, MinorAxis, Orientation
 
     Returns
     -------
     str
         Formatted data line for output makesourcedb skymodel.
     """
-    (ra, dec, I, Q, U, V, ref_freq, spix, rm, major, minor, orient) = data
+    (ra, dec, i, q, u, v, ref_freq, spix, rm, major, minor, orient) = data
     ra_str = deg_to_hms(ra)
     dec_str = deg_to_dms(dec)
     return (
         f"{source_name}, GAUSSIAN, {ra_str}, {dec_str}, "
-        f"{I}, {Q}, {U}, {V}, "
+        f"{i}, {q}, {u}, {v}, "
         f"{major}, {minor}, {orient}, "
         f"{ref_freq}, [{spix}], {rm}\n"
     )
@@ -189,11 +204,32 @@ def convert_skymodel(
     min_flux_point=0.005,
     min_flux_extended=0.02,
 ):
+    """
+    Convert an OSKAR skymodel to makesourcedb format, optionally filtering
+    sources based on flux density and size.
+
+    Parameters
+    ----------
+    input_file : str or Path
+        Path to input OSKAR skymodel file.
+    output_file : str or Path
+        Path to output skymodel file.
+    point_size_threshold : float, optional
+        Threshold in arcseconds for the size of the major axis of gaussian
+        sources below which they are considered point sources, and above which
+        they are considered extended sources. Default: 1e-8 arcseconds
+        (effectively treating all sources as extended sources).
+    min_flux_point : float, optional
+        Minimum flux density in Jy for point sources. Default: 0.005
+    min_flux_extended : float, optional
+        Minimum flux density in Jy for extended sources. Default: 0.02
+    """
+
     # Read
     header_lines, data_lines = read_data(input_file)
 
     # Filter
-    filtered_rows = filter_sources(
+    filtered_data = filter_sources(
         data_lines,
         point_size_threshold,
         min_flux_point,
@@ -203,7 +239,7 @@ def convert_skymodel(
     )
 
     # Write
-    output_source_count = write(output_file, header_lines, filtered_rows)
+    output_source_count = write(output_file, header_lines, filtered_data)
 
     # Summary
     input_source_count = next(input_source_counter)
@@ -224,8 +260,8 @@ def write(output_file, header_lines, filtered_rows):
         # updated later with the actual number of sources after writing the
         # data lines. The placeholder should be long enough to accomodate the
         # actual number of sources.
-        N_SOURCES_LINE = "# Number of sources: {: <7}\n"
-        file.write(N_SOURCES_LINE.format(0))
+        n_sources_line = "# Number of sources: {: <7}\n"
+        file.write(n_sources_line.format(0))
 
         # Write header lines
         for line in header_lines:
@@ -237,13 +273,13 @@ def write(output_file, header_lines, filtered_rows):
         file.write(HEADER_FORMAT_LINE)
 
         # Write filtered + converted rows
-        for i, row in enumerate(filtered_rows):
-            file.write(format_row(f"src{i}", row))
+        for i, data in enumerate(filtered_data):
+            file.write(format_row(f"src{i}", data))
 
         # Move back to the start of the file to update the source count
         n_sources = i + 1
         file.seek(0)
-        file.write(N_SOURCES_LINE.format(n_sources))
+        file.write(n_sources_line.format(n_sources))
 
     return n_sources
 
@@ -251,7 +287,7 @@ def write(output_file, header_lines, filtered_rows):
 def main():
     parser = argparse.ArgumentParser(
         description="Convert OSKAR skymodel to makesourcedb format. Optionally "
-        "filter sources based on flux and size."
+        "filter sources based on flux density and size."
     )
     parser.add_argument("input_file", help="Path to input OSKAR skymodel file")
     parser.add_argument(
@@ -261,26 +297,27 @@ def main():
         "--point-size-threshold",
         type=float,
         default=1e-8,
-        help="Threshold in arcseconds for the size of the major axis of gaussian sources "
-        "below which they are considered point sources, and above which they are considered "
-        "extended sources. Default: 1e-8 arcseconds (effectively treating all "
-        "sources as extended sources)",
+        help="Threshold in arcseconds for the size of the major axis of "
+        "gaussian sources below which they are considered point sources, and "
+        "above which they are considered extended sources. "
+        "Default: 1e-8 arcseconds (effectively treating all sources as extended"
+        " sources)",
     )
     parser.add_argument(
         "--min-flux-point",
         type=float,
         default=0.005,
-        help="Minimum total intensity (I) flux in Jy for point sources. Point "
-        "sources with flux below this threshold will be removed. Default: "
-        "0.005 Jy",
+        help="Minimum total intensity (Stokes I) flux density in Jy for point "
+        "sources. Point sources with flux density below this threshold will be "
+        "removed. Default: 0.005 Jy",
     )
     parser.add_argument(
         "--min-flux-extended",
         type=float,
-        default=(min_flux_extended := 0.02),
-        help="Minimum total intensity (I) flux in Jy for extended sources. "
-        "Extended sources with flux below this threshold will be removed. "
-        f"Default: {min_flux_extended} Jy",
+        default=0.02,
+        help="Minimum total intensity (Stokes I) flux density in Jy for "
+        "extended sources. Extended sources with flux density below this "
+        "threshold will be removed. Default: 0.02 Jy",
     )
 
     args = parser.parse_args()
