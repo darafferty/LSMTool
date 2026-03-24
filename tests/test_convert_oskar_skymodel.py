@@ -186,6 +186,7 @@ def counters(request):
             "n_extended_removed": 0,
             "n_point_removed": 0,
         }
+    return None
 
 
 @pytest.mark.parametrize(
