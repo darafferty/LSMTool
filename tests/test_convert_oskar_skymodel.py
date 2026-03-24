@@ -246,11 +246,28 @@ def test_convert_skymodel(capsys, tmp_path, sample_csv_path):
     ))
 
 
-# # def test_convert_oskar_skymodel():
-#     main(
-#         TEST_DATA_PATH / "oskar_sky_model_example.csv",
-#         TEST_DATA_PATH / "makesourcedb_sky_model_example.csv",
-#         size_threshold=1e-8,
-#         min_flux_point=0.005,
-#         min_flux_extended=0.02,
-#     )
+
+@pytest.mark.parametrize(
+    "command, expected_args",
+    [
+        (
+            "convert_oskar_skymodel input_test output_test",
+            ["input_test", "output_test", 1e-8, 0.005, 0.02],
+        ),
+        (
+            "convert_oskar_skymodel input_test output_test --point-size-threshold 12"
+            " --min-flux-point 1 --min-flux-extended 2",
+            ["input_test", "output_test", 12, 1, 2],
+        ),
+    ],
+)
+def test_cli(command, expected_args):
+    sys.argv[:] = shlex.split(command)
+
+    with mock.patch(
+        "lsmtool.convert_oskar_skymodel.convert_skymodel"
+    ) as mock_convert_skymodel:
+        main()
+
+    # Assert
+    mock_convert_skymodel.assert_called_once_with(*expected_args)
