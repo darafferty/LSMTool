@@ -254,7 +254,26 @@ def convert_skymodel(
     )
 
 
-def write(output_file, header_lines, filtered_rows):
+def write(output_file, header_lines, filtered_data):
+    """
+    Write the output makesourcedb skymodle file from header lines and data
+    values.
+
+    Parameters
+    ----------
+    output_file : str or Path
+        Path to the output makesourcedb skymodel file.
+    header_lines : iterable of str
+        Header lines from the input OSKAR skymodel file.
+    filtered_data : iterable of list of float
+        Filtered and converted data values for each source.
+
+    Returns
+    -------
+    int
+        Number of sources written to the output file.
+    """
+
     with open(output_file, "w") as file:
         # Write placeholder for "# Number of sources:" line, which will be
         # updated later with the actual number of sources after writing the
@@ -285,6 +304,12 @@ def write(output_file, header_lines, filtered_rows):
 
 
 def main():
+    """
+    Main function for converting OSKAR skymodel to makesourcedb format.
+
+    Parse the command line arguments, and call the convert_skymodel function
+    to do the conversion.
+    """
     parser = argparse.ArgumentParser(
         description="Convert OSKAR skymodel to makesourcedb format. Optionally "
         "filter sources based on flux density and size."
