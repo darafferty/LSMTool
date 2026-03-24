@@ -2,8 +2,8 @@
 
 import argparse
 import itertools as itt
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 # ---------------------------------------------------------------------------- #
 
@@ -131,10 +131,10 @@ def filter_sources(
         Formatted data line for output makesourcedb skymodel.
     """
     if source_counts is None:
-        # If no source_counts provided from outside, create a local source_counts dict.
-        # These counts will not be available outside the function, but we
-        # define it nonetheless to avoid having unnecessary conditionals in the
-        # loop below.
+        # If no source_counts provided from outside, create a local
+        # source_counts dict. These counts will not be available outside the
+        # function, but we define it nonetheless to avoid having unnecessary
+        # conditionals in the loop below.
         source_counts = defaultdict(int)
 
     for line in data_lines:
