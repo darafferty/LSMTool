@@ -1,5 +1,6 @@
 import shlex
 import sys
+import time
 from pathlib import Path
 from unittest import mock
 
@@ -18,8 +19,103 @@ from lsmtool.convert_oskar_skymodel import (
     write,
 )
 
+# ---------------------------------------------------------------------------- #
+# Module constants
+
 TEST_RESOURCES_PATH = TEST_DATA_PATH
 TEST_DATA_PATH = TEST_RESOURCES_PATH / Path(__file__).stem
+
+
+# ---------------------------------------------------------------------------- #
+# Helper functions
+
+
+def generate_oskar_csv_lines(rng, n_sources):
+    """
+    Generate CSV lines for a random sample of sources.
+
+    Parameters
+    ----------
+    rng : numpy.random.Generator
+        Random number generator.
+    n_sources : int
+        Number of sources to generate.
+
+    Yields
+    -------
+    str
+        CSV line representing a source.
+    """
+
+    yield (
+        "# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), "
+        "Ref. freq. (Hz), Spectral index, Rotation measure (rad/m^2), "
+        "FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg)"
+    )
+    for row in generate_oskar_skymodel_data(rng, n_sources):
+        yield ", ".join(map(str, row))
+
+
+def generate_oskar_skymodel_data(rng, n_sources):
+    """
+    Generate a random sample of sources for testing skymodel conversion.
+
+    Data are generated from uniform distributions within reasonable ranges for
+    each parameter, with the exception of Q, U, V, and rotation measure which
+    are set to zero for all sources, and reference frequency which is set to
+    144 MHz for all sources.
+
+    Parameters
+    ----------
+    rng : numpy.random.Generator
+        Random number generator.
+    n_sources : int
+        Number of sources to generate.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of shape (n_sources, 12) containing the generated source data in
+        the order: RA, Dec, I, Q, U, V, Ref. freq., Spectral index, Rotation
+        measure, FWHM major, FWHM minor, Position angle.
+    """
+
+    ra = rng.uniform(0, 360, n_sources)
+    dec = rng.uniform(-90, 90, n_sources)
+    i = rng.uniform(0.001, 20, n_sources)
+    q = u = v = np.zeros(n_sources)
+    ref_freq = np.full(n_sources, 1.44e8)
+    spectral_index = rng.uniform(-1, 0, n_sources)
+    rotation_measure = np.zeros(n_sources)
+    fwhm_major = rng.uniform(0.01, 20, n_sources)
+    fwhm_minor = rng.uniform(0, 1, n_sources) * fwhm_major
+    position_angle = rng.uniform(0, 180, n_sources)
+    return np.column_stack(
+        (
+            ra,
+            dec,
+            i,
+            q,
+            u,
+            v,
+            ref_freq,
+            spectral_index,
+            rotation_measure,
+            fwhm_major,
+            fwhm_minor,
+            position_angle,
+        )
+    )
+
+
+# ---------------------------------------------------------------------------- #
+# Fixtures
+
+
+@pytest.fixture(scope="session")
+def rng():
+    """Random number generator fixture for reproducibility."""
+    return np.random.default_rng(seed=881726)
 
 
 @pytest.fixture()
@@ -168,13 +264,6 @@ def expected_makesourcedb_lines():
     ]
 
 
-def test_read_data(sample_csv_path, sample_csv_text):
-    """Test reading header and data lines from input file."""
-    header_lines, data = read_data(sample_csv_path)
-    assert list(header_lines) == [sample_csv_text["header"]]
-    assert list(data) == sample_csv_text["data"].splitlines()
-
-
 @pytest.fixture
 def counters(request):
     """
@@ -187,6 +276,17 @@ def counters(request):
             "n_point_removed": 0,
         }
     return None
+
+
+# ---------------------------------------------------------------------------- #
+# Tests
+
+
+def test_read_data(sample_csv_path, sample_csv_text):
+    """Test reading header and data lines from input file."""
+    header_lines, data = read_data(sample_csv_path)
+    assert list(header_lines) == [sample_csv_text["header"]]
+    assert list(data) == sample_csv_text["data"].splitlines()
 
 
 @pytest.mark.parametrize(
@@ -358,3 +458,39 @@ def test_cli(command, expected_args):
 
     # Assert
     mock_convert_skymodel.assert_called_once_with(*expected_args)
+
+
+def test_performance(tmp_path, rng, n_sources=10_000, time_limit=1):
+    """
+    Test that we can process a certain number sources within a time limit in
+    seconds.
+    """
+    output_file = tmp_path / "performance_test.skymodel"
+    # mock the `_read_data` function to return generated data. In this way we
+    # avoid first having to write a large file to disk before running the test
+    with mock.patch(
+        "lsmtool.convert_oskar_skymodel._read_data"
+    ) as mock_read_data:
+        mock_read_data.return_value = generate_oskar_csv_lines(rng, n_sources)
+
+        # Time execution
+        t0 = time.time()
+        convert_skymodel(
+            None,
+            output_file,
+            point_size_threshold=1,
+            min_flux_point=1,
+            min_flux_extended=1,
+        )
+        t1 = time.time()
+
+    # Check that runtime is below time limit
+    time_taken = t1 - t0
+    print(
+        f"Performance test took {time_taken:.2f} seconds for {n_sources} "
+        "sources."
+    )
+    assert time_taken < time_limit, (
+        "Performance test took too long: "
+        f"{time_taken:.2f} seconds > {time_limit} seconds"
+    )
