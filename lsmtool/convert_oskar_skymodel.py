@@ -1,9 +1,11 @@
-#!/usr/bin/env python
 
 import argparse
 import itertools as itt
+import logging
 from collections import defaultdict
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------- #
 
@@ -252,13 +254,16 @@ def convert_skymodel(
     output_source_count = write(output_file, header_lines, filtered_data)
 
     # Summary
-    print(
-        "Conversion complete.",
-        f"Total input sources: {source_counts['n_input_sources']}",
-        f"Total output sources: {output_source_count}",
-        f"Point sources removed: {source_counts['n_point_removed']}",
-        f"Extended sources removed: {source_counts['n_extended_removed']}",
-        sep="\n",
+    logger.info(
+        "Conversion complete.\n"
+        "Total input sources: %i\n"
+        "Total output sources: %i\n"
+        "Point sources removed: %i\n"
+        "Extended sources removed: %i",
+        source_counts["n_input_sources"],
+        output_source_count,
+        source_counts["n_point_removed"],
+        source_counts["n_extended_removed"],
     )
 
 

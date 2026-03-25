@@ -381,7 +381,7 @@ def test_write(
     assert lines[4:] == expected_makesourcedb_lines
 
 
-def test_convert_skymodel(capsys, tmp_path, sample_csv_path):
+def test_convert_skymodel(caplog, tmp_path, sample_csv_path):
     """
     Test full conversion from input file to output file on small sample dataset,
     check that the expected messages are printed.
@@ -397,9 +397,8 @@ def test_convert_skymodel(capsys, tmp_path, sample_csv_path):
         min_flux_extended=0.02,
     )
 
-    captured = capsys.readouterr()
     assert all(
-        msg in captured.out
+        msg in caplog.text
         for msg in (
             "Conversion complete.",
             "Total input sources: 5",
