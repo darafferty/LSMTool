@@ -96,14 +96,14 @@ def filter_sources(
     source_counts=None,
 ):
     """
-    Generator that filter sources from the skymodel and convert the remaining
-    sources to the makesourcedb format.
+    Generator that filter sources from the skymodel and converts the remaining
+    source data to lists of floats.
 
     This function loops through the input data lines (sources) from the input
     skymodel, catagorises the source as either a point source or an extended
     source based on its size, and filters the lines that have sources that are
-    below the flux threshold for their category. Finally, it reformats the
-    lines to makesourcedb format and yields them one at a time.
+    below the flux threshold for their category. Finally, it converts the
+    data to a list of floats and yields them one at a time.
 
     Parameters
     ----------
@@ -127,8 +127,8 @@ def filter_sources(
 
     Yields
     -------
-    str
-        Formatted data line for output makesourcedb skymodel.
+    list of float
+        Row data for filtered output skymodel.
     """
     if source_counts is None:
         # If no source_counts provided from outside, create a local
