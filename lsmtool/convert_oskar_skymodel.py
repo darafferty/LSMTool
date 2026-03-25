@@ -1,9 +1,23 @@
+"""
+Script for converting an OSKAR CSV skymodel files to makesourcedb format, with
+optional filtering of sources based on flux density and size.
+
+Context: OSKAR is a tool for simulating radio interferometer observations, and
+supports skymodels in a specific CSV format. Since the LOFAR toolchain expects
+skymodels in the makesourcedb format, this script can be used to do the
+conversion.
+
+Info about the makesourcedb format can be found on
+`<the LOFAR wiki>
+https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb`_
+"""
 
 import argparse
 import itertools as itt
 import logging
 from collections import defaultdict
 from pathlib import Path
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +32,25 @@ HEADER_FORMAT_LINE = (
 
 # ---------------------------------------------------------------------------- #
 def deg_to_hms(ra_deg):
+    """
+    Convert right ascension from degrees to hours, minutes, and seconds and
+    format as a string.
+
+    This is typically much faster than using astropy for this conversion via:
+    >>> Angle(124.332, unit="deg").to_string(
+    ...     unit="hour", sep=":", pad=True, precision=5
+    ... )
+
+    Parameters
+    ----------
+    ra_deg : float
+        Right ascension in degrees.
+
+    Returns
+    -------
+    str
+        Right ascension in the format "HH:MM:SS.SSSSS".
+    """
     ra_hours = ra_deg / 15.0
     h = int(ra_hours)
     m = int((ra_hours - h) * 60)
@@ -26,6 +59,25 @@ def deg_to_hms(ra_deg):
 
 
 def deg_to_dms(dec_deg):
+    """
+    Convert declination from decimal degrees to degrees, minutes, and seconds
+    and format as a string.
+
+    This is typically much faster than using astropy for this conversion via:
+    >>> Angle(124.332, unit="deg").to_string(
+    ...     unit="hour", sep=":", pad=True, precision=5
+    ... )
+
+    Parameters
+    ----------
+    dec_deg : float
+        Declination in degrees.
+
+    Returns
+    -------
+    str
+        Declination in the format "DD:MM:SS.SSSS".
+    """
     sign = "-" if dec_deg < 0 else ""
     dec_deg = abs(dec_deg)
     d = int(dec_deg)
