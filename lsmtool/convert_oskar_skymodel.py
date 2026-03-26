@@ -53,6 +53,7 @@ OUTPUT_ORDER = [0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8]
 
 # ---------------------------------------------------------------------------- #
 
+
 def is_header_line(line):
     """
     Check if a input line is a comment header.
@@ -298,19 +299,26 @@ def convert_oskar_skymodel(
     )
 
 
-def write(output_file, header, data):
+def write(
+    output_file,
+    header,
+    data,
+    **kws,
+):
     """
-    Write the output makesourcedb skymodle file from header lines and data
-    values.
+    Write the output makesourcedb skymodel file from header lines and data
+    array.
 
     Parameters
     ----------
     output_file : str or Path
         Path to the output makesourcedb skymodel file.
     header : list of str
-        Header lines from the input OSKAR skymodel file.
+        Header lines to be written to the top of the output skymodel file.
     data : np.ndarray
         Source data to write to file.
+    **kws
+        Additional keyword arguments to pass to `numpy.savetxt`.
     """
 
     with Path(output_file).open("w") as file:
@@ -318,12 +326,8 @@ def write(output_file, header, data):
         file.write("\n".join(header))
 
         # write data
-        np.savetxt(
-            file,
-            data,
-            fmt=tuple(OUTPUT_FORMAT.values()),
-            delimiter=", ",
-        )
+        kws = {"fmt": tuple(OUTPUT_FORMAT.values()), "delimiter": ", ", **kws}
+        np.savetxt(file, data, **kws)
 
 
 def main():
