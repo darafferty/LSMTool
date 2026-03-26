@@ -240,7 +240,27 @@ def filter_sources(
     )
 
 
-def convert(data, header, point_sources):
+def convert(header, data, point_sources):
+    """
+    Convert data and header to makesourcedb format.
+
+    Parameters
+    ----------
+    header : list[str]
+        Header lines from the input skymodel.
+    data : np.ndarray
+        Input data from OSKAR skymodel.
+    point_sources : np.ndarray
+        Boolean array indicating which sources are point sources.
+
+    Yields
+    -------
+    str
+        Header lines for output skymodel.
+    np.ndarray
+        Data values for output skymodel.
+    """
+
     # Get name and type columns
     n_output_sources = len(data)
     names = np.char.add(
@@ -341,20 +361,15 @@ def write(output_file, header, data):
     ----------
     output_file : str or Path
         Path to the output makesourcedb skymodel file.
-    header_lines : iterable of str
+    header : list of str
         Header lines from the input OSKAR skymodel file.
-    filtered_data : iterable of list of float
-        Filtered and converted data values for each source.
-
-    Returns
-    -------
-    int
-        Number of sources written to the output file.
+    data : np.ndarray
+        Source data to write to file.
     """
 
     with Path(output_file).open("w") as file:
         # write header
-        file.write(header)
+        file.write("\n".join(header))
 
         # write data
         np.savetxt(
