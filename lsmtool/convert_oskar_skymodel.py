@@ -19,6 +19,7 @@ from pathlib import Path
 
 import numpy as np
 
+from lsmtool.utils import format_coordinates
 
 # ---------------------------------------------------------------------------- #
 # Init logger
@@ -34,8 +35,8 @@ SOURCE_NAME_PREFIX = "src"
 OUTPUT_FORMAT = {
     "Name": "%s",
     "Type": "%s",
-    "RA": "%.5f",
-    "Dec": "%.4f",
+    "RA": "%s",
+    "Dec": "%s",
     "I": "%.9f",
     "Q": "%.1f",
     "U": "%.1f",
@@ -140,7 +141,7 @@ def get_header(filename):
     with Path(filename).open() as f:
         for line in f:
             if is_header_line(line):
-                yield line
+                yield line.strip()
             else:
                 break
 
@@ -248,22 +249,24 @@ def convert(data, header, point_sources):
     # Get header info
     column_descriptions = header[1].strip("# \n").split(", ")
     column_descriptions = np.take(column_descriptions, OUTPUT_ORDER)
+
     # header
-    yield "\n".join(
-        (
-            f"# Number of sources: {n_output_sources}",
-            f"# {', '.join(column_descriptions)}",
-            HEADER_FORMAT_LINE,
-        )
-    )
-    # Get the output column order
-    column_names = np.take(list(data.dtype.fields.keys()), OUTPUT_ORDER)
-    # data
     yield (
-        np.array(
-            [names, source_type, *(data[_] for _ in column_names)], object
-        ).T,
+        f"# Number of sources: {n_output_sources}",
+        f"# {', '.join(column_descriptions)}",
+        HEADER_FORMAT_LINE,
     )
+
+    # Get the output column order
+    column_names = np.take(list(data.dtype.fields.keys()), OUTPUT_ORDER[2:])
+    ra, dec = format_coordinates(
+        data["RA_deg"], data["Dec_deg"], precision=5, pad=True
+    )
+
+    # data
+    yield np.array(
+        [names, source_type, ra, dec, *(data[_] for _ in column_names)], object
+    ).T
 
 
 def convert_oskar_skymodel(
