@@ -226,9 +226,11 @@ def filter_sources(
         is_point_source.astype(int)
     ]
     keep = data["I_Jy"] > threshold
+    remove = ~keep
 
-    n_point_removed = (is_point_source & ~keep).sum()
-    n_extended_removed = len(data) - keep.sum() - n_point_removed
+    removed_point_sources = is_point_source[remove]
+    n_point_removed = removed_point_sources.sum()
+    n_extended_removed = (~removed_point_sources).sum()
 
     return (
         data[keep],
