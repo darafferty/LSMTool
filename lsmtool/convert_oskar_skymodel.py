@@ -3,31 +3,51 @@ Script for converting an OSKAR CSV skymodel files to makesourcedb format, with
 optional filtering of sources based on flux density and size.
 
 Context: OSKAR is a tool for simulating radio interferometer observations, and
-supports skymodels in a specific CSV format. Since the LOFAR toolchain expects
-skymodels in the makesourcedb format, this script can be used to do the
-conversion.
+supports skymodels in CSV format. Since the LOFAR toolchain expects skymodels
+in the makesourcedb format, this script can be used to do the conversion.
 
+The OSKAR skymodel format is documented in `<the OSKAR user manual>
+https://ska-telescope.gitlab.io/sim/oskar/python/sky.html`_.
 Info about the makesourcedb format can be found on
 `<the LOFAR wiki>
 https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb`_
 """
 
 import argparse
-import itertools as itt
 import logging
-from collections import defaultdict
 from pathlib import Path
 
+import numpy as np
 
-logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------- #
+# Init logger
+logger = logging.getLogger(__name__)
 
+# Module constants
 HEADER_FORMAT_LINE = (
     "FORMAT = Name, Type, Ra, Dec, I, Q, U, V, "
     "MajorAxis, MinorAxis, Orientation, "
     "ReferenceFrequency, SpectralIndex='[]', RotationMeasure\n\n"
 )
+SOURCE_NAME_PREFIX = "src"
+OUTPUT_FORMAT = {
+    "Name": "%s",
+    "Type": "%s",
+    "RA": "%.5f",
+    "Dec": "%.4f",
+    "I": "%.9f",
+    "Q": "%.1f",
+    "U": "%.1f",
+    "V": "%.1f",
+    "MajorAxis": "%f",
+    "MinorAxis": "%f",
+    "Orientation": "%f",
+    "ReferenceFrequency": "%.1f",
+    "SpectralIndex": "[%.1f]",
+    "RotationMeasure": "%.1f",
+}
+OUTPUT_ORDER = [0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8]
 
 
 # ---------------------------------------------------------------------------- #
@@ -103,18 +123,32 @@ def is_header_line(line):
     return line.startswith("#") or line.isspace()
 
 
-def _read_data(input_file):
-    """Generator that yields lines from the input file, stripping whitespace."""
-    with Path(input_file).open("r") as file:
-        for line in file:
-            yield line.strip()
+def get_header(filename):
+    """
+    Get the header lines from a skymodel file.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the skymodel file.
+
+    Yields
+    ------
+    str
+        Header line from the skymodel file.
+    """
+    with Path(filename).open() as f:
+        for line in f:
+            if is_header_line(line):
+                yield line
+            else:
+                break
 
 
 def read_data(input_file):
     """
-    Reads lines from the input file and group them into header lines and data
-    lines. This function returns a pair of iterables for the header and data
-    respectively.
+    Load the OSKAR skymodel using numpy's genfromtxt function, which can handle
+    large files efficiently. Also get the header lines as a list.
 
     Parameters
     ----------
@@ -123,47 +157,42 @@ def read_data(input_file):
 
     Returns
     -------
-    header_lines: list
+    header: list
         A list of header lines from the input file.
-    data_lines: generator
-        Generator that yields data lines from the input file, one at a time.
-        Each line is stripped of leading and trailing whitespace.
+    data: np.ndarray
+        A numpy structured array containing the data from the input file. The
+        columns of the array can be accessed by their descriptions, which are
+        taken from the second line of the input file.
     """
-    # Create line generator
-    lines = _read_data(input_file)
-    # Split header lines
-    grouped = itt.groupby(lines, key=is_header_line)
-    # Consume the iterable of header lines so the file pointer moves to the
-    # start of the data lines
-    _, header_lines = next(grouped)  # First group is header lines
-    header_lines = list(header_lines)
-    # Get the data lines as a generator
-    _, data_lines = next(grouped)  # Second group is data lines
-    return header_lines, data_lines
+    data = np.genfromtxt(
+        input_file,
+        delimiter=",",
+        names=True,
+        encoding="utf-8",
+        skip_header=1,
+    )
+    header = list(get_header(input_file))
+    return header, data
 
 
 def filter_sources(
-    data_lines,
+    data,
     point_size_threshold,
     min_flux_point,
     min_flux_extended,
-    source_counts=None,
 ):
     """
-    Generator that filter sources from the skymodel and converts the remaining
-    source data to lists of floats.
+    Filter sources from the skymodel based on flux density and size.
 
-    This function loops through the input data lines (sources) from the input
-    skymodel, catagorises the source as either a point source or an extended
-    source based on its size, and filters the lines that have sources that are
-    below the flux threshold for their category. Finally, it converts the
-    data to a list of floats and yields them one at a time.
+    Sources are catagorised as either point sources or extended sources based
+    on their size. Data rows containing sources that are below the flux
+    threshold for their category are removed.
 
     Parameters
     ----------
-    data_lines : iterable
-        Iterable of lines from the input skymodel file, where each line
-        corresponds to a source.
+    data : np.ndarray
+        Numpy structured array containing the data from the input skymodel
+        file.
     point_size_threshold : float
         Threshold for categorising a source as a point source or extended
         source.
@@ -171,93 +200,73 @@ def filter_sources(
         Minimum flux density in Jy for a point source to be included.
     min_flux_extended : float
         Minimum flux density in Jy for an extended source to be included.
-    source_counts : dict, optional
-        Dict of integers for keeping track of the number of removed sources. If
-        provided, it should have the following form:
-        {"n_input_sources": 0, "n_point_removed": 0, "n_extended_removed": 0}.
-        These counts will be updated in place as the sources are processed. You
-        do not need to specify this if you don't care about knowing the number
-        of sources that are read or removed.
-
-    Yields
-    -------
-    list of float
-        Row data for filtered output skymodel.
-    """
-    if source_counts is None:
-        # If no source_counts provided from outside, create a local
-        # source_counts dict. These counts will not be available outside the
-        # function, but we define it nonetheless to avoid having unnecessary
-        # conditionals in the loop below.
-        source_counts = defaultdict(int)
-
-    for line in data_lines:
-        source_counts["n_input_sources"] += 1
-        # ra, dec, I, Q, U, V, ref_freq, spix, rm, major, minor, orient
-        cells = line.split(",")
-        total_intensity = float(cells[2])
-        major = float(cells[9])
-
-        # Apply filtering based on flux and size
-        is_point_source = abs(major) < point_size_threshold
-        threshold = min_flux_point if is_point_source else min_flux_extended
-        if total_intensity < threshold:
-            category = "point" if is_point_source else "extended"
-            source_counts[f"n_{category}_removed"] += 1
-            continue
-
-        # reformat
-        yield convert_row(line)
-
-
-def convert_row(line):
-    """
-    Convert a row of data from the input OSKAR skymodel to makesourcedb format.
-
-    Parameters
-    ----------
-    line : str
-        Comma separated line of data values. Data values should be convertable
-        to float.
 
     Returns
     -------
-    list of float
-        Row of data values
+    filtered_data : np.ndarray
+        Data for the output skymodel containing only sources above the given
+        flux threshold.
+    is_point_source : np.ndarray
+        Boolean array indicating which sources in the filtered data are point
+        sources and which are extended sources.
+    n_point_removed : int
+        Number of point sources that were removed based on the flux threshold.
+    n_extended_removed : int
+        Number of extended sources that were removed based on the flux
+        threshold.
     """
-    return [float(x.strip()) for x in line.split(",")]
 
+    # Determine flux cutoff based on source size
+    major = data["FWHM_major_arcsec"]
+    is_point_source = major <= point_size_threshold
 
-def format_row(source_name, data):
-    """
-    Format data values for the output makesourcedb skymodel.
+    # Filter sources based on flux density and size criteria
+    threshold = np.array([min_flux_extended, min_flux_point])[
+        is_point_source.astype(int)
+    ]
+    keep = data["I_Jy"] > threshold
 
-    Parameters
-    ----------
-    source_name : str
-        Source name.
-    data : list of float
-        Row of data values. The order of the data values should be:
-        RA, Dec, I, Q, U, V, ReferenceFrequency, SpectralIndex, RotationMeasure,
-        MajorAxis, MinorAxis, Orientation
+    n_point_removed = (is_point_source & ~keep).sum()
+    n_extended_removed = len(data) - keep.sum() - n_point_removed
 
-    Returns
-    -------
-    str
-        Formatted data line for output makesourcedb skymodel.
-    """
-    (ra, dec, i, q, u, v, ref_freq, spix, rm, major, minor, orient) = data
-    ra_str = deg_to_hms(ra)
-    dec_str = deg_to_dms(dec)
     return (
-        f"{source_name}, GAUSSIAN, {ra_str}, {dec_str}, "
-        f"{i}, {q}, {u}, {v}, "
-        f"{major}, {minor}, {orient}, "
-        f"{ref_freq}, [{spix}], {rm}\n"
+        data[keep],
+        is_point_source[keep],
+        n_point_removed,
+        n_extended_removed,
     )
 
 
-def convert_skymodel(
+def convert(data, header, point_sources):
+    # Get name and type columns
+    n_output_sources = len(data)
+    names = np.char.add(
+        SOURCE_NAME_PREFIX, np.arange(n_output_sources).astype(str)
+    )
+    source_type = np.array(["GAUSSIAN", "POINT"])[point_sources.astype(int)]
+
+    # Get header info
+    column_descriptions = header[1].strip("# \n").split(", ")
+    column_descriptions = np.take(column_descriptions, OUTPUT_ORDER)
+    # header
+    yield "\n".join(
+        (
+            f"# Number of sources: {n_output_sources}",
+            f"# {', '.join(column_descriptions)}",
+            HEADER_FORMAT_LINE,
+        )
+    )
+    # Get the output column order
+    column_names = np.take(list(data.dtype.fields.keys()), OUTPUT_ORDER)
+    # data
+    yield (
+        np.array(
+            [names, source_type, *(data[_] for _ in column_names)], object
+        ).T,
+    )
+
+
+def convert_oskar_skymodel(
     input_file,
     output_file,
     point_size_threshold=1e-8,
@@ -286,24 +295,23 @@ def convert_skymodel(
     """
 
     # Read
-    header_lines, data_lines = read_data(input_file)
+    header, data = read_data(input_file)
+    n_input_sources = len(data)
 
     # Filter
-    source_counts = {
-        "n_input_sources": 0,
-        "n_extended_removed": 0,
-        "n_point_removed": 0,
-    }
-    filtered_data = filter_sources(
-        data_lines,
+    data, is_point_source, n_point_removed, n_extended_removed = filter_sources(
+        data,
         point_size_threshold,
         min_flux_point,
         min_flux_extended,
-        source_counts,
     )
+    n_output_sources = len(data)
+
+    # Convert
+    header, data = convert(header, data, is_point_source)
 
     # Write
-    output_source_count = write(output_file, header_lines, filtered_data)
+    write(output_file, header, data)
 
     # Summary
     logger.info(
@@ -312,14 +320,14 @@ def convert_skymodel(
         "Total output sources: %i\n"
         "Point sources removed: %i\n"
         "Extended sources removed: %i",
-        source_counts["n_input_sources"],
-        output_source_count,
-        source_counts["n_point_removed"],
-        source_counts["n_extended_removed"],
+        n_input_sources,
+        n_output_sources,
+        n_point_removed,
+        n_extended_removed,
     )
 
 
-def write(output_file, header_lines, filtered_data):
+def write(output_file, header, data):
     """
     Write the output makesourcedb skymodle file from header lines and data
     values.
@@ -339,33 +347,17 @@ def write(output_file, header_lines, filtered_data):
         Number of sources written to the output file.
     """
 
-    with open(output_file, "w") as file:
-        # Write placeholder for "# Number of sources:" line, which will be
-        # updated later with the actual number of sources after writing the
-        # data lines. The placeholder should be long enough to accomodate the
-        # actual number of sources.
-        n_sources_line = "# Number of sources: {: <7}\n"
-        file.write(n_sources_line.format(0))
+    with Path(output_file).open("w") as file:
+        # write header
+        file.write(header)
 
-        # Write header lines
-        for line in header_lines:
-            if line.startswith("# Number of sources:"):
-                continue  # Skip original number of sources line
-            file.write(f"{line}\n")
-
-        # Write required FORMAT line
-        file.write(HEADER_FORMAT_LINE)
-
-        # Write filtered + converted rows
-        for i, data in enumerate(filtered_data):
-            file.write(format_row(f"src{i}", data))
-
-        # Move back to the start of the file to update the source count
-        n_sources = i + 1
-        file.seek(0)
-        file.write(n_sources_line.format(n_sources))
-
-    return n_sources
+        # write data
+        np.savetxt(
+            file,
+            data,
+            fmt=tuple(OUTPUT_FORMAT.values()),
+            delimiter=", ",
+        )
 
 
 def main():
@@ -412,7 +404,7 @@ def main():
 
     args = parser.parse_args()
 
-    convert_skymodel(
+    convert_oskar_skymodel(
         args.input_file,
         args.output_file,
         args.point_size_threshold,
