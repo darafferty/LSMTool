@@ -52,60 +52,6 @@ OUTPUT_ORDER = [0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8]
 
 
 # ---------------------------------------------------------------------------- #
-def deg_to_hms(ra_deg):
-    """
-    Convert right ascension from degrees to hours, minutes, and seconds and
-    format as a string.
-
-    This is typically much faster than using astropy for this conversion via:
-    >>> Angle(124.332, unit="deg").to_string(
-    ...     unit="hour", sep=":", pad=True, precision=5
-    ... )
-
-    Parameters
-    ----------
-    ra_deg : float
-        Right ascension in degrees.
-
-    Returns
-    -------
-    str
-        Right ascension in the format "HH:MM:SS.SSSSS".
-    """
-    ra_hours = ra_deg / 15.0
-    h = int(ra_hours)
-    m = int((ra_hours - h) * 60)
-    s = (ra_hours - h - m / 60) * 3600
-    return f"{h:02d}:{m:02d}:{s:08.5f}"
-
-
-def deg_to_dms(dec_deg):
-    """
-    Convert declination from decimal degrees to degrees, minutes, and seconds
-    and format as a string.
-
-    This is typically much faster than using astropy for this conversion via:
-    >>> Angle(124.332, unit="deg").to_string(
-    ...     unit="hour", sep=":", pad=True, precision=5
-    ... )
-
-    Parameters
-    ----------
-    dec_deg : float
-        Declination in degrees.
-
-    Returns
-    -------
-    str
-        Declination in the format "DD:MM:SS.SSSS".
-    """
-    sign = "-" if dec_deg < 0 else ""
-    dec_deg = abs(dec_deg)
-    d = int(dec_deg)
-    m = int((dec_deg - d) * 60)
-    s = (dec_deg - d - m / 60) * 3600
-    return f"{sign}{d:02d}.{m:02d}.{s:07.4f}"
-
 
 def is_header_line(line):
     """
