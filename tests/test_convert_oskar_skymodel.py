@@ -148,10 +148,10 @@ def sample_csv_text():
             "0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, "
             "1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00, "
             "12.861909842975,   2.246703463196,  74.249587537251\n"
-            "125.806642113852, -36.775065379826, 2.43444339899304e-01, "
+            "125.806642113852, -36.775065379826, 5.243444339899304, "
             "0.00000000000000e+00, 0.00000000000000e+00, 0.00000000000000e+00, "
             "1.44000000000000e+08,-7.00000000000000e-01, 0.00000000000000e+00, "
-            "8.852988859902,   6.332216807758,  96.100299655753"
+            "0.0, 0.0, 0.0"
         ),
     }
 
@@ -177,7 +177,7 @@ def expected_sample_data():
                 (
                     134.316584681925,
                     -34.806858824585,
-                    7.12299476324136e-01,
+                    0.712299476324136,
                     0.0,
                     0.0,
                     0.0,
@@ -191,7 +191,7 @@ def expected_sample_data():
                 (
                     123.357884389652,
                     -36.922300562525,
-                    5.05840198469155e-01,
+                    0.505840198469155,
                     0.0,
                     0.0,
                     0.0,
@@ -205,7 +205,7 @@ def expected_sample_data():
                 (
                     135.273082634371,
                     -29.029007646589,
-                    5.04116042438541e-01,
+                    0.504116042438541,
                     0.0,
                     0.0,
                     0.0,
@@ -219,7 +219,7 @@ def expected_sample_data():
                 (
                     128.770281841595,
                     -26.176730148372,
-                    2.58824974285288e-01,
+                    0.258824974285288,
                     0.0,
                     0.0,
                     0.0,
@@ -233,31 +233,22 @@ def expected_sample_data():
                 (
                     125.806642113852,
                     -36.775065379826,
-                    2.43444339899304e-01,
+                    5.243444339899304,
                     0.0,
                     0.0,
                     0.0,
                     1.44e8,
                     -0.7,
                     0.0,
-                    8.852988859902,
-                    6.332216807758,
-                    96.100299655753,
+                    0,
+                    0,
+                    0,
                 ),
             ],
         )
         .view(OSKAR_NUMPY_DTYPE)
         .squeeze()
     )
-
-
-@pytest.fixture()
-def expected_point_sources():
-    """
-    Expected point source boolean array for the sample CSV data, using a point
-    size threshold of 1e-8 arcsec.
-    """
-    return np.array([False, False, False, False, False])
 
 
 @pytest.fixture()
@@ -330,16 +321,16 @@ def expected_converted_data():
             ],
             [
                 "src4",
-                "GAUSSIAN",
+                "POINT",
                 "08:23:13.59411",
                 "-36.46.30.23537",
-                0.243444339899304,
+                5.243444339899304,
                 0.0,
                 0.0,
                 0.0,
-                8.852988859902,
-                6.332216807758,
-                96.100299655753,
+                0.0,
+                0.0,
+                0.0,
                 144000000.0,
                 -0.7,
                 0.0,
@@ -383,8 +374,8 @@ def expected_output_lines():
         "src3, GAUSSIAN, 08:35:04.86764, -26.10.36.22853, 0.258824974,"
         " 0.0, 0.0, 0.0, 12.861910, 2.246703, 74.249588, "
         "144000000.0, [-0.7], 0.0\n",
-        "src4, GAUSSIAN, 08:23:13.59411, -36.46.30.23537, 0.243444340,"
-        " 0.0, 0.0, 0.0, 8.852989, 6.332217, 96.100300, "
+        "src4, POINT, 08:23:13.59411, -36.46.30.23537, 5.243444340,"
+        " 0.0, 0.0, 0.0, 0.000000, 0.000000, 0.000000, "
         "144000000.0, [-0.7], 0.0\n",
     ]
 
@@ -406,16 +397,20 @@ def test_read_data(sample_csv_path, sample_csv_text, expected_sample_data):
     [
         # Treat all sources as extended, test that none are filtered for small
         # `min_flux_point`
-        (1e-8, 0.005, 0.02, [0, 0], [0, 1, 2, 3, 4]),
-        # Test that all extended source are filtered for large `min_flux_point`
-        (1e-8, 0, 1, [0, 5], []),
-        # Test that all point sources are filtered for large
-        # `min_flux_extended`
-        (15, 1, 0, [5, 0], []),
-        # Test that extended sources can be filtered
-        (10, 0, 1, [0, 2], [0, 1, 4]),
-        # Test that point sources can be filtered
-        (10, 1, 0, [3, 0], [2, 3]),
+        (0, 0.005, 0.02, [0, 0], [0, 1, 2, 3, 4]),
+        # Treat all sources as extended, test that all source are filtered for
+        # large `min_flux_extended`
+        (-1, 0, 10, [0, 5], []),
+        # Treat all sources as point sources, test that none are filtered for
+        # small `min_flux_point`
+        (15, 0, 0, [0, 0], [0, 1, 2, 3, 4]),
+        # Treat all sources as point sources, test that all are filtered for
+        # large `min_flux_point`
+        (15, 10, 0, [5, 0], []),
+        # Test that only sources above size threshold are filtered
+        (10, 0, 10, [0, 2], [0, 1, 4]),
+        # Test that only sources below size threshold are filtered
+        (10, 10, 0, [3, 0], [2, 3]),
     ],
 )
 def test_filter_sources(
@@ -442,6 +437,9 @@ def test_filter_sources(
     assert np.all(result == expected_sample_data[expected_indices_remain])
 
 
+@pytest.mark.parametrize(
+    "expected_point_sources", [np.array([False, False, False, False, True])]
+)
 def test_convert(
     sample_csv_text,
     expected_sample_data,
@@ -481,11 +479,12 @@ def test_write(
     assert output_path.exists()
 
     lines = output_path.read_text().splitlines(keepends=True)
+    header_lines, data_lines = lines[:3], lines[4:]
     assert np.all(
-        np.char.strip(lines[:3]) == np.char.strip(expected_output_header)
+        np.char.strip(header_lines) == np.char.strip(expected_output_header)
     )
 
-    assert lines[4:] == expected_output_lines
+    assert list(data_lines) == expected_output_lines
 
 
 def test_convert_oskar_skymodel(caplog, tmp_path, sample_csv_path):
@@ -535,7 +534,14 @@ def test_convert_example_oskar_skymodel(tmp_path):
     result_text = output_path.read_text()
     expected_path = TEST_DATA_PATH / "makesourcedb_sky_model_example.csv"
     expected_text = expected_path.read_text()
-    assert result_text[:1000] == expected_text[:1000]
+    for i, (result_line, expected_line) in enumerate(
+        zip(result_text.splitlines(), expected_text.splitlines()), 1
+    ):
+        assert result_line.strip() == expected_line.strip(), (
+            f"Line {i} does not match:\n"
+            f"Result:   '{result_line}'\n"
+            f"Expected: '{expected_line}'"
+        )
 
 
 @pytest.mark.parametrize(
