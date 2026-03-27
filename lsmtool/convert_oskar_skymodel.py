@@ -258,8 +258,7 @@ def convert_oskar_skymodel(
     point_size_threshold : float, optional
         Threshold in arcseconds for the size of the major axis of gaussian
         sources below which they are considered point sources, and above which
-        they are considered extended sources. Default: 1e-8 arcseconds
-        (effectively treating all sources as extended sources).
+        they are considered extended sources. Default: 1e-8 arcseconds.
     min_flux_point : float, optional
         Minimum flux density in Jy for point sources. Default: 0.005
     min_flux_extended : float, optional
@@ -352,8 +351,7 @@ def main():
         help="Threshold in arcseconds for the size of the major axis of "
         "gaussian sources below which they are considered point sources, and "
         "above which they are considered extended sources. "
-        "Default: 1e-8 arcseconds (effectively treating all sources as extended"
-        " sources)",
+        "Default: 1e-8 arcseconds",
     )
     parser.add_argument(
         "--min-flux-point",
