@@ -535,7 +535,8 @@ def test_convert_example_oskar_skymodel(tmp_path):
     expected_path = TEST_DATA_PATH / "makesourcedb_sky_model_example.csv"
     expected_text = expected_path.read_text()
     for i, (result_line, expected_line) in enumerate(
-        zip(result_text.splitlines(), expected_text.splitlines()), 1
+        zip(result_text.splitlines(), expected_text.splitlines(), strict=True),
+        1,
     ):
         assert result_line.strip() == expected_line.strip(), (
             f"Line {i} does not match:\n"
