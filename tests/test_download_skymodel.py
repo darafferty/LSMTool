@@ -32,7 +32,7 @@ from lsmtool.download_skymodel import (
 def mock_sky_model_class(mocker):
     """Fixture that provides a mock SkyModel constructor."""
 
-    def _mock_sky_model(*args, **kwargs):
+    def _mock_sky_model(*_args, **_kwargs):
         mock_model = mocker.MagicMock()
         mock_model.__len__.return_value = 1
         mock_model.write.side_effect = lambda out_path: Path(
