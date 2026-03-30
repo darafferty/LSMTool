@@ -10,12 +10,12 @@ from conftest import TEST_DATA_PATH
 
 from lsmtool.convert_oskar_skymodel import (
     OSKAR_HEADER_LINE_FORMAT,
-    convert,
+    convert_to_makesourcedb,
     convert_oskar_skymodel,
     filter_sources,
     main,
-    read_data,
-    write,
+    read_oskar_skymodel,
+    write_to_makesourcedb,
 )
 
 # ---------------------------------------------------------------------------- #
@@ -384,9 +384,11 @@ def expected_output_lines():
 # Tests
 
 
-def test_read_data(sample_csv_path, sample_csv_text, expected_sample_data):
+def test_read_oskar_skymodel(
+    sample_csv_path, sample_csv_text, expected_sample_data
+):
     """Test reading header and data lines from input file."""
-    header, data = read_data(sample_csv_path)
+    header, data = read_oskar_skymodel(sample_csv_path)
     assert header == sample_csv_text["header"]
     assert np.all(data == expected_sample_data)
 
@@ -440,14 +442,14 @@ def test_filter_sources(
 @pytest.mark.parametrize(
     "expected_point_sources", [np.array([False, False, False, False, True])]
 )
-def test_convert(
+def test_convert_to_makesourcedb(
     sample_csv_text,
     expected_sample_data,
     expected_point_sources,
     expected_converted_data,
 ):
     """Test full conversion of data from input format to output format."""
-    header, data = convert(
+    header, data = convert_to_makesourcedb(
         sample_csv_text["header"],
         expected_sample_data,
         expected_point_sources,
@@ -466,7 +468,7 @@ def test_convert(
     assert np.all(data == expected_converted_data)
 
 
-def test_write(
+def test_write_to_makesourcedb(
     tmp_path,
     expected_converted_data,
     expected_output_header,
@@ -474,7 +476,9 @@ def test_write(
 ):
     """Test writing of output file."""
     output_path = tmp_path / "test_write_sample.skymodel"
-    write(output_path, expected_output_header, expected_converted_data)
+    write_to_makesourcedb(
+        output_path, expected_output_header, expected_converted_data
+    )
 
     assert output_path.exists()
 
@@ -580,12 +584,12 @@ def test_performance(tmp_path, rng, n_sources=10_000, time_limit=1):
     seconds.
     """
     output_file = tmp_path / "performance_test.skymodel"
-    # mock the `read_data` function to return generated data. In this way we
+    # mock the `read_oskar_skymodel` function to return generated data. In this way we
     # avoid first having to write a large file to disk before running the test
     with mock.patch(
-        "lsmtool.convert_oskar_skymodel.read_data"
-    ) as mock_read_data:
-        mock_read_data.return_value = random_skymodel(n_sources, rng)
+        "lsmtool.convert_oskar_skymodel.read_oskar_skymodel"
+    ) as mock_read_oskar_skymodel:
+        mock_read_oskar_skymodel.return_value = random_skymodel(n_sources, rng)
 
         # Time execution
         t0 = time.time()
