@@ -2,11 +2,12 @@
 Unit tests for the download_skymodel module.
 """
 
-import time
-from unittest.mock import patch
+import shutil
+from pathlib import Path
 
 import mocpy
 import pytest
+import requests
 from conftest import copy_test_data
 
 import lsmtool
@@ -27,23 +28,60 @@ from lsmtool.download_skymodel import (
 )
 
 
-@pytest.mark.parametrize("ra", (10.75,))
-@pytest.mark.parametrize("dec", (5.34,))
-@pytest.mark.parametrize("radius", (0.5,))
-@pytest.mark.parametrize("overwrite", (False,))
-@pytest.mark.parametrize("survey", ("TGSS",))
-@pytest.mark.parametrize("targetname", ("Patch",))
+@pytest.fixture
+def mock_sky_model_class(mocker):
+    """Fixture that provides a mock SkyModel constructor."""
+
+    def _mock_sky_model(*args, **kwargs):
+        mock_model = mocker.MagicMock()
+        mock_model.__len__.return_value = 1
+        mock_model.write.side_effect = lambda out_path: Path(
+            out_path
+        ).write_text(
+            "FORMAT = Name, Type, Ra, Dec, I\n",
+            encoding="utf-8",
+        )
+        return mock_model
+
+    return _mock_sky_model
+
+
+@pytest.fixture
+def patch_download_skymodel_from_survey(mocker):
+    """Patch download_skymodel_from_survey using data from a source file."""
+
+    def _patch(source_skymodel_path):
+        mocker.patch(
+            "lsmtool.download_skymodel.download_skymodel_from_survey",
+            side_effect=lambda _, __, out_skymodel_path: shutil.copyfile(
+                source_skymodel_path,
+                out_skymodel_path,
+            ),
+        )
+
+    return _patch
+
+
 def test_download_skymodel(
-    ra, dec, tmp_path, radius, overwrite, survey, targetname
+    tmp_path,
+    patch_download_skymodel_from_survey,
+    mocker,
 ):
     """Test downloading a sky model."""
 
     # Arrange
     copy_test_data("expected.tgss.sky.model", tmp_path)
+    ra = 10.75
+    dec = 5.34
+    radius = 0.5
+    overwrite = False
+    survey = "TGSS"
+    targetname = "Patch"
     downloaded_skymodel_path = tmp_path / "sky.model"
     expected_skymodel_path = tmp_path / "expected.tgss.sky.model"
     skymodel_expected = lsmtool.load(str(expected_skymodel_path))
     cone_params = {"ra": ra, "dec": dec, "radius": radius}
+    patch_download_skymodel_from_survey(expected_skymodel_path)
 
     # Act
     download_skymodel(
@@ -69,68 +107,54 @@ def test_download_skymodel(
 
     # Test that attempting to download again without overwrite logs two
     # warnings: first for existing sky model, second for skipping download
-    with patch(
+    mock_warning = mocker.patch(
         "lsmtool.download_skymodel.logging.Logger.warning"
-    ) as mock_warning:
-        download_skymodel(
-            cone_params,
-            str(downloaded_skymodel_path),
-            overwrite,
-            survey,
-            targetname,
-        )
-        assert mock_warning.call_count == 2
+    )
+    download_skymodel(
+        cone_params,
+        str(downloaded_skymodel_path),
+        overwrite,
+        survey,
+        targetname,
+    )
+    assert mock_warning.call_count == 2
 
     # Test that attempting to download again with overwrite logs a warning
     # First that sky model exists, second that it is being overwritten
-    with patch(
+    mock_warning = mocker.patch(
         "lsmtool.download_skymodel.logging.Logger.warning"
-    ) as mock_warning:
-        download_skymodel(
-            cone_params,
-            str(downloaded_skymodel_path),
-            overwrite,
-            survey,
-            targetname,
-        )
-        assert mock_warning.call_count == 2
-
-    # Test that attempting to download again with overwrite logs a warning
-    # First that sky model exists, second that it is being overwritten
-    with patch(
-        "lsmtool.download_skymodel.logging.Logger.warning"
-    ) as mock_warning:
-        download_skymodel(
-            cone_params,
-            str(downloaded_skymodel_path),
-            True,
-            survey,
-            targetname,
-        )
-        assert mock_warning.call_count == 2
+    )
+    download_skymodel(
+        cone_params,
+        str(downloaded_skymodel_path),
+        True,
+        survey,
+        targetname,
+    )
+    assert mock_warning.call_count == 2
     assert downloaded_skymodel_path.is_file()
 
 
-def test_sky_model_exists_existing_skymodel(existing_skymodel_filepath):
+def test_sky_model_exists_existing_skymodel(existing_skymodel_filepath, mocker):
     """Test the _sky_model_exists function when the sky model exists."""
 
-    with patch(
+    mock_warning = mocker.patch(
         "lsmtool.download_skymodel.logging.Logger.warning"
-    ) as mock_warning:
-        result = _sky_model_exists(str(existing_skymodel_filepath))
-        mock_warning.assert_called_once()
+    )
+    result = _sky_model_exists(str(existing_skymodel_filepath))
+    mock_warning.assert_called_once()
     assert result is True
 
 
-def test_sky_model_exists_no_existing_skymodel(tmp_path):
+def test_sky_model_exists_no_existing_skymodel(tmp_path, mocker):
     """Test the _sky_model_exists function when sky model does not exist."""
 
     skymodel_path = tmp_path / "non_existent_sky.model"
-    with patch(
+    mock_warning = mocker.patch(
         "lsmtool.download_skymodel.logging.Logger.warning"
-    ) as mock_warning:
-        result = _sky_model_exists(str(skymodel_path))
-        mock_warning.assert_not_called()
+    )
+    result = _sky_model_exists(str(skymodel_path))
+    mock_warning.assert_not_called()
     assert result is False
 
 
@@ -213,21 +237,39 @@ def test_download_not_required(overwrite, skymodel_exists, expected):
     assert _download_not_required(skymodel_exists, overwrite) is expected
 
 
-def test_check_lotss_coverage_within_coverage(tmp_path):
+def test_check_lotss_coverage_within_coverage(tmp_path, mocker):
     """Test the check_lotss_coverage function within LoTSS coverage."""
     ra_within = 190.0  # RA within LoTSS coverage
     dec_within = 44.0  # DEC within LoTSS coverage
     radius = 1.0  # radius in degrees
     cone_params = {"ra": ra_within, "dec": dec_within, "radius": radius}
+    moc = mocker.Mock()
+    moc.contains_lonlat.side_effect = [
+        [True],
+        [True],
+        [True],
+        [True],
+        [True],
+    ]
+    mocker.patch("lsmtool.download_skymodel._get_lotss_moc", return_value=moc)
     check_lotss_coverage(cone_params, tmp_path)
 
 
-def test_check_lotss_coverage_outside_coverage(tmp_path):
+def test_check_lotss_coverage_outside_coverage(tmp_path, mocker):
     """Test the check_lotss_coverage function outside LoTSS coverage."""
     ra_outside = 30.0  # RA outside LoTSS coverage
     dec_outside = -30.0  # DEC outside LoTSS coverage
     radius = 1.0  # radius in degrees
     cone_params = {"ra": ra_outside, "dec": dec_outside, "radius": radius}
+    moc = mocker.Mock()
+    moc.contains_lonlat.side_effect = [
+        [False],
+        [False],
+        [False],
+        [False],
+        [False],
+    ]
+    mocker.patch("lsmtool.download_skymodel._get_lotss_moc", return_value=moc)
     with pytest.raises(ValueError):
         assert check_lotss_coverage(cone_params, tmp_path) is False
 
@@ -269,7 +311,7 @@ def test_get_panstarrs_request_raises_error_large_radius():
         _, _ = get_panstarrs_request(cone_params)
 
 
-def test_download_skymodel_panstarrs(tmp_path):
+def test_download_skymodel_panstarrs(tmp_path, mocker):
     """Test downloading a sky model from Pan-STARRS."""
 
     # Arrange
@@ -283,11 +325,82 @@ def test_download_skymodel_panstarrs(tmp_path):
     }
     skymodel_path = tmp_path / "panstarrs_sky.model"
 
+    mock_response = mocker.Mock()
+    mock_response.ok = True
+    mock_response.text = "objID,ramean,decmean\n1,10.75,5.34\n"
+    mocker.patch(
+        "lsmtool.download_skymodel.requests.get", return_value=mock_response
+    )
+
     # Act
     download_skymodel_panstarrs(url, search_params, str(skymodel_path))
 
     # Assert
     assert skymodel_path.is_file()
+    lines = skymodel_path.read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "FORMAT = Name, Ra, Dec, Type, I, ReferenceFrequency=1e6"
+    assert lines[1] == "1,10.75,5.34,POINT,0.0,"
+
+
+def test_download_skymodel_panstarrs_not_ok(tmp_path, mocker):
+    """Test Pan-STARRS download returns False when response is not OK."""
+
+    # Arrange
+    url = "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
+    search_params = {
+        "ra": 10.75,
+        "dec": 5.34,
+        "radius": 0.01,
+        "nDetections.min": "5",
+        "columns": ["objID", "ramean", "decmean"],
+    }
+    skymodel_path = tmp_path / "panstarrs_sky.model"
+
+    mock_response = mocker.Mock()
+    mock_response.ok = False
+    mock_response.text = ""
+    mocker.patch(
+        "lsmtool.download_skymodel.requests.get", return_value=mock_response
+    )
+
+    # Act
+    success = download_skymodel_panstarrs(
+        url, search_params, str(skymodel_path)
+    )
+
+    # Assert
+    assert success is False
+    assert not skymodel_path.exists()
+
+
+def test_download_skymodel_panstarrs_request_exception(tmp_path, mocker):
+    """Test Pan-STARRS download handles request exceptions."""
+
+    # Arrange
+    url = "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
+    search_params = {
+        "ra": 10.75,
+        "dec": 5.34,
+        "radius": 0.01,
+        "nDetections.min": "5",
+        "columns": ["objID", "ramean", "decmean"],
+    }
+    skymodel_path = tmp_path / "panstarrs_sky.model"
+
+    mocker.patch(
+        "lsmtool.download_skymodel.requests.get",
+        side_effect=requests.exceptions.RequestException("network error"),
+    )
+    mock_warning = mocker.patch("lsmtool.download_skymodel.logger.warning")
+
+    # Act
+    success = download_skymodel_panstarrs(
+        url, search_params, str(skymodel_path)
+    )
+
+    # Assert
+    assert success is False
+    mock_warning.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -298,33 +411,46 @@ def test_download_skymodel_panstarrs(tmp_path):
         ("GSM", 123.23, 23.34, 0.6),
     ],
 )
-def test_download_skymodel_catalog(survey, ra, dec, radius, tmp_path):
+def test_download_skymodel_catalog(
+    survey, ra, dec, radius, tmp_path, mock_sky_model_class, mocker
+):
     """Test downloading a sky model from a survey."""
 
     # Arrange
     skymodel_path = tmp_path / f"catalog_sky_{survey}.model"
     cone_params = {"ra": ra, "dec": dec, "radius": radius}
 
-    # Act: external services can occasionally return empty results or fail
-    # transiently; retry a few times before declaring upstream unavailable.
-    success = False
-    retries = 3
-    for attempt in range(retries):
-        success = download_skymodel_catalog(
-            cone_params, survey, str(skymodel_path)
-        )
-        if success:
-            break
-        if attempt < retries - 1:
-            time.sleep(attempt + 1)
+    # Act
+    mocker.patch("lsmtool.download_skymodel.SkyModel", new=mock_sky_model_class)
+    success = download_skymodel_catalog(cone_params, survey, str(skymodel_path))
 
     # Assert
-    if not success:
-        pytest.skip(
-            f"{survey} catalog unavailable or returned no sources after "
-            f"{retries} attempts"
-        )
+    assert success is True
     assert skymodel_path.is_file()
+
+
+def test_download_skymodel_catalog_empty_result(tmp_path, mocker):
+    """Test catalog download returns False when no sources are found."""
+
+    # Arrange
+    skymodel_path = tmp_path / "catalog_sky_empty.model"
+    cone_params = {"ra": 12.34, "dec": 56.78, "radius": 0.6}
+    mock_model = mocker.MagicMock()
+    mock_model.__len__.return_value = 0
+    mock_model.write.side_effect = lambda out_path: Path(out_path).write_text(
+        "FORMAT = Name, Type, Ra, Dec, I\n",
+        encoding="utf-8",
+    )
+    mocker.patch(
+        "lsmtool.download_skymodel.SkyModel",
+        return_value=mock_model,
+    )
+
+    # Act
+    success = download_skymodel_catalog(cone_params, "TGSS", str(skymodel_path))
+
+    # Assert
+    assert success is False
 
 
 @pytest.mark.parametrize(
@@ -454,11 +580,32 @@ def test_download_skymodel_from_survey_all_retries_fail(
     )
 
 
-def test_get_lotss_moc(tmp_path):
+def test_download_skymodel_from_survey_unsupported_survey(tmp_path):
+    """Test unsupported survey value raises ValueError."""
+
+    cone_params = {"ra": 10.75, "dec": 5.34, "radius": 0.5}
+    skymodel_path = tmp_path / "survey_sky_BAD.model"
+
+    with pytest.raises(ValueError):
+        download_skymodel_from_survey(cone_params, "BAD", str(skymodel_path))
+
+
+def test_get_lotss_moc(tmp_path, mocker, mock_moc):
     """Test the _get_lotss_moc function."""
 
     skymodel_path = tmp_path / "lotss_sky.model"
     expected_moc_path = tmp_path / "dr2-moc.moc"
+
+    mock_response = mocker.Mock()
+    mock_response.content = b"fake-moc-content"
+    mock_response.raise_for_status.return_value = None
+    mocker.patch(
+        "lsmtool.download_skymodel.requests.get", return_value=mock_response
+    )
+    mocker.patch(
+        "lsmtool.download_skymodel.mocpy.MOC.from_fits", return_value=mock_moc
+    )
+
     moc = _get_lotss_moc(skymodel_path)
 
     # Assert
@@ -467,25 +614,34 @@ def test_get_lotss_moc(tmp_path):
     assert expected_moc_path.is_file()
 
 
-def test_check_coverage_within_coverage(tmp_path):
-    """Test the _check_coverage function within LoTSS coverage."""
-    ra_within = 190.0  # RA within LoTSS coverage
-    dec_within = 44.0  # DEC within LoTSS coverage
-    radius = 1.0  # radius in degrees
-    cone_params = {"ra": ra_within, "dec": dec_within, "radius": radius}
-    moc = _get_lotss_moc(tmp_path / "lotss_sky.model")
-    _check_coverage(cone_params, moc)
+def test_get_lotss_moc_download_failure(tmp_path, mocker):
+    """Test _get_lotss_moc raises ConnectionError on request failure."""
+
+    skymodel_path = tmp_path / "lotss_sky.model"
+    mocker.patch(
+        "lsmtool.download_skymodel.requests.get",
+        side_effect=requests.exceptions.RequestException("download failed"),
+    )
+
+    with pytest.raises(ConnectionError):
+        _get_lotss_moc(skymodel_path)
 
 
-def test_check_coverage_outside_coverage(tmp_path):
-    """Test the _check_coverage function outside LoTSS coverage."""
-    ra_outside = 30.0  # RA outside LoTSS coverage
-    dec_outside = -30.0  # DEC outside LoTSS coverage
-    radius = 1.0  # radius in degrees
-    cone_params = {"ra": ra_outside, "dec": dec_outside, "radius": radius}
-    moc = _get_lotss_moc(tmp_path / "lotss_sky.model")
-    with pytest.raises(ValueError):
-        _check_coverage(cone_params, moc)
+def test_download_skymodel_raises_if_output_missing(tmp_path, mocker):
+    """Test top-level download raises if output file is not produced."""
+
+    cone_params = {"ra": 10.75, "dec": 5.34, "radius": 0.5}
+    skymodel_path = tmp_path / "missing_sky.model"
+    mocker.patch("lsmtool.download_skymodel.download_skymodel_from_survey")
+
+    with pytest.raises(IOError):
+        download_skymodel(
+            cone_params,
+            str(skymodel_path),
+            overwrite=False,
+            survey="TGSS",
+            targetname="Patch",
+        )
 
 
 @pytest.mark.parametrize(
