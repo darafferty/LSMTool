@@ -422,9 +422,10 @@ def test_filter_sources(
     min_flux_extended,
     expected_counts,
     expected_indices_remain,
+    caplog,
 ):
     """Test source filtering"""
-    result, point_sources, n_point_removed, n_extended_removed = filter_sources(
+    result, point_sources = filter_sources(
         expected_sample_data,
         point_size_threshold,
         min_flux_point,
@@ -432,8 +433,9 @@ def test_filter_sources(
     )
 
     # Check counter have correct values
-    assert n_point_removed == expected_counts[0]
-    assert n_extended_removed == expected_counts[1]
+    caplog_text = caplog.text
+    assert f"Removing {expected_counts[0]} point sources" in caplog_text
+    assert f"Removing {expected_counts[1]} extended sources" in caplog_text
 
     # Check that the expected lines remain in the output
     assert np.all(result == expected_sample_data[expected_indices_remain])
@@ -513,8 +515,6 @@ def test_convert_oskar_skymodel(caplog, tmp_path, sample_csv_path):
             "Conversion complete.",
             "Total input sources: 5",
             "Total output sources: 5",
-            "Point sources removed: 0",
-            "Extended sources removed: 0",
         )
     )
 
