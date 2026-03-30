@@ -179,12 +179,19 @@ def filter_sources(
     n_point_removed = removed_point_sources.sum()
     n_extended_removed = (~removed_point_sources).sum()
 
-    return (
-        data[keep],
-        is_point_source[keep],
+    logger.info(
+        "Removing %i point sources with flux below %.1f Jy\n"
+        "Removing %i extended sources with flux below %.1f Jy\n"
+        "Total sources removed %i/%i",
         n_point_removed,
+        min_flux_point,
         n_extended_removed,
+        min_flux_extended,
+        n_point_removed + n_extended_removed,
+        len(data),
     )
+
+    return (data[keep], is_point_source[keep])
 
 
 def convert_to_makesourcedb(header, data, point_sources):
@@ -270,7 +277,7 @@ def convert_oskar_skymodel(
     n_input_sources = len(data)
 
     # Filter
-    data, is_point_source, n_point_removed, n_extended_removed = filter_sources(
+    data, is_point_source = filter_sources(
         data,
         point_size_threshold,
         min_flux_point,
@@ -288,13 +295,9 @@ def convert_oskar_skymodel(
     logger.info(
         "Conversion complete.\n"
         "Total input sources: %i\n"
-        "Total output sources: %i\n"
-        "Point sources removed: %i\n"
-        "Extended sources removed: %i",
+        "Total output sources: %i\n",
         n_input_sources,
         n_output_sources,
-        n_point_removed,
-        n_extended_removed,
     )
 
 
