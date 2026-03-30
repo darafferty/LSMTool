@@ -26,13 +26,13 @@ from lsmtool.utils import format_coordinates
 logger = logging.getLogger(__name__)
 
 # Module constants
-HEADER_FORMAT_LINE = (
+OSKAR_HEADER_LINE_FORMAT = (
     "FORMAT = Name, Type, Ra, Dec, I, Q, U, V, "
     "MajorAxis, MinorAxis, Orientation, "
     "ReferenceFrequency, SpectralIndex='[]', RotationMeasure\n\n"
 )
 SOURCE_NAME_PREFIX = "src"
-OUTPUT_FORMAT = {
+MAKESOURCEDB_OUTPUT_FORMAT = {
     "Name": "%s",
     "Type": "%s",
     "RA": "%s",
@@ -223,7 +223,7 @@ def convert(header, data, point_sources):
     yield (
         f"# Number of sources: {n_output_sources}",
         f"# {', '.join(column_descriptions)}",
-        HEADER_FORMAT_LINE,
+        OSKAR_HEADER_LINE_FORMAT,
     )
 
     # Get the output column order
@@ -325,7 +325,11 @@ def write(
         file.write("\n".join(header))
 
         # write data
-        kws = {"fmt": tuple(OUTPUT_FORMAT.values()), "delimiter": ", ", **kws}
+        kws = {
+            "fmt": tuple(MAKESOURCEDB_OUTPUT_FORMAT.values()),
+            "delimiter": ", ",
+            **kws,
+        }
         np.savetxt(file, data, **kws)
 
 
