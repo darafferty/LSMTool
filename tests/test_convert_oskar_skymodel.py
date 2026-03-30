@@ -9,7 +9,7 @@ import pytest
 from conftest import TEST_DATA_PATH
 
 from lsmtool.convert_oskar_skymodel import (
-    HEADER_FORMAT_LINE,
+    OSKAR_HEADER_LINE_FORMAT,
     convert,
     convert_oskar_skymodel,
     filter_sources,
@@ -105,7 +105,7 @@ def random_skymodel(n_sources, rng):
             "# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), "
             "Ref. freq. (Hz), Spectral index, Rotation measure (rad/m^2), "
             "FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg)",
-            HEADER_FORMAT_LINE,
+            OSKAR_HEADER_LINE_FORMAT,
         ],
         generate_oskar_skymodel_data(n_sources, rng),
     )
@@ -351,7 +351,7 @@ def expected_output_header():
         "# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), "
         "FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg), "
         "Ref. freq. (Hz), Spectral index, Rotation measure (rad/m^2)",
-        HEADER_FORMAT_LINE,
+        OSKAR_HEADER_LINE_FORMAT,
     )
 
 
@@ -459,7 +459,7 @@ def test_convert(
         "# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), "
         "FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg), "
         "Ref. freq. (Hz), Spectral index, Rotation measure (rad/m^2)",
-        HEADER_FORMAT_LINE,
+        OSKAR_HEADER_LINE_FORMAT,
     )
 
     # Check data lines
