@@ -165,8 +165,7 @@ def filter_sources(
     """
 
     # Determine flux cutoff based on source size
-    major = data["FWHM_major_arcsec"]
-    is_point_source = major <= point_size_threshold
+    is_point_source = data["FWHM_major_arcsec"] <= point_size_threshold
 
     # Filter sources based on flux density and size criteria
     threshold = np.array([min_flux_extended, min_flux_point])[
