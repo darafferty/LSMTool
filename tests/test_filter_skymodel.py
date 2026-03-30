@@ -89,7 +89,8 @@ class TestBDSF:
             / "output-flat-noise-rms.test.fits",
         }
 
-    def test_filter_skymodel(self, image_paths, **kws):
+    @pytest.mark.parametrize("keep_mask", [True, False])
+    def test_filter_skymodel(self, image_paths, keep_mask, **kws):
         """
         Test skymodel filtering, with and without creating extra output files.
         """
@@ -107,11 +108,14 @@ class TestBDSF:
             beam_ms=beam_ms,
             thresh_isl=4.0,
             thresh_pix=5.0,
+            keep_mask=keep_mask,
             **kws,
         )
 
         assert true_sky_path.exists()
         assert apparent_sky_path.exists()
+        if keep_mask:
+            assert next(true_sky_path.parent.glob("*.mask.fits"))
 
         assert check_skymodels_equal(
             apparent_sky_path, TEST_DATA_PATH / "expected.apparent_sky.txt"
@@ -120,9 +124,10 @@ class TestBDSF:
             true_sky_path, TEST_DATA_PATH / "expected.true_sky.txt"
         )
 
-    def test_filter_skymodel_diagnostics(self, image_paths, diagnostic_paths):
+    @pytest.mark.parametrize("keep_mask", [True, False])
+    def test_filter_skymodel_diagnostics(self, image_paths, diagnostic_paths, keep_mask):
         # run the base test
-        self.test_filter_skymodel(image_paths, **diagnostic_paths)
+        self.test_filter_skymodel(image_paths, keep_mask=keep_mask, **diagnostic_paths)
         # check that the additional files were created
         assert diagnostic_paths["output_catalog"].exists()
         assert diagnostic_paths["output_true_rms"].exists()
