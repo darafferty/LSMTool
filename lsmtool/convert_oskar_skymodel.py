@@ -93,7 +93,7 @@ def get_header(filename):
                 break
 
 
-def read_data(input_file):
+def read_oskar_skymodel(input_file):
     """
     Load the OSKAR skymodel using numpy's genfromtxt function, which can handle
     large files efficiently. Also get the header lines as a list.
@@ -187,7 +187,7 @@ def filter_sources(
     )
 
 
-def convert(header, data, point_sources):
+def convert_to_makesourcedb(header, data, point_sources):
     """
     Convert data and header to makesourcedb format.
 
@@ -266,7 +266,7 @@ def convert_oskar_skymodel(
     """
 
     # Read
-    header, data = read_data(input_file)
+    header, data = read_oskar_skymodel(input_file)
     n_input_sources = len(data)
 
     # Filter
@@ -279,10 +279,10 @@ def convert_oskar_skymodel(
     n_output_sources = len(data)
 
     # Convert
-    header, data = convert(header, data, is_point_source)
+    header, data = convert_to_makesourcedb(header, data, is_point_source)
 
     # Write
-    write(output_file, header, data)
+    write_to_makesourcedb(output_file, header, data)
 
     # Summary
     logger.info(
@@ -298,7 +298,7 @@ def convert_oskar_skymodel(
     )
 
 
-def write(
+def write_to_makesourcedb(
     output_file,
     header,
     data,
