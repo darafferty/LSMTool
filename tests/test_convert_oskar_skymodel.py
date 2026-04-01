@@ -9,10 +9,13 @@ import pytest
 from conftest import TEST_DATA_PATH
 
 from lsmtool.convert_oskar_skymodel import (
-    OSKAR_HEADER_LINE_FORMAT,
-    convert_to_makesourcedb,
+    MAKESOURCEDB_FORMAT_STRING,
+    OSKAR_DEFAULT_COLUMN_NAMES,
     convert_oskar_skymodel,
+    convert_to_makesourcedb,
     filter_sources,
+    get_column_names,
+    is_header_line,
     main,
     read_oskar_skymodel,
     write_to_makesourcedb,
@@ -26,18 +29,18 @@ TEST_DATA_PATH = TEST_RESOURCES_PATH / Path(__file__).stem
 
 OSKAR_NUMPY_DTYPE = np.dtype(
     [
-        ("RA_deg", "<f8"),
-        ("Dec_deg", "<f8"),
-        ("I_Jy", "<f8"),
-        ("Q_Jy", "<f8"),
-        ("U_Jy", "<f8"),
-        ("V_Jy", "<f8"),
-        ("Ref_freq_Hz", "<f8"),
-        ("Spectral_index", "<f8"),
-        ("Rotation_measure_radm2", "<f8"),
-        ("FWHM_major_arcsec", "<f8"),
-        ("FWHM_minor_arcsec", "<f8"),
-        ("Position_angle_deg", "<f8"),
+        ("RA", "<f8"),
+        ("Dec", "<f8"),
+        ("I", "<f8"),
+        ("Q", "<f8"),
+        ("U", "<f8"),
+        ("V", "<f8"),
+        ("ReferenceFrequency", "<f8"),
+        ("SpectralIndex", "<f8"),
+        ("RotationMeasure", "<f8"),
+        ("MajorAxis", "<f8"),
+        ("MinorAxis", "<f8"),
+        ("Orientation", "<f8"),
     ]
 )
 
@@ -105,7 +108,7 @@ def random_skymodel(n_sources, rng):
             "# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), "
             "Ref. freq. (Hz), Spectral index, Rotation measure (rad/m^2), "
             "FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg)",
-            OSKAR_HEADER_LINE_FORMAT,
+            MAKESOURCEDB_FORMAT_STRING,
         ],
         generate_oskar_skymodel_data(n_sources, rng),
     )
@@ -351,7 +354,7 @@ def expected_output_header():
         "# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), "
         "FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg), "
         "Ref. freq. (Hz), Spectral index, Rotation measure (rad/m^2)",
-        OSKAR_HEADER_LINE_FORMAT,
+        MAKESOURCEDB_FORMAT_STRING,
     )
 
 
@@ -384,6 +387,83 @@ def expected_output_lines():
 # Tests
 
 
+@pytest.mark.parametrize(
+    "line, expected",
+    [
+        ("# This is a comment line", True),
+        ("   # This is a comment line with leading whitespace", True),
+        ("Format = RA, Dec, I", True),
+        ("   Format= (Ra, Dec, I, Q, U, V)    ", True),
+        ("#\t\t(RA,Dec,I,Q,U)\t\t=\tformat\t", True),
+        ("\n", True),
+        ("   \n", True),
+        (
+            "# (Name, Type, Ra, Dec, I, ReferenceFrequency='100e6', "
+            "SpectralIndex, Q, U, MajorAxis, MinorAxis, Orientation, V)"
+            " = format",
+            True,
+        ),
+        ("RA,Dec,I,Q,U,V", False),
+        ("src0, GAUSSIAN, 08:57:15.98032, -34.48.24.69177,", False),
+    ],
+)
+def test_is_header_line(line, expected):
+    """Test identification of header lines."""
+    assert is_header_line(line) == expected
+
+
+@pytest.mark.parametrize(
+    "header_lines, expected_column_names",
+    [
+        (["Format = RA, Dec, I"], ["RA", "Dec", "I"]),
+        (["# format = RA Dec I"], ["RA", "Dec", "I"]),
+        (["Format= (Ra, Dec, I, Q, U, V)"], ["Ra", "Dec", "I", "Q", "U", "V"]),
+        (["# (RA,Dec,I,Q,U) = format"], ["RA", "Dec", "I", "Q", "U"]),
+        (["                   Format=RA, Dec, I"], ["RA", "Dec", "I"]),
+        (["     #format=RA Dec I"], ["RA", "Dec", "I"]),
+        (
+            ["        Format	=	(Ra, Dec, I, Q, U, V)    "],
+            ["Ra", "Dec", "I", "Q", "U", "V"],
+        ),
+        (["#\t\t(RA,Dec,I,Q,U)\t\t=\tformat\t"], ["RA", "Dec", "I", "Q", "U"]),
+        (
+            [
+                "# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), Ref. "
+                "freq. (Hz), Spectral index, Rotation measure (rad/m^2), FWHM "
+                "major (arcsec), FWHM minor (arcsec), Position angle (deg)"
+            ],
+            OSKAR_DEFAULT_COLUMN_NAMES,
+        ),
+        (
+            [
+                "# Number of sources: 3",
+                "# (Name, Type, Ra, Dec, I, ReferenceFrequency='100e6', "
+                "SpectralIndex, Q, U, MajorAxis, MinorAxis, Orientation, V) = "
+                "format",
+            ],
+            [
+                "Name",
+                "Type",
+                "Ra",
+                "Dec",
+                "I",
+                "ReferenceFrequency",
+                "SpectralIndex",
+                "Q",
+                "U",
+                "MajorAxis",
+                "MinorAxis",
+                "Orientation",
+                "V",
+            ],
+        ),
+    ],
+)
+def test_get_column_names(header_lines, expected_column_names):
+    """Test parsing the column names from the OSKAR file header."""
+    assert get_column_names(header_lines) == expected_column_names
+
+
 def test_read_oskar_skymodel(
     sample_csv_path, sample_csv_text, expected_sample_data
 ):
@@ -391,6 +471,98 @@ def test_read_oskar_skymodel(
     header, data = read_oskar_skymodel(sample_csv_path)
     assert header == sample_csv_text["header"]
     assert np.all(data == expected_sample_data)
+
+
+def test_read_oskar_skymodel_can_read_makesourcedb():
+    """
+    Test that `read_oskar_skymodel` can read a makesourcedb-formatted file.
+    """
+    input_file = TEST_DATA_PATH / "oskar_small_example.csv"
+    _, data = read_oskar_skymodel(input_file)
+    expected = np.ma.masked_array(
+        data=[
+            ("s1", "POINT", 20.0, -30.0, 1, 0, [-0.7], 0, 0, 0, 0, 0, 0),
+            ("s2", "GAUSSIAN", 20.0, -30.5, 3, 0, [-0.7], 2, 2, 600, 50, 45, 0),
+            (
+                "s3",
+                "GAUSSIAN",
+                20.5,
+                -30.5,
+                3,
+                0,
+                [-0.7],
+                0,
+                0,
+                700,
+                10,
+                -10,
+                2,
+            ),
+        ],
+        mask=[
+            (
+                False,
+                False,
+                False,
+                False,
+                False,
+                True,
+                [False],
+                False,
+                False,
+                True,
+                True,
+                True,
+                False,
+            ),
+            (
+                False,
+                False,
+                False,
+                False,
+                False,
+                True,
+                [False],
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+            ),
+            (
+                False,
+                False,
+                False,
+                False,
+                False,
+                True,
+                [False],
+                False,
+                False,
+                False,
+                False,
+                False,
+                False,
+            ),
+        ],
+        dtype=[
+            ("Name", "<U100"),
+            ("Type", "<U100"),
+            ("Ra", "<f8"),
+            ("Dec", "<f8"),
+            ("I", "<i8"),
+            ("ReferenceFrequency", "<i8"),
+            ("SpectralIndex", "<f8", (1,)),
+            ("Q", "<i8"),
+            ("U", "<i8"),
+            ("MajorAxis", "<i8"),
+            ("MinorAxis", "<i8"),
+            ("Orientation", "<i8"),
+            ("V", "<i8"),
+        ],
+    )
+    assert (data == expected).all()
 
 
 @pytest.mark.parametrize(
@@ -458,13 +630,13 @@ def test_convert_to_makesourcedb(
     )
 
     # Check header lines
-    assert header == (
+    assert header == [
         "# Number of sources: 5",
-        "# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), "
-        "FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg), "
-        "Ref. freq. (Hz), Spectral index, Rotation measure (rad/m^2)",
-        OSKAR_HEADER_LINE_FORMAT,
-    )
+        "# RA (deg), Dec (deg), I (Jy), Q (Jy), U (Jy), V (Jy), FWHM major "
+        "(arcsec), FWHM minor (arcsec), Position angle (deg), Ref. freq. (Hz), "
+        "Spectral index, Rotation measure (rad/m^2)",
+        MAKESOURCEDB_FORMAT_STRING,
+    ]
 
     # Check data lines
     assert np.all(data == expected_converted_data)
@@ -519,7 +691,18 @@ def test_convert_oskar_skymodel(caplog, tmp_path, sample_csv_path):
     )
 
 
-def test_convert_example_oskar_skymodel(tmp_path):
+@pytest.mark.parametrize(
+    "input_oskar_file, expected_makesourcedb_file",
+    [
+        (
+            TEST_DATA_PATH / "oskar_sky_model_example.csv",
+            TEST_DATA_PATH / "makesourcedb_sky_model_example.csv",
+        )
+    ],
+)
+def test_convert_example_oskar_skymodel(
+    tmp_path, input_oskar_file, expected_makesourcedb_file
+):
     """
     Test full conversion from input file to output file on example dataset and
     compare output to expected output file.
@@ -528,25 +711,16 @@ def test_convert_example_oskar_skymodel(tmp_path):
     output_path = tmp_path / "makesourcedb_result.csv"
 
     convert_oskar_skymodel(
-        TEST_DATA_PATH / "oskar_sky_model_example.csv",
+        input_oskar_file,
         output_path,
         point_size_threshold=1e-8,
-        min_flux_point=0.005,
-        min_flux_extended=0.02,
+        min_flux_point=1,
+        min_flux_extended=1,
     )
 
     result_text = output_path.read_text()
-    expected_path = TEST_DATA_PATH / "makesourcedb_sky_model_example.csv"
-    expected_text = expected_path.read_text()
-    for i, (result_line, expected_line) in enumerate(
-        zip(result_text.splitlines(), expected_text.splitlines(), strict=True),
-        1,
-    ):
-        assert result_line.strip() == expected_line.strip(), (
-            f"Line {i} does not match:\n"
-            f"Result:   '{result_line}'\n"
-            f"Expected: '{expected_line}'"
-        )
+    expected_text = expected_makesourcedb_file.read_text()
+    assert result_text.strip() == expected_text.strip()
 
 
 @pytest.mark.parametrize(
@@ -584,8 +758,9 @@ def test_performance(tmp_path, rng, n_sources=10_000, time_limit=1):
     seconds.
     """
     output_file = tmp_path / "performance_test.skymodel"
-    # mock the `read_oskar_skymodel` function to return generated data. In this way we
-    # avoid first having to write a large file to disk before running the test
+    # mock the `read_oskar_skymodel` function to return generated data. In this
+    # way we avoid first having to write a large file to disk before running
+    # the test
     with mock.patch(
         "lsmtool.convert_oskar_skymodel.read_oskar_skymodel"
     ) as mock_read_oskar_skymodel:
