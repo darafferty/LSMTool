@@ -15,23 +15,25 @@ https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:m
 
 import argparse
 import logging
+import re
 from pathlib import Path
 
 import numpy as np
 
+from lsmtool.io import check_file_exists, load
 from lsmtool.utils import format_coordinates
 
 # ---------------------------------------------------------------------------- #
-# Init logger
+# Init logger KctT*Ehegsq1zVbUTmM8
 logger = logging.getLogger(__name__)
 
 # Module constants
-OSKAR_HEADER_LINE_FORMAT = (
+SOURCE_NAME_PREFIX = "src"
+MAKESOURCEDB_FORMAT_STRING = (
     "FORMAT = Name, Type, Ra, Dec, I, Q, U, V, "
     "MajorAxis, MinorAxis, Orientation, "
     "ReferenceFrequency, SpectralIndex='[]', RotationMeasure\n\n"
 )
-SOURCE_NAME_PREFIX = "src"
 MAKESOURCEDB_OUTPUT_FORMAT = {
     "Name": "%s",
     "Type": "%s",
@@ -48,7 +50,39 @@ MAKESOURCEDB_OUTPUT_FORMAT = {
     "SpectralIndex": "[%.1f]",
     "RotationMeasure": "%.1f",
 }
+MAKESOURCEDB_COLUMN_DESCRIPTIONS = {
+    "RA": "RA (deg)",
+    "Dec": "Dec (deg)",
+    "I": "I (Jy)",
+    "Q": "Q (Jy)",
+    "U": "U (Jy)",
+    "V": "V (Jy)",
+    "MajorAxis": "FWHM major (arcsec)",
+    "MinorAxis": "FWHM minor (arcsec)",
+    "Orientation": "Position angle (deg)",
+    "ReferenceFrequency": "Ref. freq. (Hz)",
+    "SpectralIndex": "Spectral index",
+    "RotationMeasure": "Rotation measure (rad/m^2)",
+}
+
 OUTPUT_ORDER = [0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8]
+OSKAR_DEFAULT_COLUMN_NAMES = list(
+    np.take(list(MAKESOURCEDB_OUTPUT_FORMAT.keys()), np.add(OUTPUT_ORDER, 2))
+)
+FORMAT_LINE_REGEX = re.compile(
+    r"""(?xsmi)
+        \#?\s*
+        (?P<fmt>format\s*=\s*)?
+        (?P<bracket>\()?
+            (?P<columns>[^\n\)]+?)
+        (?(bracket)\)|)
+        (?P<fmt_tail>
+            (?(fmt)|(\s*=\s*)format)
+        )
+        \s*$
+    """
+)
+COLUMN_NAME_REGEX = re.compile(r"\b[a-zA-Z]+\b")
 
 
 # ---------------------------------------------------------------------------- #
@@ -68,7 +102,39 @@ def is_header_line(line):
     bool
         True if the line is a header line, False otherwise.
     """
-    return line.startswith("#") or line.isspace()
+    return bool(
+        line.strip().startswith("#")
+        or FORMAT_LINE_REGEX.search(line)
+        or line.isspace()
+    )
+
+
+def get_column_names(header):
+    """
+    Find the line in the header that specifies the format of the skymodel file,
+    and extract the column names from it.
+
+    Parameters
+    ----------
+    header : list of str
+        List of header lines from the skymodel file.
+
+    Returns
+    -------
+    column_names : list of str
+        List of column names in the order they appear in the input skymodel
+        file.
+    """
+
+    if match := next(filter(None, map(FORMAT_LINE_REGEX.search, header)), None):
+        return COLUMN_NAME_REGEX.findall(match["columns"])
+
+    logger.warning(
+        "No format string found in header, assuming default column sequence: "
+        "%s",
+        OSKAR_DEFAULT_COLUMN_NAMES,
+    )
+    return OSKAR_DEFAULT_COLUMN_NAMES
 
 
 def get_header(filename):
@@ -112,15 +178,30 @@ def read_oskar_skymodel(input_file):
         columns of the array can be accessed by their descriptions, which are
         taken from the second line of the input file.
     """
-    data = np.genfromtxt(
-        input_file,
-        delimiter=",",
-        names=True,
-        encoding="utf-8",
-        skip_header=1,
-    )
+    input_file = check_file_exists(input_file)
+
     header = list(get_header(input_file))
-    return header, data
+
+    try:
+        skymodel = load(input_file)
+        return header, skymodel.table.as_array()
+
+    except IOError as err:
+        logger.info(
+            "Could not load skymodel using lsmtool, attempting to load as csv "
+            "using numpy. Error was: %s",
+            err,
+        )
+
+        data = np.genfromtxt(
+            input_file,
+            delimiter=",",
+            names=get_column_names(header),
+            encoding="utf-8",
+            skip_header=len(header),
+        )
+
+        return header, data
 
 
 def filter_sources(
@@ -165,13 +246,13 @@ def filter_sources(
     """
 
     # Determine flux cutoff based on source size
-    is_point_source = data["FWHM_major_arcsec"] <= point_size_threshold
+    is_point_source = data["MajorAxis"] <= point_size_threshold
 
     # Filter sources based on flux density and size criteria
     threshold = np.array([min_flux_extended, min_flux_point])[
         is_point_source.astype(int)
     ]
-    keep = data["I_Jy"] > threshold
+    keep = data["I"] > threshold
     remove = ~keep
 
     removed_point_sources = is_point_source[remove]
@@ -221,22 +302,33 @@ def convert_to_makesourcedb(header, data, point_sources):
     )
     source_type = np.array(["GAUSSIAN", "POINT"])[point_sources.astype(int)]
 
-    # Get header info
-    column_descriptions = header[1].strip("# \n").split(", ")
-    column_descriptions = np.take(column_descriptions, OUTPUT_ORDER)
+    # Update header
+    header = list(header)
+    for i, line in enumerate(header):
+        # Update number of sources
+        if line.startswith("# Number of sources:"):
+            header[i] = f"# Number of sources: {n_output_sources}"
 
-    # header
-    yield (
-        f"# Number of sources: {n_output_sources}",
-        f"# {', '.join(column_descriptions)}",
-        OSKAR_HEADER_LINE_FORMAT,
-    )
+        # Update column descriptions if found
+        elif len(column_descriptions := line.strip("# \n").split(", ")) == len(
+            data.dtype.fields
+        ):
+            column_descriptions = np.take(column_descriptions, OUTPUT_ORDER)
+            header[i] = f"# {', '.join(column_descriptions)}"
+
+        # Update format string if found
+        elif FORMAT_LINE_REGEX.search(line):
+            header[i] = MAKESOURCEDB_FORMAT_STRING
+            break
+    else:
+        # Append the format string if we didn't find it in the header
+        header.append(MAKESOURCEDB_FORMAT_STRING)
+
+    yield header
 
     # Get the output column order
     column_names = np.take(list(data.dtype.fields.keys()), OUTPUT_ORDER[2:])
-    ra, dec = format_coordinates(
-        data["RA_deg"], data["Dec_deg"], precision=5, pad=True
-    )
+    ra, dec = format_coordinates(data["RA"], data["Dec"], precision=5, pad=True)
 
     # data
     yield np.array(
