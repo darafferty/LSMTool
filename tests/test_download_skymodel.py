@@ -314,7 +314,7 @@ def test_download_skymodel_panstarrs(cone_params, tmp_path, mocker):
     """Test downloading a sky model from Pan-STARRS."""
 
     # Arrange
-    skymodel_path = tmp_path / "panstarrs_sky.model"
+    skymodel_path = tmp_path / "panstarrs.sky"
 
     mock_response = mocker.Mock()
     mock_response.ok = True
@@ -337,7 +337,7 @@ def test_download_skymodel_panstarrs_not_ok(cone_params, tmp_path, mocker):
     """Test Pan-STARRS download returns False when response is not OK."""
 
     # Arrange
-    skymodel_path = tmp_path / "panstarrs_sky.model"
+    skymodel_path = tmp_path / "panstarrs.sky"
 
     mock_response = mocker.Mock()
     mock_response.ok = False
@@ -360,7 +360,7 @@ def test_download_skymodel_panstarrs_request_exception(
     """Test Pan-STARRS download handles request exceptions."""
 
     # Arrange
-    skymodel_path = tmp_path / "panstarrs_sky.model"
+    skymodel_path = tmp_path / "panstarrs.sky"
 
     mocker.patch(
         "lsmtool.download_skymodel.requests.get",
