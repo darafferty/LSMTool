@@ -1,0 +1,12 @@
+FORMAT = Name, Type, Patch, Ra, Dec, I, Q, U, V, MajorAxis, MinorAxis, Orientation, ReferenceFrequency='147500000.0', SpectralIndex='[]'
+
+# LSMTool history:
+# 2025-11-06 13:50:27: LOAD (from file 'expected.tgss.sky')
+# 2025-11-06 13:50:27: UNGROUP
+# 2025-11-06 13:50:27: SETPATCHPOSITIONS (method = 'mid')
+# 2025-11-06 13:50:27: GROUP (algorithm = 'single')
+# 2025-11-06 13:50:27: SETPATCHPOSITIONS (method = 'mid')
+
+ , , Patch, 0:42:01.3542, 5.20.56.1949
+J004226.9+050524, GAUSSIAN, Patch, 0:42:26.928, 5.05.24.324, 1.4606, 0, 0, 0, 22.6, 8.2, -22.9,  , [-0.73]
+J004135.7+053628, POINT, Patch, 0:41:35.7576, 5.36.28.044, 0.4511, 0, 0, 0, 0.0, 0.0, 0.0,  , [-0.73]
