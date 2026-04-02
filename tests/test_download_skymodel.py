@@ -138,8 +138,6 @@ def test_download_skymodel_overwrite(
     downloaded_skymodel_path.touch()
     fake_content = "Fake sky model content to be overwritten"
     downloaded_skymodel_path.write_text(fake_content, encoding="utf-8")
-    old_content = downloaded_skymodel_path.read_text(encoding="utf-8")
-    assert fake_content in old_content
 
     expected_skymodel_path = tmp_path / "expected.tgss.sky"
     patch_download_skymodel_from_survey(expected_skymodel_path)
