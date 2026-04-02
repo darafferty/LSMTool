@@ -275,7 +275,7 @@ def test_check_lotss_coverage_outside_coverage(tmp_path, mocker):
     ]
     mocker.patch("lsmtool.download_skymodel._get_lotss_moc", return_value=moc)
     with pytest.raises(ValueError):
-        assert check_lotss_coverage(cone_params, tmp_path) is False
+        check_lotss_coverage(cone_params, tmp_path)
 
 
 def test_get_panstarrs_request(cone_params):
@@ -329,8 +329,10 @@ def test_download_skymodel_panstarrs(cone_params, tmp_path, mocker):
     # Assert
     assert skymodel_path.is_file()
     lines = skymodel_path.read_text(encoding="utf-8").splitlines()
-    assert lines[0] == "FORMAT = Name, Ra, Dec, Type, I, ReferenceFrequency=1e6"
-    assert lines[1] == "1,10.75,5.34,POINT,0.0,"
+    assert lines == [
+        "FORMAT = Name, Ra, Dec, Type, I, ReferenceFrequency=1e6",
+        "1,10.75,5.34,POINT,0.0,",
+    ]
 
 
 def test_download_skymodel_panstarrs_not_ok(cone_params, tmp_path, mocker):
@@ -351,6 +353,7 @@ def test_download_skymodel_panstarrs_not_ok(cone_params, tmp_path, mocker):
 
     # Assert
     assert success is False
+    mock_warning.assert_called_once()
     assert not skymodel_path.exists()
 
 
@@ -374,6 +377,7 @@ def test_download_skymodel_panstarrs_request_exception(
     # Assert
     assert success is False
     mock_warning.assert_called_once()
+    assert not skymodel_path.exists()
 
 
 @pytest.mark.parametrize(
@@ -501,7 +505,8 @@ def test_download_skymodel_from_survey_retries(
         )
 
     # Assert
-    assert f"Attempt #2 to download {survey} sky model failed. " in caplog.text
+    assert f"Attempt #1 to download {survey} sky model failed. Attempting 2 more times." in caplog.text
+    assert f"Attempt #2 to download {survey} sky model failed. Attempting 1 more time." in caplog.text
     assert "Attempting 1 more time." in caplog.text
     assert "Attempting 2 more times." in caplog.text
     assert (
@@ -547,10 +552,11 @@ def test_download_skymodel_from_survey_all_retries_fail(
             )
 
     # Assert
-    assert (
-        f"Attempt #{retries + 1} to download {survey} sky model failed."
-        in caplog.text
-    )
+    for retry in range(retries)
+        assert (
+            f"Attempt #{retry + 1} to download {survey} sky model failed."
+            in caplog.text
+        )
 
 
 def test_download_skymodel_from_survey_unsupported_survey(tmp_path):
