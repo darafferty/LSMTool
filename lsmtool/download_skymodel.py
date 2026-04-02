@@ -510,5 +510,5 @@ def _validate_skymodel_path(skymodel_path: str):
     ValueError
         If the skymodel_path exists but is not a file.
     """
-    if not Path(skymodel_path).is_file() and Path(skymodel_path).exists():
+    if Path(skymodel_path).exists() and not Path(skymodel_path).is_file():
         raise ValueError(f'Path "{skymodel_path}" exists but is not a file!')
