@@ -38,6 +38,7 @@ def download_skymodel(
         'ra': Right ascension of the target position.
         'dec': Declination of the target position.
         'radius': Search radius in degrees.
+        For Pan-STARRS, the radius must be <= 0.5 degrees.
     skymodel_path : str
         Full name (with path) to the output skymodel.
     overwrite : bool, optional
@@ -324,9 +325,6 @@ def _get_lotss_moc(skymodel_path):
         If the LoTSS MOC file cannot be downloaded.
     """
     mocpath = Path(skymodel_path).parent / "dr2-moc.moc"
-    # Securely download the MOC file without spawning an external process.
-    # (Fix for security lint S607: avoid subprocess with partial
-    # executable path.)
     moc_url = "https://lofar-surveys.org/public/DR2/catalogues/dr2-moc.moc"
     try:
         response = requests.get(
