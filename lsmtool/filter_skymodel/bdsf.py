@@ -189,6 +189,7 @@ def filter_skymodel(
 
     # Filter the sky model (if it was given) and any sources were detected
     if img_true_sky.nisl > 0 and (input_true_skymodel or input_bright_skymodel):
+        # Reduce RAM memory usage
         del img_true_sky
         filter_sources(
             mask_file,
