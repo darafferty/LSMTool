@@ -18,7 +18,7 @@ from lsmtool.download_skymodel import (
     _group_sources_into_single_direction,
     _overwrite_required,
     _prepare_path_for_download,
-    _sky_model_exists,
+    _sky_model_already_exists,
     _validate_skymodel_path,
     _verify_download,
     check_lotss_coverage,
@@ -157,8 +157,8 @@ def test_download_skymodel_overwrite(
     assert expected_new_header in new_content
 
 
-def test_sky_model_exists_existing_skymodel(tmp_path, mocker):
-    """Test the _sky_model_exists function when the sky model exists."""
+def test_sky_model_already_exists_existing_skymodel(tmp_path, mocker):
+    """Test the _sky_model_already_exists function when the sky model exists."""
 
     skymodel_path = tmp_path / "test.skymodel"
     skymodel_path.touch()
@@ -166,19 +166,19 @@ def test_sky_model_exists_existing_skymodel(tmp_path, mocker):
     mock_warning = mocker.patch(
         "lsmtool.download_skymodel.logging.Logger.warning"
     )
-    result = _sky_model_exists(str(skymodel_path))
+    result = _sky_model_already_exists(str(skymodel_path))
     mock_warning.assert_called_once()
     assert result is True
 
 
-def test_sky_model_exists_no_existing_skymodel(tmp_path, mocker):
-    """Test the _sky_model_exists function when sky model does not exist."""
+def test_sky_model_already_exists_no_existing_skymodel(tmp_path, mocker):
+    """Test the _sky_model_already_exists function when sky model does not exist."""
 
     skymodel_path = tmp_path / "non_existent_sky.model"
     mock_warning = mocker.patch(
         "lsmtool.download_skymodel.logging.Logger.warning"
     )
-    result = _sky_model_exists(str(skymodel_path))
+    result = _sky_model_already_exists(str(skymodel_path))
     mock_warning.assert_not_called()
     assert result is False
 

@@ -50,7 +50,7 @@ def download_skymodel(
     target_name : str, default="Patch"
         Give the patch a certain name.
     """
-    skymodel_exists = _sky_model_exists(skymodel_path)
+    skymodel_exists = _sky_model_already_exists(skymodel_path)
 
     if _download_not_required(skymodel_exists, overwrite):
         return
@@ -435,9 +435,9 @@ def _download_not_required(skymodel_exists: bool, overwrite: bool):
     return False
 
 
-def _sky_model_exists(skymodel_path: str):
+def _sky_model_already_exists(skymodel_path: str):
     """
-    Check if the sky model file exists.
+    Check if the sky model file already exists and log a warning.
 
     Parameters
     ----------
