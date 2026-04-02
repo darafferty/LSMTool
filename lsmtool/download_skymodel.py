@@ -115,9 +115,8 @@ def download_skymodel_from_survey(
                     cone_params, survey, skymodel_path
                 )
             case "PANSTARRS":
-                url, search_params = get_panstarrs_request(cone_params)
                 success = download_skymodel_panstarrs(
-                    url, search_params, skymodel_path
+                    cone_params, skymodel_path
                 )
             case _:
                 raise ValueError(
@@ -224,16 +223,17 @@ def get_panstarrs_request(cone_params):
     return url, search_params
 
 
-def download_skymodel_panstarrs(url, search_params, skymodel_path):
+def download_skymodel_panstarrs(cone_params, skymodel_path):
     """
     Download a skymodel from the Pan-STARRS source.
 
     Parameters
     ----------
-    url : str
-        The Pan-STARRS API URL.
-    search_params : dict
-        The search parameters for the request.
+    cone_params : dict
+        Dictionary containing the cone search parameters:
+        'ra': Right ascension of the target position.
+        'dec': Declination of the target position.
+        'radius': Search radius in degrees.
     skymodel_path : str
         Path to the output skymodel file.
 
@@ -249,6 +249,7 @@ def download_skymodel_panstarrs(url, search_params, skymodel_path):
     """
     logger.info("Downloading skymodel from Pan-STARRS into %s", skymodel_path)
     try:
+        url, search_params = get_panstarrs_request(cone_params)
         result = requests.get(
             url,
             params=search_params,

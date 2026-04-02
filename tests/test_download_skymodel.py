@@ -63,25 +63,28 @@ def patch_download_skymodel_from_survey(mocker):
     return _patch
 
 
+@pytest.fixture
+def cone_params():
+    """Fixture that provides example cone search parameters for PAN-STARRS."""
+    return {"ra": 10.75, "dec": 5.34, "radius": 0.01}
+
+
 def test_download_skymodel(
     tmp_path,
     patch_download_skymodel_from_survey,
     mocker,
+    cone_params,
 ):
     """Test downloading a sky model."""
 
     # Arrange
     copy_test_data("expected.tgss.sky.model", tmp_path)
-    ra = 10.75
-    dec = 5.34
-    radius = 0.5
     overwrite = False
     survey = "TGSS"
     targetname = "Patch"
     downloaded_skymodel_path = tmp_path / "sky.model"
     expected_skymodel_path = tmp_path / "expected.tgss.sky.model"
     skymodel_expected = lsmtool.load(str(expected_skymodel_path))
-    cone_params = {"ra": ra, "dec": dec, "radius": radius}
     patch_download_skymodel_from_survey(expected_skymodel_path)
 
     # Act
@@ -275,22 +278,17 @@ def test_check_lotss_coverage_outside_coverage(tmp_path, mocker):
         assert check_lotss_coverage(cone_params, tmp_path) is False
 
 
-def test_get_panstarrs_request():
+def test_get_panstarrs_request(cone_params):
     """Test the get_panstarrs_request function."""
 
     # Arrange
-    ra = 10.75
-    dec = 5.34
-    radius = 0.01
-    cone_params = {"ra": ra, "dec": dec, "radius": radius}
-
     expected_url = (
         "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
     )
     expected_search_params = {
-        "ra": ra,
-        "dec": dec,
-        "radius": radius,
+        "ra": cone_params["ra"],
+        "dec": cone_params["dec"],
+        "radius": cone_params["radius"],
         "nDetections.min": "5",
         "columns": ["objID", "ramean", "decmean"],
     }
@@ -312,18 +310,10 @@ def test_get_panstarrs_request_raises_error_large_radius():
         _, _ = get_panstarrs_request(cone_params)
 
 
-def test_download_skymodel_panstarrs(tmp_path, mocker):
+def test_download_skymodel_panstarrs(cone_params, tmp_path, mocker):
     """Test downloading a sky model from Pan-STARRS."""
 
     # Arrange
-    url = "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
-    search_params = {
-        "ra": 10.75,
-        "dec": 5.34,
-        "radius": 0.01,
-        "nDetections.min": "5",
-        "columns": ["objID", "ramean", "decmean"],
-    }
     skymodel_path = tmp_path / "panstarrs_sky.model"
 
     mock_response = mocker.Mock()
@@ -334,7 +324,7 @@ def test_download_skymodel_panstarrs(tmp_path, mocker):
     )
 
     # Act
-    download_skymodel_panstarrs(url, search_params, str(skymodel_path))
+    download_skymodel_panstarrs(cone_params, str(skymodel_path))
 
     # Assert
     assert skymodel_path.is_file()
@@ -343,18 +333,10 @@ def test_download_skymodel_panstarrs(tmp_path, mocker):
     assert lines[1] == "1,10.75,5.34,POINT,0.0,"
 
 
-def test_download_skymodel_panstarrs_not_ok(tmp_path, mocker):
+def test_download_skymodel_panstarrs_not_ok(cone_params, tmp_path, mocker):
     """Test Pan-STARRS download returns False when response is not OK."""
 
     # Arrange
-    url = "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
-    search_params = {
-        "ra": 10.75,
-        "dec": 5.34,
-        "radius": 0.01,
-        "nDetections.min": "5",
-        "columns": ["objID", "ramean", "decmean"],
-    }
     skymodel_path = tmp_path / "panstarrs_sky.model"
 
     mock_response = mocker.Mock()
@@ -365,27 +347,19 @@ def test_download_skymodel_panstarrs_not_ok(tmp_path, mocker):
     )
 
     # Act
-    success = download_skymodel_panstarrs(
-        url, search_params, str(skymodel_path)
-    )
+    success = download_skymodel_panstarrs(cone_params, str(skymodel_path))
 
     # Assert
     assert success is False
     assert not skymodel_path.exists()
 
 
-def test_download_skymodel_panstarrs_request_exception(tmp_path, mocker):
+def test_download_skymodel_panstarrs_request_exception(
+    cone_params, tmp_path, mocker
+):
     """Test Pan-STARRS download handles request exceptions."""
 
     # Arrange
-    url = "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
-    search_params = {
-        "ra": 10.75,
-        "dec": 5.34,
-        "radius": 0.01,
-        "nDetections.min": "5",
-        "columns": ["objID", "ramean", "decmean"],
-    }
     skymodel_path = tmp_path / "panstarrs_sky.model"
 
     mocker.patch(
@@ -395,9 +369,7 @@ def test_download_skymodel_panstarrs_request_exception(tmp_path, mocker):
     mock_warning = mocker.patch("lsmtool.download_skymodel.logger.warning")
 
     # Act
-    success = download_skymodel_panstarrs(
-        url, search_params, str(skymodel_path)
-    )
+    success = download_skymodel_panstarrs(cone_params, str(skymodel_path))
 
     # Assert
     assert success is False
@@ -430,12 +402,11 @@ def test_download_skymodel_catalog(
     assert skymodel_path.is_file()
 
 
-def test_download_skymodel_catalog_empty_result(tmp_path, mocker):
+def test_download_skymodel_catalog_empty_result(cone_params, tmp_path, mocker):
     """Test catalog download returns False when no sources are found."""
 
     # Arrange
     skymodel_path = tmp_path / "catalog_sky_empty.model"
-    cone_params = {"ra": 12.34, "dec": 56.78, "radius": 0.6}
     mock_model = mocker.MagicMock()
     mock_model.__len__.return_value = 0
     mock_model.write.side_effect = lambda out_path: Path(out_path).write_text(
@@ -463,12 +434,13 @@ def test_download_skymodel_catalog_empty_result(tmp_path, mocker):
         "PANSTARRS",
     ],
 )
-def test_download_skymodel_from_survey(survey, tmp_path, mocker, caplog):
+def test_download_skymodel_from_survey(
+    cone_params, survey, tmp_path, mocker, caplog
+):
     """Test downloading a sky model from a survey."""
 
     # Arrange
     skymodel_path = tmp_path / f"survey_sky_{survey}.model"
-    cone_params = {"ra": 10.75, "dec": 5.34, "radius": 0.5}
 
     # Mock sucessful download attempt on first try
     mocker.patch(
