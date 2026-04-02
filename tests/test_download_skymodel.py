@@ -21,6 +21,7 @@ from lsmtool.download_skymodel import (
     _prepare_path_for_download,
     _sky_model_exists,
     _validate_skymodel_path,
+    _verify_download,
     check_lotss_coverage,
     download_skymodel,
     download_skymodel_catalog,
@@ -738,3 +739,16 @@ def test_prepare_path_for_downloading_not_a_file(tmp_path):
         _prepare_path_for_download(
             str(skymodel_path), skymodel_exists=True, overwrite=False
         )
+
+
+@pytest.mark.parametrize("file_exists", [True, False])
+def test_verify_download_raises(tmp_path, file_exists):
+    """Test the _verify_download function raises IOError when file does not exist."""
+
+    skymodel_path = tmp_path / "nonexistent.sky"
+    if file_exists:
+        skymodel_path.touch()
+        _verify_download(str(skymodel_path))
+    else:
+        with pytest.raises(IOError):
+            _verify_download(str(skymodel_path))

@@ -59,11 +59,7 @@ def download_skymodel(
 
     download_skymodel_from_survey(cone_params, survey, skymodel_path)
 
-    if not Path(skymodel_path).is_file():
-        raise IOError(
-            f'Sky model file "{skymodel_path}" does not exist after trying to '
-            "download the sky model."
-        )
+    _verify_download(skymodel_path)
 
     _group_sources_into_single_direction(skymodel_path, targetname)
 
@@ -523,6 +519,25 @@ def _validate_skymodel_path(skymodel_path: str):
     if Path(skymodel_path).exists() and not Path(skymodel_path).is_file():
         raise ValueError(f'Path "{skymodel_path}" exists but is not a file!')
 
+def _verify_download(skymodel_path: str):
+    """
+    Verify that the sky model file was downloaded successfully.
+
+    Parameters
+    ----------
+    skymodel_path : str
+        Full name (with path) to the output skymodel.
+
+    Raises
+    ------
+    IOError
+        If the sky model file does not exist after the download attempt.
+    """
+    if not Path(skymodel_path).is_file():
+        raise IOError(
+            f'Sky model file "{skymodel_path}" does not exist after trying to '
+            "download the sky model."
+        )
 
 def _group_sources_into_single_direction(skymodel_path: str, target_name: str):
     """
