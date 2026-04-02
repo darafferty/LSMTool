@@ -50,10 +50,10 @@ def download_skymodel(
         Give the patch a certain name.
     """
     skymodel_exists = _sky_model_exists(skymodel_path)
-    
+
     if _download_not_required(skymodel_exists, overwrite):
         return
-    
+
     if _overwrite_required(skymodel_exists, overwrite):
         os.remove(skymodel_path)
 
@@ -70,10 +70,7 @@ def download_skymodel(
             "download the sky model."
         )
 
-    # Treat all sources as one group (direction)
-    skymodel = lsmtool.load(skymodel_path)
-    skymodel.group("single", root=targetname)
-    skymodel.write(clobber=True)
+    _group_sources_into_single_direction(skymodel_path, targetname)
 
 
 def download_skymodel_from_survey(
@@ -512,3 +509,19 @@ def _validate_skymodel_path(skymodel_path: str):
     """
     if Path(skymodel_path).exists() and not Path(skymodel_path).is_file():
         raise ValueError(f'Path "{skymodel_path}" exists but is not a file!')
+
+
+def _group_sources_into_single_direction(skymodel_path: str, target_name: str):
+    """
+    Group all sources in the sky model into a single direction.
+
+    Parameters
+    ----------
+    skymodel_path : str
+        Full name (with path) to the output skymodel.
+    target_name : str
+        Name to give to the single direction group.
+    """
+    skymodel = lsmtool.load(skymodel_path)
+    skymodel.group("single", root=target_name)
+    skymodel.write(clobber=True)

@@ -15,6 +15,7 @@ from lsmtool.download_skymodel import (
     _check_coverage,
     _download_not_required,
     _get_lotss_moc,
+    _group_sources_into_single_direction,
     _new_directory_required,
     _overwrite_required,
     _sky_model_exists,
@@ -690,3 +691,20 @@ def test_check_coverage_zero(mocker, mock_moc, cone_params):
     )
     with pytest.raises(ValueError):
         _check_coverage(cone_params, mock_moc)
+
+
+def test_group_sources_into_single_direction(tmp_path, mocker):
+    """Test sky model is grouped into a single direction and overwritten."""
+
+    skymodel_path = tmp_path / "sky.model"
+    target_name = "Patch"
+
+    mock_skymodel = mocker.Mock()
+    mocker.patch(
+        "lsmtool.download_skymodel.lsmtool.load", return_value=mock_skymodel
+    )
+
+    _group_sources_into_single_direction(str(skymodel_path), target_name)
+
+    mock_skymodel.group.assert_called_once_with("single", root=target_name)
+    mock_skymodel.write.assert_called_once_with(clobber=True)
