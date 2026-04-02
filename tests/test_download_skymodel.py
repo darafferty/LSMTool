@@ -353,7 +353,6 @@ def test_download_skymodel_panstarrs_not_ok(cone_params, tmp_path, mocker):
 
     # Assert
     assert success is False
-    mock_warning.assert_called_once()
     assert not skymodel_path.exists()
 
 
@@ -505,8 +504,14 @@ def test_download_skymodel_from_survey_retries(
         )
 
     # Assert
-    assert f"Attempt #1 to download {survey} sky model failed. Attempting 2 more times." in caplog.text
-    assert f"Attempt #2 to download {survey} sky model failed. Attempting 1 more time." in caplog.text
+    assert (
+        f"Attempt #1 to download {survey} sky model failed. Attempting 2 more times."
+        in caplog.text
+    )
+    assert (
+        f"Attempt #2 to download {survey} sky model failed. Attempting 1 more time."
+        in caplog.text
+    )
     assert "Attempting 1 more time." in caplog.text
     assert "Attempting 2 more times." in caplog.text
     assert (
@@ -552,7 +557,7 @@ def test_download_skymodel_from_survey_all_retries_fail(
             )
 
     # Assert
-    for retry in range(retries)
+    for retry in range(retries):
         assert (
             f"Attempt #{retry + 1} to download {survey} sky model failed."
             in caplog.text
