@@ -122,20 +122,42 @@ def test_download_skymodel(
     )
     assert mock_warning.call_count == 2
 
-    # Test that attempting to download again with overwrite logs a warning
-    # First that sky model exists, second that it is being overwritten
-    mock_warning = mocker.patch(
-        "lsmtool.download_skymodel.logging.Logger.warning"
-    )
+
+def test_download_skymodel_overwrite(
+    tmp_path, patch_download_skymodel_from_survey
+):
+    """Test downloading a sky model with overwrite enabled."""
+
+    # Arrange
+    copy_test_data("expected.tgss.sky", tmp_path)
+    survey = "TGSS"
+    targetname = "Patch"
+
+    # Create a fake existing sky model file to test overwrite functionality
+    downloaded_skymodel_path = tmp_path / "downloaded.sky"
+    downloaded_skymodel_path.touch()
+    fake_content = "Fake sky model content to be overwritten"
+    downloaded_skymodel_path.write_text(fake_content, encoding="utf-8")
+    old_content = downloaded_skymodel_path.read_text(encoding="utf-8")
+    assert fake_content in old_content
+
+    expected_skymodel_path = tmp_path / "expected.tgss.sky"
+    patch_download_skymodel_from_survey(expected_skymodel_path)
+    expected_new_header = "FORMAT = Name, Type, Patch, Ra, Dec, I, Q, U, V, MajorAxis, MinorAxis, Orientation, ReferenceFrequency='147500000.0', SpectralIndex='[]'"
+    # Act
     download_skymodel(
         cone_params,
         str(downloaded_skymodel_path),
-        True,
-        survey,
-        targetname,
+        overwrite=True,
+        survey=survey,
+        targetname=targetname,
     )
-    assert mock_warning.call_count == 2
+
+    # Assert
     assert downloaded_skymodel_path.is_file()
+    new_content = downloaded_skymodel_path.read_text(encoding="utf-8")
+    assert fake_content not in new_content
+    assert expected_new_header in new_content
 
 
 def test_sky_model_exists_existing_skymodel(tmp_path, mocker):

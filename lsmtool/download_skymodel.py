@@ -519,6 +519,7 @@ def _validate_skymodel_path(skymodel_path: str):
     if Path(skymodel_path).exists() and not Path(skymodel_path).is_file():
         raise ValueError(f'Path "{skymodel_path}" exists but is not a file!')
 
+
 def _verify_download(skymodel_path: str):
     """
     Verify that the sky model file was downloaded successfully.
@@ -538,6 +539,7 @@ def _verify_download(skymodel_path: str):
             f'Sky model file "{skymodel_path}" does not exist after trying to '
             "download the sky model."
         )
+
 
 def _group_sources_into_single_direction(skymodel_path: str, target_name: str):
     """
