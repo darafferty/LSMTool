@@ -90,7 +90,7 @@ def download_skymodel_from_survey(
         Source of the skymodel (e.g. "LOTSS", "TGSS", "GSM", "PANSTARRS").
     skymodel_path : str
         Path to the output skymodel file.
-    retries : int, default=5
+    retries : int, default=4
         Number of repeat attempts to download the skymodel.
     time_between_retries : int, default=5
         Time to wait between retries in seconds.
