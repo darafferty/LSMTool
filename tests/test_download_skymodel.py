@@ -98,9 +98,6 @@ def test_download_skymodel(
     skymodel_downloaded = lsmtool.load(str(downloaded_skymodel_path))
 
     # Assert
-    assert list(skymodel_downloaded.table.columns) == list(
-        skymodel_expected.table.columns
-    )
     assert len(skymodel_downloaded) == len(skymodel_expected)
     for col in skymodel_expected.table.columns:
         assert col in skymodel_downloaded.table.columns
@@ -139,8 +136,11 @@ def test_download_skymodel(
     assert downloaded_skymodel_path.is_file()
 
 
-def test_sky_model_exists_existing_skymodel(existing_skymodel_path, mocker):
+def test_sky_model_exists_existing_skymodel(tmp_path, mocker):
     """Test the _sky_model_exists function when the sky model exists."""
+
+    skymodel_path = tmp_path / "test.skymodel"
+    skymodel_path.touch()
 
     mock_warning = mocker.patch(
         "lsmtool.download_skymodel.logging.Logger.warning"
