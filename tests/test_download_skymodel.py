@@ -140,7 +140,11 @@ def test_download_skymodel_overwrite(
 
     expected_skymodel_path = tmp_path / "expected.tgss.sky"
     patch_download_skymodel_from_survey(expected_skymodel_path)
-    expected_new_header = "FORMAT = Name, Type, Patch, Ra, Dec, I, Q, U, V, MajorAxis, MinorAxis, Orientation, ReferenceFrequency='147500000.0', SpectralIndex='[]'"
+    expected_new_header = (
+        "FORMAT = Name, Type, Patch, Ra, Dec, I, Q, U, V, "
+        "MajorAxis, MinorAxis, Orientation, ReferenceFrequency='147500000.0', "
+        "SpectralIndex='[]'"
+    )
     # Act
     download_skymodel(
         cone_params,
@@ -172,7 +176,7 @@ def test_sky_model_already_exists_existing_skymodel(tmp_path, mocker):
 
 
 def test_sky_model_already_exists_no_existing_skymodel(tmp_path, mocker):
-    """Test the _sky_model_already_exists function when sky model does not exist."""
+    """Test _sky_model_already_exists when sky model does not exist."""
 
     skymodel_path = tmp_path / "non_existent_sky.model"
     mock_warning = mocker.patch(
@@ -184,7 +188,7 @@ def test_sky_model_already_exists_no_existing_skymodel(tmp_path, mocker):
 
 
 def test_validate_skymodel_path_existing_file(tmp_path):
-    """Test the _validate_skymodel_path function when sky model file exists."""
+    """Test _validate_skymodel_path when sky model file exists."""
 
     existing_file_path = tmp_path / "existing_sky.model"
     existing_file_path.touch()
@@ -494,12 +498,12 @@ def test_download_skymodel_from_survey_retries(
 
     # Assert
     assert (
-        f"Attempt #1 to download {survey} sky model failed. Attempting 2 more times."
-        in caplog.text
+        f"Attempt #1 to download {survey} sky model failed. "
+        "Attempting 2 more times." in caplog.text
     )
     assert (
-        f"Attempt #2 to download {survey} sky model failed. Attempting 1 more time."
-        in caplog.text
+        f"Attempt #2 to download {survey} sky model failed. "
+        "Attempting 1 more time." in caplog.text
     )
     assert "Attempting 1 more time." in caplog.text
     assert "Attempting 2 more times." in caplog.text
@@ -624,7 +628,7 @@ def test_download_skymodel_raises_if_output_missing(tmp_path, mocker):
 def test_check_moc_coverage_partial(
     mocker, mock_moc, cone_params, caplog, false_index
 ):
-    """Test the _check_moc_coverage function for some coordinates within MOC."""
+    """Test _check_moc_coverage for some coordinates within MOC."""
     contains_lonlat_return = [
         [True] if i != false_index else [False] for i in range(5)
     ]
@@ -651,7 +655,7 @@ def test_check_moc_coverage_full(mocker, mock_moc, cone_params, caplog):
 
 
 def test_check_moc_coverage_zero(mocker, mock_moc, cone_params):
-    """Test the _check_moc_coverage function for all coordinates outside MOC."""
+    """Test _check_moc_coverage for all coordinates outside MOC."""
 
     mocker.patch.object(
         mock_moc,
@@ -715,7 +719,7 @@ def test_prepare_path_for_download_new_directory(tmp_path, overwrite):
 
 
 def test_prepare_path_for_downloading_not_a_file(tmp_path):
-    """Test the _prepare_path_for_download function raises ValueError if path is not a file."""
+    """Test _prepare_path_for_download raises ValueError if path not a file."""
 
     skymodel_path = tmp_path / "not_a_file"
     skymodel_path.mkdir()
@@ -727,7 +731,7 @@ def test_prepare_path_for_downloading_not_a_file(tmp_path):
 
 @pytest.mark.parametrize("file_exists", [True, False])
 def test_verify_download_raises(tmp_path, file_exists):
-    """Test the _verify_download function raises IOError when file does not exist."""
+    """Test _verify_download raises IOError when file does not exist."""
 
     skymodel_path = tmp_path / "nonexistent.sky"
     if file_exists:
