@@ -50,14 +50,14 @@ def download_skymodel(
         Give the patch a certain name.
     """
     skymodel_exists = _sky_model_exists(skymodel_path)
-
+    
     if _download_not_required(skymodel_exists, overwrite):
         return
-
-    _validate_skymodel_path(skymodel_path)
-
+    
     if _overwrite_required(skymodel_exists, overwrite):
         os.remove(skymodel_path)
+
+    _validate_skymodel_path(skymodel_path)
 
     if _new_directory_required(skymodel_path):
         Path(skymodel_path).parent.mkdir(parents=True, exist_ok=True)
