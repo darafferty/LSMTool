@@ -182,27 +182,26 @@ def filter_skymodel(
     n_sources = img_true_sky.nsrc
 
     # Save mask file
-    if img_true_sky.nisl > 0:
-        mask_file = f"{img_true_sky.filename}.mask.fits"
-        img_true_sky.export_image(
+    mask_file = f"{Path(img_true_sky.filename).name}.mask.fits"
+    img_true_sky.export_image(
         outfile=mask_file, clobber=True, img_type="island_mask"
-        )
-        del img_true_sky  # helps reduce memory usage
+    )
 
-        # Filter the sky model (if it was given) and any sources were detected
-        if (input_true_skymodel or input_bright_skymodel):
-            filter_sources(
-                mask_file,
-                vertices_file,
-                input_true_skymodel,
-                input_apparent_skymodel,
-                input_bright_skymodel,
-                beam_ms,
-                filter_by_mask,
-                keep_mask,
-                output_true_sky,
-                output_apparent_sky,
-            )
+    # Filter the sky model (if it was given) and any sources were detected
+    if img_true_sky.nisl > 0 and (input_true_skymodel or input_bright_skymodel):
+        del img_true_sky
+        filter_sources(
+            mask_file,
+            vertices_file,
+            input_true_skymodel,
+            input_apparent_skymodel,
+            input_bright_skymodel,
+            beam_ms,
+            filter_by_mask,
+            keep_mask,
+            output_true_sky,
+            output_apparent_sky,
+    )
     else:
         create_dummy_skymodel(
             img_true_sky, output_true_sky, output_apparent_sky
