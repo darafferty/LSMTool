@@ -18,6 +18,7 @@ from lsmtool.download_skymodel import (
     _group_sources_into_single_direction,
     _new_directory_required,
     _overwrite_required,
+    _prepare_path_for_download,
     _sky_model_exists,
     _validate_skymodel_path,
     check_lotss_coverage,
@@ -691,3 +692,49 @@ def test_group_sources_into_single_direction(tmp_path, mocker):
 
     mock_skymodel.group.assert_called_once_with("single", root=target_name)
     mock_skymodel.write.assert_called_once_with(clobber=True)
+
+
+@pytest.mark.parametrize(
+    "skymodel_exists_before, overwrite, skymodel_exists_after",
+    [
+        (True, False, True),
+        (True, True, False),
+        (False, False, False),
+        (False, True, False),
+    ],
+)
+def test_prepare_path_for_download(
+    skymodel_exists_before, overwrite, skymodel_exists_after, tmp_path
+):
+    """Test the _prepare_path_for_download function."""
+
+    skymodel_path = tmp_path / "fake.sky"
+    if skymodel_exists_before:
+        skymodel_path.touch()
+
+    _prepare_path_for_download(
+        str(skymodel_path), skymodel_exists_before, overwrite
+    )
+    assert skymodel_path.is_file() == skymodel_exists_after
+
+
+@pytest.mark.parametrize("overwrite", [True, False])
+def test_prepare_path_for_download_new_directory(tmp_path, overwrite):
+    """Test the _prepare_path_for_download function creates new directory."""
+
+    skymodel_path = tmp_path / "new_directory" / "fake.sky"
+    _prepare_path_for_download(
+        str(skymodel_path), skymodel_exists=False, overwrite=overwrite
+    )
+    assert skymodel_path.parent.is_dir()
+
+
+def test_prepare_path_for_downloading_not_a_file(tmp_path):
+    """Test the _prepare_path_for_download function raises ValueError if path is not a file."""
+
+    skymodel_path = tmp_path / "not_a_file"
+    skymodel_path.mkdir()
+    with pytest.raises(ValueError):
+        _prepare_path_for_download(
+            str(skymodel_path), skymodel_exists=True, overwrite=False
+        )

@@ -55,13 +55,7 @@ def download_skymodel(
     if _download_not_required(skymodel_exists, overwrite):
         return
 
-    if _overwrite_required(skymodel_exists, overwrite):
-        os.remove(skymodel_path)
-
-    _validate_skymodel_path(skymodel_path)
-
-    if _new_directory_required(skymodel_path):
-        Path(skymodel_path).parent.mkdir(parents=True, exist_ok=True)
+    _prepare_path_for_download(skymodel_path, skymodel_exists, overwrite)
 
     download_skymodel_from_survey(cone_params, survey, skymodel_path)
 
@@ -304,6 +298,26 @@ def check_lotss_coverage(cone_params, skymodel_path):
 
     moc = _get_lotss_moc(skymodel_path)
     _check_moc_coverage(cone_params, moc)
+
+
+def _prepare_path_for_download(skymodel_path, skymodel_exists, overwrite):
+    """
+    Prepare the path for downloading the sky model.
+
+    Parameters
+    ----------
+    skymodel_path : str
+        Full name (with path) to the output skymodel.
+    overwrite : bool
+        Whether to overwrite the existing sky model file.
+    """
+    if _overwrite_required(skymodel_exists, overwrite):
+        os.remove(skymodel_path)
+
+    _validate_skymodel_path(skymodel_path)
+
+    if _new_directory_required(skymodel_path):
+        Path(skymodel_path).parent.mkdir(parents=True, exist_ok=True)
 
 
 def _get_lotss_moc(skymodel_path):
