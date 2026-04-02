@@ -12,7 +12,7 @@ from conftest import copy_test_data
 
 import lsmtool
 from lsmtool.download_skymodel import (
-    _check_coverage,
+    _check_moc_coverage,
     _download_not_required,
     _get_lotss_moc,
     _group_sources_into_single_direction,
@@ -655,21 +655,21 @@ def test_download_skymodel_raises_if_output_missing(tmp_path, mocker):
         [[True], [True], [True], [True], [False]],
     ),
 )
-def test_check_coverage_partial(
+def test_check_moc_coverage_partial(
     mocker, mock_moc, cone_params, caplog, contains_lonlat_return
 ):
-    """Test the _check_coverage function for some coordinates within MOC."""
+    """Test the _check_moc_coverage function for some coordinates within MOC."""
 
     mocker.patch.object(
         mock_moc, "contains_lonlat", side_effect=contains_lonlat_return
     )
     with caplog.at_level("WARNING"):
-        _check_coverage(cone_params, mock_moc)
+        _check_moc_coverage(cone_params, mock_moc)
     assert "Incomplete LoTSS coverage" in caplog.text
 
 
-def test_check_coverage_full(mocker, mock_moc, cone_params, caplog):
-    """Test the _check_coverage function for all coordinates within MOC."""
+def test_check_moc_coverage_full(mocker, mock_moc, cone_params, caplog):
+    """Test the _check_moc_coverage function for all coordinates within MOC."""
 
     mocker.patch.object(
         mock_moc,
@@ -677,12 +677,12 @@ def test_check_coverage_full(mocker, mock_moc, cone_params, caplog):
         side_effect=[[True], [True], [True], [True], [True]],
     )
     with caplog.at_level("INFO"):
-        _check_coverage(cone_params, mock_moc)
+        _check_moc_coverage(cone_params, mock_moc)
     assert "Complete LoTSS coverage" in caplog.text
 
 
-def test_check_coverage_zero(mocker, mock_moc, cone_params):
-    """Test the _check_coverage function for all coordinates outside MOC."""
+def test_check_moc_coverage_zero(mocker, mock_moc, cone_params):
+    """Test the _check_moc_coverage function for all coordinates outside MOC."""
 
     mocker.patch.object(
         mock_moc,
@@ -690,7 +690,7 @@ def test_check_coverage_zero(mocker, mock_moc, cone_params):
         side_effect=[[False], [False], [False], [False], [False]],
     )
     with pytest.raises(ValueError):
-        _check_coverage(cone_params, mock_moc)
+        _check_moc_coverage(cone_params, mock_moc)
 
 
 def test_group_sources_into_single_direction(tmp_path, mocker):

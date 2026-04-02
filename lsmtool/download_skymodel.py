@@ -301,7 +301,7 @@ def check_lotss_coverage(cone_params, skymodel_path):
     logger.info("Checking LoTSS coverage for the requested centre and radius.")
 
     moc = _get_lotss_moc(skymodel_path)
-    _check_coverage(cone_params, moc)
+    _check_moc_coverage(cone_params, moc)
 
 
 def _get_lotss_moc(skymodel_path):
@@ -344,7 +344,7 @@ def _get_lotss_moc(skymodel_path):
     return mocpy.MOC.from_fits(mocpath)
 
 
-def _check_coverage(
+def _check_moc_coverage(
     cone_params,
     moc,
 ):
