@@ -505,8 +505,6 @@ def test_download_skymodel_from_survey_retries(
         f"Attempt #2 to download {survey} sky model failed. "
         "Attempting 1 more time." in caplog.text
     )
-    assert "Attempting 1 more time." in caplog.text
-    assert "Attempting 2 more times." in caplog.text
     assert (
         f"Download of {survey} sky model completed successfully." in caplog.text
     )
