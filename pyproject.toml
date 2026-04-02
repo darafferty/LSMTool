@@ -41,6 +41,7 @@ dependencies = [
     "everybeam >= 0.6.1",
     "lofar-parameterset >= 1.1",
     "matplotlib",
+    "mocpy",
     "numpy",
     "python-casacore",
     "pyvo",
@@ -52,7 +53,7 @@ dependencies = [
 [project.optional-dependencies]
 sofia = ["sofia2 @ git+https://gitlab.com/SoFiA-Admin/SoFiA-2.git@b10ab4ef"]
 docs = [ "setuptools_scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3"]
-tests = ["pytest", "pytest-cov"]
+tests = ["pytest", "pytest-cov", "pytest-mock", "pytest-xdist"]
 dev = ["ruff", "lsmtool[docs,tests,sofia]"]
 
 [dependency-groups]
@@ -182,10 +183,10 @@ description = "run unit tests"
 deps = [{ replace = "ref", of = ["dependency-groups", "tests"], extend = true }]
 extras = ["tests"]
 package = "editable"
-set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning" }
+set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning", PYTEST_XDIST_AUTO_NUM_WORKERS = "4" }
 commands = [
     ["python", "--version"],
-    ["python", "-m", "pytest", { replace = "posargs", default = [], extend = true }]
+    ["python", "-m", "pytest", "-vv", "-n", "auto", { replace = "posargs", default = [], extend = true }]
 ]
 
 # [tool.tox.env.fix]
