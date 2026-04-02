@@ -16,7 +16,6 @@ from lsmtool.download_skymodel import (
     _download_not_required,
     _get_lotss_moc,
     _group_sources_into_single_direction,
-    _new_directory_required,
     _overwrite_required,
     _prepare_path_for_download,
     _sky_model_exists,
@@ -182,38 +181,6 @@ def test_sky_model_exists_no_existing_skymodel(tmp_path, mocker):
     result = _sky_model_exists(str(skymodel_path))
     mock_warning.assert_not_called()
     assert result is False
-
-
-def test_new_directory_required_existing_directory(tmp_path):
-    """Test the _new_directory_required function."""
-
-    existing_dir_path = tmp_path / "new_directory"
-    existing_dir_path.mkdir()
-    assert _new_directory_required(str(existing_dir_path)) is False
-
-
-def test_new_directory_required_non_existent_directory(tmp_path):
-    """Test the _new_directory_required function."""
-
-    non_existent_path = tmp_path / "non_existent_directory"
-    assert _new_directory_required(str(non_existent_path)) is False
-
-
-def test_new_directory_required_file_in_existing_directory(tmp_path):
-    """Test the _new_directory_required function."""
-
-    file_in_existing_dir = tmp_path / "existing_directory" / "file.model"
-    file_in_existing_dir.parent.mkdir()
-    assert _new_directory_required(str(file_in_existing_dir)) is False
-
-
-def test_new_directory_required_file_in_non_existent_directory(tmp_path):
-    """Test the _new_directory_required function."""
-
-    file_in_non_existent_dir = (
-        tmp_path / "non_existent_directory" / "file.model"
-    )
-    assert _new_directory_required(str(file_in_non_existent_dir)) is True
 
 
 def test_validate_skymodel_path_existing_file(tmp_path):

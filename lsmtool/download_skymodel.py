@@ -312,8 +312,7 @@ def _prepare_path_for_download(skymodel_path, skymodel_exists, overwrite):
 
     _validate_skymodel_path(skymodel_path)
 
-    if _new_directory_required(skymodel_path):
-        Path(skymodel_path).parent.mkdir(parents=True, exist_ok=True)
+    Path(skymodel_path).parent.mkdir(parents=True, exist_ok=True)
 
 
 def _get_lotss_moc(skymodel_path):
@@ -454,28 +453,6 @@ def _sky_model_exists(skymodel_path: str):
     if file_exists:
         logger.warning('Sky model "%s" exists!', skymodel_path)
     return file_exists
-
-
-def _new_directory_required(skymodel_path: str):
-    """
-    Check if the given path is a new directory that needs to be created.
-
-    Parameters
-    ----------
-    skymodel_path : str
-        The path to check.
-
-    Returns
-    -------
-    bool
-        True if the skymodel_path is a valid directory, False otherwise.
-    """
-    # Empty strings are False. Only attempt directory creation if there is a
-    # directory path involved.
-    return (
-        not Path(skymodel_path).is_file()
-        and not Path(skymodel_path).parent.exists()
-    )
 
 
 def _overwrite_required(skymodel_exists: bool, overwrite: bool):
