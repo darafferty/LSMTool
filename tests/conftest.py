@@ -82,7 +82,7 @@ def copy_test_data(files_to_copy, target):
 
 
 @pytest.fixture
-def existing_skymodel_filepath(tmp_path):
+def existing_skymodel_path(tmp_path):
     """Fixture that provides a path to an existing sky model file."""
     file_path = tmp_path / "existing_sky.model"
     file_path.write_text("This is a test sky model.")

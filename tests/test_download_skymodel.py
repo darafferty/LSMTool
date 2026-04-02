@@ -136,13 +136,13 @@ def test_download_skymodel(
     assert downloaded_skymodel_path.is_file()
 
 
-def test_sky_model_exists_existing_skymodel(existing_skymodel_filepath, mocker):
+def test_sky_model_exists_existing_skymodel(existing_skymodel_path, mocker):
     """Test the _sky_model_exists function when the sky model exists."""
 
     mock_warning = mocker.patch(
         "lsmtool.download_skymodel.logging.Logger.warning"
     )
-    result = _sky_model_exists(str(existing_skymodel_filepath))
+    result = _sky_model_exists(str(existing_skymodel_path))
     mock_warning.assert_called_once()
     assert result is True
 
