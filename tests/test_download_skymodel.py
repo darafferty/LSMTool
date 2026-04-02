@@ -145,7 +145,7 @@ def test_sky_model_exists_existing_skymodel(tmp_path, mocker):
     mock_warning = mocker.patch(
         "lsmtool.download_skymodel.logging.Logger.warning"
     )
-    result = _sky_model_exists(str(existing_skymodel_path))
+    result = _sky_model_exists(str(skymodel_path))
     mock_warning.assert_called_once()
     assert result is True
 
