@@ -78,12 +78,12 @@ def test_download_skymodel(
     """Test downloading a sky model."""
 
     # Arrange
-    copy_test_data("expected.tgss.sky.model", tmp_path)
+    copy_test_data("expected.tgss.sky", tmp_path)
     overwrite = False
     survey = "TGSS"
     targetname = "Patch"
     downloaded_skymodel_path = tmp_path / "sky.model"
-    expected_skymodel_path = tmp_path / "expected.tgss.sky.model"
+    expected_skymodel_path = tmp_path / "expected.tgss.sky"
     skymodel_expected = lsmtool.load(str(expected_skymodel_path))
     patch_download_skymodel_from_survey(expected_skymodel_path)
 

@@ -1,7 +1,7 @@
 FORMAT = Name, Type, Patch, Ra, Dec, I, Q, U, V, MajorAxis, MinorAxis, Orientation, ReferenceFrequency='147500000.0', SpectralIndex='[]'
 
 # LSMTool history:
-# 2025-11-06 13:50:27: LOAD (from file 'expected.tgss.sky.model')
+# 2025-11-06 13:50:27: LOAD (from file 'expected.tgss.sky')
 # 2025-11-06 13:50:27: UNGROUP
 # 2025-11-06 13:50:27: SETPATCHPOSITIONS (method = 'mid')
 # 2025-11-06 13:50:27: GROUP (algorithm = 'single')
