@@ -653,19 +653,14 @@ def test_download_skymodel_raises_if_output_missing(tmp_path, mocker):
 
 
 @pytest.mark.parametrize(
-    "contains_lonlat_return",
-    (
-        [[False], [True], [True], [True], [True]],
-        [[True], [False], [True], [True], [True]],
-        [[True], [True], [False], [True], [True]],
-        [[True], [True], [True], [False], [True]],
-        [[True], [True], [True], [True], [False]],
-    ),
+    "false_index",
+    (0, 1, 2, 3, 4),
 )
 def test_check_moc_coverage_partial(
-    mocker, mock_moc, cone_params, caplog, contains_lonlat_return
+    mocker, mock_moc, cone_params, caplog, false_index
 ):
     """Test the _check_moc_coverage function for some coordinates within MOC."""
+    contains_lonlat_return = [[True] if i != false_index else [False] for i in range(5)]
 
     mocker.patch.object(
         mock_moc, "contains_lonlat", side_effect=contains_lonlat_return
