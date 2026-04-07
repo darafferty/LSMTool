@@ -71,15 +71,17 @@ OSKAR_DEFAULT_COLUMN_NAMES = list(
 )
 FORMAT_LINE_REGEX = re.compile(
     r"""(?xsmi)
-        \#?\s*
-        (?P<fmt>format\s*=\s*)?
-        (?P<bracket>\()?
-            (?P<columns>[^\n\)]+?)
-        (?(bracket)\)|)
-        (?P<fmt_tail>
-            (?(fmt)|(\s*=\s*)format)
-        )
-        \s*$
+    \#?\s*                      # optional comment opens format string
+    (?P<fmt>format\s*=\s*)?     # optional opening "format" specifier
+    (?P<bracket>\()?            # optional opening bracket "("
+        (?P<columns>[^\n\)]+?)  # column definitions (match anything except
+                                # newline non-greedily)
+    (?(bracket)\)|)             # optional closing bracket matched only if
+                                # opening bracket present
+    (?P<fmt_tail>               # optional format specifier following column
+      (?(fmt)|(\s*=\s*)format)  # definitions. Only matched if opening "format"
+    )                           # is missing.
+    \s*$                        # trailing whitespace up to line end
     """
 )
 COLUMN_NAME_REGEX = re.compile(r"\b[a-zA-Z]+\b")
