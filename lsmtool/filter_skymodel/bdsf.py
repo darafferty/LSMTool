@@ -182,7 +182,7 @@ def filter_skymodel(
     n_sources = img_true_sky.nsrc
 
     # Save mask file
-    mask_file = f"{Path(img_true_sky.filename).name}.mask.fits"
+    mask_file = f"{img_true_sky.filename}.mask.fits"
     img_true_sky.export_image(
         outfile=mask_file, clobber=True, img_type="island_mask"
     )

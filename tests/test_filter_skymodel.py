@@ -115,7 +115,7 @@ class TestBDSF:
         assert true_sky_path.exists()
         assert apparent_sky_path.exists()
         if keep_mask:
-            assert next(TEST_DATA_PATH.glob("*.mask.fits"))
+            assert next(true_sky_path.parent.glob("*.mask.fits"))
 
         assert check_skymodels_equal(
             apparent_sky_path, TEST_DATA_PATH / "expected.apparent_sky.txt"
