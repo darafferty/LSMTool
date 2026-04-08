@@ -181,10 +181,18 @@ def filter_skymodel(
     # Save number of sources found by PyBDSF for later use
     n_sources = img_true_sky.nsrc
 
+    # Save mask file
+    mask_file = f"{img_true_sky.filename}.mask.fits"
+    img_true_sky.export_image(
+        outfile=mask_file, clobber=True, img_type="island_mask"
+    )
+
     # Filter the sky model (if it was given) and any sources were detected
     if img_true_sky.nisl > 0 and (input_true_skymodel or input_bright_skymodel):
+        # Reduce RAM memory usage
+        del img_true_sky
         filter_sources(
-            img_true_sky,
+            mask_file,
             vertices_file,
             input_true_skymodel,
             input_apparent_skymodel,
@@ -295,7 +303,7 @@ def process_images(
 
 
 def filter_sources(
-    img_true_sky: PathLike,
+    mask_file: PathLike,
     vertices_file: PathLike,
     input_true_skymodel: PathLikeOptional,
     input_apparent_skymodel: PathLikeOptional,
@@ -315,8 +323,8 @@ def filter_sources(
 
     Parameters
     ----------
-    img_true_sky : bdsf.image.Image
-        The PyBDSF image object.
+    mask_image : bdsf.image.Image
+        Path to the mask image.
     vertices_file : str or pathlib.Path
         Filename of file with vertices, which determine the imaging field.
     input_true_skymodel : str or pathlib.Path, optional
@@ -336,13 +344,6 @@ def filter_sources(
     output_apparent_sky : str or pathlib.Path
         Output file name for the generated apparent sky model.
     """
-
-    mask_file = f"{img_true_sky.filename}.mask.fits"
-    img_true_sky.export_image(
-        outfile=mask_file, clobber=True, img_type="island_mask"
-    )
-    del img_true_sky  # helps reduce memory usage
-
     # Trim the mask file to the image sector
     rasterize_polygon_mask_exterior(mask_file, vertices_file)
 
