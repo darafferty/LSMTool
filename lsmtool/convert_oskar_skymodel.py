@@ -14,6 +14,7 @@ https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:m
 """
 
 import argparse
+import itertools as itt
 import logging
 import re
 from pathlib import Path
@@ -195,15 +196,57 @@ def read_oskar_skymodel(input_file):
             err,
         )
 
+    try:
+        column_names = get_column_names(header)
         data = np.genfromtxt(
             input_file,
             delimiter=",",
-            names=get_column_names(header),
+            names=column_names,
             encoding="utf-8",
             skip_header=len(header),
         )
-
         return header, data
+
+    except ValueError as err:
+        logger.info(
+            "Could not load skymodel using numpy, attempting to read line by "
+            "line. Error was: %s",
+            err,
+        )
+        if re.search(
+            r"could not assign tuple of length \d+ to structure with 12 fields",
+            str(err),
+        ):
+            data = _read_oskar_line_by_line(
+                input_file, len(header), len(column_names)
+            )
+            data = np.array(list(data)).view(
+                [(name, float) for name in column_names]
+            )
+            return header, data
+
+        raise ValueError(f"Could not read skymodel file: {input_file}") from err
+
+
+def _read_oskar_line_by_line(input_file, n_header, n_cols, fill_value=0.0):
+    """
+    Read the skymodel file line by line, yielding the data values as lists of
+    floats.
+
+    This is a fallback method for reading the skymodel if the other methods
+    fail, and is less efficient than using numpy's genfromtxt, but can handle
+    files with inconsistent number of columns by substituting a default value
+    for missing data.
+    """
+
+    with open(input_file) as file:
+        for line in itt.islice(file, n_header, None):
+            if (line := line.strip()) and not line.startswith("#"):
+                cells = list(map(float, line.split()))
+                if n_missing := n_cols - len(cells):
+                    cells = [*cells, *([fill_value] * n_missing)]
+
+                yield cells
 
 
 def filter_sources(

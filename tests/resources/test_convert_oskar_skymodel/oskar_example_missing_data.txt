@@ -1,0 +1,17 @@
+#
+# Required columns:
+# =================
+# RA(deg), Dec(deg), I(Jy)
+#
+# Optional columns:
+# =================
+# Q(Jy), U(Jy), V(Jy), freq0(Hz), spectral index, rotation measure,
+#           FWHM major (arcsec), FWHM minor (arcsec), position angle (deg)
+#
+#
+# Two fully-specified sources
+0.0 70.0 1.1 0.0 0.0 0.0 100e6 -0.7 0.0 200.0 150.0  23.0
+0.0 71.2 2.3 1.0 0.0 0.0 100e6 -0.7 0.0  90.0  40.0 -10.0
+
+# A source where only Stokes I is defined (other columns take default values)
+0.1 69.8 1.0
