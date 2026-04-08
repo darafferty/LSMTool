@@ -65,6 +65,7 @@ dev = ["lsmtool[dev]"]
 [project.scripts]
 lsmtool = "lsmtool.lsmtool:main"
 correct_gaussian_orientation = "lsmtool.correct_gaussian_orientation:main"
+convert_oskar_skymodel = "lsmtool.convert_oskar_skymodel:main"
 
 [project.urls]
 Documentation = "https://lsmtool.readthedocs.io/en/latest/"

@@ -25,7 +25,7 @@ from shapely.prepared import prep
 from .io import read_vertices_x_y
 
 
-def format_coordinates(ra, dec, precision=6):
+def format_coordinates(ra, dec, precision=6, **kws):
     """
     Format RA and Dec coordinates to strings in the makesourcedb format using
     astropy.
@@ -44,6 +44,9 @@ def format_coordinates(ra, dec, precision=6):
     precision : int, optional
         The number of decimal places for seconds in RA and Dec strings.
         Default is 6.
+    **kws
+        Additional keyword arguments to pass to `Angle.to_string` method for
+        RA and Dec formatting.
 
     Returns
     -------
@@ -53,8 +56,12 @@ def format_coordinates(ra, dec, precision=6):
     """
     coords = SkyCoord(ra, dec, unit="deg")
     return (
-        coords.ra.to_string("hourangle", sep=":", precision=precision),
-        coords.dec.to_string(sep=".", precision=precision, alwayssign=True),
+        coords.ra.to_string(
+            **{"unit": "hourangle", "sep": ":", "precision": precision, **kws}
+        ),
+        coords.dec.to_string(
+            **{"sep": ".", "precision": precision, "alwayssign": True, **kws}
+        ),
     )
 
 
