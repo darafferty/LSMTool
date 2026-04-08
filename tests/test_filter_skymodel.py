@@ -125,9 +125,13 @@ class TestBDSF:
         )
 
     @pytest.mark.parametrize("keep_mask", [True, False])
-    def test_filter_skymodel_diagnostics(self, image_paths, diagnostic_paths, keep_mask):
+    def test_filter_skymodel_diagnostics(
+        self, image_paths, diagnostic_paths, keep_mask
+    ):
         # run the base test
-        self.test_filter_skymodel(image_paths, keep_mask=keep_mask, **diagnostic_paths)
+        self.test_filter_skymodel(
+            image_paths, keep_mask=keep_mask, **diagnostic_paths
+        )
         # check that the additional files were created
         assert diagnostic_paths["output_catalog"].exists()
         assert diagnostic_paths["output_true_rms"].exists()

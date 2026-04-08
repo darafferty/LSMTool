@@ -202,7 +202,7 @@ def filter_skymodel(
             keep_mask,
             output_true_sky,
             output_apparent_sky,
-    )
+        )
     else:
         create_dummy_skymodel(
             img_true_sky, output_true_sky, output_apparent_sky
