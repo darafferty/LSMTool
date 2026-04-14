@@ -224,8 +224,9 @@ commands = [
 [tool.tox.env.format]
 deps = ["ruff"]
 commands = [
-    ["python", "-m", "ruff", "format", "-v",
-     { replace = "posargs", default = [], extend = true }]
+    ["python", "-m", "ruff", "format",
+     { replace = "posargs", default = [], extend = true }],
+    ["python", "-m", "ruff", "check", "--select", "I", "--fix"]
 ]
 
 [tool.tox.env.docs]
