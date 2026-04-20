@@ -2,13 +2,265 @@
 Module that holds functions and classes related to faceting.
 """
 
+import logging
+import tempfile
+
 import numpy as np
 import scipy
+from astropy.coordinates import Angle
+from matplotlib import patches
+from shapely.geometry import Polygon
 
-from lsmtool.constants import WCS_ORIGIN, WCS_PIXEL_SCALE
-from lsmtool.operations_lib import make_wcs
+from . import tableio
+from .constants import WCS_ORIGIN, WCS_PIXEL_SCALE
+from .download_skymodel import download_skymodel
+from .operations_lib import make_wcs, normalize_ra_dec
+from .io import load
+
+
 
 INDEX_OUTSIDE_DIAGRAM = -1
+
+
+class Facet(object):
+    """
+    Base Facet class
+
+    Parameters
+    ----------
+    name : str
+        Name of facet
+    ra : float or str
+        RA of reference coordinate in degrees (if float) or as a string in a
+        format supported by astropy.coordinates.Angle
+    dec : float or str
+        Dec of reference coordinate in degrees (if float) or as a string in a
+        format supported by astropy.coordinates.Angle
+    vertices : list of tuples
+        List of (RA, Dec) tuples, one for each vertex of the facet
+    """
+
+    def __init__(self, name, ra, dec, vertices):
+        self.name = name
+        self.log = logging.getLogger("rapthor:{0}".format(self.name))
+        if type(ra) is str:
+            ra = Angle(ra).to("deg").value
+        if type(dec) is str:
+            dec = Angle(dec).to("deg").value
+        self.ra, self.dec = normalize_ra_dec(ra, dec)
+        self.vertices = np.array(vertices)
+
+        # Convert input (RA, Dec) vertices to (x, y) polygon
+        self.wcs = make_wcs(self.ra, self.dec, WCS_PIXEL_SCALE)
+        self.polygon_ras = [radec[0] for radec in self.vertices]
+        self.polygon_decs = [radec[1] for radec in self.vertices]
+        x_values, y_values = self.wcs.wcs_world2pix(
+            self.polygon_ras, self.polygon_decs, WCS_ORIGIN
+        )
+        polygon_vertices = [(x, y) for x, y in zip(x_values, y_values)]
+        self.polygon = Polygon(polygon_vertices)
+
+        # Find the size and center coordinates of the facet
+        xmin, ymin, xmax, ymax = self.polygon.bounds
+        self.size = min(
+            0.5, max(xmax - xmin, ymax - ymin) * abs(self.wcs.wcs.cdelt[0])
+        )  # degrees
+        self.x_center = xmin + (xmax - xmin) / 2
+        self.y_center = ymin + (ymax - ymin) / 2
+        self.ra_center, self.dec_center = map(
+            float,
+            self.wcs.wcs_pix2world(
+                self.x_center, self.y_center, WCS_ORIGIN
+            ),
+        )
+
+        # Find the centroid of the facet
+        self.ra_centroid, self.dec_centroid = map(
+            float,
+            self.wcs.wcs_pix2world(
+                self.polygon.centroid.x,
+                self.polygon.centroid.y,
+                WCS_ORIGIN,
+            ),
+        )
+
+    def set_skymodel(self, skymodel):
+        """
+        Sets the facet's sky model
+
+        The input sky model is filtered to contain only those sources that lie
+        inside the facet's polygon. The filtered sky model is stored in
+        self.skymodel
+
+        Parameters
+        ----------
+        skymodel : LSMTool skymodel object
+            Input sky model
+        """
+        self.skymodel = filter_skymodel(self.polygon, skymodel, self.wcs)
+
+    def download_panstarrs(self, max_search_cone_radius=0.5):
+        """
+        Returns a Pan-STARRS sky model for the area around the facet
+
+        Note: the resulting sky model may contain sources outside the facet's
+        polygon
+
+        Parameters
+        ----------
+        max_search_cone_radius : float, optional
+            The maximum radius in degrees to use in the cone search. The smaller
+            of this radius and the minimum radius that covers the facet is used
+
+        Returns
+        -------
+        skymodel : LSMTool skymodel object
+            The Pan-STARRS sky model
+        """
+        try:
+            with tempfile.NamedTemporaryFile() as fp:
+                skymodel_cone_params = {
+                    "ra": self.ra_center,
+                    "dec": self.dec_center,
+                    "radius": min(max_search_cone_radius, self.size / 2),
+                }
+                download_skymodel(
+                    skymodel_cone_params,
+                    skymodel_path=fp.name,
+                    overwrite=True,
+                    survey="PANSTARRS",
+                )
+                skymodel = load(fp.name)
+                skymodel.group("every")
+        except IOError:
+            # Comparison catalog not downloaded successfully
+            self.log.warning(
+                "The Pan-STARRS catalog could not be successfully downloaded"
+            )
+            skymodel = tableio.makeEmptyTable()
+
+        return skymodel
+
+    def find_astrometry_offsets(self, comparison_skymodel=None, min_number=5):
+        """
+        Finds the astrometry offsets for sources in the facet
+
+        The offsets are calculated as (LOFAR model value) - (comparison model
+        value); e.g., a positive Dec offset indicates that the LOFAR sources
+        are on average North of the comparison source positions.
+
+        The offsets are stored in self.astrometry_diagnostics, a dict with
+        the following keys (see LSMTool's compare operation for details of the
+        diagnostics):
+
+            'meanRAOffsetDeg', 'stdRAOffsetDeg', 'meanClippedRAOffsetDeg',
+            'stdClippedRAOffsetDeg', 'meanDecOffsetDeg', 'stdDecOffsetDeg',
+            'meanClippedDecOffsetDeg', 'stdClippedDecOffsetDeg'
+
+        Note: if the comparison is unsuccessful, self.astrometry_diagnostics is
+        an empty dict
+
+        Parameters
+        ----------
+        comparison_skymodel : LSMTool skymodel object, optional
+            Comparison sky model. If not given, the Pan-STARRS catalog is
+            used
+        min_number : int, optional
+            Minimum number of sources required for comparison
+        """
+        self.astrometry_diagnostics = {}
+        if comparison_skymodel is None:
+            comparison_skymodel = self.download_panstarrs()
+
+        # Find the astrometry offsets between the facet's sky model and the
+        # comparison sky model
+        #
+        # Note: If there are no successful matches, the compare() method
+        # returns None
+        if len(comparison_skymodel) >= min_number:
+            result = self.skymodel.compare(
+                comparison_skymodel,
+                radius="5 arcsec",
+                excludeMultiple=True,
+                make_plots=False,
+            )
+            # Save offsets
+            if result is not None:
+                self.astrometry_diagnostics.update(result)
+        else:
+            self.log.warning(
+                "Too few matches to determine astrometry offsets "
+                "(min_number = %i but number of matches = %i)",
+                min_number,
+                len(comparison_skymodel),
+            )
+
+    def get_matplotlib_patch(self, wcs=None):
+        """
+        Returns a matplotlib patch for the facet polygon
+
+        Parameters
+        ----------
+        wcs : WCS object, optional
+            WCS object defining (RA, Dec) <-> (x, y) transformation. If not given,
+            the facet's transformation is used
+
+        Returns
+        -------
+        patch : matplotlib patch object
+            The patch for the facet polygon
+        """
+        if wcs is not None:
+            x, y = wcs.wcs_world2pix(
+                self.polygon_ras, self.polygon_decs, WCS_ORIGIN
+            )
+        else:
+            x, y = self.polygon.exterior.coords.xy
+        xy = np.vstack([x, y]).transpose()
+        patch = patches.Polygon(xy=xy, edgecolor="black", facecolor="white")
+
+        return patch
+
+
+class SquareFacet(Facet):
+    """
+    Wrapper class for a square facet
+
+    Parameters
+    ----------
+    name : str
+        Name of facet
+    ra : float or str
+        RA of reference coordinate in degrees (if float) or as a string in a
+        format supported by astropy.coordinates.Angle
+    dec : float or str
+        Dec of reference coordinate in degrees (if float) or as a string in a
+        format supported by astropy.coordinates.Angle
+    width : float
+        Width in degrees of facet
+    """
+
+    def __init__(self, name, ra, dec, width):
+        if type(ra) is str:
+            ra = Angle(ra).to("deg").value
+        if type(dec) is str:
+            dec = Angle(dec).to("deg").value
+        ra, dec = normalize_ra_dec(ra, dec)
+        wcs = make_wcs(ra, dec, WCS_PIXEL_SCALE)
+
+        # Make the vertices.
+        xmin = wcs.wcs.crpix[0] - width / 2 / abs(wcs.wcs.cdelt[0])
+        xmax = wcs.wcs.crpix[0] + width / 2 / abs(wcs.wcs.cdelt[0])
+        ymin = wcs.wcs.crpix[1] - width / 2 / abs(wcs.wcs.cdelt[1])
+        ymax = wcs.wcs.crpix[1] + width / 2 / abs(wcs.wcs.cdelt[1])
+        # Corner order: lower-left, top-left, top-right and lower-right.
+        corners_ra, corners_dec = wcs.wcs_pix2world(
+            [xmin, xmin, xmax, xmax], [ymin, ymax, ymax, ymin], WCS_ORIGIN
+        )
+
+        vertices = list(zip(corners_ra, corners_dec))
+
+        super().__init__(name, ra, dec, vertices)
 
 
 def tessellate(
