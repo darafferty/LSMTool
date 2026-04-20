@@ -9,16 +9,17 @@ import numpy as np
 import scipy
 from astropy.coordinates import Angle
 from matplotlib import patches
-from shapely.geometry import Polygon
+from PIL import Image, ImageDraw
+from shapely.geometry import Point, Polygon
+from shapely.prepared import prep
 
 from . import tableio
 from .constants import WCS_ORIGIN, WCS_PIXEL_SCALE
 from .download_skymodel import download_skymodel
-from .operations_lib import make_wcs, normalize_ra_dec
 from .io import load
+from .operations_lib import make_wcs, normalize_ra_dec
 
-
-
+# Module constants
 INDEX_OUTSIDE_DIAGRAM = -1
 
 
@@ -69,9 +70,7 @@ class Facet(object):
         self.y_center = ymin + (ymax - ymin) / 2
         self.ra_center, self.dec_center = map(
             float,
-            self.wcs.wcs_pix2world(
-                self.x_center, self.y_center, WCS_ORIGIN
-            ),
+            self.wcs.wcs_pix2world(self.x_center, self.y_center, WCS_ORIGIN),
         )
 
         # Find the centroid of the facet
@@ -494,3 +493,97 @@ def is_valid_region(region, vertices, bounding_box):
             return False
 
     return bool(region)
+
+
+def filter_skymodel(polygon, skymodel, wcs, invert=False):
+    """
+    Filters input skymodel to select only sources that lie inside the input facet
+
+    Parameters
+    ----------
+    polygon : Shapely polygon object
+        Polygon object to use for filtering
+    skymodel : LSMTool skymodel object
+        Input sky model to be filtered
+    wcs : WCS object
+        WCS object defining image to sky transformations
+    invert : bool, optional
+        If True, invert the selection (so select only sources that lie outside
+        the facet)
+
+    Returns
+    -------
+    filtered_skymodel : LSMTool skymodel object
+        Filtered sky model
+    """
+    # Make list of sources
+    RA = skymodel.getColValues("Ra")
+    Dec = skymodel.getColValues("Dec")
+    x, y = wcs.wcs_world2pix(RA, Dec, WCS_ORIGIN)
+
+    # Keep only those sources inside the bounding box
+    inside = np.zeros(len(skymodel), dtype=bool)
+    xmin, ymin, xmax, ymax = polygon.bounds
+    inside_ind = np.where((x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax))
+    inside[inside_ind] = True
+    if invert:
+        skymodel.remove(inside)
+    else:
+        skymodel.select(inside)
+    if len(skymodel) == 0:
+        return skymodel
+    RA = skymodel.getColValues("Ra")
+    Dec = skymodel.getColValues("Dec")
+    x, y = wcs.wcs_world2pix(RA, Dec, WCS_ORIGIN)
+
+    # Now check the actual boundary against filtered sky model. We first do a quick (but
+    # coarse) check using ImageDraw with a padding of at least a few pixels to ensure the
+    # quick check does not remove sources spuriously. We then do a slow (but precise)
+    # check using Shapely
+    xpadding = max(int(0.1 * (max(x) - min(x))), 3)
+    ypadding = max(int(0.1 * (max(y) - min(y))), 3)
+    xshift = int(min(x)) - xpadding
+    yshift = int(min(y)) - ypadding
+    xsize = int(np.ceil(max(x) - min(x))) + 2 * xpadding
+    ysize = int(np.ceil(max(y) - min(y))) + 2 * ypadding
+    x -= xshift
+    y -= yshift
+    prepared_polygon = prep(polygon)
+
+    # Unmask everything outside of the polygon + its border (outline)
+    inside = np.zeros(len(skymodel), dtype=bool)
+    mask = Image.new("L", (xsize, ysize), 0)
+    verts = [
+        (xv - xshift, yv - yshift)
+        for xv, yv in zip(
+            polygon.exterior.coords.xy[0], polygon.exterior.coords.xy[1]
+        )
+    ]
+    ImageDraw.Draw(mask).polygon(verts, outline=1, fill=1)
+    inside_ind = np.where(
+        np.array(mask).transpose()[(x.astype(int), y.astype(int))]
+    )
+    inside[inside_ind] = True
+
+    # Now check sources in the border precisely
+    mask = Image.new("L", (xsize, ysize), 0)
+    ImageDraw.Draw(mask).polygon(verts, outline=1, fill=0)
+    border_ind = np.where(
+        np.array(mask).transpose()[(x.astype(int), y.astype(int))]
+    )
+    points = [Point(xs, ys) for xs, ys in zip(x[border_ind], y[border_ind])]
+    indexes = []
+    for i in range(len(points)):
+        indexes.append(border_ind[0][i])
+    i_points = zip(indexes, points)
+    i_outside_points = [
+        (i, p) for (i, p) in i_points if not prepared_polygon.contains(p)
+    ]
+    for idx, _ in i_outside_points:
+        inside[idx] = False
+    if invert:
+        skymodel.remove(inside)
+    else:
+        skymodel.select(inside)
+
+    return skymodel
