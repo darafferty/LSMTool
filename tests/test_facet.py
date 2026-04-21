@@ -1,4 +1,9 @@
+"""
+Tests for the lsmtool.facet module.
+"""
+
 import contextlib
+import socket
 
 import numpy as np
 import pytest
@@ -6,13 +11,29 @@ from astropy.coordinates import SkyCoord
 from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
+    Facet,
     in_box,
+    make_ds9_region_file,
     prepare_points_for_tessellate,
+    read_ds9_region_file,
     tessellate,
     voronoi,
 )
 
 NULL_CONTEXT = contextlib.nullcontext()
+
+
+@pytest.fixture
+def facet():
+    """
+    Fixture to create a facet for testing.
+    """
+    return Facet(
+        name="Square Facet",
+        ra=1.0,
+        dec=1.0,
+        vertices=[(0, 2.0), (2.0, 2.0), (2.0, 0), (0, 0)],
+    )
 
 
 @pytest.mark.parametrize(
@@ -481,3 +502,121 @@ def test_prepare_points_for_tessellate(
         assert set(map(tuple, expected_points)) == set(map(tuple, points))
 
         np.testing.assert_array_equal(points_centre, expected_centre)
+
+
+def test_read_ds9_region_file(request):
+    """
+    Test reading a DS9 region file.
+    """
+    facets = read_ds9_region_file(request.config.resource_dir / "test.reg")
+    assert len(facets) == 15
+    assert facets[0].name == "Patch_1"
+    assert facets[0].ra == 318.2026666666666
+    assert facets[0].dec == 62.25055927777777
+    assert facets[1].name == "Patch_10_with_spaces"
+    assert facets[2].name == "Patch_11"
+    assert facets[3].name == "Patch_12"
+
+
+def test_write_ds9_region_file(request, tmp_path):
+    """
+    Test writing a DS9 region file.
+    """
+    reg_in = request.config.resource_dir / "test.reg"
+    reg_out = tmp_path / "test_region_write.reg"
+    facets = read_ds9_region_file(reg_in)
+    make_ds9_region_file(facets, reg_out)
+    facets = read_ds9_region_file(reg_out)
+    assert len(facets) == 15
+    assert facets[0].name == "Patch_1"
+    assert facets[0].ra == 318.2026666666666
+    assert facets[0].dec == 62.25055927777777
+    assert facets[1].name == "Patch_10_with_spaces"
+    assert facets[2].name == "Patch_11"
+    assert facets[3].name == "Patch_12"
+
+
+def test_find_astrometry_offsets_with_comparison_skymodel_does_not_download_from_panstarrs(
+    facet, mocker
+):
+    """
+    Test that find_astrometry_offsets does not attempt to download data from PanSTARRS
+    if a comparison skymodel is provided.
+    """
+    facet.skymodel = mocker.MagicMock()
+    mock_download_panstarrs = mocker.patch.object(facet, "download_panstarrs")
+    mock_comparison_skymodel = "mock_LSMTool_skymodel"
+    facet.find_astrometry_offsets(mock_comparison_skymodel, min_number=1)
+    mock_download_panstarrs.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "mock_panstarrs",
+    (
+        [],  # No sources found in PanSTARRS
+        [0, 1, 2, 3, 4],  # Default minimum number of sources is 5
+        [0, 1, 2, 3],  # Below the minimum number of sources
+    ),
+)
+def test_find_astrometry_offsets_without_comparison_skymodel_downloads_from_panstarrs(
+    facet, mocker, mock_panstarrs
+):
+    """
+    Test that find_astrometry_offsets attempts to download data from PanSTARRS
+    if no comparison skymodel is provided.
+    """
+    min_number = 5  # Default minimum number of sources is 5
+    facet.skymodel = mocker.MagicMock()
+    mock_download_panstarrs = mocker.patch.object(
+        facet, "download_panstarrs", return_value=mock_panstarrs
+    )
+    facet.find_astrometry_offsets(
+        comparison_skymodel=None, min_number=min_number
+    )
+    mock_download_panstarrs.assert_called_once()
+    if len(mock_panstarrs) < min_number:
+        facet.skymodel.compare.assert_not_called()
+    else:
+        facet.skymodel.compare.assert_called_once()
+
+
+@pytest.mark.disable_socket
+def test_network_is_blocked_by_pytest_socket():
+    with pytest.raises(Exception):
+        socket.create_connection(("example.com", 80), timeout=1)
+
+
+@pytest.mark.disable_socket
+def test_find_astrometry_offsets_with_comparison_skymodel_does_not_access_internet(
+    facet, mocker
+):
+    """Test that find_astrometry_offsets does not access the internet if a comparison skymodel is provided."""
+    facet.skymodel = mocker.MagicMock()
+    mock_comparsion_skymodel = [
+        1,
+        1,
+        1,
+        1,
+        1,
+    ]  # Mock comparison skymodel with enough sources
+    facet.find_astrometry_offsets(
+        comparison_skymodel=mock_comparsion_skymodel, min_number=5
+    )
+    facet.skymodel.compare.assert_called_once_with(
+        mock_comparsion_skymodel,
+        radius="5 arcsec",
+        excludeMultiple=True,
+        make_plots=False,
+    )
+
+
+def test_download_panstarrs(facet, mocker):
+    """
+    Test that download_panstarrs is called.
+    """
+    mock_download_skymodel = mocker.patch(
+        "lsmtool.download_skymodel.download_skymodel",
+        return_value="mock_skymodel",
+    )
+    _ = facet.download_panstarrs()
+    assert mock_download_skymodel.called
