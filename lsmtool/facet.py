@@ -46,7 +46,7 @@ class Facet(object):
 
     def __init__(self, name, ra, dec, vertices):
         self.name = name
-        self.log = logging.getLogger("rapthor:{0}".format(self.name))
+        self.log = logging.getLogger("lsmtool:{0}".format(self.name))
         if type(ra) is str:
             ra = Angle(ra).to("deg").value
         if type(dec) is str:
