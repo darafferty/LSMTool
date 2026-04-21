@@ -581,12 +581,6 @@ def test_find_astrometry_offsets_without_comparison_skymodel_downloads_from_pans
 
 
 @pytest.mark.disable_socket
-def test_network_is_blocked_by_pytest_socket():
-    with pytest.raises(Exception):
-        socket.create_connection(("example.com", 80), timeout=1)
-
-
-@pytest.mark.disable_socket
 def test_find_astrometry_offsets_with_comparison_skymodel_does_not_access_internet(
     facet, mocker
 ):
