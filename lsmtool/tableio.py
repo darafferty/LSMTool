@@ -31,7 +31,6 @@ import logging
 import os
 from copy import deepcopy
 from .operations_lib import normalize_ra_dec
-from .facet import tessellate
 
 # Python 3 compatibility
 try:
@@ -1033,6 +1032,8 @@ def facetRegionWriter(table, fileName):
         Output file to which the sky model is written
 
     """
+    from lsmtool.facet import tessellate
+    
     log = logging.getLogger('LSMTool.Write')
 
     # Get the positions of the calibration patches
