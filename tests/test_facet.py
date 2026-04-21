@@ -590,7 +590,10 @@ def test_network_is_blocked_by_pytest_socket():
 def test_find_astrometry_offsets_with_comparison_skymodel_does_not_access_internet(
     facet, mocker
 ):
-    """Test that find_astrometry_offsets does not access the internet if a comparison skymodel is provided."""
+    """
+    Test that find_astrometry_offsets does not access the internet if a
+    comparison skymodel is provided.
+    """
     facet.skymodel = mocker.MagicMock()
     mock_comparsion_skymodel = [
         1,
@@ -615,7 +618,7 @@ def test_download_panstarrs(facet, mocker):
     Test that download_panstarrs is called.
     """
     mock_download_skymodel = mocker.patch(
-        "lsmtool.download_skymodel.download_skymodel",
+        "lsmtool.facet.download_skymodel",
         return_value="mock_skymodel",
     )
     _ = facet.download_panstarrs()
