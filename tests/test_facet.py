@@ -607,7 +607,6 @@ def test_find_astrometry_offsets_with_comparison_skymodel_does_not_access_intern
     )
 
 
-
 @pytest.mark.filterwarnings(
     "ignore:The Pan-STARRS catalog could not be successfully downloaded"
     # since we are mocking the download_skymodel function, the returned

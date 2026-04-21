@@ -42,9 +42,14 @@ class Facet(object):
         format supported by astropy.coordinates.Angle
     vertices : list of tuples
         List of (RA, Dec) tuples, one for each vertex of the facet
+    wcs_pixel_scale : float, optional, default `lsmtool.constants.WCS_PIXEL_SCALE
+        The pixel scale to use for the conversion to pixel coordinates in
+        degrees per pixel
     """
 
-    def __init__(self, name, ra, dec, vertices):
+    def __init__(
+        self, name, ra, dec, vertices, *, wcs_pixel_scale=WCS_PIXEL_SCALE
+    ):
         self.name = name
         self.log = logging.getLogger("lsmtool:{0}".format(self.name))
         if type(ra) is str:
@@ -55,7 +60,7 @@ class Facet(object):
         self.vertices = np.array(vertices)
 
         # Convert input (RA, Dec) vertices to (x, y) polygon
-        self.wcs = make_wcs(self.ra, self.dec, WCS_PIXEL_SCALE)
+        self.wcs = make_wcs(self.ra, self.dec, wcs_pixel_scale)
         self.polygon_ras = [radec[0] for radec in self.vertices]
         self.polygon_decs = [radec[1] for radec in self.vertices]
         x_values, y_values = self.wcs.wcs_world2pix(
@@ -240,15 +245,21 @@ class SquareFacet(Facet):
         format supported by astropy.coordinates.Angle
     width : float
         Width in degrees of facet
+    wcs_pixel_scale : float, optional
+        The pixel scale to use for the conversion to pixel coordinates in
+        degrees per pixel. Defaullt value is taken from default
+        `lsmtool.constants.WCS_PIXEL_SCALE`
     """
 
-    def __init__(self, name, ra, dec, width):
+    def __init__(
+        self, name, ra, dec, width, *, wcs_pixel_scale=WCS_PIXEL_SCALE
+    ):
         if type(ra) is str:
             ra = Angle(ra).to("deg").value
         if type(dec) is str:
             dec = Angle(dec).to("deg").value
         ra, dec = normalize_ra_dec(ra, dec)
-        wcs = make_wcs(ra, dec, WCS_PIXEL_SCALE)
+        wcs = make_wcs(ra, dec, wcs_pixel_scale)
 
         # Make the vertices.
         xmin = wcs.wcs.crpix[0] - width / 2 / abs(wcs.wcs.cdelt[0])
@@ -262,13 +273,16 @@ class SquareFacet(Facet):
 
         vertices = list(zip(corners_ra, corners_dec))
 
-        super().__init__(name, ra, dec, vertices)
+        super().__init__(
+            name, ra, dec, vertices, wcs_pixel_scale=wcs_pixel_scale
+        )
 
 
 def tessellate(
     directions,
     bbox_midpoint,
     bbox_size,
+    *,
     wcs_pixel_scale=WCS_PIXEL_SCALE,
 ):
     """
@@ -288,9 +302,10 @@ def tessellate(
     bbox_size : tuple of float
         Size of bounding box (RA, Dec). Should be a 2-tuple of numbers in
         degrees.
-    wcs_pixel_scale : float
+    wcs_pixel_scale : float, optional
         The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel.
+        degrees per pixel. Defaullt value is taken from default
+        `lsmtool.constants.WCS_PIXEL_SCALE`
 
     Returns
     -------
@@ -639,7 +654,7 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
         f.writelines(lines)
 
 
-def read_ds9_region_file(region_file):
+def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
     """
     Read a ds9 facet region file and return facets
 
@@ -647,6 +662,10 @@ def read_ds9_region_file(region_file):
     ----------
     region_file : str
         Filename of input ds9 region file
+    wcs_pixel_scale : float, optional
+        The pixel scale to use for the conversion to pixel coordinates in
+        degrees per pixel. Defaullt value is taken from default
+        `lsmtool.constants.WCS_PIXEL_SCALE`
 
     Returns
     -------
@@ -678,7 +697,13 @@ def read_ds9_region_file(region_file):
             # Make a temporary facet to get centroid and make new facet with
             # reference point at centroid (this point may be overridden by
             # a following 'point' line)
-            facet_tmp = Facet("temp", polygon_ras[0], polygon_decs[0], vertices)
+            facet_tmp = Facet(
+                "temp",
+                polygon_ras[0],
+                polygon_decs[0],
+                vertices,
+                wcs_pixel_scale=wcs_pixel_scale,
+            )
             ra = facet_tmp.ra_centroid
             dec = facet_tmp.dec_centroid
 
@@ -727,12 +752,24 @@ def read_ds9_region_file(region_file):
             facet_name = f"facet_{indx}"
 
         # Lastly, add the facet to the list
-        facets.append(Facet(facet_name, ra, dec, vertices))
+        facets.append(
+            Facet(
+                facet_name, ra, dec, vertices, wcs_pixel_scale=wcs_pixel_scale
+            )
+        )
 
     return facets
 
 
-def read_skymodel(skymodel, ra_mid, dec_mid, width_ra, width_dec):
+def read_skymodel(
+    skymodel,
+    ra_mid,
+    dec_mid,
+    width_ra,
+    width_dec,
+    *,
+    wcs_pixel_scale=WCS_PIXEL_SCALE,
+):
     """
     Reads a sky model file and returns facets
 
@@ -748,6 +785,10 @@ def read_skymodel(skymodel, ra_mid, dec_mid, width_ra, width_dec):
         Width of bounding box in RA in degrees, corrected to Dec = 0
     width_dec : float
         Width of bounding box in Dec in degrees
+    wcs_pixel_scale : float, optional
+        The pixel scale to use for the conversion to pixel coordinates in
+        degrees per pixel. Defaullt value is taken from default
+        `lsmtool.constants.WCS_PIXEL_SCALE`
 
     Returns
     -------
@@ -779,7 +820,7 @@ def read_skymodel(skymodel, ra_mid, dec_mid, width_ra, width_dec):
         SkyCoord(ra_cal, dec_cal, unit="deg"),
         SkyCoord(ra_mid, dec_mid, unit="deg"),
         [width_ra, width_dec],
-        wcs_pixel_scale=WCS_PIXEL_SCALE,
+        wcs_pixel_scale=wcs_pixel_scale,
     )
     facet_names = []
     for facet_point in facet_points:
@@ -798,6 +839,14 @@ def read_skymodel(skymodel, ra_mid, dec_mid, width_ra, width_dec):
     for name, center_coord, vertices in zip(
         facet_names, facet_points, facet_polys
     ):
-        facets.append(Facet(name, center_coord[0], center_coord[1], vertices))
+        facets.append(
+            Facet(
+                name,
+                center_coord[0],
+                center_coord[1],
+                vertices,
+                wcs_pixel_scale=wcs_pixel_scale,
+            )
+        )
 
     return facets
