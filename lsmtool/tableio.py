@@ -1032,6 +1032,7 @@ def facetRegionWriter(table, fileName):
         Output file to which the sky model is written
 
     """
+    # TODO: Fix circular import and move to module scope
     from lsmtool.facet import tessellate
     
     log = logging.getLogger('LSMTool.Write')
