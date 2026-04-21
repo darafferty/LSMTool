@@ -613,6 +613,14 @@ def test_find_astrometry_offsets_with_comparison_skymodel_does_not_access_intern
     )
 
 
+
+@pytest.mark.filterwarnings(
+    "ignore:The Pan-STARRS catalog could not be successfully downloaded"
+    # since we are mocking the download_skymodel function, the returned
+    # "skymodel" will not load correctly, which will trigger a warning. Since
+    # we are only testing that the download_skymodel function was called, we
+    # can safely ignore this
+)
 def test_download_panstarrs(facet, mocker):
     """
     Test that download_panstarrs is called.
