@@ -31,8 +31,8 @@ def facet():
     return Facet(
         name="Square Facet",
         ra=1.0,
-        dec=1.0,
-        vertices=[(0, 2.0), (2.0, 2.0), (2.0, 0), (0, 0)],
+        dec=1,
+        vertices=[(0, 2), (2, 2), (2, 0), (0, 0)],
     )
 
 
