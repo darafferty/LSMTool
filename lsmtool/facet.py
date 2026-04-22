@@ -247,7 +247,7 @@ class SquareFacet(Facet):
         Width in degrees of facet
     wcs_pixel_scale : float, optional
         The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel. Defaullt value is taken from default
+        degrees per pixel. Default value is taken from default
         `lsmtool.constants.WCS_PIXEL_SCALE`
     """
 
@@ -304,7 +304,7 @@ def tessellate(
         degrees.
     wcs_pixel_scale : float, optional
         The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel. Defaullt value is taken from default
+        degrees per pixel. Default value is taken from default
         `lsmtool.constants.WCS_PIXEL_SCALE`
 
     Returns
@@ -664,7 +664,7 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         Filename of input ds9 region file
     wcs_pixel_scale : float, optional
         The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel. Defaullt value is taken from default
+        degrees per pixel. Default value is taken from default
         `lsmtool.constants.WCS_PIXEL_SCALE`
 
     Returns
@@ -787,7 +787,7 @@ def read_skymodel(
         Width of bounding box in Dec in degrees
     wcs_pixel_scale : float, optional
         The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel. Defaullt value is taken from default
+        degrees per pixel. Default value is taken from default
         `lsmtool.constants.WCS_PIXEL_SCALE`
 
     Returns
