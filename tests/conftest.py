@@ -19,6 +19,10 @@ TEST_PATH = Path(__file__).parent
 TEST_DATA_PATH = TEST_PATH / "resources"
 
 
+def pytest_configure(config):
+    config.resource_dir = TEST_DATA_PATH
+
+
 @pytest.fixture
 def midbands_ms(tmp_path):
     """Uncompresses test_midbands.ms into a temporary directory."""
