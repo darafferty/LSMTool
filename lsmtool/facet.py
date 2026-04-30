@@ -49,7 +49,7 @@ class Facet(object):
         when wcs_obj is specified
     wcs_obj : astropy.wcs.WCS object, optional
         WCS object that defines the world coordinate system to use. If None, a
-        generic WCS system is used
+        generic WCS is used
     """
 
     def __init__(
@@ -674,7 +674,7 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE, wcs_obj=N
         when wcs_obj is specified
     wcs_obj : astropy.wcs.WCS object, optional
         WCS object that defines the world coordinate system to use. If None, a
-        generic WCS system is used
+        generic WCS is used
 
     Returns
     -------
@@ -803,7 +803,7 @@ def read_skymodel(
         when wcs_obj is specified
     wcs_obj : astropy.wcs.WCS object, optional
         WCS object that defines the world coordinate system to use. If None, a
-        generic WCS system is used
+        generic WCS is used
 
     Returns
     -------
