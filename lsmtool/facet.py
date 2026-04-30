@@ -42,13 +42,18 @@ class Facet(object):
         format supported by astropy.coordinates.Angle
     vertices : list of tuples
         List of (RA, Dec) tuples, one for each vertex of the facet
-    wcs_pixel_scale : float, optional, default `lsmtool.constants.WCS_PIXEL_SCALE
+    wcs_pixel_scale : float, optional
         The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel
+        degrees per pixel. Default value is taken from default
+        `lsmtool.constants.WCS_PIXEL_SCALE`. Note: this parameter is ignored
+        when wcs_obj is specified
+    wcs_obj : astropy.wcs.WCS object, optional
+        WCS object that defines the world coordinate system to use. If None, a
+        generic WCS system is used
     """
 
     def __init__(
-        self, name, ra, dec, vertices, *, wcs_pixel_scale=WCS_PIXEL_SCALE
+        self, name, ra, dec, vertices, *, wcs_pixel_scale=WCS_PIXEL_SCALE, wcs_obj=None
     ):
         self.name = name
         self.log = logging.getLogger("lsmtool:{0}".format(self.name))
@@ -60,7 +65,7 @@ class Facet(object):
         self.vertices = np.array(vertices)
 
         # Convert input (RA, Dec) vertices to (x, y) polygon
-        self.wcs = make_wcs(self.ra, self.dec, wcs_pixel_scale)
+        self.wcs = wcs_obj if wcs_obj else make_wcs(self.ra, self.dec, wcs_pixel_scale)
         self.polygon_ras = [radec[0] for radec in self.vertices]
         self.polygon_decs = [radec[1] for radec in self.vertices]
         x_values, y_values = self.wcs.wcs_world2pix(
@@ -654,7 +659,7 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
         f.writelines(lines)
 
 
-def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
+def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE, wcs_obj=None):
     """
     Read a ds9 facet region file and return facets
 
@@ -665,7 +670,11 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
     wcs_pixel_scale : float, optional
         The pixel scale to use for the conversion to pixel coordinates in
         degrees per pixel. Default value is taken from default
-        `lsmtool.constants.WCS_PIXEL_SCALE`
+        `lsmtool.constants.WCS_PIXEL_SCALE`. Note: this parameter is ignored
+        when wcs_obj is specified
+    wcs_obj : astropy.wcs.WCS object, optional
+        WCS object that defines the world coordinate system to use. If None, a
+        generic WCS system is used
 
     Returns
     -------
@@ -703,6 +712,7 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
                 polygon_decs[0],
                 vertices,
                 wcs_pixel_scale=wcs_pixel_scale,
+                wcs_obj=wcs_obj,
             )
             ra = facet_tmp.ra_centroid
             dec = facet_tmp.dec_centroid
@@ -769,6 +779,7 @@ def read_skymodel(
     width_dec,
     *,
     wcs_pixel_scale=WCS_PIXEL_SCALE,
+    wcs_obj=None,
 ):
     """
     Reads a sky model file and returns facets
@@ -788,7 +799,11 @@ def read_skymodel(
     wcs_pixel_scale : float, optional
         The pixel scale to use for the conversion to pixel coordinates in
         degrees per pixel. Default value is taken from default
-        `lsmtool.constants.WCS_PIXEL_SCALE`
+        `lsmtool.constants.WCS_PIXEL_SCALE`. Note: this parameter is ignored
+        when wcs_obj is specified
+    wcs_obj : astropy.wcs.WCS object, optional
+        WCS object that defines the world coordinate system to use. If None, a
+        generic WCS system is used
 
     Returns
     -------
@@ -846,6 +861,7 @@ def read_skymodel(
                 center_coord[1],
                 vertices,
                 wcs_pixel_scale=wcs_pixel_scale,
+                wcs_obj=wcs_obj,
             )
         )
 
