@@ -1,0 +1,8 @@
+# (component_id,source_id,ra_deg,dec_deg,a_arcsec,b_arcsec,pa_deg,spec_idx,log_spec_idx,i_pol_jy,ref_freq_hz,epoch) = format
+# NUMBER_OF_COMPONENTS=3
+# QUERY_CENTRE_RAJ2000_DEG=123.456
+# QUERY_CENTRE_DEJ2000_DEG=45.678
+# QUERY_RADIUS_DEG=4.567
+J000011-000001,J000011,11.1,-1.234,100,10,1,"[-0.7,0.01,0.123]",true,10.0,1.01e+08,J2000
+J000011-000002,J000011,22.2,-2.345,200,20,2,"[-0.7,0.02,0.123]",false,20.0,1.02e+08,J2000
+J000011-000003,J000011,33.3,-3.456,300,30,3,"[-0.7,0.03,0.123]",true,30.0,1.03e+08,J2000
