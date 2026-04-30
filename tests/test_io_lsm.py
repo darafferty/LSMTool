@@ -1,6 +1,5 @@
 import ast
 import csv
-from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as _np
@@ -14,7 +13,7 @@ from lsmtool.tableio import (
 )
 
 
-class InvalidLSMFormat(Exception):
+class InvalidLSMFormatError(Exception):
     pass
 
 
@@ -40,9 +39,8 @@ def _get_lsm_header(path: Path):
                     header_columns = header_columns.lstrip("(").rstrip(")")
                     return header_columns.split(",")
                 except ValueError as e:
-                    raise InvalidLSMFormat(f"Invalid header {line}") from e
-        else:
-            raise InvalidLSMFormat("Format line not provided in {path}")
+                    raise InvalidLSMFormatError(f"Invalid header {line}") from e
+        raise InvalidLSMFormatError("Format line not provided in {path}")
 
 
 def _get_sky_header(path: Path):
@@ -52,15 +50,14 @@ def _get_sky_header(path: Path):
                 try:
                     _, header_columns = line.split("=", maxsplit=1)
                 except ValueError as e:
-                    raise InvalidLSMFormat(f"Invalid header {line}") from e
+                    raise InvalidLSMFormatError(f"Invalid header {line}") from e
 
-                columns = [
+                return [
                     part.strip().split("=", maxsplit=1)[0]
                     for part in header_columns.split(",")
                 ]
-                return columns
 
-    raise InvalidLSMFormat(f"Format line not provided in {path}")
+    raise InvalidLSMFormatError(f"Format line not provided in {path}")
 
 
 def _split_sky_row(line: str):
@@ -165,16 +162,16 @@ def validate_lsm_format(skymodel_path):
         try:
             ra = float(row[2])
             dec = float(row[3])
-            a = float(row[4])
-            b = float(row[5])
-            pa = float(row[6])
+            _ = float(row[4])
+            _ = float(row[5])
+            _ = float(row[6])
 
             i_pol = float(row[9])
-            ref_freq = float(row[10])
+            _ = float(row[10])
         except ValueError as exc:
             raise AssertionError(
                 f"Row {n} numeric parse error: {exc} (row={row})"
-            )
+            ) from exc
 
         assert 0.0 <= ra < 360.0, f"Row {n} ra out of range: {ra}"
         assert -90.0 <= dec <= 90.0, f"Row {n} dec out of range: {dec}"
@@ -335,7 +332,7 @@ def assert_tables_equal(t1, t2):
         c1, c2 = t1[col], t2[col]
         if isinstance(c1[0], _np.ndarray):
             # ndarray elements: compare element-wise
-            for v1, v2 in zip(c1, c2):
+            for v1, v2 in zip(c1, c2, strict=True):
                 assert _np.allclose(v1, v2), f"Failed comparison for {col}"
 
         elif _np.issubdtype(c1.dtype, _np.floating):
