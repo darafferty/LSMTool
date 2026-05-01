@@ -201,6 +201,12 @@ def validate_lsm_format(skymodel_path):
 
 
 def validate_skymodel_format(skymodel_path):
+    """Validate that a skymodel matches the makesourcedb format.
+
+    Expected columns per row:
+    (Name,Type,Patch,Ra,Dec,I,SpectralIndex,LogarithmicSI,ReferenceFrequency,
+     MajorAxis,MinorAxis,Orientation)
+    """
     p = Path(skymodel_path)
     assert p.exists(), f"Missing file: {p}"
     sky_header = _get_sky_header(p)
@@ -274,14 +280,6 @@ def apparent_skymodel(request):
     return request.config.resource_dir / "apparent.sky"
 
 
-def test_lsm_format(lsm_skymodel):
-    validate_lsm_format(lsm_skymodel)
-
-
-def test_skymodel_format(apparent_skymodel):
-    validate_skymodel_format(apparent_skymodel)
-
-
 def test_load_lsm_with_astropy(lsm_skymodel):
     table = loadAstropyTableFromLSM(lsm_skymodel)
     assert set(table.colnames) ^ set(_EXPECTED_LSM_COLUMN_NAMES) == set()
@@ -308,6 +306,9 @@ def expected_lsm_content():
 
 
 def test_load_table_from_lsm(lsm_skymodel, expected_lsm_content):
+    """
+    Verifies that can load the table from LSM/GSM format
+    """
     table = loadTableFromLSM(lsm_skymodel)
     for key, expected_values in expected_lsm_content.items():
         if key == "SpectralIndex":
@@ -322,6 +323,9 @@ def test_load_table_from_lsm(lsm_skymodel, expected_lsm_content):
 
 
 def test_validation_succeed(lsm_skymodel, apparent_skymodel):
+    """
+    Verifies that the validation function work properly
+    """
     assert validateLSMFormat(lsm_skymodel)
     assert not validateLSMFormat(apparent_skymodel)
 
@@ -344,12 +348,20 @@ def assert_tables_equal(t1, t2):
 
 
 def test_instantiate_lsm_skymodel_from_file(lsm_skymodel):
+    """
+    Verifies that you can load the SkyModel object
+    from LSM skymodel
+    """
     skymodel = SkyModel(str(lsm_skymodel))
     expected_table = loadTableFromLSM(lsm_skymodel)
     assert_tables_equal(skymodel.table, expected_table)
 
 
 def test_instantiate_lsm_skymodel_store_skymodel(lsm_skymodel, tmpdir):
+    """
+    Verifies that you can load the SkyModel object
+    from LSM skymodel and store the makesourcedb format skymodel
+    """
     skymodel = SkyModel(str(lsm_skymodel))
 
     # Write to temporary file
@@ -363,6 +375,10 @@ def test_instantiate_lsm_skymodel_store_skymodel(lsm_skymodel, tmpdir):
 
 
 def test_instantiate_lsm_skymodel_store_lsm(lsm_skymodel, tmpdir):
+    """
+    Verifies that you can load the SkyModel object
+    from LSM skymodel and store the lsm format skymodel
+    """
     skymodel = SkyModel(str(lsm_skymodel))
 
     # Write to temporary file
