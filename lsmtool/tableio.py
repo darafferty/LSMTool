@@ -1476,16 +1476,15 @@ def getGSM(position, radius):
     return table
 
 def _readLSMFormatLine(lsm_path):
-    with open(lsm_path, "r") as f:
-        for line in f.readlines():
+    with open(lsm_path, "r") as f_stream:
+        for line in f_stream:
             if "format" in line.lower():
                 line, _ = line.split("=")
                 line = line.replace("#", "").\
                             replace(" ", "").\
                             lstrip("(").rstrip(")")
                 return line
-        else:
-            raise IOError(f"Format line not found in: {lsm_path}")
+        raise IOError(f"Format line not found in: {lsm_path}")
 
 def _parseLSMFormatLine(lsm_format):
     return lsm_format.split(",") 
