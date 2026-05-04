@@ -262,10 +262,13 @@ def test_in_box(coords, bounding_box, expected, context):
                 dec=[89.92, 89.91, 89.89, 89.89],
                 unit="deg",
             ),
-            bbox_midpoint := SkyCoord(ra=126.52, dec=90.0, unit="deg"),
-            bbox_size := (0.3, 0.3),
+            # bbox_midpoint
+            SkyCoord(ra=126.52, dec=90.0, unit="deg"),
+            # bbox_size
+            (0.3, 0.3),
             # expected_facet_points
             np.transpose([directions.ra.deg, directions.dec.deg]),
+            # expected_facet_polygons
             [
                 [
                     [127.3, 89.9],
@@ -298,6 +301,22 @@ def test_in_box(coords, bounding_box, expected, context):
                     [119.9, 89.9],
                 ],
             ],
+        ),
+        pytest.param(
+            # directions
+            SkyCoord(
+                ra=[119.73, 138.08, 124.13, 115.74],
+                dec=[89.92, 89.91, 89.89, 89.89],
+                unit="deg",
+            ),
+            # bbox_midpoint
+            SkyCoord(ra=126.52, dec=90.0, unit="deg"),
+            # bbox_size
+            (-1, 0.3),
+            # expected_facet_points
+            None,
+            # expected_facet_polygons
+            None,
         )
     ],
 )
@@ -312,27 +331,28 @@ def test_tessellate(
     Test the tessellate function, using a region that encompasses the North
     Celestial Pole (NCP).
     """
+    context = ERROR_CONTEXT if expected_facet_points is None else NULL_CONTEXT
+    with context:
+        # Tessellate a region that encompasses the NCP.
+        facet_points, facet_polys = tessellate(
+            directions,
+            bbox_midpoint,
+            bbox_size,
+        )
 
-    # Tessellate a region that encompasses the NCP.
-    facet_points, facet_polys = tessellate(
-        directions,
-        bbox_midpoint,
-        bbox_size,
-    )
+        # Check the facet points
+        np.testing.assert_allclose(facet_points, expected_facet_points)
 
-    # Check the facet points
-    np.testing.assert_allclose(facet_points, expected_facet_points)
+        # Check the facet polygons. Since the tessellate function is not
+        # guaranteed to return the same order of vertices for identical
+        # polygons, check only that the set of expected and actual vertices
+        # are identical.
+        facet_polys = [np.round(a, 1).tolist() for a in facet_polys]
+        facet_polys_flat = _flatten(facet_polys)
 
-    # Check the facet polygons. Since the tessellate function is not
-    # guaranteed to return the same order of vertices for identical
-    # polygons, check only that the set of expected and actual vertices
-    # are identical.
-    facet_polys = [np.round(a, 1).tolist() for a in facet_polys]
-    facet_polys_flat = _flatten(facet_polys)
-
-    facet_polys_expected = _flatten(expected_facet_polygons)
-    difference = facet_polys_flat.symmetric_difference(facet_polys_expected)
-    assert not difference
+        facet_polys_expected = _flatten(expected_facet_polygons)
+        difference = facet_polys_flat.symmetric_difference(facet_polys_expected)
+        assert not difference
 
 
 def _flatten(iterable):
