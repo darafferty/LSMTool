@@ -36,6 +36,116 @@ def facet():
     )
 
 
+# ---------------------------------------------------------------------------- #
+# Tests
+
+
+class TestFacet:
+    """Unit tests for the `lsmtool.facet.Facet` class."""
+
+    reference_coords = 266.41681662, -29.00782497
+
+    _reference_namespace = {
+        "ra": reference_coords[0],
+        "dec": reference_coords[1],
+        "vertices": (
+            _vertices := np.array(
+                [
+                    [266.9848842, -29.50105015],
+                    [266.97941377, -28.50112422],
+                    [265.84157768, -28.50107158],
+                    [265.83598434, -29.50099529],
+                ]
+            )
+        ),
+    }
+    _constructor_kws = {
+        Facet: {"vertices": _reference_namespace["vertices"]},
+        SquareFacet: {"width": 1},
+    }
+    _expected_namespace = {
+        Facet: {
+            **_reference_namespace,
+            "size": 0.5,
+            "ra_center": 266.41046451225884,
+            "dec_center": -29.002269268446632,
+            "ra_centroid": 266.4104645130159,
+            "dec_centroid": -29.00226926732463,
+        "x_center": 1000.0,
+            "y_center": 1000.0,
+        },
+        SquareFacet: {
+            **_reference_namespace,
+            "vertices": (
+                _vertices := np.array(
+                    [
+                        [266.9848842, -29.50105015],
+                        [266.97941377, -28.50112422],
+                        [265.84157768, -28.50107158],
+                        [265.83598434, -29.50099529],
+                    ]
+                )
+            ),
+            "size": 0.5,
+            "ra_center": 266.41046451354356,
+            "dec_center": -29.00226926514979,
+            "ra_centroid": 266.41046451354356,
+            "dec_centroid": -29.00226926514978,
+            "x_center": 1000.0,
+            "y_center": 1000.0,
+        },
+    }
+
+    @pytest.fixture(params=[Facet, SquareFacet])
+    def facet_class(self, request):
+        return request.param
+
+    @pytest.fixture()
+    def constructor_kws(self, facet_class):
+        return self._constructor_kws[facet_class]
+
+    @pytest.fixture()
+    def expected_namespace(self, facet_class):
+        return self._expected_namespace[facet_class]
+
+    @pytest.mark.parametrize(
+        "ra, dec",
+        [
+            pytest.param(
+                *reference_coords,
+                id="numeric RA and Dec",
+            ),
+            pytest.param(
+                "17h45m40.03599s",
+                "-29d00m28.1699s",
+                id="string RA and Dec",
+            ),
+        ],
+    )
+    def test_init(
+        self,
+        facet_class,
+        ra,
+        dec,
+        constructor_kws,
+        expected_namespace,
+    ):
+        """
+        Test the Facet class.
+        """
+        facet = facet_class(
+            "test_facet",
+            ra,
+            dec,
+            **constructor_kws,
+        )
+        for attr, val in expected_namespace.items():
+            assert np.allclose(getattr(facet, attr), val), (
+                f"Facet attribute {attr!r} does not match expected value."
+            )
+
+
+
 @pytest.mark.parametrize(
     "cal_coords, bounding_box, expected, context",
     [
