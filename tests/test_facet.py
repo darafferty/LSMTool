@@ -3,8 +3,8 @@ Tests for the lsmtool.facet module.
 """
 
 import contextlib
-import socket
 
+import astropy.units as u
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
@@ -12,17 +12,21 @@ from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
     Facet,
+    SquareFacet,
     in_box,
     make_ds9_region_file,
     prepare_points_for_tessellate,
     read_ds9_region_file,
+    read_skymodel,
     tessellate,
     voronoi,
 )
 
 NULL_CONTEXT = contextlib.nullcontext()
+ERROR_CONTEXT = pytest.raises(ValueError)
 
 
+# ---------------------------------------------------------------------------- #
 @pytest.fixture
 def facet():
     """
@@ -71,7 +75,7 @@ class TestFacet:
             "dec_center": -29.002269268446632,
             "ra_centroid": 266.4104645130159,
             "dec_centroid": -29.00226926732463,
-        "x_center": 1000.0,
+            "x_center": 1000.0,
             "y_center": 1000.0,
         },
         SquareFacet: {
@@ -145,7 +149,6 @@ class TestFacet:
             )
 
 
-
 @pytest.mark.parametrize(
     "cal_coords, bounding_box, expected, context",
     [
@@ -211,7 +214,7 @@ class TestFacet:
             np.array([1, 2, 3]),
             np.array([0, 1, 0, 1]),
             None,
-            pytest.raises(ValueError),
+            ERROR_CONTEXT,
             id="cal_coords_not_2d",
         ),
         # Error: `cal_coords` with wrong number of columns
@@ -219,7 +222,7 @@ class TestFacet:
             np.array([[1, 1, 1], [2, 2, 2]]),
             np.array([0, 2, 0, 2]),
             None,
-            pytest.raises(ValueError),
+            ERROR_CONTEXT,
             id="cal_coords_wrong_columns",
         ),
         # Error: `bounding_box` wrong shape (too small)
@@ -227,7 +230,7 @@ class TestFacet:
             np.array([[1, 1]]),
             np.array([0, 1, 0]),
             None,
-            pytest.raises(ValueError),
+            ERROR_CONTEXT,
             id="bounding_box_too_short",
         ),
         # Error: `bounding_box` wrong shape (too big)
@@ -235,7 +238,7 @@ class TestFacet:
             np.array([[1, 1]]),
             np.array([0, 1, 0, 1, 2]),
             None,
-            pytest.raises(ValueError),
+            ERROR_CONTEXT,
             id="bounding_box_too_long",
         ),
     ],
@@ -439,7 +442,7 @@ def _flatten(iterable):
             ...,
             [],
             [],
-            pytest.raises(ValueError),
+            ERROR_CONTEXT,
             id="edge_case_all_outside",
         ),
     ],
@@ -561,7 +564,7 @@ def test_voronoi(
             np.array([1, 2, 3]),
             [0, 1, 0, 1],
             None,
-            pytest.raises(ValueError),
+            ERROR_CONTEXT,
             id="cal_coords_not_2d",
         ),
         # cal_coords wrong number of columns
@@ -569,7 +572,7 @@ def test_voronoi(
             np.array([[1, 2, 3], [4, 5, 6]]),
             [0, 1, 0, 1],
             None,
-            pytest.raises(ValueError),
+            ERROR_CONTEXT,
             id="cal_coords_wrong_columns",
         ),
         # bounding_box wrong shape (too short)
@@ -577,7 +580,7 @@ def test_voronoi(
             np.array([[1, 1]]),
             [0, 1, 0],
             None,
-            pytest.raises(ValueError),
+            ERROR_CONTEXT,
             id="bounding_box_too_short",
         ),
         # bounding_box wrong shape (too long)
@@ -585,7 +588,7 @@ def test_voronoi(
             np.array([[1, 1]]),
             [0, 1, 0, 1, 2],
             None,
-            pytest.raises(ValueError),
+            ERROR_CONTEXT,
             id="bounding_box_too_long",
         ),
     ],
@@ -734,3 +737,56 @@ def test_download_panstarrs(facet, mocker):
     )
     _ = facet.download_panstarrs()
     assert mock_download_skymodel.called
+
+
+class TestReadSkymodel:
+    """Tests for the `lsmtool.facet.read_skymodel` function."""
+
+    @pytest.fixture(autouse=True)
+    def mock_skymodel(self, mocker, request):
+
+        patch_positions = (
+            {"getPatchPositions.return_value": request.param}
+            if (has_patches := request.param is not None)
+            else {}
+        )
+
+        mock_skymodel = mocker.Mock(hasPatches=has_patches, **patch_positions)
+        mocker.patch("lsmtool.facet.load", return_value=mock_skymodel)
+        return mock_skymodel
+
+    @pytest.mark.parametrize("mock_skymodel", [None], indirect=True)
+    def test_read_skymodel_no_patches(self):
+        """
+        Test that read_skymodel raises ValueError if sky model has no patches.
+        """
+        with pytest.raises(ValueError, match="must be grouped into patches"):
+            read_skymodel("fake.sky", 180.0, 45.0, 2.0, 2.0)
+
+    @pytest.mark.parametrize(
+        "mock_skymodel",
+        [
+            {
+                "PatchA": (180.0 * u.degree, 45.0 * u.degree),
+                "PatchB": (180.5 * u.degree, 45.5 * u.degree),
+                "PatchC": (179.5 * u.degree, 44.5 * u.degree),
+            }
+        ],
+        indirect=True,
+    )
+    def test_read_skymodel_returns_facets(self):
+        """
+        Test that read_skymodel returns correct facets from a patched sky model.
+        """
+
+        # Act
+        facets = read_skymodel("fake.sky", 180.0, 45.0, 2.0, 2.0)
+
+        # Assert
+        assert all(isinstance(facet, Facet) for facet in facets)
+        # Each facet name should be one of the patch names
+        assert [(facet.name, facet.ra, facet.dec) for facet in facets] == [
+            ("PatchA", 180.0, 45.0),
+            ("PatchB", 180.5, 45.5),
+            ("PatchC", 179.5, 44.5),
+        ]
