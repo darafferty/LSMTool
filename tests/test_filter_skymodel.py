@@ -8,54 +8,51 @@ import pytest
 from conftest import TEST_DATA_PATH, copy_test_data
 
 from lsmtool.filter_skymodel import bdsf, resolve_source_finder
-
-try:
-    from lsmtool.filter_skymodel import sofia
-
-    have_sofia = True
-except ImportError:
-    have_sofia = False
-
 from lsmtool.testing import check_skymodels_equal
 
+sofia = None
+with ctx.suppress(ImportError):
+    from lsmtool.filter_skymodel import sofia
 
-class TestResolveSourceFinder:
-    null_context = ctx.nullcontext()
-    raises = pytest.raises(ValueError)
 
-    @pytest.mark.parametrize(
-        "name, expected, context",
-        [
-            pytest.param(
-                "sofia",
-                "sofia",
-                null_context,
-                id="sofia",
-                marks=pytest.mark.skipif(
-                    not have_sofia, reason="SoFiA not available"
-                ),
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        # -------------------------------------------------------------------- #
+        # Nominal cases
+        pytest.param(
+            "sofia",
+            "sofia",
+            id="sofia",
+            marks=pytest.mark.skipif(
+                sofia is None, reason="SoFiA not available"
             ),
-            pytest.param("bdsf", "bdsf", null_context, id="bdsf"),
-            pytest.param(
-                "SoFiA",
-                "sofia",
-                null_context,
-                id="SoFiA",
-                marks=pytest.mark.skipif(
-                    not have_sofia, reason="SoFiA not available"
-                ),
+        ),
+        pytest.param("bdsf", "bdsf", id="bdsf"),
+        pytest.param(
+            "SoFiA",
+            "sofia",
+            id="SoFiA",
+            marks=pytest.mark.skipif(
+                sofia is None, reason="SoFiA not available"
             ),
-            pytest.param("BDSF", "bdsf", null_context, id="BDSF"),
-            pytest.param(None, None, raises, id="nonetype_raises"),
-            pytest.param(True, None, raises, id="true_raises"),
-            pytest.param("none", None, raises, id="invalid_string_raises"),
-        ],
+        ),
+        pytest.param("BDSF", "bdsf", id="BDSF"),
+        # -------------------------------------------------------------------- #
+        # Error cases
+        pytest.param(None, None, id="nonetype_raises"),
+        pytest.param(True, None, id="true_raises"),
+        pytest.param("none", None, id="invalid_string_raises"),
+    ],
+)
+def test_resolve_source_finder(name, expected):
+
+    context = (
+        pytest.raises(ValueError) if expected is None else ctx.nullcontext()
     )
-    def test_resolve_source_finder(self, name, expected, context):
-        # Act
-        with context:
-            # Assert
-            assert resolve_source_finder(name) == expected
+    with context:
+        # Assert
+        assert resolve_source_finder(name) == expected
 
 
 def get_image_paths(tmp_path, prefix):
@@ -171,7 +168,7 @@ class TestBDSF:
         )
 
 
-@pytest.mark.skipif(not have_sofia, reason="SoFiA not available")
+@pytest.mark.skipif(not sofia, reason="SoFiA not available")
 class TestSofia:
     """Test skymodel filtering with SoFiA-2."""
 

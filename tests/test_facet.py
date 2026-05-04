@@ -9,6 +9,7 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
+from conftest import TEST_DATA_PATH
 from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
@@ -22,23 +23,50 @@ from lsmtool.facet import (
     tessellate,
     voronoi,
 )
-
-NULL_CONTEXT = contextlib.nullcontext()
-ERROR_CONTEXT = pytest.raises(ValueError)
-
+from lsmtool.io import load
 
 # ---------------------------------------------------------------------------- #
-@pytest.fixture
-def facet():
+# Module constants
+
+TEST_DATA_PATH = TEST_DATA_PATH / Path(__file__).stem
+
+# ---------------------------------------------------------------------------- #
+# Helper functions
+
+
+def get_context(expected, **kws):
     """
-    Fixture to create a facet for testing.
+    Get the appropriate runtime context for executing test code based on
+    whether the expected result is an exception or not.
+
+    Parameters
+    ----------
+    expected : Exception or object
+        The expected result of the test. If this object is an ex
+
+    Examples
+    --------
+    For tests that are expected to succeed:
+    >>> @pytest.mark.parametrize("expected", [1])
+    ... def test_success(expected):
+    ...     with get_context(expected):
+    ...         assert expected == 1
+
+    For tests that are expected to fail:
+    The following example will raise an IndexError, which will get caught by
+    the `pytest.raises` context manager, leading to a successful test
+    >>> @pytest.mark.parametrize("expected", [LookupError])
+    ... def test_expected_failure(expected):
+    ...     with get_context(expected):
+    ...         [][1]
+
+    Returns
+    -------
+    contextlib.AbstractContextManager
     """
-    return Facet(
-        name="Square Facet",
-        ra=1.0,
-        dec=1,
-        vertices=[(0, 2), (2, 2), (2, 0), (0, 0)],
-    )
+    if isinstance(expected, type) and issubclass(expected, BaseException):
+        return pytest.raises(expected, **kws)
+    return contextlib.nullcontext(expected)
 
 
 # ---------------------------------------------------------------------------- #
@@ -149,10 +177,124 @@ class TestFacet:
                 f"Facet attribute {attr!r} does not match expected value."
             )
 
+    # ------------------------------------------------------------------------ #
+    @pytest.fixture()
+    def facet(self, mocker):
+        """
+        Fixture to create a facet for testing.
+        """
+        facet = Facet(
+            name="Square Facet",
+            ra=1.0,
+            dec=1,
+            vertices=[(0, 2), (2, 2), (2, 0), (0, 0)],
+        )
+
+        # Attach mock skymodel
+        facet.skymodel = mocker.MagicMock()
+
+        return facet
+
+    @pytest.fixture()
+    def mock_download_panstarrs(self, mocker, request, facet):
+        """
+        Fixture to mock the download_panstarrs method of the
+        `lsmtool.facet.Facet` class.
+        """
+        return mocker.patch.object(
+            facet, "download_panstarrs", return_value=request.param
+        )
+
+    @pytest.mark.parametrize(
+        "mock_download_panstarrs",
+        [None],
+        indirect=True,
+    )
+    def test_find_astrometry_offsets_with_comparison_skymodel_does_not_download(
+        self, facet, mock_download_panstarrs
+    ):
+        """
+        Test that find_astrometry_offsets does not attempt to download data
+        from PanSTARRS if a comparison skymodel is provided.
+        """
+        mock_comparison_skymodel = "mock_LSMTool_skymodel"
+        facet.find_astrometry_offsets(mock_comparison_skymodel, min_number=1)
+        mock_download_panstarrs.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "mock_download_panstarrs",
+        (
+            [],  # No sources found in PanSTARRS
+            [0, 1, 2, 3, 4],  # Default minimum number of sources is 5
+            [0, 1, 2, 3],  # Below the minimum number of sources
+        ),
+        indirect=True,
+    )
+    def test_find_astrometry_offsets_without_comparison_skymodel_downloads(
+        self, facet, mock_download_panstarrs
+    ):
+        """
+        Test that find_astrometry_offsets attempts to download data from
+        PanSTARRS if no comparison skymodel is provided.
+        """
+        min_number = 5  # Default minimum number of sources is 5
+        facet.find_astrometry_offsets(
+            comparison_skymodel=None, min_number=min_number
+        )
+        mock_download_panstarrs.assert_called_once()
+        if len(mock_download_panstarrs.return_value) < min_number:
+            facet.skymodel.compare.assert_not_called()
+        else:
+            facet.skymodel.compare.assert_called_once()
+
+    @pytest.mark.disable_socket
+    def test_find_astrometry_offsets_with_comparison_skymodel_does_not_access_internet(
+        self, facet
+    ):
+        """
+        Test that find_astrometry_offsets does not access the internet if a
+        comparison skymodel is provided.
+        """
+        mock_comparsion_skymodel = [
+            1,
+            1,
+            1,
+            1,
+            1,
+        ]  # Mock comparison skymodel with enough sources
+        facet.find_astrometry_offsets(
+            comparison_skymodel=mock_comparsion_skymodel, min_number=5
+        )
+        facet.skymodel.compare.assert_called_once_with(
+            mock_comparsion_skymodel,
+            radius="5 arcsec",
+            excludeMultiple=True,
+            make_plots=False,
+        )
+
+    @pytest.mark.filterwarnings(
+        "ignore:The Pan-STARRS catalog could not be successfully downloaded"
+        # since we are mocking the download_skymodel function, the returned
+        # "skymodel" will not load correctly, which will trigger a warning.
+        # Since we are only testing that the download_skymodel function was
+        # called, we can safely ignore this
+    )
+    def test_download_panstarrs(self, facet, mocker):
+        """
+        Test that download_panstarrs is called.
+        """
+        mock_download_skymodel = mocker.patch(
+            "lsmtool.facet.download_skymodel",
+            return_value="mock_skymodel",
+        )
+        _ = facet.download_panstarrs()
+        assert mock_download_skymodel.called
+
     @pytest.mark.parametrize("use_wcs", [False, True])
     def test_get_matplotlib_patch(self, facet, use_wcs):
         """
-        Test that get_matplotlib_patch returns a matplotlib patch object with the expected .
+        Test that get_matplotlib_patch returns a matplotlib patch object with
+        the expected .
         """
         patch = facet.get_matplotlib_patch(wcs=facet.wcs if use_wcs else None)
         extents = patch.get_extents()
@@ -163,102 +305,92 @@ class TestFacet:
 
 
 @pytest.mark.parametrize(
-    "coords, bounding_box, expected, context",
+    "coords, bounding_box, expected",
     [
         # All points inside boundary
         pytest.param(
-            np.array([[1, 1], [2, 2], [3, 3]]),
-            np.array([0, 4, 0, 4]),
-            np.array([True, True, True]),
-            NULL_CONTEXT,
+            np.array([[1, 1], [2, 2], [3, 3]]),  # coords
+            np.array([0, 4, 0, 4]),  # bounding box
+            np.array([True, True, True]),  # expected
             id="all_inside",
         ),
         # Some points inside, some outside boundary
         pytest.param(
-            np.array([[0, 0], [5, 5], [2, 2]]),
-            np.array([1, 4, 1, 4]),
-            np.array([False, False, True]),
-            NULL_CONTEXT,
+            np.array([[0, 0], [5, 5], [2, 2]]),  # coords
+            np.array([1, 4, 1, 4]),  # bounding box
+            np.array([False, False, True]),  # expected
             id="some_inside_some_outside",
         ),
         # Points exactly on the boundary
         pytest.param(
-            np.array([[1, 1], [4, 4], [1, 4], [4, 1]]),
-            np.array([1, 4, 1, 4]),
-            np.array([True, True, True, True]),
-            NULL_CONTEXT,
+            np.array([[1, 1], [4, 4], [1, 4], [4, 1]]),  # coords
+            np.array([1, 4, 1, 4]),  # bounding box
+            np.array([True, True, True, True]),  # expected
             id="on_boundary",
         ),
         # Empty `coords`
         pytest.param(
-            np.empty((0, 2)),
-            np.array([0, 1, 0, 1]),
-            np.array([], dtype=bool),
-            NULL_CONTEXT,
+            np.empty((0, 2)),  # coords
+            np.array([0, 1, 0, 1]),  # bounding box
+            np.array([], dtype=bool),  # expected
             id="empty_coords",
         ),
         # Bounding box with zero area (min == max)
         pytest.param(
-            np.array([[1, 1], [1, 2], [2, 1]]),
-            np.array([1, 1, 1, 1]),
-            np.array([True, False, False]),
-            NULL_CONTEXT,
+            np.array([[1, 1], [1, 2], [2, 1]]),  # coords
+            np.array([1, 1, 1, 1]),  # bounding box
+            np.array([True, False, False]),  # expected
             id="zero_area_box",
         ),
         # Negative coordinates
         pytest.param(
-            np.array([[-2, -2], [-1, -1], [0, 0]]),
-            np.array([-2, 0, -2, 0]),
-            np.array([True, True, True]),
-            NULL_CONTEXT,
+            np.array([[-2, -2], [-1, -1], [0, 0]]),  # coords
+            np.array([-2, 0, -2, 0]),  # bounding box
+            np.array([True, True, True]),  # expected
             id="negative_coords",
         ),
         # Bounding box with min > max (inverted box)
         pytest.param(
-            np.array([[0, 0], [1, 1]]),
-            np.array([2, 0, 2, 0]),
-            np.array([True, True]),
-            NULL_CONTEXT,
+            np.array([[0, 0], [1, 1]]),  # coords
+            np.array([2, 0, 2, 0]),  # bounding box
+            np.array([True, True]),  # expected
             id="inverted_box",
         ),
         # -------------------------------------------------------------------- #
         # Error: `coords` not 2D
         pytest.param(
-            np.array([1, 2, 3]),
-            np.array([0, 1, 0, 1]),
-            None,
-            ERROR_CONTEXT,
+            np.array([1, 2, 3]),  # coords
+            np.array([0, 1, 0, 1]),  # bounding box
+            ValueError,  # expected
             id="coords_not_2d",
         ),
         # Error: `coords` with wrong number of columns
         pytest.param(
-            np.array([[1, 1, 1], [2, 2, 2]]),
-            np.array([0, 2, 0, 2]),
-            None,
-            ERROR_CONTEXT,
+            np.array([[1, 1, 1], [2, 2, 2]]),  # coords
+            np.array([0, 2, 0, 2]),  # bounding box
+            ValueError,  # expected
             id="coords_wrong_columns",
         ),
         # Error: `bounding_box` wrong shape (too small)
         pytest.param(
-            np.array([[1, 1]]),
-            np.array([0, 1, 0]),
-            None,
-            ERROR_CONTEXT,
+            np.array([[1, 1]]),  # coords
+            np.array([0, 1, 0]),  # bounding box
+            ValueError,  # expected
             id="bounding_box_too_short",
         ),
         # Error: `bounding_box` wrong shape (too big)
         pytest.param(
-            np.array([[1, 1]]),
-            np.array([0, 1, 0, 1, 2]),
-            None,
-            ERROR_CONTEXT,
+            np.array([[1, 1]]),  # coords
+            np.array([0, 1, 0, 1, 2]),  # bounding box
+            ValueError,  # expected
             id="bounding_box_too_long",
         ),
     ],
 )
-def test_in_box(coords, bounding_box, expected, context):
+def test_in_box(coords, bounding_box, expected):
     # Act
-    with context:
+
+    with get_context(expected):
         result = in_box(coords, bounding_box)
 
         # Assert
@@ -327,10 +459,10 @@ def test_in_box(coords, bounding_box, expected, context):
             # bbox_size
             (-1, 0.3),
             # expected_facet_points
-            None,
+            ValueError,
             # expected_facet_polygons
-            None,
-        )
+            ...,
+        ),
     ],
 )
 def test_tessellate(
@@ -344,8 +476,7 @@ def test_tessellate(
     Test the tessellate function, using a region that encompasses the North
     Celestial Pole (NCP).
     """
-    context = ERROR_CONTEXT if expected_facet_points is None else NULL_CONTEXT
-    with context:
+    with get_context(expected_facet_points):
         # Tessellate a region that encompasses the NCP.
         facet_points, facet_polys = tessellate(
             directions,
@@ -373,17 +504,19 @@ def _flatten(iterable):
 
 
 @pytest.mark.parametrize(
-    "coords, bounding_box,"
-    "expected_in_box, expected_vertices, expected_regions,"
-    "context",
+    "coords, bounding_box,expected_in_box, expected_vertices, expected_regions",
     [
         # Regular input cases
         # -------------------------------------------------------------------- #
         # 4 points in a square
         pytest.param(
+            # coords
             np.array([[0, 0], [1, 0], [1, 1], [0, 1]]),
+            # bounding_box
             [0, 1, 0, 1],
+            # expected_in_box
             np.array([True, True, True, True]),
+            # expected_vertices
             np.array(
                 [
                     [-0.5, -0.5],
@@ -397,27 +530,35 @@ def _flatten(iterable):
                     [0.5, 1.5],
                 ]
             ),
+            # expected_regions
             [],
-            NULL_CONTEXT,
             id="square",
         ),
         # Edge cases
         # -------------------------------------------------------------------- #
         # Only one point inside bounding box
         pytest.param(
+            # coords
             np.array([[0.5, 0.5], [2, 2]]),
+            # bounding_box
             [0, 1, 0, 1],
+            # expected_in_box
             np.array([True, False]),
+            # expected_vertices
             np.array([[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]]),
+            # expected_regions
             [[3, 1, 0, 2]],
-            NULL_CONTEXT,
             id="edge_case_one_inside",
         ),
         # All points on the boundary
         pytest.param(
+            # coords
             np.array([[0, 0], [1, 0], [1, 1], [0, 1]]),
+            # bounding_box
             [0, 1, 0, 1],
+            # expected_in_box
             np.array([True, True, True, True]),
+            # expected_vertices
             np.array(
                 [
                     [-0.5, -0.5],
@@ -431,15 +572,19 @@ def _flatten(iterable):
                     [0.5, 1.5],
                 ]
             ),
+            # expected_regions
             [],
-            NULL_CONTEXT,
             id="all_on_boundary",
         ),
         # Degenerate: all points colinear
         pytest.param(
+            # coords
             np.array([[0, 0], [0.5, 0.5], [1, 1]]),
+            # bounding_box
             [0, 1, 0, 1],
+            # expected_in_box
             np.array([True, True, True]),
+            # expected_vertices
             np.array(
                 [
                     [-0.25, 1.25],
@@ -452,30 +597,38 @@ def _flatten(iterable):
                     [1.0, 0.5],
                 ]
             ),
+            # expected_regions
             [[7, 5, 4, 3, 2, 6]],
-            NULL_CONTEXT,
             id="colinear_points",
         ),
         # Duplicate points
         pytest.param(
+            # coords
             np.array([[0, 0], [0, 0], [1, 1], [1, 1]]),
+            # bounding_box
             [0, 1, 0, 1],
+            # expected_in_box
             np.array([True, True, True, True]),
+            # expected_vertices
             np.array([[1.0, 0.0], [0.0, 1.0]]),
+            # expected_regions
             [],
-            NULL_CONTEXT,
             id="duplicate_points",
         ),
         # Error cases
         # -------------------------------------------------------------------- #
         # All points outside bounding box
         pytest.param(
+            # coords
             np.array([[2, 2], [3, 3]]),
+            # bounding_box
             [0, 1, 0, 1],
+            # expected_in_box
             ...,
-            [],
-            [],
-            ERROR_CONTEXT,
+            # expected_vertices
+            ...,
+            # expected_regions
+            ValueError,
             id="edge_case_all_outside",
         ),
     ],
@@ -486,10 +639,9 @@ def test_voronoi(
     expected_in_box,
     expected_vertices,
     expected_regions,
-    context,
 ):
     # Arrange
-    with context:
+    with get_context(expected_regions):
         # Act
         points, vertices, regions = voronoi(coords, bounding_box)
 
@@ -506,7 +658,7 @@ def test_voronoi(
 
 
 @pytest.mark.parametrize(
-    "coords, bounding_box, expected_centre, context",
+    "coords, bounding_box, expected_centre",
     [
         # Nominal cases
         # -------------------------------------------------------------------- #
@@ -515,7 +667,6 @@ def test_voronoi(
             np.array([[0, 0], [1, 1], [0.5, 0.5]]),
             [0, 1, 0, 1],
             np.array([[0, 0], [1, 1], [0.5, 0.5]]),
-            NULL_CONTEXT,
             id="all_inside",
         ),
         # Some points inside, some outside
@@ -523,7 +674,6 @@ def test_voronoi(
             np.array([[0, 0], [2, 2], [1, 1]]),
             [0, 1, 0, 1],
             np.array([[0, 0], [1, 1]]),
-            NULL_CONTEXT,
             id="some_inside_some_outside",
         ),
         # All points outside
@@ -531,7 +681,6 @@ def test_voronoi(
             np.array([[2, 2], [3, 3]]),
             [0, 1, 0, 1],
             np.empty((0, 2)),
-            NULL_CONTEXT,
             id="all_outside",
         ),
         # Points on the boundary
@@ -539,7 +688,6 @@ def test_voronoi(
             np.array([[0, 0], [1, 1], [0, 1], [1, 0]]),
             [0, 1, 0, 1],
             np.array([[0, 0], [1, 1], [0, 1], [1, 0]]),
-            NULL_CONTEXT,
             id="on_boundary",
         ),
         # Empty input
@@ -547,7 +695,6 @@ def test_voronoi(
             np.empty((0, 2)),
             [0, 1, 0, 1],
             np.empty((0, 2)),
-            NULL_CONTEXT,
             id="empty_input",
         ),
         # Negative coordinates
@@ -555,7 +702,6 @@ def test_voronoi(
             np.array([[-1, -1], [0, 0], [1, 1]]),
             [-1, 1, -1, 1],
             np.array([[-1, -1], [0, 0], [1, 1]]),
-            NULL_CONTEXT,
             id="negative_coords",
         ),
         # Inverted bounding box (min > max)
@@ -563,7 +709,6 @@ def test_voronoi(
             np.array([[0, 0], [1, 1]]),
             [1, 0, 1, 0],
             np.array([[0, 0], [1, 1]]),
-            NULL_CONTEXT,
             id="inverted_box",
         ),
         # Duplicate points
@@ -571,7 +716,6 @@ def test_voronoi(
             np.array([[0, 0], [0, 0], [1, 1], [1, 1]]),
             [0, 1, 0, 1],
             np.array([[0, 0], [0, 0], [1, 1], [1, 1]]),
-            NULL_CONTEXT,
             id="duplicate_points",
         ),
         # Single point inside
@@ -579,7 +723,6 @@ def test_voronoi(
             np.array([[0.5, 0.5]]),
             [0, 1, 0, 1],
             np.array([[0.5, 0.5]]),
-            NULL_CONTEXT,
             id="single_point_inside",
         ),
         # Single point outside
@@ -587,7 +730,6 @@ def test_voronoi(
             np.array([[2, 2]]),
             [0, 1, 0, 1],
             np.empty((0, 2)),
-            NULL_CONTEXT,
             id="single_point_outside",
         ),
         # Error cases
@@ -596,41 +738,35 @@ def test_voronoi(
         pytest.param(
             np.array([1, 2, 3]),
             [0, 1, 0, 1],
-            None,
-            ERROR_CONTEXT,
+            ValueError,
             id="coords_not_2d",
         ),
         # coords wrong number of columns
         pytest.param(
             np.array([[1, 2, 3], [4, 5, 6]]),
             [0, 1, 0, 1],
-            None,
-            ERROR_CONTEXT,
+            ValueError,
             id="coords_wrong_columns",
         ),
         # bounding_box wrong shape (too short)
         pytest.param(
             np.array([[1, 1]]),
             [0, 1, 0],
-            None,
-            ERROR_CONTEXT,
+            ValueError,
             id="bounding_box_too_short",
         ),
         # bounding_box wrong shape (too long)
         pytest.param(
             np.array([[1, 1]]),
             [0, 1, 0, 1, 2],
-            None,
-            ERROR_CONTEXT,
+            ValueError,
             id="bounding_box_too_long",
         ),
     ],
 )
-def test_prepare_points_for_tessellate(
-    coords, bounding_box, expected_centre, context
-):
+def test_prepare_points_for_tessellate(coords, bounding_box, expected_centre):
     # Act
-    with context:
+    with get_context(expected_centre):
         points_centre, points = prepare_points_for_tessellate(
             coords, bounding_box
         )
@@ -680,96 +816,6 @@ def test_write_ds9_region_file(request, tmp_path):
     assert facets[1].name == "Patch_10_with_spaces"
     assert facets[2].name == "Patch_11"
     assert facets[3].name == "Patch_12"
-
-
-def test_find_astrometry_offsets_with_comparison_skymodel_does_not_download_from_panstarrs(
-    facet, mocker
-):
-    """
-    Test that find_astrometry_offsets does not attempt to download data from PanSTARRS
-    if a comparison skymodel is provided.
-    """
-    facet.skymodel = mocker.MagicMock()
-    mock_download_panstarrs = mocker.patch.object(facet, "download_panstarrs")
-    mock_comparison_skymodel = "mock_LSMTool_skymodel"
-    facet.find_astrometry_offsets(mock_comparison_skymodel, min_number=1)
-    mock_download_panstarrs.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    "mock_panstarrs",
-    (
-        [],  # No sources found in PanSTARRS
-        [0, 1, 2, 3, 4],  # Default minimum number of sources is 5
-        [0, 1, 2, 3],  # Below the minimum number of sources
-    ),
-)
-def test_find_astrometry_offsets_without_comparison_skymodel_downloads_from_panstarrs(
-    facet, mocker, mock_panstarrs
-):
-    """
-    Test that find_astrometry_offsets attempts to download data from PanSTARRS
-    if no comparison skymodel is provided.
-    """
-    min_number = 5  # Default minimum number of sources is 5
-    facet.skymodel = mocker.MagicMock()
-    mock_download_panstarrs = mocker.patch.object(
-        facet, "download_panstarrs", return_value=mock_panstarrs
-    )
-    facet.find_astrometry_offsets(
-        comparison_skymodel=None, min_number=min_number
-    )
-    mock_download_panstarrs.assert_called_once()
-    if len(mock_panstarrs) < min_number:
-        facet.skymodel.compare.assert_not_called()
-    else:
-        facet.skymodel.compare.assert_called_once()
-
-
-@pytest.mark.disable_socket
-def test_find_astrometry_offsets_with_comparison_skymodel_does_not_access_internet(
-    facet, mocker
-):
-    """
-    Test that find_astrometry_offsets does not access the internet if a
-    comparison skymodel is provided.
-    """
-    facet.skymodel = mocker.MagicMock()
-    mock_comparsion_skymodel = [
-        1,
-        1,
-        1,
-        1,
-        1,
-    ]  # Mock comparison skymodel with enough sources
-    facet.find_astrometry_offsets(
-        comparison_skymodel=mock_comparsion_skymodel, min_number=5
-    )
-    facet.skymodel.compare.assert_called_once_with(
-        mock_comparsion_skymodel,
-        radius="5 arcsec",
-        excludeMultiple=True,
-        make_plots=False,
-    )
-
-
-@pytest.mark.filterwarnings(
-    "ignore:The Pan-STARRS catalog could not be successfully downloaded"
-    # since we are mocking the download_skymodel function, the returned
-    # "skymodel" will not load correctly, which will trigger a warning. Since
-    # we are only testing that the download_skymodel function was called, we
-    # can safely ignore this
-)
-def test_download_panstarrs(facet, mocker):
-    """
-    Test that download_panstarrs is called.
-    """
-    mock_download_skymodel = mocker.patch(
-        "lsmtool.facet.download_skymodel",
-        return_value="mock_skymodel",
-    )
-    _ = facet.download_panstarrs()
-    assert mock_download_skymodel.called
 
 
 class TestReadSkymodel:

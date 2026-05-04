@@ -8,6 +8,9 @@ from conftest import TEST_DATA_PATH
 from lsmtool import load
 from lsmtool.testing import check_skymodels_equal
 
+# ---------------------------------------------------------------------------- #
+# Fixtures
+
 
 @pytest.fixture(scope="session")
 def input_skymodel():
@@ -53,6 +56,10 @@ def _update_patch_names(skymodel):
 
     patches = skymodel.table.groups.keys["Patch"]
     patches[patches == last_patch_name] = new_name
+
+
+# ---------------------------------------------------------------------------- #
+# Tests
 
 
 @pytest.mark.parametrize(

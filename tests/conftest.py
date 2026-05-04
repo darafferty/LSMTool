@@ -23,17 +23,8 @@ def pytest_configure(config):
     config.resource_dir = TEST_DATA_PATH
 
 
-@pytest.fixture
-def midbands_ms(tmp_path):
-    """Uncompresses test_midbands.ms into a temporary directory."""
-    ms_name = "test_midbands.ms"
-    untar(TEST_DATA_PATH / f"{ms_name}.tgz", tmp_path)
-    return tmp_path / ms_name
-
-
-@pytest.fixture(scope="session")
-def test_image_wcs():
-    return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
+# ---------------------------------------------------------------------------- #
+# Helper functions
 
 
 def untar(
@@ -83,6 +74,19 @@ def copy_test_data(files_to_copy, target):
     for filename in files_to_copy:
         path = check_file_exists(TEST_DATA_PATH / filename)
         shutil.copy(path, target)
+
+
+@pytest.fixture
+def midbands_ms(tmp_path):
+    """Uncompresses test_midbands.ms into a temporary directory."""
+    ms_name = "test_midbands.ms"
+    untar(TEST_DATA_PATH / f"{ms_name}.tgz", tmp_path)
+    return tmp_path / ms_name
+
+
+@pytest.fixture(scope="session")
+def test_image_wcs():
+    return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
 
 
 @pytest.fixture

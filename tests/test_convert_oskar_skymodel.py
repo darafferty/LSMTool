@@ -24,8 +24,7 @@ from lsmtool.convert_oskar_skymodel import (
 # ---------------------------------------------------------------------------- #
 # Module constants
 
-TEST_RESOURCES_PATH = TEST_DATA_PATH
-TEST_DATA_PATH = TEST_RESOURCES_PATH / Path(__file__).stem
+TEST_DATA_PATH = TEST_DATA_PATH / Path(__file__).stem
 
 OSKAR_NUMPY_DTYPE = np.dtype(
     [
