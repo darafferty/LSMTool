@@ -150,7 +150,7 @@ class TestFacet:
 
 
 @pytest.mark.parametrize(
-    "cal_coords, bounding_box, expected, context",
+    "coords, bounding_box, expected, context",
     [
         # All points inside boundary
         pytest.param(
@@ -176,7 +176,7 @@ class TestFacet:
             NULL_CONTEXT,
             id="on_boundary",
         ),
-        # Empty `cal_coords`
+        # Empty `coords`
         pytest.param(
             np.empty((0, 2)),
             np.array([0, 1, 0, 1]),
@@ -209,21 +209,21 @@ class TestFacet:
             id="inverted_box",
         ),
         # -------------------------------------------------------------------- #
-        # Error: `cal_coords` not 2D
+        # Error: `coords` not 2D
         pytest.param(
             np.array([1, 2, 3]),
             np.array([0, 1, 0, 1]),
             None,
             ERROR_CONTEXT,
-            id="cal_coords_not_2d",
+            id="coords_not_2d",
         ),
-        # Error: `cal_coords` with wrong number of columns
+        # Error: `coords` with wrong number of columns
         pytest.param(
             np.array([[1, 1, 1], [2, 2, 2]]),
             np.array([0, 2, 0, 2]),
             None,
             ERROR_CONTEXT,
-            id="cal_coords_wrong_columns",
+            id="coords_wrong_columns",
         ),
         # Error: `bounding_box` wrong shape (too small)
         pytest.param(
@@ -243,10 +243,10 @@ class TestFacet:
         ),
     ],
 )
-def test_in_box(cal_coords, bounding_box, expected, context):
+def test_in_box(coords, bounding_box, expected, context):
     # Act
     with context:
-        result = in_box(cal_coords, bounding_box)
+        result = in_box(coords, bounding_box)
 
         # Assert
         assert_array_equal(result, expected)
@@ -340,7 +340,7 @@ def _flatten(iterable):
 
 
 @pytest.mark.parametrize(
-    "cal_coords, bounding_box,"
+    "coords, bounding_box,"
     "expected_in_box, expected_vertices, expected_regions,"
     "context",
     [
@@ -448,7 +448,7 @@ def _flatten(iterable):
     ],
 )
 def test_voronoi(
-    cal_coords,
+    coords,
     bounding_box,
     expected_in_box,
     expected_vertices,
@@ -458,11 +458,11 @@ def test_voronoi(
     # Arrange
     with context:
         # Act
-        points, vertices, regions = voronoi(cal_coords, bounding_box)
+        points, vertices, regions = voronoi(coords, bounding_box)
 
         # Assert
         # filtered_points should match the points inside the bounding box
-        expected_points = cal_coords[expected_in_box]
+        expected_points = coords[expected_in_box]
         assert_array_equal(points, expected_points)
 
         # check regions are as expected
@@ -473,7 +473,7 @@ def test_voronoi(
 
 
 @pytest.mark.parametrize(
-    "cal_coords, bounding_box, expected_centre, context",
+    "coords, bounding_box, expected_centre, context",
     [
         # Nominal cases
         # -------------------------------------------------------------------- #
@@ -559,21 +559,21 @@ def test_voronoi(
         ),
         # Error cases
         # -------------------------------------------------------------------- #
-        # cal_coords not 2D
+        # coords not 2D
         pytest.param(
             np.array([1, 2, 3]),
             [0, 1, 0, 1],
             None,
             ERROR_CONTEXT,
-            id="cal_coords_not_2d",
+            id="coords_not_2d",
         ),
-        # cal_coords wrong number of columns
+        # coords wrong number of columns
         pytest.param(
             np.array([[1, 2, 3], [4, 5, 6]]),
             [0, 1, 0, 1],
             None,
             ERROR_CONTEXT,
-            id="cal_coords_wrong_columns",
+            id="coords_wrong_columns",
         ),
         # bounding_box wrong shape (too short)
         pytest.param(
@@ -594,12 +594,12 @@ def test_voronoi(
     ],
 )
 def test_prepare_points_for_tessellate(
-    cal_coords, bounding_box, expected_centre, context
+    coords, bounding_box, expected_centre, context
 ):
     # Act
     with context:
         points_centre, points = prepare_points_for_tessellate(
-            cal_coords, bounding_box
+            coords, bounding_box
         )
 
         # If there are N points_centre, there should be N*5 points in total
