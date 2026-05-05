@@ -5,6 +5,7 @@ Tests for the lsmtool.facet module.
 import contextlib
 
 import astropy.units as u
+import matplotlib as mpl
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
@@ -147,6 +148,18 @@ class TestFacet:
             assert np.allclose(getattr(facet, attr), val), (
                 f"Facet attribute {attr!r} does not match expected value."
             )
+
+    @pytest.mark.parametrize("use_wcs", [False, True])
+    def test_get_matplotlib_patch(self, facet, use_wcs):
+        """
+        Test that get_matplotlib_patch returns a matplotlib patch object with the expected .
+        """
+        patch = facet.get_matplotlib_patch(wcs=facet.wcs if use_wcs else None)
+        extents = patch.get_extents()
+
+        assert isinstance(patch, mpl.patches.Patch)
+        assert np.allclose(extents.max, np.max(facet.polygon.exterior.xy, 1))
+        assert np.allclose(extents.min, np.min(facet.polygon.exterior.xy, 1))
 
 
 @pytest.mark.parametrize(
