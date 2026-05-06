@@ -75,10 +75,13 @@ class Facet(object):
     ):
         self.name = name
         self.log = logging.getLogger("lsmtool:{0}".format(self.name))
-        if type(ra) is str:
+
+        if isinstance(ra, str):
             ra = Angle(ra).to("deg").value
-        if type(dec) is str:
+
+        if isinstance(dec, str):
             dec = Angle(dec).to("deg").value
+
         self.ra, self.dec = normalize_ra_dec(ra, dec)
         self.vertices = np.array(vertices)
 
