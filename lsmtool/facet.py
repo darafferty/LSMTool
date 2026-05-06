@@ -665,11 +665,11 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
 
     facets = []
     for index, (polygon, *_, points) in enumerate(
-        parse_facet_definitions(region_file)
+        parse_ds9_facets(region_file)
     ):
         vertices = ast.literal_eval(polygon.split("polygon")[1])
         ra, dec = ast.literal_eval(points.split("point")[1])
-        vertices = list(zip(vertices[::2], vertices[1::2]))
+        vertices = np.reshape(vertices, (-1, 2))
 
         if "text" in points:
             facet_name = parse_facet_name(region_file, points)
@@ -686,7 +686,7 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
     return facets
 
 
-def parse_facet_definitions(region_file):
+def parse_ds9_facets(region_file):
     """Parse facet definitions from a ds9 region file
 
     Each facet in the region file is defined by a polygon line that starts
@@ -699,8 +699,7 @@ def parse_facet_definitions(region_file):
     (see https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html)
     """
 
-    path = Path(region_file)
-    with path.open("r") as stream:
+    with Path(region_file).open("r") as stream:
         buffer = []
         for line in stream:
             if not line.startswith(("polygon", "point")):
