@@ -1540,10 +1540,11 @@ def loadTableFromLSM(lsm_path):
                      'pa_deg': 'orientation',
                      'ref_freq_hz': 'referencefrequency',
                      'spec_idx': 'spectralindex',
-                     'log_spec_idx':'logarithmicsi'
+                     'log_spec_idx':'logarithmicsi',
                      }
-    catalogProperties = {'fluxunits': 'Jy', 'deconvolved':False, 'psf': 1, 'fluxtype': 'total'}
+    catalogProperties = {'fluxunits': 'Jy', 'deconvolved':False, 'psf':0, 'fluxtype': 'total'}
     table = loadAstropyTableFromLSM(lsm_path)
+    
     table["spec_idx"] = [literal_eval(x) for x in table["spec_idx"]]
     table = convertExternalTable(table, columnMapping, catalogProperties)
     

@@ -302,9 +302,9 @@ def expected_lsm_content():
         "Patch": ["J000011", "J000011", "J000011"],
         "ReferenceFrequency": [1.01e8, 1.02e8, 1.03e8],
         "I": [10.0, 20.0, 30.0],
-        "MajorAxis": [100.0, 200.0, 300.0],
-        "MinorAxis": [10.0, 20.0, 30.0],
-        "Orientation": [1.0, 2.0, 3.0],
+        "MajorAxis": [0.0, 200.0, 300.0],
+        "MinorAxis": [0.0, 20.0, 30.0],
+        "Orientation": [0.0, 2.0, 3.0],
         "SpectralIndex": [
             [-0.7, 0.01, 0.123],
             [-0.7, 0.02, 0.123],
@@ -398,3 +398,13 @@ def test_instantiate_lsm_skymodel_store_lsm(lsm_skymodel, tmpdir):
     # Read back and verify
     loaded_skymodel = SkyModel(output_path)
     assert_tables_equal(skymodel.table, loaded_skymodel.table)
+
+def test_loading_gassian_and_point_sources(lsm_skymodel):
+    """
+    Verifies that the loaded LSM model component are read
+    to be gaussians or point sources correctly
+    """
+    skymodel = SkyModel(str(lsm_skymodel))
+    for read_type, expected_type in zip(skymodel.table["Type"],
+            ["POINT", "GAUSSIAN", "GAUSSIAN"]):
+        assert read_type == expected_type
