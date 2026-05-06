@@ -555,70 +555,51 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
         Filtered sky model
     """
     # Make list of sources
-    RA = skymodel.getColValues("Ra")
-    Dec = skymodel.getColValues("Dec")
-    x, y = wcs.wcs_world2pix(RA, Dec, WCS_ORIGIN)
+    ra = skymodel.getColValues("Ra")
+    dec = skymodel.getColValues("Dec")
+    x, y = wcs.wcs_world2pix(ra, dec, WCS_ORIGIN)
 
     # Keep only those sources inside the bounding box
-    inside = np.zeros(len(skymodel), dtype=bool)
     xmin, ymin, xmax, ymax = polygon.bounds
-    inside_ind = np.where((x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax))
-    inside[inside_ind] = True
+    inside = (x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax)
+
     if invert:
         skymodel.remove(inside)
     else:
         skymodel.select(inside)
+
     if len(skymodel) == 0:
         return skymodel
-    RA = skymodel.getColValues("Ra")
-    Dec = skymodel.getColValues("Dec")
-    x, y = wcs.wcs_world2pix(RA, Dec, WCS_ORIGIN)
 
-    # Now check the actual boundary against filtered sky model. We first do a quick (but
-    # coarse) check using ImageDraw with a padding of at least a few pixels to ensure the
-    # quick check does not remove sources spuriously. We then do a slow (but precise)
-    # check using Shapely
-    xpadding = max(int(0.1 * (max(x) - min(x))), 3)
-    ypadding = max(int(0.1 * (max(y) - min(y))), 3)
-    xshift = int(min(x)) - xpadding
-    yshift = int(min(y)) - ypadding
-    xsize = int(np.ceil(max(x) - min(x))) + 2 * xpadding
-    ysize = int(np.ceil(max(y) - min(y))) + 2 * ypadding
-    x -= xshift
-    y -= yshift
-    prepared_polygon = prep(polygon)
+    # Now check the actual boundary against filtered sky model. We first do a
+    # quick (but coarse) check using ImageDraw with a padding of at least a few
+    # pixels to ensure the quick check does not remove sources spuriously. We
+    # then do a slow (but precise) check using Shapely
+    xy = np.array([x, y])[:, inside]
+    xy_ranges = np.ptp(xy, 1)
+    xy_padding = (0.1 * xy_ranges).astype(int).clip(3, None)
+    xy_shifts = xy.min(1).astype(int) - xy_padding
+    xy_sizes = tuple(np.ceil(xy_ranges).astype(int) + 2 * xy_padding)
+    xy -= xy_shifts[:, None]
 
     # Unmask everything outside of the polygon + its border (outline)
-    inside = np.zeros(len(skymodel), dtype=bool)
-    mask = Image.new("L", (xsize, ysize), 0)
-    verts = [
-        (xv - xshift, yv - yshift)
-        for xv, yv in zip(
-            polygon.exterior.coords.xy[0], polygon.exterior.coords.xy[1]
-        )
-    ]
+    mask = Image.new("1", xy_sizes, 0)
+    verts = (polygon.exterior.coords.xy - xy_shifts[:, None]).T.tolist()
     ImageDraw.Draw(mask).polygon(verts, outline=1, fill=1)
-    inside_ind = np.where(
-        np.array(mask).transpose()[(x.astype(int), y.astype(int))]
-    )
-    inside[inside_ind] = True
+
+    inside = np.array(mask).transpose()[tuple(xy.astype(int))]
 
     # Now check sources in the border precisely
-    mask = Image.new("L", (xsize, ysize), 0)
+    mask = Image.new("1", xy_sizes, 0)
     ImageDraw.Draw(mask).polygon(verts, outline=1, fill=0)
-    border_ind = np.where(
-        np.array(mask).transpose()[(x.astype(int), y.astype(int))]
-    )
-    points = [Point(xs, ys) for xs, ys in zip(x[border_ind], y[border_ind])]
-    indexes = []
-    for i in range(len(points)):
-        indexes.append(border_ind[0][i])
-    i_points = zip(indexes, points)
-    i_outside_points = [
-        (i, p) for (i, p) in i_points if not prepared_polygon.contains(p)
-    ]
-    for idx, _ in i_outside_points:
-        inside[idx] = False
+    border = np.array(mask).transpose()[tuple(xy.astype(int))]
+    (border_indices,) = np.nonzero(border)
+
+    prepared_polygon = prep(polygon)
+    for i, xy_point in zip(border_indices, xy[:, border].T):
+        if not prepared_polygon.contains(Point(*xy_point)):
+            inside[i] = False
+
     if invert:
         skymodel.remove(inside)
     else:
