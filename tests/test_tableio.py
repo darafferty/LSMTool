@@ -2,7 +2,7 @@ import ast
 import csv
 from pathlib import Path
 
-import numpy as _np
+import numpy as np
 import pytest
 
 from lsmtool.skymodel import SkyModel
@@ -334,17 +334,17 @@ def assert_tables_equal(t1, t2):
     assert t1.colnames == t2.colnames
     for col in t1.colnames:
         c1, c2 = t1[col], t2[col]
-        if isinstance(c1[0], _np.ndarray):
+        if isinstance(c1[0], np.ndarray):
             # ndarray elements: compare element-wise
             for v1, v2 in zip(c1, c2, strict=True):
-                assert _np.allclose(v1, v2), f"Failed comparison for {col}"
+                assert np.allclose(v1, v2), f"Failed comparison for {col}"
 
-        elif _np.issubdtype(c1.dtype, _np.floating):
+        elif np.issubdtype(c1.dtype, np.floating):
             # Float columns: use allclose for tolerance
-            assert _np.allclose(c1, c2), f"Failed comparison for {col}"
+            assert np.allclose(c1, c2), f"Failed comparison for {col}"
         else:
             # Other types: exact comparison
-            assert _np.all(c1 == c2), f"Failed comparison for {col}"
+            assert np.all(c1 == c2), f"Failed comparison for {col}"
 
 
 def test_instantiate_lsm_skymodel_from_file(lsm_skymodel):
