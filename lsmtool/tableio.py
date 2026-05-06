@@ -131,6 +131,22 @@ _EXPECTED_LSM_COLUMN_NAMES = [
     "epoch"
 ]
 
+FORMAT_LINE_REGEX = re.compile(
+    r"""(?xsmi)
+    \#?\s*                      # optional comment opens format string
+    (?P<fmt>format\s*=\s*)?     # optional opening "format" specifier
+    (?P<bracket>\()?            # optional opening bracket "("
+        (?P<columns>[^\n\)]+?)  # column definitions (match anything except
+                                # newline non-greedily)
+    (?(bracket)\)|)             # optional closing bracket matched only if
+                                # opening bracket present
+    (?P<fmt_tail>               # optional format specifier following column
+      (?(fmt)|(\s*=\s*)format)  # definitions. Only matched if opening "format"
+    )                           # is missing.
+    \s*$                        # trailing whitespace up to line end
+    """
+)
+
 def raformat(val):
     """
     Column formatter for RA values.
