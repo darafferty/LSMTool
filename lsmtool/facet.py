@@ -29,7 +29,22 @@ from .operations_lib import make_wcs, normalize_ra_dec
 # ---------------------------------------------------------------------------- #
 INDEX_OUTSIDE_DIAGRAM = -1
 
-FACET_NAME_REGEX = re.compile(r'^[^#]*#\s*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$')
+FACET_NAME_REGEX = re.compile(
+    r"""(?x)                    # verbose mode
+        ^[^#]*                  # any text preceding the comment character
+        \#\s*                   # comment character maybe followed whitespace
+        text\s*=\s*             # the text= keyword with optional whitespace
+        (                       # opening quote / brace
+            (?P<quote>["'])
+            |
+            (?P<brace>\{)
+        )
+        (?P<text>[^}"']*)       # capture the text value
+        (?(quote)(?P=quote)|\}) # closing quote / brace for the text value
+        .*
+        $
+    """
+)
 
 # ---------------------------------------------------------------------------- #
 
@@ -745,7 +760,7 @@ def parse_facet_name(region_file, line):
             f"{line}"
         )
 
-    facet_name = match.group(1)
+    facet_name = match["text"]
 
     # Replace characters that are potentially problematic for Rapthor,
     # DP3, etc. with an underscore
