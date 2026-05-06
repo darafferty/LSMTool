@@ -162,12 +162,17 @@ def validate_lsm_format(skymodel_path):
         try:
             ra = float(row[2])
             dec = float(row[3])
-            _ = float(row[4])
-            _ = float(row[5])
-            _ = float(row[6])
-
             i_pol = float(row[9])
-            _ = float(row[10])
+
+            # Assert columns
+            # 4 - a_arcsec 
+            # 5 - b_arcsec
+            # 6 - pa_deg
+            # 10 - ref_frequency
+            # are float
+            for col_idx in [4,5,6,10]:
+                _ = float(row[col_idx])
+            
         except ValueError as exc:
             raise AssertionError(
                 f"Row {n} numeric parse error: {exc} (row={row})"
@@ -239,11 +244,15 @@ def validate_skymodel_format(skymodel_path):
         assert dec, f"Row {n} empty Dec"
 
         try:
-            _ = float(row[5])
-            _ = float(row[8])
-            _ = float(row[9])
-            _ = float(row[10])
-            _ = float(row[11])
+            # Assert columns
+            # 5 - I 
+            # 8 - ReferenceFrequency
+            # 9 - MajorAxis
+            # 10 - MinorAxis
+            # 11 - Orientation
+            # are float
+            for col_idx in [5,8,9,10,11]:
+                _ = float(row[col_idx])
         except ValueError as exc:
             raise AssertionError(
                 f"Row {n} numeric parse error: {exc} (row={row})"
@@ -256,7 +265,7 @@ def validate_skymodel_format(skymodel_path):
                 f"Row {n} spec_idx parse error: (value={row[6]})"
             ) from exc
 
-        assert isinstance(spec_list, (list, tuple)), (
+        assert isinstance(spec_list, list), (
             f"Row {n} spec_idx is not a list: {spec_list}"
         )
         for v in spec_list:
