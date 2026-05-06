@@ -690,9 +690,9 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
             # New facet definition begins
             indx += 1
             vertices = ast.literal_eval(line.split("polygon")[1])
-            polygon_ras = [ra for ra in vertices[::2]]
-            polygon_decs = [dec for dec in vertices[1::2]]
-            vertices = [(ra, dec) for ra, dec in zip(polygon_ras, polygon_decs)]
+            polygon_ras = list(vertices[::2])
+            polygon_decs = list(vertices[1::2])
+            vertices = list(zip(polygon_ras, polygon_decs))
 
             # Make a temporary facet to get centroid and make new facet with
             # reference point at centroid (this point may be overridden by
