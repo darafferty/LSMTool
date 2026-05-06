@@ -108,12 +108,11 @@ def check_file_exists(path: PathLike):
             "system path."
         )
 
-    path = Path(path)
-    if not path.exists() or not path.is_file():
-        # Fails if the path does not exits or is not a file.
-        raise FileNotFoundError(f"Not able to find file: '{path}'.")
+    if (path := Path(path)).is_file():
+        return path
 
-    return path
+    # Fails if the path does not exits or is not a file.
+    raise FileNotFoundError(f"Not able to find file: '{path}'.")
 
 
 def validate_paths(required: bool = True, **filenames):
