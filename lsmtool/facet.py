@@ -216,7 +216,7 @@ class Facet(object):
             )
             # Save offsets
             if result is not None:
-                self.astrometry_diagnostics.update(result)
+                self.astrometry_diagnostics |= result
         else:
             self.log.warning(
                 "Too few matches to determine astrometry offsets "
