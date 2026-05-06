@@ -299,6 +299,7 @@ def test_load_lsm_with_astropy(lsm_skymodel):
 def expected_lsm_content():
     return {
         "Name": ["J000011-000001", "J000011-000002", "J000011-000003"],
+        "Type": ["POINT", "GAUSSIAN", "GAUSSIAN"],
         "Patch": ["J000011", "J000011", "J000011"],
         "ReferenceFrequency": [1.01e8, 1.02e8, 1.03e8],
         "I": [10.0, 20.0, 30.0],
@@ -398,13 +399,3 @@ def test_instantiate_lsm_skymodel_store_lsm(lsm_skymodel, tmpdir):
     # Read back and verify
     loaded_skymodel = SkyModel(output_path)
     assert_tables_equal(skymodel.table, loaded_skymodel.table)
-
-def test_loading_gassian_and_point_sources(lsm_skymodel):
-    """
-    Verifies that the loaded LSM model component are read
-    to be gaussians or point sources correctly
-    """
-    skymodel = SkyModel(str(lsm_skymodel))
-    for read_type, expected_type in zip(skymodel.table["Type"],
-            ["POINT", "GAUSSIAN", "GAUSSIAN"]):
-        assert read_type == expected_type
