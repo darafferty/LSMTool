@@ -1649,43 +1649,41 @@ def lsmWriter(table, fileName):
 
     # Write data rows
     for row in table:
-        lsmRow = []
-        
-        # component_id (Name)
-        lsmRow.append(str(row['Name']))
-        
-        # source_id (Patch)
-        lsmRow.append(str(row['Patch']))
-        
-        # ra_deg, dec_deg
-        lsmRow.append(str(float(row['Ra'])))
-        lsmRow.append(str(float(row['Dec'])))
-        
-        # a_arcsec, b_arcsec, pa_deg
-        lsmRow.append(str(float(row['MajorAxis'])))
-        lsmRow.append(str(float(row['MinorAxis'])))
-        lsmRow.append(str(float(row['Orientation'])))
-        
-        # spec_idx (as quoted string)
-        spec_idx = row['SpectralIndex']
-        if isinstance(spec_idx, np.ndarray):
-            spec_str = str(spec_idx.tolist())
+        # spec_idx
+        if isinstance((spec_idx := row['SpectralIndex']), np.ndarray):
+            spec_str = spec_idx.tolist()
         else:
-            spec_str = str([spec_idx])
-        lsmRow.append('"{0}"'.format(spec_str))
-        
-        # log_spec_idx
-        lsmRow.append(str(row['LogarithmicSI']))
-        
-        # i_pol_jy, ref_freq_hz
-        lsmRow.append(str(float(row['I'])))
-        lsmRow.append(str(float(row['ReferenceFrequency'])))
-        
-        # epoch (default to J2000)
-        lsmRow.append('J2000')
-        
-        lsmFile.write(','.join(lsmRow))
-        lsmFile.write('\n')
+            spec_str = [spec_idx]
+
+        lsmFile.write(
+            # component_id (Name)
+            f'{row["Name"]},'
+
+            # source_id (Patch)
+            f"{row['Patch']},"
+
+            # ra_deg, dec_deg
+            f"{float(row['Ra'])},"
+            f"{float(row['Dec'])},"
+
+            # a_arcsec, b_arcsec, pa_deg
+            f"{float(row['MajorAxis'])},"
+            f"{float(row['MinorAxis'])},"
+            f"{float(row['Orientation'])},"
+            
+            # spec_idx (as quoted string)
+            f'"{spec_str}",'
+
+            # log_spec_idx
+            f"{row['LogarithmicSI']},"
+            
+            # i_pol_jy, ref_freq_hz
+            f"{float(row['I'])},"
+            f"{float(row['ReferenceFrequency'])},"
+
+            # epoch (default to J2000)
+            'J2000\n'
+        )
 
     lsmFile.close()
 
