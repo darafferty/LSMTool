@@ -69,13 +69,9 @@ class Facet(object):
 
         # Convert input (RA, Dec) vertices to (x, y) polygon
         self.wcs = make_wcs(self.ra, self.dec, wcs_pixel_scale)
-        self.polygon_ras = [radec[0] for radec in self.vertices]
-        self.polygon_decs = [radec[1] for radec in self.vertices]
-        x_values, y_values = self.wcs.wcs_world2pix(
-            self.polygon_ras, self.polygon_decs, WCS_ORIGIN
-        )
-        polygon_vertices = [(x, y) for x, y in zip(x_values, y_values)]
-        self.polygon = Polygon(polygon_vertices)
+
+        xy_values = self.wcs.wcs_world2pix(*self.vertices.T, WCS_ORIGIN)
+        self.polygon = Polygon(list(zip(*xy_values)))
 
         # Find the size and center coordinates of the facet
         xmin, ymin, xmax, ymax = self.polygon.bounds
@@ -217,8 +213,8 @@ class Facet(object):
         Parameters
         ----------
         wcs : WCS object, optional
-            WCS object defining (RA, Dec) <-> (x, y) transformation. If not given,
-            the facet's transformation is used
+            WCS object defining the celestial coordinate (RA, Dec) to image
+            (x, y) transformation. If not given, the facet's WCS object is used.
 
         Returns
         -------
@@ -226,9 +222,7 @@ class Facet(object):
             The patch for the facet polygon
         """
         if wcs is not None:
-            x, y = wcs.wcs_world2pix(
-                self.polygon_ras, self.polygon_decs, WCS_ORIGIN
-            )
+            x, y = wcs.wcs_world2pix(*self.vertices.T, WCS_ORIGIN)
         else:
             x, y = self.polygon.exterior.coords.xy
         xy = np.vstack([x, y]).transpose()
