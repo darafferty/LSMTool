@@ -303,6 +303,19 @@ class TestFacet:
         assert np.allclose(extents.max, np.max(facet.polygon.exterior.xy, 1))
         assert np.allclose(extents.min, np.min(facet.polygon.exterior.xy, 1))
 
+    def test_set_skymodel(self, mocker, facet):
+        """
+        Test that `set_skymodel` method runs the `filter_skymodel` function.
+        """
+        # Arrange
+        mock_filter_skymodel = mocker.patch("lsmtool.facet.filter_skymodel")
+        # Act
+        facet.set_skymodel("mock_skymodel")
+        # Assert
+        mock_filter_skymodel.assert_called_once_with(
+            facet.polygon, "mock_skymodel", facet.wcs
+        )
+
 
 @pytest.mark.parametrize(
     "coords, bounding_box, expected",
