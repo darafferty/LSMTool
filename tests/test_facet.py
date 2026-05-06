@@ -16,6 +16,7 @@ from numpy.testing import assert_array_equal
 from lsmtool.facet import (
     Facet,
     SquareFacet,
+    filter_skymodel,
     in_box,
     make_ds9_region_file,
     prepare_points_for_tessellate,
@@ -961,54 +962,47 @@ def test_prepare_points_for_tessellate(coords, bounding_box, expected_centre):
         np.testing.assert_array_equal(points_centre, expected_centre)
 
 
-class TestReadSkymodel:
-    """Tests for the `lsmtool.facet.read_skymodel` function."""
+@pytest.mark.parametrize(
+    "facet, extent",
+    [
+        (
+            SquareFacet(
+                name="test_filter_skymodel",
+                ra=255,
+                dec=55,
+                width=5,
+            ),
+            [250, 260, 50, 60],
+        ),
+        (
+            Facet(
+                name="test_filter_skymodel",
+                ra=238.795,
+                dec=50.98242,
+                vertices=[(250, 60), (260, 60), (260, 50), (250, 50)],
+            ),
+            [250, 260, 50, 60],
+        ),
+    ],
+)
+def test_filter_skymodel(request, facet, extent):
+    """
+    Test that `facet.filter_skymodel` selects only sources that lie inside the
+    input facet.
+    """
 
-    @pytest.fixture(autouse=True)
-    def mock_skymodel(self, mocker, request):
+    # Arrange
+    skymodel = load(request.config.resource_dir / "no_patches.sky")
 
-        patch_positions = (
-            {"getPatchPositions.return_value": request.param}
-            if (has_patches := request.param is not None)
-            else {}
-        )
+    # Act
+    result = filter_skymodel(facet.polygon, skymodel, facet.wcs)
 
-        mock_skymodel = mocker.Mock(hasPatches=has_patches, **patch_positions)
-        mocker.patch("lsmtool.facet.load", return_value=mock_skymodel)
-        return mock_skymodel
+    # Assert
+    assert "FILTER (with array of indices/bools)" in result.history[-1]
 
-    @pytest.mark.parametrize("mock_skymodel", [None], indirect=True)
-    def test_read_skymodel_no_patches(self):
-        """
-        Test that read_skymodel raises ValueError if sky model has no patches.
-        """
-        with pytest.raises(ValueError, match="must be grouped into patches"):
-            read_skymodel("fake.sky", 180.0, 45.0, 2.0, 2.0)
+    ra = result.table["Ra"]
+    dec = result.table["Dec"]
 
-    @pytest.mark.parametrize(
-        "mock_skymodel",
-        [
-            {
-                "PatchA": (180.0 * u.degree, 45.0 * u.degree),
-                "PatchB": (180.5 * u.degree, 45.5 * u.degree),
-                "PatchC": (179.5 * u.degree, 44.5 * u.degree),
-            }
-        ],
-        indirect=True,
-    )
-    def test_read_skymodel_returns_facets(self):
-        """
-        Test that read_skymodel returns correct facets from a patched sky model.
-        """
-
-        # Act
-        facets = read_skymodel("fake.sky", 180.0, 45.0, 2.0, 2.0)
-
-        # Assert
-        assert all(isinstance(facet, Facet) for facet in facets)
-        # Each facet name should be one of the patch names
-        assert [(facet.name, facet.ra, facet.dec) for facet in facets] == [
-            ("PatchA", 180.0, 45.0),
-            ("PatchB", 180.5, 45.5),
-            ("PatchC", 179.5, 44.5),
-        ]
+    ra0, ra1, dec0, dec1 = extent
+    assert np.all((ra0 < ra) & (ra < ra1))
+    assert np.all((dec0 < dec) & (dec < dec1))
