@@ -232,9 +232,7 @@ class Facet(object):
         else:
             x, y = self.polygon.exterior.coords.xy
         xy = np.vstack([x, y]).transpose()
-        patch = patches.Polygon(xy=xy, edgecolor="black", facecolor="white")
-
-        return patch
+        return patches.Polygon(xy=xy, edgecolor="black", facecolor="white")
 
 
 class SquareFacet(Facet):
