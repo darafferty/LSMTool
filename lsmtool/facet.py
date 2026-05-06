@@ -65,9 +65,10 @@ class Facet(object):
         format supported by astropy.coordinates.Angle
     vertices : list of tuples
         List of (RA, Dec) tuples, one for each vertex of the facet
-    wcs_pixel_scale : float, optional, default `lsmtool.constants.WCS_PIXEL_SCALE
+    wcs_pixel_scale : float, optional
         The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel
+        degrees per pixel. The default value is
+        `lsmtool.constants.WCS_PIXEL_SCALE`
     """
 
     def __init__(
@@ -92,13 +93,13 @@ class Facet(object):
         self.polygon = Polygon(list(zip(*xy_values)))
 
         # Find the size and center coordinates of the facet
-        bounds = np.array(self.polygon.bounds).reshape(2,2)
+        bounds = np.array(self.polygon.bounds).reshape(2, 2)
         ranges = np.ptp(bounds, 0)
         self.x_center, self.y_center = bounds[0] + ranges / 2
-        
+
         # get size in degrees
-        self.size = min(0.5, np.abs(ranges * self.wcs.wcs.cdelt).max())  
-        
+        self.size = min(0.5, np.abs(ranges * self.wcs.wcs.cdelt).max())
+
         self.ra_center, self.dec_center = map(
             float,
             self.wcs.wcs_pix2world(self.x_center, self.y_center, WCS_ORIGIN),
@@ -814,51 +815,41 @@ def read_from_skymodel(
     # Set the position of the calibration patches to those of
     # the input sky model
     source_dict = skymod.getPatchPositions()
-    name_cal = []
-    ra_cal = []
-    dec_cal = []
-    for k, v in source_dict.items():
-        name_cal.append(k)
-        # Make sure RA is between [0, 360) deg and Dec between [-90, 90]
-        ra, dec = normalize_ra_dec(v[0].value, v[1].value)
-        ra_cal.append(ra)
-        dec_cal.append(dec)
-    patch_coords = SkyCoord(
-        ra=np.array(ra_cal) * u.degree, dec=np.array(dec_cal) * u.degree
-    )
+
+    # Make sure RA is between [0, 360) deg and Dec between [-90, 90]
+    coordinates = [
+        normalize_ra_dec(ra.value, dec.value)
+        for (ra, dec) in source_dict.values()
+    ]
+    patch_coords = SkyCoord(coordinates, unit="deg")
 
     # Do the tessellation
     facet_points, facet_polys = tessellate(
-        SkyCoord(ra_cal, dec_cal, unit="deg"),
+        patch_coords,
         SkyCoord(ra_mid, dec_mid, unit="deg"),
         [width_ra, width_dec],
         wcs_pixel_scale=wcs_pixel_scale,
     )
-    facet_names = []
-    for facet_point in facet_points:
-        # For each facet, match the correct patch name (i.e., the name of the
-        # patch closest to the facet reference point). This step is needed
-        # because some patches in the sky model may not appear in the facet list if
-        # they lie outside the bounding box
-        facet_coord = SkyCoord(
-            ra=facet_point[0] * u.degree, dec=facet_point[1] * u.degree
-        )
-        separations = facet_coord.separation(patch_coords)
-        facet_names.append(np.array(name_cal)[np.argmin(separations)])
+
+    # For each facet, match the correct patch name (i.e., the name of the patch
+    # closest to the facet reference point). This step is needed because some
+    # patches in the sky model may not appear in the facet list if they lie
+    # outside the bounding box.
+    names = np.array(list(source_dict.keys()))
+    facet_coords = SkyCoord(facet_points, unit="deg")
+    facet_names = names[
+        facet_coords[:, None].separation(patch_coords).argmin(1)
+    ]
 
     # Create the facets
-    facets = []
-    for name, center_coord, vertices in zip(
-        facet_names, facet_points, facet_polys
-    ):
-        facets.append(
-            Facet(
-                name,
-                center_coord[0],
-                center_coord[1],
-                vertices,
-                wcs_pixel_scale=wcs_pixel_scale,
-            )
+    return [
+        Facet(
+            name,
+            *center_coords,
+            vertices,
+            wcs_pixel_scale=wcs_pixel_scale,
         )
-
-    return facets
+        for name, center_coords, vertices in zip(
+            facet_names, facet_points, facet_polys, strict=True
+        )
+    ]
