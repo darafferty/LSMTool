@@ -773,7 +773,7 @@ def parse_facet_name(region_file, line):
     return facet_name
 
 
-def read_skymodel(
+def read_from_skymodel(
     skymodel,
     ra_mid,
     dec_mid,
