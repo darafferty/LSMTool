@@ -3,6 +3,7 @@ Tests for the lsmtool.facet module.
 """
 
 import contextlib
+from pathlib import Path
 
 import astropy.units as u
 import matplotlib as mpl
@@ -64,8 +65,13 @@ def get_context(expected, **kws):
     -------
     contextlib.AbstractContextManager
     """
-    if isinstance(expected, type) and issubclass(expected, BaseException):
-        return pytest.raises(expected, **kws)
+    if isinstance(expected, type):
+        if isinstance(expected, contextlib.AbstractContextManager):
+            return expected
+
+        if issubclass(expected, BaseException):
+            return pytest.raises(expected, **kws)
+
     return contextlib.nullcontext(expected)
 
 
@@ -317,6 +323,162 @@ class TestFacet:
         )
 
 
+class TestDS9RegionFile:
+    """
+    Tests for the `lsmtool.facet.read_ds9_region_file` and
+    `lsmtool.facet.make_ds9_region_file` functions.
+    """
+
+    @pytest.fixture(params=["test.reg", "invalid.reg"])
+    def ds9_region_file(self, request):
+        """
+        Fixture to create a DS9 region file for testing.
+        """
+        return TEST_DATA_PATH / request.param
+
+    @pytest.fixture(params=["test.reg", "invalid.reg"])
+    def expected_facet_attributes(self, ds9_region_file):
+        if ds9_region_file.name == "test.reg":
+            return [
+                {
+                    "name": "Patch_1",
+                    "ra": 318.2026666666666,
+                    "dec": 62.25055927777777,
+                },
+                {
+                    "name": "Patch_10_with_spaces",
+                    "ra": 312.59492416666666,
+                    "dec": 60.46176975,
+                },
+                {
+                    "name": "Patch_11",
+                    "ra": 315.00718541666663,
+                    "dec": 59.5211111388889,
+                },
+                {
+                    "name": "Patch_12",
+                    "ra": 310.31232124999997,
+                    "dec": 59.54736030555557,
+                },
+            ]
+
+        return ValueError
+
+    def test_read_ds9_region_file(
+        self, ds9_region_file, expected_facet_attributes
+    ):
+        """
+        Test reading a DS9 region file.
+        """
+        with get_context(expected_facet_attributes):
+            # Act
+            facets = read_ds9_region_file(ds9_region_file)
+
+            # Assert
+            for i, (facet, expected) in enumerate(
+                zip(facets, expected_facet_attributes, strict=False)
+            ):
+                for attr, value in expected.items():
+                    assert getattr(facet, attr) == value, (
+                        f"Facet {i} attribute {attr!r} does not match expected "
+                        "value."
+                    )
+
+    @pytest.mark.parametrize(
+        "ds9_region_file, expected_facet_attributes",
+        [("test.reg", "test.reg")],
+        indirect=True,
+    )
+    @pytest.mark.parametrize(
+        "enclose_names, context",
+        [
+            pytest.param(True, contextlib.nullcontext(), id="enclose_names"),
+            pytest.param(
+                False,
+                pytest.raises(
+                    ValueError, match='"text" property could not be parsed'
+                ),
+                id="no_enclose_names",
+            ),
+        ],
+    )
+    def test_write_ds9_region_file(
+        self,
+        tmp_path,
+        ds9_region_file,
+        expected_facet_attributes,
+        enclose_names,
+        context,
+    ):
+        """
+        Test writing a DS9 region file.
+        """
+        # Arrange
+        reg_out = tmp_path / "test_region_write.reg"
+        facets = read_ds9_region_file(ds9_region_file)
+
+        # Act
+        make_ds9_region_file(facets, reg_out, enclose_names=enclose_names)
+
+        # Assert
+        with context:
+            self.test_read_ds9_region_file(reg_out, expected_facet_attributes)
+
+
+class TestReadSkymodel:
+    """Tests for the `lsmtool.facet.read_skymodel` function."""
+
+    @pytest.fixture(autouse=True)
+    def mock_skymodel(self, mocker, request):
+
+        patch_positions = (
+            {"getPatchPositions.return_value": request.param}
+            if (has_patches := request.param is not None)
+            else {}
+        )
+
+        mock_skymodel = mocker.Mock(hasPatches=has_patches, **patch_positions)
+        mocker.patch("lsmtool.facet.load", return_value=mock_skymodel)
+        return mock_skymodel
+
+    @pytest.mark.parametrize("mock_skymodel", [None], indirect=True)
+    def test_read_skymodel_no_patches(self):
+        """
+        Test that read_skymodel raises ValueError if sky model has no patches.
+        """
+        with pytest.raises(ValueError, match="must be grouped into patches"):
+            read_skymodel("fake.sky", 180.0, 45.0, 2.0, 2.0)
+
+    @pytest.mark.parametrize(
+        "mock_skymodel",
+        [
+            {
+                "PatchA": (180.0 * u.degree, 45.0 * u.degree),
+                "PatchB": (180.5 * u.degree, 45.5 * u.degree),
+                "PatchC": (179.5 * u.degree, 44.5 * u.degree),
+            }
+        ],
+        indirect=True,
+    )
+    def test_read_skymodel_returns_facets(self):
+        """
+        Test that read_skymodel returns correct facets from a patched sky model.
+        """
+
+        # Act
+        facets = read_skymodel("fake.sky", 180.0, 45.0, 2.0, 2.0)
+
+        # Assert
+        assert all(isinstance(facet, Facet) for facet in facets)
+        # Each facet name should be one of the patch names
+        assert [(facet.name, facet.ra, facet.dec) for facet in facets] == [
+            ("PatchA", 180.0, 45.0),
+            ("PatchB", 180.5, 45.5),
+            ("PatchC", 179.5, 44.5),
+        ]
+
+
+# ---------------------------------------------------------------------------- #
 @pytest.mark.parametrize(
     "coords, bounding_box, expected",
     [
@@ -797,38 +959,6 @@ def test_prepare_points_for_tessellate(coords, bounding_box, expected_centre):
         assert set(map(tuple, expected_points)) == set(map(tuple, points))
 
         np.testing.assert_array_equal(points_centre, expected_centre)
-
-
-def test_read_ds9_region_file(request):
-    """
-    Test reading a DS9 region file.
-    """
-    facets = read_ds9_region_file(request.config.resource_dir / "test.reg")
-    assert len(facets) == 15
-    assert facets[0].name == "Patch_1"
-    assert facets[0].ra == 318.2026666666666
-    assert facets[0].dec == 62.25055927777777
-    assert facets[1].name == "Patch_10_with_spaces"
-    assert facets[2].name == "Patch_11"
-    assert facets[3].name == "Patch_12"
-
-
-def test_write_ds9_region_file(request, tmp_path):
-    """
-    Test writing a DS9 region file.
-    """
-    reg_in = request.config.resource_dir / "test.reg"
-    reg_out = tmp_path / "test_region_write.reg"
-    facets = read_ds9_region_file(reg_in)
-    make_ds9_region_file(facets, reg_out)
-    facets = read_ds9_region_file(reg_out)
-    assert len(facets) == 15
-    assert facets[0].name == "Patch_1"
-    assert facets[0].ra == 318.2026666666666
-    assert facets[0].dec == 62.25055927777777
-    assert facets[1].name == "Patch_10_with_spaces"
-    assert facets[2].name == "Patch_11"
-    assert facets[3].name == "Patch_12"
 
 
 class TestReadSkymodel:

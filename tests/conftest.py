@@ -76,6 +76,10 @@ def copy_test_data(files_to_copy, target):
         shutil.copy(path, target)
 
 
+# ---------------------------------------------------------------------------- #
+# Fixtures
+
+
 @pytest.fixture
 def midbands_ms(tmp_path):
     """Uncompresses test_midbands.ms into a temporary directory."""
