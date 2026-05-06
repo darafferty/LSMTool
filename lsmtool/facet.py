@@ -736,9 +736,9 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         # Note: if a name is defined for both the facet polygon and the facet
         # reference point, the one for the point takes precedence
         if "text" in line:
-            try:
-                facet_name = FACET_NAME_REGEX.match(line).group(1)
-            except AttributeError:  # raised if `re.match()` returns `None`
+            if match := FACET_NAME_REGEX.match(line):
+                facet_name = match.group(1)
+            else:
                 raise ValueError(
                     f'Error parsing region file "{region_file}": '
                     '"text" property could not be parsed for line: '
