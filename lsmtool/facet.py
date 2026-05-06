@@ -23,8 +23,10 @@ from .io import load
 from .operations_lib import make_wcs, normalize_ra_dec
 
 # Module constants
+# ---------------------------------------------------------------------------- #
 INDEX_OUTSIDE_DIAGRAM = -1
 
+FACET_NAME_REGEX = re.compile(r'^[^#]*#\s*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$')
 
 class Facet(object):
     """
@@ -734,9 +736,8 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         # Note: if a name is defined for both the facet polygon and the facet
         # reference point, the one for the point takes precedence
         if "text" in line:
-            pattern = r'^[^#]*#\s*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$'
             try:
-                facet_name = re.match(pattern, line).group(1)
+                facet_name = FACET_NAME_REGEX.match(line).group(1)
             except AttributeError:  # raised if `re.match()` returns `None`
                 raise ValueError(
                     f'Error parsing region file "{region_file}": '
