@@ -631,35 +631,22 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
         other tools that use the region file, such as DP3, in which
         case they can be excluded by setting this option to False
     """
-    lines = []
-    lines.append(
-        "# Region file format: DS9 version 4.0\nglobal color=green "
-        'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
-        "move=1 delete=1 include=1 fixed=0 source=1\nfk5\n"
-    )
+    with open(outfile, "w") as stream:
+        stream.write(
+            "# Region file format: DS9 version 4.0\n"
+            'global color=green font="helvetica 10 normal" select=1 highlite=1 '
+            "edit=1  move=1 delete=1 include=1 fixed=0 source=1\n"
+            "fk5\n"
+        )
 
-    for facet in facets:
-        radec_list = []
-        RAs = facet.polygon_ras
-        Decs = facet.polygon_decs
-        for ra, dec in zip(RAs, Decs):
-            radec_list.append("{0}, {1}".format(ra, dec))
-        lines.append("polygon({0})\n".format(", ".join(radec_list)))
-        if enclose_names:
-            lines.append(
-                "point({0}, {1}) # text={{{2}}}\n".format(
-                    facet.ra, facet.dec, facet.name
-                )
-            )
-        else:
-            lines.append(
-                "point({0}, {1}) # text={2}\n".format(
-                    facet.ra, facet.dec, facet.name
-                )
-            )
+        for facet in facets:
+            radec_list = ", ".join(map(str, facet.vertices.ravel()))
+            stream.write(f"polygon({radec_list})\n")
 
-    with open(outfile, "w") as f:
-        f.writelines(lines)
+            facet_name = f"{{{facet.name}}}" if enclose_names else facet.name
+            stream.write(
+                f"point({facet.ra}, {facet.dec}) # text={facet_name}\n"
+            )
 
 
 def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
