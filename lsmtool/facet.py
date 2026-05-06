@@ -6,6 +6,7 @@ import ast
 import logging
 import re
 import tempfile
+from pathlib import Path
 
 import astropy.units as u
 import numpy as np
@@ -15,6 +16,8 @@ from matplotlib import patches
 from PIL import Image, ImageDraw
 from shapely.geometry import Point, Polygon
 from shapely.prepared import prep
+
+from lsmtool.io import check_file_exists
 
 from . import tableio
 from .constants import WCS_ORIGIN, WCS_PIXEL_SCALE
@@ -27,6 +30,9 @@ from .operations_lib import make_wcs, normalize_ra_dec
 INDEX_OUTSIDE_DIAGRAM = -1
 
 FACET_NAME_REGEX = re.compile(r'^[^#]*#\s*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$')
+
+# ---------------------------------------------------------------------------- #
+
 
 class Facet(object):
     """
@@ -674,83 +680,21 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
     facets : list
         List of Facet objects
     """
+
+    region_file = check_file_exists(region_file)
+
     facets = []
-    with open(region_file, "r") as f:
-        lines = f.readlines()
+    for index, (polygon, *_, points) in enumerate(
+        parse_facet_definitions(region_file)
+    ):
+        vertices = ast.literal_eval(polygon.split("polygon")[1])
+        ra, dec = ast.literal_eval(points.split("point")[1])
+        vertices = list(zip(vertices[::2], vertices[1::2]))
 
-    indx = 0
-    for line in lines:
-        # Each facet in the region file is defined by a polygon line that starts
-        # with 'polygon' and gives the (RA, Dec) vertices
-        #
-        # Each facet polygon line may be followed by a line giving the reference
-        # point that starts with 'point' and gives the reference (RA, Dec)
-        #
-        # The facet name may be set in the text property of either line
-        # (see https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html)
-        if line.startswith("polygon"):
-            # New facet definition begins
-            indx += 1
-            vertices = ast.literal_eval(line.split("polygon")[1])
-            polygon_ras = list(vertices[::2])
-            polygon_decs = list(vertices[1::2])
-            vertices = list(zip(polygon_ras, polygon_decs))
-
-            # Make a temporary facet to get centroid and make new facet with
-            # reference point at centroid (this point may be overridden by
-            # a following 'point' line)
-            facet_tmp = Facet(
-                "temp",
-                polygon_ras[0],
-                polygon_decs[0],
-                vertices,
-                wcs_pixel_scale=wcs_pixel_scale,
-            )
-            ra = facet_tmp.ra_centroid
-            dec = facet_tmp.dec_centroid
-
-        elif line.startswith("point"):
-            # Facet definition continues
-            if not len(facets):
-                raise ValueError(
-                    f'Error parsing region file "{region_file}": "point" '
-                    'line found without a preceding "polygon" line'
-                )
-            facet_tmp = facets.pop()
-            vertices = facet_tmp.vertices
-            ra, dec = ast.literal_eval(line.split("point")[1])
-
+        if "text" in points:
+            facet_name = parse_facet_name(region_file, points)
         else:
-            continue
-
-        # Read the facet name, if any. The name is defined using the 'text'
-        # property. E.g.:
-        #     'polygon(309.6, 60.9, 310.4, 58.9, 309.1, 59.2) # text = {Patch_1} width = 2'
-        #     'point(0.1, 1.2) # text = {Patch_1} width = 2'
-        #
-        # Note: ds9 format allows strings to be quoted with " or ' or {}
-        # (see https://ds9.si.edu/doc/ref/region.html#RegionProperties),
-        # so we match everything between "", '', or {}, if the line contains
-        # anything like `... # text = ...`
-        #
-        # Note: if a name is defined for both the facet polygon and the facet
-        # reference point, the one for the point takes precedence
-        if "text" in line:
-            if not (match := FACET_NAME_REGEX.match(line)):
-                raise ValueError(
-                    f'Error parsing region file "{region_file}": '
-                    '"text" property could not be parsed for line: '
-                    f"{line}"
-                )
-
-            facet_name = match.group(1)
-
-            # Replace characters that are potentially problematic for Rapthor,
-            # DP3, etc. with an underscore
-            for invalid_char in [" ", "{", "}", '"', "'"]:
-                facet_name = facet_name.replace(invalid_char, "_")
-        else:
-            facet_name = f"facet_{indx}"
+            facet_name = f"facet_{index}"
 
         # Lastly, add the facet to the list
         facets.append(
@@ -760,6 +704,75 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         )
 
     return facets
+
+
+def parse_facet_definitions(region_file):
+    """Parse facet definitions from a ds9 region file
+
+    Each facet in the region file is defined by a polygon line that starts
+    with 'polygon' and gives the (RA, Dec) vertices
+
+    Each facet polygon line may be followed by a line giving the reference
+    point that starts with 'point' and gives the reference (RA, Dec)
+
+    The facet name may be set in the text property of either line
+    (see https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html)
+    """
+
+    path = Path(region_file)
+    with path.open("r") as stream:
+        buffer = []
+        for line in stream:
+            if not line.startswith(("polygon", "point")):
+                continue
+
+            if line.startswith("polygon") and buffer:
+                yield buffer
+                buffer = []
+
+            elif line.startswith("point") and not buffer:
+                raise ValueError(
+                    f'Error parsing region file "{region_file}": "point" '
+                    'line found without a preceding "polygon" line'
+                )
+
+            buffer.append(line)
+
+        if buffer:
+            yield buffer
+
+
+def parse_facet_name(region_file, line):
+    """
+    Read the facet name, if any. The name is defined using the 'text'
+    property. E.g.:
+        'polygon(309.6, 60.9, 310.4, 58.9, 309.1, 59.2) # text = {Patch_1} width = 2'
+        'point(0.1, 1.2) # text = {Patch_1} width = 2'
+
+    Note: ds9 format allows strings to be quoted with " or ' or {}
+    (see https://ds9.si.edu/doc/ref/region.html#RegionProperties),
+    so we match everything between "", '', or {}, if the line contains
+    anything like `... # text = ...`
+
+    Note: if a name is defined for both the facet polygon and the facet
+    reference point, the one for the point takes precedence
+    """
+
+    if not (match := FACET_NAME_REGEX.match(line)):
+        raise ValueError(
+            f'Error parsing region file "{region_file}": '
+            '"text" property could not be parsed for line: '
+            f"{line}"
+        )
+
+    facet_name = match.group(1)
+
+    # Replace characters that are potentially problematic for Rapthor,
+    # DP3, etc. with an underscore
+    for invalid_char in [" ", "{", "}", '"', "'"]:
+        facet_name = facet_name.replace(invalid_char, "_")
+
+    return facet_name
 
 
 def read_skymodel(
