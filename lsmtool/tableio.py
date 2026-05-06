@@ -1494,12 +1494,9 @@ def getGSM(position, radius):
 def _readLSMFormatLine(lsm_path):
     with open(lsm_path, "r") as f_stream:
         for line in f_stream:
-            if "format" in line.lower():
-                line, _ = line.split("=")
-                line = line.replace("#", "").\
-                            replace(" ", "").\
-                            lstrip("(").rstrip(")")
-                return line
+            if match := FORMAT_LINE_REGEX.match(line):
+                return match['columns']
+
         raise IOError(f"Format line not found in: {lsm_path}")
 
 def _parseLSMFormatLine(lsm_format):
@@ -1634,74 +1631,72 @@ def lsmWriter(table, fileName):
     """
     log = logging.getLogger('LSMTool.Write')
 
-    lsmFile = open(fileName, 'w')
-    log.debug('Writing LSM model to {0}'.format(fileName))
+    with  open(fileName, 'w') as lsmFile:
+        log.debug('Writing LSM model to {0}'.format(fileName))
 
-    # Column name mapping from makesourcedb to LSM format
-    lsmColumnNames = [
-        'component_id',
-        'source_id',
-        'ra_deg',
-        'dec_deg',
-        'a_arcsec',
-        'b_arcsec',
-        'pa_deg',
-        'spec_idx',
-        'log_spec_idx',
-        'i_pol_jy',
-        'ref_freq_hz',
-        'epoch'
-    ]
+        # Column name mapping from makesourcedb to LSM format
+        lsmColumnNames = [
+            'component_id',
+            'source_id',
+            'ra_deg',
+            'dec_deg',
+            'a_arcsec',
+            'b_arcsec',
+            'pa_deg',
+            'spec_idx',
+            'log_spec_idx',
+            'i_pol_jy',
+            'ref_freq_hz',
+            'epoch'
+        ]
 
-    # Write format line
-    format_line = '# ({0}) = format\n'.format(','.join(lsmColumnNames))
-    lsmFile.write(format_line)
-    
-    # Write metadata comments if available
-    if 'History' in table.meta:
-        lsmFile.write('# LSMTool history:\n# ')
-        lsmFile.write('\n# '.join(table.meta['History']))
-        lsmFile.write('\n')
+        # Write format line
+        format_line = '# ({0}) = format\n'.format(','.join(lsmColumnNames))
+        lsmFile.write(format_line)
+        
+        # Write metadata comments if available
+        if 'History' in table.meta:
+            lsmFile.write('# LSMTool history:\n# ')
+            lsmFile.write('\n# '.join(table.meta['History']))
+            lsmFile.write('\n')
 
-    # Write data rows
-    for row in table:
-        # spec_idx
-        if isinstance((spec_idx := row['SpectralIndex']), np.ndarray):
-            spec_str = spec_idx.tolist()
-        else:
-            spec_str = [spec_idx]
+        # Write data rows
+        for row in table:
+            # spec_idx
+            if isinstance((spec_idx := row['SpectralIndex']), np.ndarray):
+                spec_str = spec_idx.tolist()
+            else:
+                spec_str = [spec_idx]
 
-        lsmFile.write(
-            # component_id (Name)
-            f'{row["Name"]},'
+            lsmFile.write(
+                # component_id (Name)
+                f'{row["Name"]},'
 
-            # source_id (Patch)
-            f"{row['Patch']},"
+                # source_id (Patch)
+                f"{row['Patch']},"
 
-            # ra_deg, dec_deg
-            f"{float(row['Ra'])},"
-            f"{float(row['Dec'])},"
+                # ra_deg, dec_deg
+                f"{float(row['Ra'])},"
+                f"{float(row['Dec'])},"
 
-            # a_arcsec, b_arcsec, pa_deg
-            f"{float(row['MajorAxis'])},"
-            f"{float(row['MinorAxis'])},"
-            f"{float(row['Orientation'])},"
-            
-            # spec_idx (as quoted string)
-            f'"{spec_str}",'
+                # a_arcsec, b_arcsec, pa_deg
+                f"{float(row['MajorAxis'])},"
+                f"{float(row['MinorAxis'])},"
+                f"{float(row['Orientation'])},"
+                
+                # spec_idx (as quoted string)
+                f'"{spec_str}",'
 
-            # log_spec_idx
-            f"{row['LogarithmicSI']},"
-            
-            # i_pol_jy, ref_freq_hz
-            f"{float(row['I'])},"
-            f"{float(row['ReferenceFrequency'])},"
+                # log_spec_idx
+                f"{row['LogarithmicSI']},"
+                
+                # i_pol_jy, ref_freq_hz
+                f"{float(row['I'])},"
+                f"{float(row['ReferenceFrequency'])},"
 
-            # epoch (default to J2000)
-            'J2000\n'
-        )
-
-    lsmFile.close()
+                # epoch (default to J2000)
+                'J2000\n'
+            )
 
 
 
