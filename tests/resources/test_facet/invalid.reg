@@ -1,0 +1,5 @@
+# Region file format: DS9 version 4.0
+global color=green font="helvetica 10 normal" select=1 highlite=1 edit=1 move=1 delete=1 include=1 fixed=0 source=1
+fk5
+
+point(318.2026666666666, 62.250559277777775) # text={Patch_1}
