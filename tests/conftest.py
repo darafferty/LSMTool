@@ -2,6 +2,8 @@
 Configuration for python tests.
 """
 
+import contextlib
+import inspect
 import shutil
 import tarfile
 from pathlib import Path
@@ -23,17 +25,8 @@ def pytest_configure(config):
     config.resource_dir = TEST_DATA_PATH
 
 
-@pytest.fixture
-def midbands_ms(tmp_path):
-    """Uncompresses test_midbands.ms into a temporary directory."""
-    ms_name = "test_midbands.ms"
-    untar(TEST_DATA_PATH / f"{ms_name}.tgz", tmp_path)
-    return tmp_path / ms_name
-
-
-@pytest.fixture(scope="session")
-def test_image_wcs():
-    return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
+# ---------------------------------------------------------------------------- #
+# Helper functions
 
 
 def untar(
@@ -83,6 +76,78 @@ def copy_test_data(files_to_copy, target):
     for filename in files_to_copy:
         path = check_file_exists(TEST_DATA_PATH / filename)
         shutil.copy(path, target)
+
+
+def get_context(expected, **kws):
+    """
+    Get the appropriate runtime context for executing test code based on
+    whether the expected result is an exception or not.
+
+    Parameters
+    ----------
+    expected : Exception or object
+        The expected result of the test. If this object is an exception class,
+        the context manager will be `pytest.raises(expected, **kws)`. Otherwise,
+        it will be a null context manager.
+
+    Examples
+    --------
+    For tests that are expected to succeed:
+    >>> @pytest.mark.parametrize("expected", [1])
+    ... def test_success(expected):
+    ...     with get_context(expected):
+    ...         assert expected == 1
+
+    For tests that are expected to fail:
+    The following example will raise an IndexError, which will get caught by
+    the `pytest.raises` context manager, leading to a successful test
+    >>> @pytest.mark.parametrize("expected", [LookupError])
+    ... def test_expected_failure(expected):
+    ...     with get_context(expected):
+    ...         [][1]
+
+    Returns
+    -------
+    contextlib.AbstractContextManager
+    """
+    if isinstance(expected, type):
+        if isinstance(expected, contextlib.AbstractContextManager):
+            return expected
+
+        if issubclass(expected, BaseException):
+            return pytest.raises(expected, **kws)
+
+    return contextlib.nullcontext(expected)
+
+
+# ---------------------------------------------------------------------------- #
+# Fixtures
+
+
+@pytest.fixture(scope="module")
+def test_data_path(request):
+    """Path to the test data subfolder for the test module."""
+
+    test_module = inspect.getmodule(request._pyfuncitem.parent._obj)
+    test_data_path = request.config.resource_dir / test_module.__name__
+    return (
+        test_data_path
+        if test_data_path.exists()
+        else request.config.resource_dir
+    )
+
+
+@pytest.fixture
+def midbands_ms(tmp_path):
+    """Uncompresses test_midbands.ms into a temporary directory."""
+    ms_name = "test_midbands.ms"
+    untar(TEST_DATA_PATH / f"{ms_name}.tgz", tmp_path)
+    return tmp_path / ms_name
+
+
+@pytest.fixture(scope="module")
+def test_image_wcs():
+    return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
 
 
 @pytest.fixture

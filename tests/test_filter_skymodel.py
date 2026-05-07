@@ -5,57 +5,54 @@ Tests for filtering sources from the skymodel based on source detection.
 import contextlib as ctx
 
 import pytest
-from conftest import TEST_DATA_PATH, copy_test_data
+from conftest import copy_test_data
 
 from lsmtool.filter_skymodel import bdsf, resolve_source_finder
-
-try:
-    from lsmtool.filter_skymodel import sofia
-
-    have_sofia = True
-except ImportError:
-    have_sofia = False
-
 from lsmtool.testing import check_skymodels_equal
 
+sofia = None
+with ctx.suppress(ImportError):
+    from lsmtool.filter_skymodel import sofia
 
-class TestResolveSourceFinder:
-    null_context = ctx.nullcontext()
-    raises = pytest.raises(ValueError)
 
-    @pytest.mark.parametrize(
-        "name, expected, context",
-        [
-            pytest.param(
-                "sofia",
-                "sofia",
-                null_context,
-                id="sofia",
-                marks=pytest.mark.skipif(
-                    not have_sofia, reason="SoFiA not available"
-                ),
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        # -------------------------------------------------------------------- #
+        # Nominal cases
+        pytest.param(
+            "sofia",
+            "sofia",
+            id="sofia",
+            marks=pytest.mark.skipif(
+                sofia is None, reason="SoFiA not available"
             ),
-            pytest.param("bdsf", "bdsf", null_context, id="bdsf"),
-            pytest.param(
-                "SoFiA",
-                "sofia",
-                null_context,
-                id="SoFiA",
-                marks=pytest.mark.skipif(
-                    not have_sofia, reason="SoFiA not available"
-                ),
+        ),
+        pytest.param("bdsf", "bdsf", id="bdsf"),
+        pytest.param(
+            "SoFiA",
+            "sofia",
+            id="SoFiA",
+            marks=pytest.mark.skipif(
+                sofia is None, reason="SoFiA not available"
             ),
-            pytest.param("BDSF", "bdsf", null_context, id="BDSF"),
-            pytest.param(None, None, raises, id="nonetype_raises"),
-            pytest.param(True, None, raises, id="true_raises"),
-            pytest.param("none", None, raises, id="invalid_string_raises"),
-        ],
+        ),
+        pytest.param("BDSF", "bdsf", id="BDSF"),
+        # -------------------------------------------------------------------- #
+        # Error cases
+        pytest.param(None, None, id="nonetype_raises"),
+        pytest.param(True, None, id="true_raises"),
+        pytest.param("none", None, id="invalid_string_raises"),
+    ],
+)
+def test_resolve_source_finder(name, expected):
+
+    context = (
+        pytest.raises(ValueError) if expected is None else ctx.nullcontext()
     )
-    def test_resolve_source_finder(self, name, expected, context):
-        # Act
-        with context:
-            # Assert
-            assert resolve_source_finder(name) == expected
+    with context:
+        # Assert
+        assert resolve_source_finder(name) == expected
 
 
 def get_image_paths(tmp_path, prefix):
@@ -90,7 +87,9 @@ class TestBDSF:
         }
 
     @pytest.mark.parametrize("keep_mask", [True, False])
-    def test_filter_skymodel(self, image_paths, keep_mask, **kws):
+    def test_filter_skymodel(
+        self, test_data_path, image_paths, keep_mask, **kws
+    ):
         """
         Test skymodel filtering, with and without creating extra output files.
         """
@@ -100,11 +99,11 @@ class TestBDSF:
         bdsf.filter_skymodel(
             flat_noise_image=image_path,
             true_sky_image=image_path,
-            input_true_skymodel=TEST_DATA_PATH / "sector_1-sources-pb.txt",
+            input_true_skymodel=test_data_path / "sector_1-sources-pb.txt",
             input_apparent_skymodel=None,
             output_apparent_sky=apparent_sky_path,
             output_true_sky=true_sky_path,
-            vertices_file=TEST_DATA_PATH / "expected_sector_1_vertices.npy",
+            vertices_file=test_data_path / "expected_sector_1_vertices.npy",
             beam_ms=beam_ms,
             thresh_isl=4.0,
             thresh_pix=5.0,
@@ -118,26 +117,26 @@ class TestBDSF:
             assert next(true_sky_path.parent.glob("*.mask.fits"))
 
         assert check_skymodels_equal(
-            apparent_sky_path, TEST_DATA_PATH / "expected.apparent_sky.txt"
+            apparent_sky_path, test_data_path / "expected.apparent_sky.txt"
         )
         assert check_skymodels_equal(
-            true_sky_path, TEST_DATA_PATH / "expected.true_sky.txt"
+            true_sky_path, test_data_path / "expected.true_sky.txt"
         )
 
     @pytest.mark.parametrize("keep_mask", [True, False])
     def test_filter_skymodel_diagnostics(
-        self, image_paths, diagnostic_paths, keep_mask
+        self, test_data_path, image_paths, diagnostic_paths, keep_mask
     ):
         # run the base test
         self.test_filter_skymodel(
-            image_paths, keep_mask=keep_mask, **diagnostic_paths
+            test_data_path, image_paths, keep_mask=keep_mask, **diagnostic_paths
         )
         # check that the additional files were created
         assert diagnostic_paths["output_catalog"].exists()
         assert diagnostic_paths["output_true_rms"].exists()
         assert diagnostic_paths["output_flat_noise_rms"].exists()
 
-    def test_filter_skymodel_empty(self, image_paths):
+    def test_filter_skymodel_empty(self, test_data_path, image_paths):
         """
         Test skymodel filtering with too high thresholds.
         filter_skymodel() should fallback to using create_dummy_skymodel().
@@ -149,11 +148,11 @@ class TestBDSF:
         bdsf.filter_skymodel(
             flat_noise_image=image_path,
             true_sky_image=image_path,
-            input_true_skymodel=TEST_DATA_PATH / "sector_1-sources-pb.txt",
+            input_true_skymodel=test_data_path / "sector_1-sources-pb.txt",
             input_apparent_skymodel=None,
             output_apparent_sky=apparent_sky_path,
             output_true_sky=true_sky_path,
-            vertices_file=TEST_DATA_PATH / "expected_sector_1_vertices.npy",
+            vertices_file=test_data_path / "expected_sector_1_vertices.npy",
             beam_ms=beam_ms,
             thresh_isl=400.0,
             thresh_pix=500.0,
@@ -163,15 +162,15 @@ class TestBDSF:
         assert true_sky_path.exists()
 
         assert check_skymodels_equal(
-            true_sky_path, TEST_DATA_PATH / "single_point.sky"
+            true_sky_path, test_data_path / "single_point.sky"
         )
         assert check_skymodels_equal(
             apparent_sky_path,
-            TEST_DATA_PATH / "single_point.sky",
+            test_data_path / "single_point.sky",
         )
 
 
-@pytest.mark.skipif(not have_sofia, reason="SoFiA not available")
+@pytest.mark.skipif(not sofia, reason="SoFiA not available")
 class TestSofia:
     """Test skymodel filtering with SoFiA-2."""
 
@@ -180,7 +179,7 @@ class TestSofia:
         """Image paths for testing."""
         return get_image_paths(tmp_path, "output_sofia")
 
-    def test_filter_skymodel_single_image(self, image_paths):
+    def test_filter_skymodel_single_image(self, test_data_path, image_paths):
         """Test skymodel filtering with no true sky image provided."""
 
         image_name, true_sky_path, apparent_sky_path = image_paths
@@ -205,11 +204,11 @@ class TestSofia:
         )
         assert check_skymodels_equal(
             apparent_sky_path,
-            TEST_DATA_PATH / "expected_sofia.true_sky.txt",
+            test_data_path / "expected_sofia.true_sky.txt",
             check_patch_names_sizes=False,
         )
 
-    def test_filter_skymodel_true_sky_image(self, image_paths):
+    def test_filter_skymodel_true_sky_image(self, test_data_path, image_paths):
         """Test skymodel filtering with true sky image provided."""
         image_name, true_sky_path, apparent_sky_path = image_paths
 
@@ -227,11 +226,11 @@ class TestSofia:
 
         assert check_skymodels_equal(
             apparent_sky_path,
-            TEST_DATA_PATH / "expected_sofia.true_sky.txt",
+            test_data_path / "expected_sofia.true_sky.txt",
             check_patch_names_sizes=False,
         )
         assert check_skymodels_equal(
             true_sky_path,
-            TEST_DATA_PATH / "expected_sofia.true_sky.txt",
+            test_data_path / "expected_sofia.true_sky.txt",
             check_patch_names_sizes=False,
         )
