@@ -39,7 +39,7 @@ class TestFacet:
         "ra": reference_coords[0],
         "dec": reference_coords[1],
         "vertices": (
-            _vertices := np.array(
+            np.array(
                 [
                     [266.9848842, -29.50105015],
                     [266.97941377, -28.50112422],
@@ -67,7 +67,7 @@ class TestFacet:
         SquareFacet: {
             **_reference_namespace,
             "vertices": (
-                _vertices := np.array(
+                np.array(
                     [
                         [266.9848842, -29.50105015],
                         [266.97941377, -28.50112422],
