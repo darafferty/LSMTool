@@ -527,6 +527,8 @@ def test_in_box(coords, bounding_box, expected):
     "directions, bbox_midpoint, bbox_size, "
     "expected_facet_points, expected_facet_polygons",
     [
+        # -------------------------------------------------------------------- #
+        # Nominal case: 4 directions in a square around the NCP
         pytest.param(
             directions := SkyCoord(
                 ra=[119.73, 138.08, 124.13, 115.74],
@@ -573,6 +575,8 @@ def test_in_box(coords, bounding_box, expected):
                 ],
             ],
         ),
+        # -------------------------------------------------------------------- #
+        # Error: Negative bbox_size
         pytest.param(
             # directions
             SkyCoord(
@@ -585,9 +589,10 @@ def test_in_box(coords, bounding_box, expected):
             # bbox_size
             (-1, 0.3),
             # expected_facet_points
-            ValueError,
+            ValueError,  # Negative bbox size should cause a ValueError
             # expected_facet_polygons
-            ...,
+            None,
+            id="negative_bbox_size",
         ),
     ],
 )
@@ -743,17 +748,19 @@ def _flatten(iterable):
         ),
         # Error cases
         # -------------------------------------------------------------------- #
-        # All points outside bounding box
+        # All points outside bounding box.
         pytest.param(
             # coords
             np.array([[2, 2], [3, 3]]),
             # bounding_box
             [0, 1, 0, 1],
             # expected_in_box
-            ...,
+            None,
             # expected_vertices
-            ...,
-            # expected_regions
+            None,
+            # expected_regions: If there are no points inside the bounding box
+            # the `voronoi` function should raise a ValueError (via scipy)
+            # since it cannot perform the tessellation.
             ValueError,
             id="edge_case_all_outside",
         ),
