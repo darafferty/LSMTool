@@ -19,7 +19,7 @@ def test_skymodelreader_headeronly(tmp_path):
 
     # Create a fake existing sky model file to test functionality
     skymodel_path = tmp_path/ "empty.sky"
-    skymodel_path.write_test(
+    skymodel_path.write_text(
         "FORMAT = Name, Type, Ra, Dec, I\n"
     )
 
