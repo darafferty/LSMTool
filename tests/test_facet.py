@@ -10,7 +10,7 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
-from conftest import TEST_DATA_PATH
+from conftest import TEST_DATA_PATH, get_context
 from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
@@ -31,49 +31,6 @@ from lsmtool.io import load
 # Module constants
 
 TEST_DATA_PATH = TEST_DATA_PATH / Path(__file__).stem
-
-# ---------------------------------------------------------------------------- #
-# Helper functions
-
-
-def get_context(expected, **kws):
-    """
-    Get the appropriate runtime context for executing test code based on
-    whether the expected result is an exception or not.
-
-    Parameters
-    ----------
-    expected : Exception or object
-        The expected result of the test. If this object is an ex
-
-    Examples
-    --------
-    For tests that are expected to succeed:
-    >>> @pytest.mark.parametrize("expected", [1])
-    ... def test_success(expected):
-    ...     with get_context(expected):
-    ...         assert expected == 1
-
-    For tests that are expected to fail:
-    The following example will raise an IndexError, which will get caught by
-    the `pytest.raises` context manager, leading to a successful test
-    >>> @pytest.mark.parametrize("expected", [LookupError])
-    ... def test_expected_failure(expected):
-    ...     with get_context(expected):
-    ...         [][1]
-
-    Returns
-    -------
-    contextlib.AbstractContextManager
-    """
-    if isinstance(expected, type):
-        if isinstance(expected, contextlib.AbstractContextManager):
-            return expected
-
-        if issubclass(expected, BaseException):
-            return pytest.raises(expected, **kws)
-
-    return contextlib.nullcontext(expected)
 
 
 # ---------------------------------------------------------------------------- #
