@@ -395,7 +395,8 @@ class TestReadFromSkymodel:
     @pytest.mark.parametrize("mock_skymodel", [None], indirect=True)
     def test_read_from_skymodel_no_patches(self):
         """
-        Test that read_from_skymodel raises ValueError if sky model has no patches.
+        Test that read_from_skymodel raises ValueError if sky model has no
+        patches.
         """
         with pytest.raises(ValueError, match="must be grouped into patches"):
             read_from_skymodel("fake.sky", 180.0, 45.0, 2.0, 2.0)
@@ -413,7 +414,8 @@ class TestReadFromSkymodel:
     )
     def test_read_from_skymodel_returns_facets(self):
         """
-        Test that read_from_skymodel returns correct facets from a patched sky model.
+        Test that read_from_skymodel returns correct facets from a patched sky
+        model.
         """
 
         # Act

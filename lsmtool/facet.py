@@ -125,7 +125,7 @@ class Facet(object):
 
         Parameters
         ----------
-        skymodel : LSMTool skymodel object
+        skymodel : lsmtool.skymodel.SkyModel
             Input sky model
         """
         self.skymodel = filter_skymodel(self.polygon, skymodel, self.wcs)
@@ -145,7 +145,7 @@ class Facet(object):
 
         Returns
         -------
-        skymodel : LSMTool skymodel object
+        skymodel : lsmtool.skymodel.SkyModel
             The Pan-STARRS sky model
         """
         try:
@@ -193,7 +193,7 @@ class Facet(object):
 
         Parameters
         ----------
-        comparison_skymodel : LSMTool skymodel object, optional
+        comparison_skymodel : lsmtool.skymodel.SkyModel, optional
             Comparison sky model. If not given, the Pan-STARRS catalog is
             used
         min_number : int, optional
@@ -232,7 +232,7 @@ class Facet(object):
 
         Parameters
         ----------
-        wcs : WCS object, optional
+        wcs : astropy.wcs.WCS, optional
             WCS object defining the celestial coordinate (RA, Dec) to image
             (x, y) transformation. If not given, the facet's WCS object is used.
 
@@ -535,24 +535,25 @@ def is_valid_region(region, vertices, bounding_box):
 
 def filter_skymodel(polygon, skymodel, wcs, invert=False):
     """
-    Filters input skymodel to select only sources that lie inside the input facet
+    Filters input skymodel to select only sources that lie inside / outside the
+    input facet.
 
     Parameters
     ----------
-    polygon : Shapely polygon object
-        Polygon object to use for filtering
-    skymodel : LSMTool skymodel object
-        Input sky model to be filtered
-    wcs : WCS object
-        WCS object defining image to sky transformations
+    polygon : shapely.Polygon
+        Polygon object to use for filtering.
+    skymodel : lsmtool.skymodel.SkyModel
+        Input sky model to be filtered.
+    wcs : astropy.wcs.WCS
+        WCS object defining image to sky transformations.
     invert : bool, optional
         If True, invert the selection (so select only sources that lie outside
-        the facet)
+        the facet).
 
     Returns
     -------
-    filtered_skymodel : LSMTool skymodel object
-        Filtered sky model
+    filtered_skymodel : lsmtool.skymodel.SkyModel
+        The filtered sky model.
     """
     # Make list of sources
     ra = skymodel.getColValues("Ra")
@@ -615,14 +616,14 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
     Parameters
     ----------
     facets : list of Facet objects
-        List of Facet objects to include
+        List of Facet objects to include.
     outfile : str
-        Name of output region file
+        Name of output region file.
     enclose_names : bool, optional
         If True, enclose patch names in curly brackets for full
         compatibility with ds9. Curly brackets may cause issues with
         other tools that use the region file, such as DP3, in which
-        case they can be excluded by setting this option to False
+        case they can be excluded by setting this option to False.
     """
     with open(outfile, "w") as stream:
         stream.write(
@@ -644,21 +645,21 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
 
 def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
     """
-    Read a ds9 facet region file and return facets
+    Read a ds9 facet region file and return facets.
 
     Parameters
     ----------
     region_file : str
-        Filename of input ds9 region file
+        Filename of input ds9 region file.
     wcs_pixel_scale : float, optional
         The pixel scale to use for the conversion to pixel coordinates in
         degrees per pixel. Default value is taken from default
-        `lsmtool.constants.WCS_PIXEL_SCALE`
+        `lsmtool.constants.WCS_PIXEL_SCALE`.
 
     Returns
     -------
     facets : list
-        List of Facet objects
+        List of Facet objects.
     """
 
     region_file = check_file_exists(region_file)
@@ -687,16 +688,17 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
 
 
 def parse_ds9_facets(region_file):
-    """Parse facet definitions from a ds9 region file
+    """
+    Parse facet definitions from a ds9 region file.
 
     Each facet in the region file is defined by a polygon line that starts
-    with 'polygon' and gives the (RA, Dec) vertices
+    with 'polygon' and gives the (RA, Dec) vertices.
 
     Each facet polygon line may be followed by a line giving the reference
-    point that starts with 'point' and gives the reference (RA, Dec)
+    point that starts with 'point' and gives the reference (RA, Dec).
 
     The facet name may be set in the text property of either line
-    (see https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html)
+    (see https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html).
     """
 
     with Path(region_file).open("r") as stream:
@@ -723,9 +725,10 @@ def parse_ds9_facets(region_file):
 
 def parse_facet_name(region_file, line):
     """
-    Read the facet name, if any. The name is defined using the 'text'
-    property. E.g.:
-        'polygon(309.6, 60.9, 310.4, 58.9, 309.1, 59.2) # text = {Patch_1} width = 2'
+    Parse the facet name from the polgon definition string.
+
+    In the region file, the name is defined using the 'text' property. E.g.:
+        'polygon(3.6, 60.9, 3.4, 58.9, 3.1, 59.2) # text = {Patch_1} width = 2'
         'point(0.1, 1.2) # text = {Patch_1} width = 2'
 
     Note: ds9 format allows strings to be quoted with " or ' or {}
@@ -734,7 +737,7 @@ def parse_facet_name(region_file, line):
     anything like `... # text = ...`
 
     Note: if a name is defined for both the facet polygon and the facet
-    reference point, the one for the point takes precedence
+    reference point, the one for the point takes precedence.
     """
 
     if not (match := FACET_NAME_REGEX.match(line)):
