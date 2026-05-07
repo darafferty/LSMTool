@@ -205,7 +205,7 @@ class TestFacet:
             facet.skymodel.compare.assert_called_once()
 
     @pytest.mark.disable_socket
-    def test_find_astrometry_offsets_with_comparison_skymodel_does_not_access_internet(
+    def test_find_astrometry_offsets_with_comparison_skymodel_no_internet(
         self, facet
     ):
         """

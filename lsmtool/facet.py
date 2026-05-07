@@ -8,7 +8,6 @@ import re
 import tempfile
 from pathlib import Path
 
-import astropy.units as u
 import numpy as np
 import scipy
 from astropy.coordinates import Angle, SkyCoord
@@ -90,7 +89,7 @@ class Facet(object):
         self.wcs = make_wcs(self.ra, self.dec, wcs_pixel_scale)
 
         xy_values = self.wcs.wcs_world2pix(*self.vertices.T, WCS_ORIGIN)
-        self.polygon = Polygon(list(zip(*xy_values)))
+        self.polygon = Polygon(list(zip(*xy_values, strict=True)))
 
         # Find the size and center coordinates of the facet
         bounds = np.array(self.polygon.bounds).reshape(2, 2)
@@ -291,7 +290,7 @@ class SquareFacet(Facet):
             [xmin, xmin, xmax, xmax], [ymin, ymax, ymax, ymin], WCS_ORIGIN
         )
 
-        vertices = list(zip(corners_ra, corners_dec))
+        vertices = list(zip(corners_ra, corners_dec, strict=True))
 
         super().__init__(
             name, ra, dec, vertices, wcs_pixel_scale=wcs_pixel_scale
@@ -597,7 +596,7 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
     (border_indices,) = np.nonzero(border)
 
     prepared_polygon = prep(polygon)
-    for i, xy_point in zip(border_indices, xy[:, border].T):
+    for i, xy_point in zip(border_indices, xy[:, border].T, strict=True):
         if not prepared_polygon.contains(Point(*xy_point)):
             inside[i] = False
 
