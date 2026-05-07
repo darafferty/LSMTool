@@ -6,7 +6,6 @@ from unittest import mock
 
 import numpy as np
 import pytest
-from conftest import TEST_DATA_PATH
 
 from lsmtool.convert_oskar_skymodel import (
     MAKESOURCEDB_FORMAT_STRING,
@@ -24,7 +23,6 @@ from lsmtool.convert_oskar_skymodel import (
 # ---------------------------------------------------------------------------- #
 # Module constants
 
-TEST_DATA_PATH = TEST_DATA_PATH / Path(__file__).stem
 
 OSKAR_NUMPY_DTYPE = np.dtype(
     [
@@ -476,7 +474,7 @@ def test_read_oskar_skymodel(
     "input_file, expected_data",
     [
         (
-            TEST_DATA_PATH / "oskar_example_basic.csv",
+            "oskar_example_basic.csv",
             np.ma.masked_array(
                 data=[
                     (
@@ -590,7 +588,7 @@ def test_read_oskar_skymodel(
             ),
         ),
         (
-            TEST_DATA_PATH / "oskar_example_missing_data.txt",
+            "oskar_example_missing_data.txt",
             np.array(
                 [
                     [
@@ -660,11 +658,11 @@ def test_read_oskar_skymodel(
         ),
     ],
 )
-def test_read_oskar_skymodel_example(input_file, expected_data):
+def test_read_oskar_skymodel_example(test_data_path, input_file, expected_data):
     """
     Test that `read_oskar_skymodel` can read a makesourcedb-formatted file.
     """
-    _, data = read_oskar_skymodel(input_file)
+    _, data = read_oskar_skymodel(test_data_path / input_file)
     assert (data == expected_data).all()
 
 
@@ -798,23 +796,24 @@ def test_convert_oskar_skymodel(caplog, tmp_path, sample_csv_path):
     "input_oskar_file, expected_makesourcedb_file",
     [
         (
-            TEST_DATA_PATH / "oskar_sky_model_example.csv",
-            TEST_DATA_PATH / "makesourcedb_sky_model_example.csv",
+            "oskar_sky_model_example.csv",
+            "makesourcedb_sky_model_example.csv",
         )
     ],
 )
 def test_convert_example_oskar_skymodel(
-    tmp_path, input_oskar_file, expected_makesourcedb_file
+    tmp_path, test_data_path, input_oskar_file, expected_makesourcedb_file
 ):
     """
     Test full conversion from input file to output file on example dataset and
     compare output to expected output file.
     """
-
+    input_path = test_data_path / input_oskar_file
     output_path = tmp_path / "makesourcedb_result.csv"
+    reference_path = test_data_path / expected_makesourcedb_file
 
     convert_oskar_skymodel(
-        input_oskar_file,
+        input_path,
         output_path,
         point_size_threshold=1e-8,
         min_flux_point=1,
@@ -822,7 +821,7 @@ def test_convert_example_oskar_skymodel(
     )
 
     result_text = output_path.read_text()
-    expected_text = expected_makesourcedb_file.read_text()
+    expected_text = reference_path.read_text()
     assert result_text.strip() == expected_text.strip()
 
 

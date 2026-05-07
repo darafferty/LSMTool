@@ -3,14 +3,13 @@ Tests for the lsmtool.facet module.
 """
 
 import contextlib
-from pathlib import Path
 
 import astropy.units as u
 import matplotlib as mpl
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
-from conftest import TEST_DATA_PATH, get_context
+from conftest import get_context
 from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
@@ -26,12 +25,6 @@ from lsmtool.facet import (
     voronoi,
 )
 from lsmtool.io import load
-
-# ---------------------------------------------------------------------------- #
-# Module constants
-
-TEST_DATA_PATH = TEST_DATA_PATH / Path(__file__).stem
-
 
 # ---------------------------------------------------------------------------- #
 # Tests
@@ -288,11 +281,11 @@ class TestDS9RegionFile:
     """
 
     @pytest.fixture(params=["test.reg", "invalid.reg"])
-    def ds9_region_file(self, request):
+    def ds9_region_file(self, request, test_data_path):
         """
         Fixture to create a DS9 region file for testing.
         """
-        return TEST_DATA_PATH / request.param
+        return test_data_path / request.param
 
     @pytest.fixture(params=["test.reg", "invalid.reg"])
     def expected_facet_attributes(self, ds9_region_file):

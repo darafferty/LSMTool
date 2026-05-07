@@ -3,6 +3,7 @@ Configuration for python tests.
 """
 
 import contextlib
+import inspect
 import shutil
 import tarfile
 from pathlib import Path
@@ -123,6 +124,19 @@ def get_context(expected, **kws):
 # Fixtures
 
 
+@pytest.fixture(scope="module")
+def test_data_path(request):
+    """Path to the test data subfolder for the test module."""
+
+    test_module = inspect.getmodule(request._pyfuncitem.parent._obj)
+    test_data_path = request.config.resource_dir / test_module.__name__
+    return (
+        test_data_path
+        if test_data_path.exists()
+        else request.config.resource_dir
+    )
+
+
 @pytest.fixture
 def midbands_ms(tmp_path):
     """Uncompresses test_midbands.ms into a temporary directory."""
@@ -131,7 +145,7 @@ def midbands_ms(tmp_path):
     return tmp_path / ms_name
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def test_image_wcs():
     return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
 
