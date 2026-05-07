@@ -288,7 +288,7 @@ class TestFacet:
     )
     def test_download_panstarrs(self, facet, mocker):
         """
-        Test that download_panstarrs is called.
+        Test that download_skymodel is called.
         """
         mock_download_skymodel = mocker.patch(
             "lsmtool.facet.download_skymodel",
@@ -301,7 +301,7 @@ class TestFacet:
     def test_get_matplotlib_patch(self, facet, use_wcs):
         """
         Test that get_matplotlib_patch returns a matplotlib patch object with
-        the expected .
+        extents matching the facet's polygon vertices.
         """
         patch = facet.get_matplotlib_patch(wcs=facet.wcs if use_wcs else None)
         extents = patch.get_extents()
