@@ -1,6 +1,6 @@
 from astropy.table import Table
 
-from lsmtool.skymodel import skyModelReader
+from lsmtool.tableio import skyModelReader
 
 def test_skymodelreader_emptyfile(tmp_path):
     """ Test skyModelReader returns empty table for empty file """
