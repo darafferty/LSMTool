@@ -3,7 +3,6 @@ Configuration for python tests.
 """
 
 import contextlib
-import inspect
 import shutil
 import tarfile
 from pathlib import Path
@@ -138,8 +137,8 @@ def get_context(expected, **kws):
 def test_data_path(request):
     """Path to the test data subfolder for the test module."""
 
-    test_module = inspect.getmodule(request._pyfuncitem.parent._obj)
-    test_data_path = request.config.resource_dir / test_module.__name__
+    test_module_name = request.node.module.__name__
+    test_data_path = request.config.resource_dir / test_module_name
     return (
         test_data_path
         if test_data_path.exists()
