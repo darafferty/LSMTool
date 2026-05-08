@@ -11,14 +11,24 @@ from pathlib import Path
 import astropy.units as u
 import mocpy
 import pytest
+import requests
 from astropy.coordinates import Latitude, Longitude
 from astropy.io import fits
 from astropy.wcs import WCS
 
-from lsmtool.io import PathLike, PathLikeOptional, check_file_exists
+from lsmtool.io import PathLike, PathLikeOptional, check_file_exists, load
+
+# ---------------------------------------------------------------------------- #\
+# Module constants
 
 TEST_PATH = Path(__file__).parent
 TEST_DATA_PATH = TEST_PATH / "resources"
+
+# Path to the LOFAR HBA mock measurement set
+LOFAR_HBA_URL = "https://support.astron.nl/software/ci_data/EveryBeam/L258627-one-timestep.tar.bz2"
+
+
+# ---------------------------------------------------------------------------- #
 
 
 def pytest_configure(config):
@@ -138,16 +148,43 @@ def test_data_path(request):
 
 
 @pytest.fixture
-def midbands_ms(tmp_path):
+def midbands_ms(tmp_path, test_data_path):
     """Uncompresses test_midbands.ms into a temporary directory."""
     ms_name = "test_midbands.ms"
-    untar(TEST_DATA_PATH / f"{ms_name}.tgz", tmp_path)
+    untar(test_data_path / f"{ms_name}.tgz", tmp_path)
     return tmp_path / ms_name
 
 
 @pytest.fixture(scope="module")
-def test_image_wcs():
-    return WCS(fits.getheader(TEST_DATA_PATH / "test_image.fits"))
+def test_ms_lofar_hba(test_data_path):
+    """
+    Fixture that provides the path to the LOFAR HBA mock measurement set. If
+    the file does not exist, it will be downloaded and extracted from the
+    specified URL.
+    """
+    path = test_data_path / "LOFAR_HBA_MOCK.ms"
+    if path.exists():
+        return path
+
+    def filter_(member, _):
+        return member.replace(name=Path(*Path(member.path).parts[1:]))
+
+    with requests.get(LOFAR_HBA_URL, stream=True) as req:
+        with tarfile.open(fileobj=req.raw, mode="r|bz2") as tarobj:
+            tarobj.extractall(path=path, filter=filter_)
+
+    return path
+
+
+@pytest.fixture(scope="module")
+def lofar_hba_skymodel(test_data_path):
+    """Fixture that loads the skymodel data from the test data path."""
+    return load(test_data_path / "LOFAR_HBA_MOCK.sky")
+
+
+@pytest.fixture(scope="module")
+def test_image_wcs(test_data_path):
+    return WCS(fits.getheader(test_data_path / "test_image.fits"))
 
 
 @pytest.fixture
