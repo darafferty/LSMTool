@@ -280,8 +280,8 @@ def validate_skymodel_format(skymodel_path):
 
 
 @pytest.fixture()
-def lsm_skymodel(request):
-    return request.config.resource_dir / "skymodel.lsm"
+def lsm_skymodel(test_data_path):
+    return test_data_path / "skymodel.lsm"
 
 
 @pytest.fixture()
