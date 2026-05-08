@@ -13,10 +13,6 @@ from lsmtool.tableio import (
 )
 
 
-class InvalidLSMFormatError(Exception):
-    pass
-
-
 def _data_rows(path: Path):
     with path.open() as f:
         for line in f:
@@ -39,8 +35,8 @@ def _get_lsm_header(path: Path):
                     header_columns = header_columns.lstrip("(").rstrip(")")
                     return header_columns.split(",")
                 except ValueError as e:
-                    raise InvalidLSMFormatError(f"Invalid header {line}") from e
-        raise InvalidLSMFormatError("Format line not provided in {path}")
+                    raise AssertionError(f"Invalid header {line}") from e
+        raise AssertionError("Format line not provided in {path}")
 
 
 def _get_sky_header(path: Path):
@@ -165,14 +161,14 @@ def validate_lsm_format(skymodel_path):
             i_pol = float(row[9])
 
             # Assert columns
-            # 4 - a_arcsec 
+            # 4 - a_arcsec
             # 5 - b_arcsec
             # 6 - pa_deg
             # 10 - ref_frequency
             # are float
-            for col_idx in [4,5,6,10]:
+            for col_idx in [4, 5, 6, 10]:
                 _ = float(row[col_idx])
-            
+
         except ValueError as exc:
             raise AssertionError(
                 f"Row {n} numeric parse error: {exc} (row={row})"
@@ -245,13 +241,13 @@ def validate_skymodel_format(skymodel_path):
 
         try:
             # Assert columns
-            # 5 - I 
+            # 5 - I
             # 8 - ReferenceFrequency
             # 9 - MajorAxis
             # 10 - MinorAxis
             # 11 - Orientation
             # are float
-            for col_idx in [5,8,9,10,11]:
+            for col_idx in [5, 8, 9, 10, 11]:
                 _ = float(row[col_idx])
         except ValueError as exc:
             raise AssertionError(
