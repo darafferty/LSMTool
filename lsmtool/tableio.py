@@ -251,6 +251,12 @@ def skyModelReader(fileName, header_start=0):
             outline, metaDict = processLine(line, metaDict, colNames)
             if outline is not None:
                 outlines.append(outline)
+
+    # Handle empty skymodels
+    if len(outlines) == 0:
+        log.warning("Sky model contains no sources. Check that it is a valid skymodel for this dataset")
+        return makeEmptyTable()
+
     outlines.append('\n')  # needed in case of single-line sky models
 
     # Create table
