@@ -59,9 +59,9 @@ class SkyModel(object):
         ----------
         fileName : str
             Input ASCII file from which the sky model is read (must respect the
-            makesourcedb format), name of VO service to query (must be one of
-            'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'), or dict
-            (single source only)
+            makesourcedb format or the LSM/GSM format), name of VO service to query
+            (must be one of 'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'), 
+            or dict (single source only)
         beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table
@@ -139,6 +139,11 @@ class SkyModel(object):
                                      'Sky model is empty.'.format(fileName, VOPosition, VORadius))
                     self.table = tableio.makeEmptyTable()
                     self._fileName = None
+            elif tableio.validateLSMFormat(fileName):
+                self.log.debug("Attempting to load LSM model from file '{0}'...".format(fileName))
+                self.table = tableio.loadTableFromLSM(fileName)
+                self.log.debug("Successfully loaded model from file '{0}'".format(fileName))
+                self._addHistory("LOAD (from file '{0}')".format(fileName))
             else:
                 # If fileName does not point to a VO query, assume it points to a local file
                 self.log.debug("Attempting to load model from file '{0}'...".format(fileName))

@@ -1,3 +1,4 @@
+<<<<<<< tests/test_tableio.py
 from astropy.table import Table
 import pytest
 
@@ -26,3 +27,427 @@ def test_skymodelreader_headeronly(tmp_path):
 
     assert isinstance(table,Table)
     assert len(table) == 0
+=======
+import ast
+import csv
+from pathlib import Path
+from astropy.table import Table
+
+import numpy as np
+import pytest
+
+from lsmtool.skymodel import SkyModel
+from lsmtool.tableio import (
+    loadAstropyTableFromLSM,
+    loadTableFromLSM,
+    validateLSMFormat,
+    skyModelReader
+)
+
+
+def _data_rows(path: Path):
+    with path.open() as f:
+        for line in f:
+            s = line.strip()
+            if not s:
+                continue
+            if s.startswith("#"):
+                continue
+            yield line
+
+
+def _get_lsm_header(path: Path):
+    with path.open() as f:
+        for line in f:
+            if "format" in line:
+                try:
+                    header_columns, *_ = (
+                        line.replace("#", "").replace(" ", "").split("=")
+                    )
+                    header_columns = header_columns.lstrip("(").rstrip(")")
+                    return header_columns.split(",")
+                except ValueError as e:
+                    raise AssertionError(f"Invalid header {line}") from e
+        raise AssertionError("Format line not provided in {path}")
+
+
+def _get_sky_header(path: Path):
+    with path.open() as f:
+        for line in f:
+            if "format" in line.lower():
+                try:
+                    _, header_columns = line.split("=", maxsplit=1)
+                except ValueError as e:
+                    raise InvalidLSMFormatError(f"Invalid header {line}") from e
+
+                return [
+                    part.strip().split("=", maxsplit=1)[0]
+                    for part in header_columns.split(",")
+                ]
+
+    raise InvalidLSMFormatError(f"Format line not provided in {path}")
+
+
+def _split_sky_row(line: str):
+    parts = []
+    token = []
+    bracket_depth = 0
+
+    for ch in line:
+        if ch == "[":
+            bracket_depth += 1
+        elif ch == "]":
+            bracket_depth = max(0, bracket_depth - 1)
+
+        if ch == "," and bracket_depth == 0:
+            parts.append("".join(token).strip())
+            token = []
+            continue
+
+        token.append(ch)
+
+    if token:
+        parts.append("".join(token).strip())
+
+    return parts
+
+
+def _skymodel_rows(path: Path):
+    with path.open() as f:
+        for line in f:
+            s = line.strip()
+            if not s:
+                continue
+            if s.startswith("#"):
+                continue
+            if "format" in s.lower():
+                continue
+            if s.startswith(","):
+                continue
+            yield s
+
+
+_EXPECTED_LSM_COLUMN_NAMES = [
+    "component_id",
+    "source_id",
+    "ra_deg",
+    "dec_deg",
+    "a_arcsec",
+    "b_arcsec",
+    "pa_deg",
+    "spec_idx",
+    "log_spec_idx",
+    "i_pol_jy",
+    "ref_freq_hz",
+    "epoch",
+]
+
+_EXPECTED_SKYMODEL_COLUMN_NAMES = [
+    "Name",
+    "Type",
+    "Patch",
+    "Ra",
+    "Dec",
+    "I",
+    "SpectralIndex",
+    "LogarithmicSI",
+    "ReferenceFrequency",
+    "MajorAxis",
+    "MinorAxis",
+    "Orientation",
+]
+
+
+def validate_lsm_format(skymodel_path):
+    """Validate that a skymodel matches the LSM format.
+
+    Expected columns per row:
+    (component_id, ra_deg, dec_deg, i_pol_jy, a_arcsec, b_arcsec, pa_deg,
+     ref_freq_hz, spec_idx, log_spec_idx)
+    """
+    p = Path(skymodel_path)
+    assert p.exists(), f"Missing file: {p}"
+    lsm_header = _get_lsm_header(skymodel_path)
+
+    for idx, (column_name, expected_column_name) in enumerate(
+        zip(lsm_header, _EXPECTED_LSM_COLUMN_NAMES, strict=True)
+    ):
+        assert column_name == expected_column_name, (
+            f"column {idx} name mismatch"
+        )
+
+    reader = csv.reader(_data_rows(p), delimiter=",", quotechar='"')
+    rows = list(reader)
+    assert rows, f"No data rows found in {p.name}"
+
+    for n, row in enumerate(rows, start=1):
+        component_id = row[0].strip()
+        source_id = row[1].strip()
+        assert component_id, f"Row {n} empty component_id"
+        assert source_id, f"Row {n} empty component_id"
+
+        # numeric conversions
+        try:
+            ra = float(row[2])
+            dec = float(row[3])
+            i_pol = float(row[9])
+
+            # Assert columns
+            # 4 - a_arcsec
+            # 5 - b_arcsec
+            # 6 - pa_deg
+            # 10 - ref_frequency
+            # are float
+            for col_idx in [4, 5, 6, 10]:
+                _ = float(row[col_idx])
+
+        except ValueError as exc:
+            raise AssertionError(
+                f"Row {n} numeric parse error: {exc} (row={row})"
+            ) from exc
+
+        assert 0.0 <= ra < 360.0, f"Row {n} ra out of range: {ra}"
+        assert -90.0 <= dec <= 90.0, f"Row {n} dec out of range: {dec}"
+        assert i_pol >= 0.0, f"Row {n} i_pol negative: {i_pol}"
+
+        # spec_idx: quoted CSV field containing a python-style list
+        spec_field = row[7].strip()
+        try:
+            spec_list = ast.literal_eval(spec_field)
+        except Exception as exc:
+            raise AssertionError(
+                f"Row {n} spec_idx parse error: (value={spec_field})"
+            ) from exc
+
+        assert isinstance(spec_list, (list, tuple)), (
+            f"Row {n} spec_idx is not a list: {spec_list}"
+        )
+        for v in spec_list:
+            assert isinstance(v, (int, float)), (
+                f"Row {n} spec_idx element not numeric: {v}"
+            )
+
+        log_field = row[8].strip().lower()
+        assert log_field in ("true", "false"), (
+            f"Row {n} log_spec_idx not boolean: {row[9]}"
+        )
+
+
+def validate_skymodel_format(skymodel_path):
+    """Validate that a skymodel matches the makesourcedb format.
+
+    Expected columns per row:
+    (Name,Type,Patch,Ra,Dec,I,SpectralIndex,LogarithmicSI,ReferenceFrequency,
+     MajorAxis,MinorAxis,Orientation)
+    """
+    p = Path(skymodel_path)
+    assert p.exists(), f"Missing file: {p}"
+    sky_header = _get_sky_header(p)
+
+    for idx, (column_name, expected_column_name) in enumerate(
+        zip(sky_header, _EXPECTED_SKYMODEL_COLUMN_NAMES, strict=True)
+    ):
+        assert column_name == expected_column_name, (
+            f"column {idx} name mismatch"
+        )
+
+    for n, line in enumerate(_skymodel_rows(p), start=1):
+        row = _split_sky_row(line)
+        assert len(row) == len(_EXPECTED_SKYMODEL_COLUMN_NAMES), (
+            f"Row {n} has wrong number of columns: {len(row)} (row={row})"
+        )
+
+        name = row[0].strip()
+        source_type = row[1].strip()
+        patch = row[2].strip()
+        ra = row[3].strip()
+        dec = row[4].strip()
+
+        assert name, f"Row {n} empty Name"
+        assert source_type in ("POINT", "GAUSSIAN"), (
+            f"Row {n} unknown Type: {source_type}"
+        )
+        assert patch, f"Row {n} empty Patch"
+        assert ra, f"Row {n} empty Ra"
+        assert dec, f"Row {n} empty Dec"
+
+        try:
+            # Assert columns
+            # 5 - I
+            # 8 - ReferenceFrequency
+            # 9 - MajorAxis
+            # 10 - MinorAxis
+            # 11 - Orientation
+            # are float
+            for col_idx in [5, 8, 9, 10, 11]:
+                _ = float(row[col_idx])
+        except ValueError as exc:
+            raise AssertionError(
+                f"Row {n} numeric parse error: {exc} (row={row})"
+            ) from exc
+
+        try:
+            spec_list = ast.literal_eval(row[6])
+        except Exception as exc:
+            raise AssertionError(
+                f"Row {n} spec_idx parse error: (value={row[6]})"
+            ) from exc
+
+        assert isinstance(spec_list, list), (
+            f"Row {n} spec_idx is not a list: {spec_list}"
+        )
+        for v in spec_list:
+            assert isinstance(v, (int, float)), (
+                f"Row {n} spec_idx element not numeric: {v}"
+            )
+
+        log_field = row[7].strip().lower()
+        assert log_field in ("true", "false"), (
+            f"Row {n} LogarithmicSI not boolean: {row[7]}"
+        )
+
+
+@pytest.fixture()
+def lsm_skymodel(test_data_path):
+    return test_data_path / "skymodel.lsm"
+
+
+@pytest.fixture()
+def apparent_skymodel(request):
+    return request.config.resource_dir / "apparent.sky"
+
+
+def test_load_lsm_with_astropy(lsm_skymodel):
+    table = loadAstropyTableFromLSM(lsm_skymodel)
+    assert set(table.colnames) ^ set(_EXPECTED_LSM_COLUMN_NAMES) == set()
+    assert len(table) == 3
+
+
+@pytest.fixture()
+def expected_lsm_content():
+    return {
+        "Name": ["J000011-000001", "J000011-000002", "J000011-000003"],
+        "Type": ["POINT", "GAUSSIAN", "GAUSSIAN"],
+        "Patch": ["J000011", "J000011", "J000011"],
+        "ReferenceFrequency": [1.01e8, 1.02e8, 1.03e8],
+        "I": [10.0, 20.0, 30.0],
+        "MajorAxis": [0.0, 200.0, 300.0],
+        "MinorAxis": [0.0, 20.0, 30.0],
+        "Orientation": [0.0, 2.0, 3.0],
+        "SpectralIndex": [
+            [-0.7, 0.01, 0.123],
+            [-0.7, 0.02, 0.123],
+            [-0.7, 0.03, 0.123],
+        ],
+        "LogarithmicSI": ["true", "false", "true"],
+    }
+
+
+def test_load_table_from_lsm(lsm_skymodel, expected_lsm_content):
+    """
+    Verifies that can load the table from LSM/GSM format
+    """
+    table = loadTableFromLSM(lsm_skymodel)
+    for key, expected_values in expected_lsm_content.items():
+        if key == "SpectralIndex":
+            for idx, (value, expected_value) in enumerate(
+                zip(table[key], expected_values, strict=True)
+            ):
+                assert list(value) == expected_value, (
+                    f"{idx} mismatch for {key}"
+                )
+        else:
+            assert list(table[key]) == list(expected_values), f"{key}"
+
+
+def test_validation_succeed(lsm_skymodel, apparent_skymodel):
+    """
+    Verifies that the validation function work properly
+    """
+    assert validateLSMFormat(lsm_skymodel)
+    assert not validateLSMFormat(apparent_skymodel)
+
+
+def assert_tables_equal(t1, t2):
+    assert t1.colnames == t2.colnames
+    for col in t1.colnames:
+        c1, c2 = t1[col], t2[col]
+        if isinstance(c1[0], np.ndarray):
+            # ndarray elements: compare element-wise
+            for v1, v2 in zip(c1, c2, strict=True):
+                assert np.allclose(v1, v2), f"Failed comparison for {col}"
+
+        elif np.issubdtype(c1.dtype, np.floating):
+            # Float columns: use allclose for tolerance
+            assert np.allclose(c1, c2), f"Failed comparison for {col}"
+        else:
+            # Other types: exact comparison
+            assert np.all(c1 == c2), f"Failed comparison for {col}"
+
+
+def test_instantiate_lsm_skymodel_from_file(lsm_skymodel):
+    """
+    Verifies that you can load the SkyModel object
+    from LSM skymodel
+    """
+    skymodel = SkyModel(str(lsm_skymodel))
+    expected_table = loadTableFromLSM(lsm_skymodel)
+    assert_tables_equal(skymodel.table, expected_table)
+
+
+def test_instantiate_lsm_skymodel_store_skymodel(lsm_skymodel, tmpdir):
+    """
+    Verifies that you can load the SkyModel object
+    from LSM skymodel and store the makesourcedb format skymodel
+    """
+    skymodel = SkyModel(str(lsm_skymodel))
+
+    # Write to temporary file
+    output_path = str(Path(tmpdir) / "saved_skymodel.sky")
+    skymodel.write(output_path)
+
+    validate_skymodel_format(output_path)
+    # Read back and verify
+    loaded_skymodel = SkyModel(output_path)
+    assert_tables_equal(skymodel.table, loaded_skymodel.table)
+
+
+def test_instantiate_lsm_skymodel_store_lsm(lsm_skymodel, tmpdir):
+    """
+    Verifies that you can load the SkyModel object
+    from LSM skymodel and store the lsm format skymodel
+    """
+    skymodel = SkyModel(str(lsm_skymodel))
+
+    # Write to temporary file
+    output_path = str(Path(tmpdir) / "saved_skymodel.sky")
+    skymodel.write(output_path, format="lsm")
+
+    validate_lsm_format(Path(output_path))
+    # Read back and verify
+    loaded_skymodel = SkyModel(output_path)
+    assert_tables_equal(skymodel.table, loaded_skymodel.table)
+def test_skymodelreader_emptyfile(tmp_path):
+    """ Test skyModelReader raises IOError for empty file """
+
+    # Create a fake existing sky model file to test functionality
+    skymodel_path = tmp_path/ "empty.sky"
+    skymodel_path.touch()
+
+    with pytest.raises(IOError):
+        skyModelReader(str(skymodel_path))
+
+def test_skymodelreader_headeronly(tmp_path):
+    """ Test skyModelReader returns empty table for header-only file """
+
+    # Create a fake existing sky model file to test functionality
+    skymodel_path = tmp_path/ "empty.sky"
+    skymodel_path.write_text(
+        "FORMAT = Name, Type, Ra, Dec, I\n"
+    )
+
+    table = skyModelReader(str(skymodel_path))
+
+    assert isinstance(table,Table)
+    assert len(table) == 0
+>>>>>>> tests/test_tableio.py
