@@ -27,9 +27,8 @@ def test_apply_beam(
         lofar_hba_skymodel.getColValues("Dec"),
         invert=invert,
     )
-    np.set_printoptions(precision=6)
-    output_path.write_text(str(result))
 
+    np.savetxt(output_path, result, fmt="%.6f")
     assert filecmp.cmp(reference_path, output_path, shallow=False)
 
 
