@@ -1,37 +1,8 @@
-<<<<<<< tests/test_tableio.py
 from astropy.table import Table
 import pytest
-
-from lsmtool.tableio import skyModelReader
-
-def test_skymodelreader_emptyfile(tmp_path):
-    """ Test skyModelReader raises IOError for empty file """
-
-    # Create a fake existing sky model file to test functionality
-    skymodel_path = tmp_path/ "empty.sky"
-    skymodel_path.touch()
-
-    with pytest.raises(IOError):
-        skyModelReader(str(skymodel_path))
-
-def test_skymodelreader_headeronly(tmp_path):
-    """ Test skyModelReader returns empty table for header-only file """
-
-    # Create a fake existing sky model file to test functionality
-    skymodel_path = tmp_path/ "empty.sky"
-    skymodel_path.write_text(
-        "FORMAT = Name, Type, Ra, Dec, I\n"
-    )
-
-    table = skyModelReader(str(skymodel_path))
-
-    assert isinstance(table,Table)
-    assert len(table) == 0
-=======
 import ast
 import csv
 from pathlib import Path
-from astropy.table import Table
 
 import numpy as np
 import pytest
@@ -43,7 +14,6 @@ from lsmtool.tableio import (
     validateLSMFormat,
     skyModelReader
 )
-
 
 def _data_rows(path: Path):
     with path.open() as f:
@@ -427,6 +397,7 @@ def test_instantiate_lsm_skymodel_store_lsm(lsm_skymodel, tmpdir):
     # Read back and verify
     loaded_skymodel = SkyModel(output_path)
     assert_tables_equal(skymodel.table, loaded_skymodel.table)
+
 def test_skymodelreader_emptyfile(tmp_path):
     """ Test skyModelReader raises IOError for empty file """
 
@@ -450,4 +421,3 @@ def test_skymodelreader_headeronly(tmp_path):
 
     assert isinstance(table,Table)
     assert len(table) == 0
->>>>>>> tests/test_tableio.py
