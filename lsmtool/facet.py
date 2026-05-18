@@ -91,12 +91,12 @@ class Facet(object):
         self.polygon = Polygon(xy_values)
 
         # Find the size and center coordinates of the facet
-        bounds = np.array(self.polygon.bounds).reshape(2, 2)
-        ranges = np.ptp(bounds, 0)
-        self.x_center, self.y_center = bounds[0] + ranges / 2
-
-        # get size in degrees
-        self.size = min(0.5, np.abs(ranges * self.wcs.wcs.cdelt).max())
+        xmin, ymin, xmax, ymax = self.polygon.bounds
+        self.size = min(
+            0.5, max(xmax - xmin, ymax - ymin) * abs(self.wcs.wcs.cdelt[0])
+        )  # degrees
+        self.x_center = xmin + (xmax - xmin) / 2
+        self.y_center = ymin + (ymax - ymin) / 2
 
         self.ra_center, self.dec_center = map(
             float,
