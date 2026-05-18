@@ -393,7 +393,7 @@ class TestReadFromSkymodel:
         return mock_skymodel
 
     @pytest.mark.parametrize("mock_skymodel", [None], indirect=True)
-    def test_read_from_skymodel_no_patches(self):
+    def test_no_patches(self):
         """
         Test that read_from_skymodel raises ValueError if sky model has no
         patches.
@@ -412,7 +412,7 @@ class TestReadFromSkymodel:
         ],
         indirect=True,
     )
-    def test_read_from_skymodel_returns_facets(self):
+    def test_returns_facets(self):
         """
         Test that read_from_skymodel returns correct facets from a patched sky
         model.
