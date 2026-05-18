@@ -87,9 +87,8 @@ class Facet(object):
 
         # Convert input (RA, Dec) vertices to (x, y) polygon
         self.wcs = make_wcs(self.ra, self.dec, wcs_pixel_scale)
-
-        xy_values = self.wcs.wcs_world2pix(*self.vertices.T, WCS_ORIGIN)
-        self.polygon = Polygon(list(zip(*xy_values, strict=True)))
+        xy_values = self.wcs.world_to_pixel_values(self.vertices)
+        self.polygon = Polygon(xy_values)
 
         # Find the size and center coordinates of the facet
         bounds = np.array(self.polygon.bounds).reshape(2, 2)
