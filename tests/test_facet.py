@@ -8,8 +8,9 @@ import astropy.units as u
 import matplotlib as mpl
 import numpy as np
 import pytest
+import shapely
 from astropy.coordinates import SkyCoord
-from conftest import get_context
+from conftest import SkyModelGenerator, get_context
 from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
@@ -25,6 +26,7 @@ from lsmtool.facet import (
     voronoi,
 )
 from lsmtool.io import load
+from lsmtool.utils import format_coordinates
 
 # ---------------------------------------------------------------------------- #
 # Tests
@@ -133,6 +135,27 @@ class TestFacet:
             assert np.allclose(getattr(facet, attr), val), (
                 f"Facet attribute {attr!r} does not match expected value."
             )
+
+    @pytest.mark.xfail(
+        raises=shapely.errors.GEOSException,
+        reason="Points of LinearRing do not form a closed linestring",
+    )
+    def test_error_cases(self):
+
+        Facet(
+            name="facet spanning 180 degrees in dec",
+            ra=45,
+            dec=0,
+            vertices=[
+                (0, -90),
+                (0, 0),
+                (0, 90),
+                (90, 0),
+                (90, -90),
+                (0, -90),
+            ],
+            wcs_pixel_scale=0.1,  # degrees per pixel
+        )
 
     # ------------------------------------------------------------------------ #
     @pytest.fixture()
@@ -919,47 +942,187 @@ def test_prepare_points_for_tessellate(coords, bounding_box, expected_centre):
         np.testing.assert_array_equal(points_centre, expected_centre)
 
 
-@pytest.mark.parametrize(
-    "facet, extent",
-    [
-        (
-            SquareFacet(
-                name="test_filter_skymodel",
-                ra=255,
-                dec=55,
-                width=5,
-            ),
-            [250, 260, 50, 60],
-        ),
-        (
-            Facet(
-                name="test_filter_skymodel",
-                ra=238.795,
-                dec=50.98242,
-                vertices=[(250, 60), (260, 60), (260, 50), (250, 50)],
-            ),
-            [250, 260, 50, 60],
-        ),
-    ],
-)
-def test_filter_skymodel(request, facet, extent):
+class SourceGridGenerator(SkyModelGenerator):
     """
-    Test that `facet.filter_skymodel` selects only sources that lie inside the
-    input facet.
+    A mock sky model generator that creates sources on a regular grid in RA and
+    Dec. This is used for testing the `filter_skymodel` function.
     """
 
-    # Arrange
-    skymodel = load(request.config.resource_dir / "no_patches.sky")
+    ra_range = (0, 360)
+    dec_range = (-90, 90)
 
-    # Act
-    result = filter_skymodel(facet.polygon, skymodel, facet.wcs)
+    def get_coords(self, n_sources, state):
+        # Create a regular grid of sources in RA and Dec
 
-    # Assert
-    assert "FILTER (with array of indices/bools)" in result.history[-1]
+        n = int(np.sqrt(n_sources))
+        ra0, ra1 = self.ra_range
+        dec0, dec1 = self.dec_range
+        ra, dec = np.mgrid[
+            ra0 : ra1 : (n * 1j), dec0 : dec1 : (n * 1j)
+        ].reshape(2, -1)
+        return super().get_coords(n_sources, {"ra": ra, "dec": dec})
 
-    ra = result.table["Ra"]
-    dec = result.table["Dec"]
 
-    ra0, ra1, dec0, dec1 = extent
-    assert np.all((ra0 < ra) & (ra < ra1))
-    assert np.all((dec0 < dec) & (dec < dec1))
+class TestFilterSkymodel:
+    @pytest.fixture()
+    def skymodel(self, tmp_path):
+        """
+        Fixture that creates a mock skymodel for testing the `filter_skymodel`
+        function.
+        """
+        path = tmp_path / "test_filter_skymodel.sky"
+        skymodel_generator = SourceGridGenerator()
+        skymodel_generator.to_file(path, n_sources=144)
+        return load(path)
+
+    @pytest.mark.parametrize(
+        "facet, extent",
+        [
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=22.5,
+                    dec=22.5,
+                    vertices=[(0, 0), (45, 0), (45, 45), (0, 45), (0, 0)],
+                    wcs_pixel_scale=0.1,  # degrees per pixel
+                ),
+                [0, 45, 0, 45],
+                id="nominal",
+            ),
+            pytest.param(
+                SquareFacet(
+                    name="test_filter_skymodel",
+                    ra=22.5,
+                    dec=0,
+                    width=45,
+                    wcs_pixel_scale=0.1,  # degrees per pixel
+                ),
+                [0, 45, -22.5, 22.5],
+                id="nominal_square_facet",
+            ),
+            # ---------------------------------------------------------------- #
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=0,
+                    dec=0,
+                    vertices=[(0, 0), (90, 0), (90, 45), (0, 45), (0, 0)],
+                    wcs_pixel_scale=0.1,  # degrees per pixel
+                ),
+                [0, 90, 0, 45],
+                marks=pytest.mark.xfail(
+                    raises=AssertionError,
+                    reason=(
+                        "`facet.polygon` in image coordinates become too "
+                        "large, with values around 1e18. Not all expected "
+                        "sources are filtered due to the unhandled arithmetic "
+                        "overflow"
+                    ),
+                ),
+                id="Facet coordinates at lower left corner",
+            ),
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=90,
+                    dec=30,
+                    vertices=[(0, 0), (180, 0), (180, 60), (0, 60), (0, 0)],
+                    wcs_pixel_scale=0.1,  # degrees per pixel
+                ),
+                [0, 180, 0, 60],
+                marks=pytest.mark.xfail(
+                    raises=AssertionError,
+                    reason=(
+                        "`facet.polygon` in image coordinates become too "
+                        "large, with values around 1e18. Not all expected "
+                        "sources are filtered due to the unhandled arithmetic "
+                        "overflow"
+                    ),
+                ),
+                id="facet spanning 180 degrees in ra",
+            ),
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=45,
+                    dec=0,
+                    vertices=[
+                        (0, -45),
+                        (0, 0),
+                        (0, 45),
+                        (90, 0),
+                        (90, -45),
+                        (0, -45),
+                    ],
+                    wcs_pixel_scale=0.1,  # degrees per pixel
+                ),
+                [0, 90, -45, 45],
+                id="filter source at north celestial",
+            ),
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=90,
+                    dec=0,
+                    vertices=[
+                        (0, -45),
+                        (0, 0),
+                        (0, 45),
+                        (180, 0),
+                        (180, -45),
+                        (0, -45),
+                    ],
+                    wcs_pixel_scale=0.1,  # degrees per pixel
+                ),
+                [0, 180, -45, 45],
+                marks=pytest.mark.xfail(
+                    raises=(OverflowError, np.core._exceptions._UFuncOutputCastingError),
+                    reason="Python int too large to convert to C long",
+                ),
+                id="facet spanning 90 degrees in dec, 180 degrees in ra",
+            ),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "invert",
+        [
+            False,
+            pytest.param(
+                True,
+                marks=pytest.mark.xfail(
+                    raises=ValueError,
+                    reason="cannot convert float NaN to integer",
+                ),
+            ),
+        ],
+    )
+    def test_filter_skymodel(self, facet, extent, skymodel, invert):
+        """
+        Test that `facet.filter_skymodel` selects only sources that lie inside the
+        input facet.
+        """
+
+        # Arrange
+
+        # Act
+        filter_skymodel(facet.polygon, skymodel, facet.wcs, invert)
+
+        # Assert
+        if skymodel.table:
+            assert (
+                "FILTER (with array of indices/bools)" in skymodel.history[-1]
+            )
+
+        ra = skymodel.table["Ra"]
+        dec = skymodel.table["Dec"]
+
+        ra0, ra1, dec0, dec1 = extent
+        ra_inside = (ra0 <= ra) & (ra <= ra1)
+        dec_inside = (dec0 <= dec) & (dec <= dec1)
+
+        if invert:
+            assert np.any(~ra_inside)
+            assert np.any(~dec_inside)
+        else:
+            assert np.all(ra_inside)
+            assert np.all(dec_inside)
