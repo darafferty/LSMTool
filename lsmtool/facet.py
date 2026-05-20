@@ -585,13 +585,12 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
     mask = Image.new("1", xy_sizes, 0)
     verts = (polygon.exterior.coords.xy - xy_bottom_left[:, None]).T.tolist()
     ImageDraw.Draw(mask).polygon(verts, outline=1, fill=1)
-
-    inside = np.array(mask).transpose()[tuple(xy.astype(int))]
+    inside = np.array(mask)[tuple(xy.astype(int))[::-1]]
 
     # Now check sources in the border precisely
     mask = Image.new("1", xy_sizes, 0)
     ImageDraw.Draw(mask).polygon(verts, outline=1, fill=0)
-    border = np.array(mask).transpose()[tuple(xy.astype(int))]
+    border = np.array(mask)[tuple(xy.astype(int))[::-1]]
     (border_indices,) = np.nonzero(border)
 
     prepared_polygon = prep(polygon)
