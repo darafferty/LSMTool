@@ -1,11 +1,11 @@
 import shlex
 import sys
 import time
-from pathlib import Path
 from unittest import mock
 
 import numpy as np
 import pytest
+from conftest import SkyModelGenerator
 
 from lsmtool.convert_oskar_skymodel import (
     MAKESOURCEDB_FORMAT_STRING,
@@ -45,7 +45,7 @@ OSKAR_NUMPY_DTYPE = np.dtype(
 # Helper functions
 
 
-def generate_oskar_skymodel_data(n_sources, rng):
+def generate_oskar_skymodel_data(n_sources):
     """
     Generate a random sample of sources for testing skymodel conversion.
 
@@ -56,8 +56,6 @@ def generate_oskar_skymodel_data(n_sources, rng):
 
     Parameters
     ----------
-    rng : numpy.random.Generator
-        Random number generator.
     n_sources : int
         Number of sources to generate.
 
@@ -69,35 +67,11 @@ def generate_oskar_skymodel_data(n_sources, rng):
         measure, FWHM major, FWHM minor, Position angle.
     """
 
-    ra = rng.uniform(0, 360, n_sources)
-    dec = rng.uniform(-90, 90, n_sources)
-    i = rng.uniform(0.001, 20, n_sources)
-    q = u = v = np.zeros(n_sources)
-    ref_freq = np.full(n_sources, 1.44e8)
-    spectral_index = rng.uniform(-1, 0, n_sources)
-    rotation_measure = np.zeros(n_sources)
-    fwhm_major = rng.uniform(0.01, 20, n_sources)
-    fwhm_minor = rng.uniform(0, 1, n_sources) * fwhm_major
-    position_angle = rng.uniform(0, 180, n_sources)
-    return np.column_stack(
-        (
-            ra,
-            dec,
-            i,
-            q,
-            u,
-            v,
-            ref_freq,
-            spectral_index,
-            rotation_measure,
-            fwhm_major,
-            fwhm_minor,
-            position_angle,
-        )
-    ).view(OSKAR_NUMPY_DTYPE)
+    samples = SkyModelGenerator().sample(n_sources)
+    return np.column_stack(list(samples.values())).view(OSKAR_NUMPY_DTYPE)
 
 
-def random_skymodel(n_sources, rng):
+def random_skymodel(n_sources):
     """Generate a random skymodel dataset and header for testing."""
     return (
         [
@@ -107,18 +81,12 @@ def random_skymodel(n_sources, rng):
             "FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg)",
             MAKESOURCEDB_FORMAT_STRING,
         ],
-        generate_oskar_skymodel_data(n_sources, rng),
+        generate_oskar_skymodel_data(n_sources),
     )
 
 
 # ---------------------------------------------------------------------------- #
 # Fixtures
-
-
-@pytest.fixture(scope="session")
-def rng():
-    """Random number generator fixture for reproducibility."""
-    return np.random.default_rng(seed=881726)
 
 
 @pytest.fixture()
@@ -854,7 +822,7 @@ def test_cli(command, expected_args):
     mock_convert_skymodel.assert_called_once_with(*expected_args)
 
 
-def test_performance(tmp_path, rng, n_sources=10_000, time_limit=1):
+def test_performance(tmp_path, n_sources=10_000, time_limit=1):
     """
     Test that we can process a certain number sources within a time limit in
     seconds.
@@ -866,7 +834,7 @@ def test_performance(tmp_path, rng, n_sources=10_000, time_limit=1):
     with mock.patch(
         "lsmtool.convert_oskar_skymodel.read_oskar_skymodel"
     ) as mock_read_oskar_skymodel:
-        mock_read_oskar_skymodel.return_value = random_skymodel(n_sources, rng)
+        mock_read_oskar_skymodel.return_value = random_skymodel(n_sources)
 
         # Time execution
         t0 = time.time()

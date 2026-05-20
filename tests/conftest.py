@@ -386,12 +386,6 @@ class SkyModelGenerator:
 # Fixtures
 
 
-@pytest.fixture(scope="session")
-def rng():
-    """Random number generator fixture for reproducibility."""
-    return RNG
-
-
 @pytest.fixture(scope="module")
 def test_data_path(request):
     """Path to the test data subfolder for the test module."""
