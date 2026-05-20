@@ -576,7 +576,7 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
     # then do a slow (but precise) check using Shapely
     xy = np.array([x, y])[:, inside]
     xy_ranges = np.ptp(xy, 1)
-    xy_padding = (0.1 * xy_ranges).astype(int).clip(3, None)
+    xy_padding = min(xy_ranges.min(), 3)
     xy_bottom_left = xy.min(1).astype(int) - xy_padding
     xy_sizes = tuple(np.ceil(xy_ranges).astype(int) + 2 * xy_padding)
     xy -= xy_bottom_left[:, None]
