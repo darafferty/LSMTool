@@ -1,18 +1,17 @@
-from astropy.table import Table
-import pytest
 import ast
 import csv
 from pathlib import Path
 
 import numpy as np
 import pytest
+from astropy.table import Table
 
 from lsmtool.skymodel import SkyModel
 from lsmtool.tableio import (
     loadAstropyTableFromLSM,
     loadTableFromLSM,
-    validateLSMFormat,
     skyModelReader,
+    validateLSMFormat,
 )
 
 
@@ -39,7 +38,7 @@ def _get_lsm_header(path: Path):
                     return header_columns.split(",")
                 except ValueError as e:
                     raise AssertionError(f"Invalid header {line}") from e
-        raise AssertionError("Format line not provided in {path}")
+        raise AssertionError(f"Format line not provided in {path}")
 
 
 def _get_sky_header(path: Path):
