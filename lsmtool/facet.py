@@ -10,11 +10,11 @@ from pathlib import Path
 
 import numpy as np
 import scipy
+import shapely
 from astropy.coordinates import Angle, SkyCoord
 from matplotlib import patches
 from PIL import Image, ImageDraw
-from shapely.geometry import Point, Polygon
-from shapely.prepared import prep
+from shapely.geometry import Polygon
 
 from lsmtool.io import check_file_exists
 
@@ -591,12 +591,11 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
     mask = Image.new("1", xy_sizes, 0)
     ImageDraw.Draw(mask).polygon(verts, outline=1, fill=0)
     border = np.array(mask)[tuple(xy.astype(int))[::-1]]
-    (border_indices,) = np.nonzero(border)
 
-    prepared_polygon = prep(polygon)
-    for i, xy_point in zip(border_indices, xy[:, border].T, strict=True):
-        if not prepared_polygon.contains(Point(*xy_point)):
-            inside[i] = False
+    if border.any():
+        (border_indices,) = np.nonzero(border)
+        border_pixels_contain = shapely.contains_xy(polygon, *xy[:, border])
+        inside[border_indices[~border_pixels_contain]] = False
 
     if invert:
         skymodel.remove(inside)
