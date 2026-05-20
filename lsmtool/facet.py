@@ -577,13 +577,13 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
     xy = np.array([x, y])[:, inside]
     xy_ranges = np.ptp(xy, 1)
     xy_padding = (0.1 * xy_ranges).astype(int).clip(3, None)
-    xy_shifts = xy.min(1).astype(int) - xy_padding
+    xy_bottom_left = xy.min(1).astype(int) - xy_padding
     xy_sizes = tuple(np.ceil(xy_ranges).astype(int) + 2 * xy_padding)
-    xy -= xy_shifts[:, None]
+    xy -= xy_bottom_left[:, None]
 
     # Unmask everything outside of the polygon + its border (outline)
     mask = Image.new("1", xy_sizes, 0)
-    verts = (polygon.exterior.coords.xy - xy_shifts[:, None]).T.tolist()
+    verts = (polygon.exterior.coords.xy - xy_bottom_left[:, None]).T.tolist()
     ImageDraw.Draw(mask).polygon(verts, outline=1, fill=1)
 
     inside = np.array(mask).transpose()[tuple(xy.astype(int))]
