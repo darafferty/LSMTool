@@ -6,7 +6,8 @@ import contextlib
 import inspect
 import shutil
 import tarfile
-from dataclasses import asdict, dataclass
+from collections.abc import MutableMapping, Sequence
+from dataclasses import InitVar, asdict, dataclass
 from pathlib import Path
 
 import astropy.units as u
@@ -138,7 +139,7 @@ def get_context(expected, **kws):
 
 
 # ---------------------------------------------------------------------------- #
-# Helper classes for generating random skymodel data
+# Helper classes for generating random sRAPTHOR_MAX_THREADSkymodel data
 
 
 class rv_constant:
@@ -154,7 +155,7 @@ class rv_constant:
         return np.full(n, self.value)
 
 
-RV = rv_frozen | rv_constant
+RVType = rv_frozen | rv_constant | None
 
 
 @dataclass
@@ -173,45 +174,45 @@ class SkyModelGenerator:
 
     Attributes
     ----------
-    ra : RV
+    ra : RVType
         Distribution for Right ascension (in degrees). Default: uniform(0, 360).
-    dec : RV
+    dec : RVType
         Distribution for Declination (in degrees). Default: uniform(-90, 90).
-    i : RV
+    i : RVType
         Distribution for Stokes I flux (in Jy). Default: uniform(0.001, 20).
-    q : RV
+    q : RVType
         Distribution for Stokes Q flux (in Jy). Default: constant(0).
-    u : RV
+    u : RVType
         Distribution for Stokes U flux (in Jy). Default: constant(0).
-    v : RV
+    v : RVType
         Distribution for Stokes V flux (in Jy). Default: constant(0).
-    reference_frequency : RV
+    reference_frequency : RVType
         Distribution for Reference frequency (in Hz). Default: constant(1.44e8).
-    spectral_index : RV
+    spectral_index : RVType
         Distribution for Spectral index. Default: uniform(-1, 0).
-    rotation_measure : RV
+    rotation_measure : RVType
         Distribution for Rotation measure. Default: constant(0).
-    major_axis : RV
+    major_axis : RVType
         Distribution for Major axis in arcsec. Default: uniform(0.01, 20).
-    minor_axis : RV
+    minor_axis : RVType
         Distribution for Minor axis as a fraction of major axis. Default:
         uniform(0, 1).
-    orientation : RV
+    orientation : RVType
         Position angle in degrees. Default: uniform(0, 180).
     """
 
-    ra: RV = uniform(0, 360)
-    dec: RV = uniform(-90, 90)
-    i: RV = uniform(0.001, 20)
-    q: RV = rv_constant(0)
-    u: RV = rv_constant(0)
-    v: RV = rv_constant(0)
-    reference_frequency: RV = rv_constant(1.44e8)
-    spectral_index: RV = uniform(-1, 0)
-    rotation_measure: RV = rv_constant(0)
-    major_axis: RV = uniform(0.01, 20)
-    minor_axis: RV = uniform(0, 1)
-    orientation: RV = uniform(0, 180)
+    ra: RVType = uniform(0, 360)
+    dec: RVType = uniform(-90, 90)
+    i: RVType = uniform(0.001, 20)
+    q: RVType = rv_constant(0)
+    u: RVType = rv_constant(0)
+    v: RVType = rv_constant(0)
+    reference_frequency: RVType = rv_constant(1.44e8)
+    spectral_index: RVType = uniform(-1, 0)
+    rotation_measure: RVType = rv_constant(0)
+    major_axis: RVType = uniform(0.01, 20)
+    minor_axis: RVType = uniform(0, 1)
+    orientation: RVType = uniform(0, 180)
 
     def __call__(self, n_sources):
         """
@@ -380,6 +381,30 @@ class SkyModelGenerator:
             delimiter=", ",
             fmt="%s",
         )
+
+
+@dataclass
+class SourceGridGenerator(SkyModelGenerator):
+    """
+    A mock sky model generator that creates sources on a regular grid in RA and
+    Dec. This is used for testing the `filter_skymodel` function.
+    """
+
+    ra: RVType = None
+    dec: RVType = None
+    ra_range: InitVar[tuple] = (0, 360)
+    dec_range: InitVar[tuple] = (-90, 90)
+
+    def get_coords(self, n_sources, state):
+        # Create a regular grid of sources in RA and Dec
+
+        n = int(np.sqrt(n_sources))
+        ra0, ra1 = self.ra_range
+        dec0, dec1 = self.dec_range
+        ra, dec = np.mgrid[
+            ra0 : ra1 : (n * 1j), dec0 : dec1 : (n * 1j)
+        ].reshape(2, -1)
+        return super().get_coords(n_sources, {"ra": ra, "dec": dec})
 
 
 # ---------------------------------------------------------------------------- #

@@ -3,6 +3,7 @@ Tests for the lsmtool.facet module.
 """
 
 import contextlib
+from dataclasses import dataclass
 
 import astropy.units as u
 import matplotlib as mpl
@@ -10,7 +11,7 @@ import numpy as np
 import pytest
 import shapely
 from astropy.coordinates import SkyCoord
-from conftest import SkyModelGenerator, get_context
+from conftest import SourceGridGenerator, get_context
 from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
@@ -26,7 +27,6 @@ from lsmtool.facet import (
     voronoi,
 )
 from lsmtool.io import load
-from lsmtool.utils import format_coordinates
 
 # ---------------------------------------------------------------------------- #
 # Tests
@@ -942,42 +942,46 @@ def test_prepare_points_for_tessellate(coords, bounding_box, expected_centre):
         np.testing.assert_array_equal(points_centre, expected_centre)
 
 
-class SourceGridGenerator(SkyModelGenerator):
-    """
-    A mock sky model generator that creates sources on a regular grid in RA and
-    Dec. This is used for testing the `filter_skymodel` function.
-    """
-
-    ra_range = (0, 360)
-    dec_range = (-90, 90)
-
-    def get_coords(self, n_sources, state):
-        # Create a regular grid of sources in RA and Dec
-
-        n = int(np.sqrt(n_sources))
-        ra0, ra1 = self.ra_range
-        dec0, dec1 = self.dec_range
-        ra, dec = np.mgrid[
-            ra0 : ra1 : (n * 1j), dec0 : dec1 : (n * 1j)
-        ].reshape(2, -1)
-        return super().get_coords(n_sources, {"ra": ra, "dec": dec})
-
-
 class TestFilterSkymodel:
     @pytest.fixture()
-    def skymodel(self, tmp_path):
+    def skymodel(self, tmp_path, request):
         """
         Fixture that creates a mock skymodel for testing the `filter_skymodel`
         function.
         """
         path = tmp_path / "test_filter_skymodel.sky"
-        skymodel_generator = SourceGridGenerator()
+        config = getattr(request, "param", {})
+        skymodel_generator = SourceGridGenerator(**config)
         skymodel_generator.to_file(path, n_sources=144)
         return load(path)
 
     @pytest.mark.parametrize(
-        "facet, extent",
+        "facet, extent, skymodel",
         [
+            # ---------------------------------------------------------------- #
+            # Nominal cases
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=238.795,
+                    dec=50.98242,
+                    vertices=[(250, 60), (260, 60), (260, 50), (250, 50)],
+                ),
+                [250, 260, 50, 60],
+                {"ra_range": (250, 260), "dec_range": (50, 60)},
+                id="nominal narrow field",
+            ),
+            pytest.param(
+                SquareFacet(
+                    name="test_filter_skymodel",
+                    ra=255,
+                    dec=55,
+                    width=5,
+                ),
+                [250, 260, 50, 60],
+                {"ra_range": (250, 260), "dec_range": (50, 60)},
+                id="nominal case square facet",
+            ),
             pytest.param(
                 Facet(
                     name="test_filter_skymodel",
@@ -987,7 +991,8 @@ class TestFilterSkymodel:
                     wcs_pixel_scale=0.1,  # degrees per pixel
                 ),
                 [0, 45, 0, 45],
-                id="nominal",
+                {},
+                id="nominal wide field",
             ),
             pytest.param(
                 SquareFacet(
@@ -998,9 +1003,11 @@ class TestFilterSkymodel:
                     wcs_pixel_scale=0.1,  # degrees per pixel
                 ),
                 [0, 45, -22.5, 22.5],
-                id="nominal_square_facet",
+                {},
+                id="nominal wide field square facet",
             ),
             # ---------------------------------------------------------------- #
+            # The following case are known to fail
             pytest.param(
                 Facet(
                     name="test_filter_skymodel",
@@ -1010,6 +1017,7 @@ class TestFilterSkymodel:
                     wcs_pixel_scale=0.1,  # degrees per pixel
                 ),
                 [0, 90, 0, 45],
+                {},
                 marks=pytest.mark.xfail(
                     raises=AssertionError,
                     reason=(
@@ -1030,6 +1038,7 @@ class TestFilterSkymodel:
                     wcs_pixel_scale=0.1,  # degrees per pixel
                 ),
                 [0, 180, 0, 60],
+                {},
                 marks=pytest.mark.xfail(
                     raises=AssertionError,
                     reason=(
@@ -1057,6 +1066,7 @@ class TestFilterSkymodel:
                     wcs_pixel_scale=0.1,  # degrees per pixel
                 ),
                 [0, 90, -45, 45],
+                {},
                 id="filter source at north celestial",
             ),
             pytest.param(
@@ -1075,13 +1085,18 @@ class TestFilterSkymodel:
                     wcs_pixel_scale=0.1,  # degrees per pixel
                 ),
                 [0, 180, -45, 45],
+                {},
                 marks=pytest.mark.xfail(
-                    raises=(OverflowError, np.core._exceptions._UFuncOutputCastingError),
+                    raises=(
+                        OverflowError,
+                        np.core._exceptions._UFuncOutputCastingError,
+                    ),
                     reason="Python int too large to convert to C long",
                 ),
                 id="facet spanning 90 degrees in dec, 180 degrees in ra",
             ),
         ],
+        indirect=["skymodel"],
     )
     @pytest.mark.parametrize(
         "invert",
@@ -1102,8 +1117,6 @@ class TestFilterSkymodel:
         input facet.
         """
 
-        # Arrange
-
         # Act
         filter_skymodel(facet.polygon, skymodel, facet.wcs, invert)
 
@@ -1117,12 +1130,6 @@ class TestFilterSkymodel:
         dec = skymodel.table["Dec"]
 
         ra0, ra1, dec0, dec1 = extent
-        ra_inside = (ra0 <= ra) & (ra <= ra1)
-        dec_inside = (dec0 <= dec) & (dec <= dec1)
-
-        if invert:
-            assert np.any(~ra_inside)
-            assert np.any(~dec_inside)
-        else:
-            assert np.all(ra_inside)
-            assert np.all(dec_inside)
+        inside = (ra0 <= ra) & (ra <= ra1) & (dec0 <= dec) & (dec <= dec1)
+        selected = ~inside if invert else inside
+        assert np.all(selected)
