@@ -1535,7 +1535,7 @@ def loadAstropyTableFromLSM(lsm_path):
     return table
 
 def parseSpectralIndex(spectral_index_string):
-    returned=  [literal_eval(x) for x in spectral_index_string.strip("[]").split(",") if x]
+    returned = [literal_eval(x) for x in spectral_index_string.strip("[]").split(",") if x]
     if returned:
         return returned
     else:
