@@ -1534,6 +1534,13 @@ def loadAstropyTableFromLSM(lsm_path):
     )
     return table
 
+def parseSpectralIndex(spectral_index_string):
+    returned=  [literal_eval(x) for x in spectral_index_string.strip("[]").split(",") if x]
+    if returned:
+        return returned
+    else:
+        return []
+
 def loadTableFromLSM(lsm_path):
 
     columnMapping = {'component_id': 'name',
@@ -1550,8 +1557,9 @@ def loadTableFromLSM(lsm_path):
                      }
     catalogProperties = {'fluxunits': 'Jy', 'deconvolved':False, 'psf':0, 'fluxtype': 'total'}
     table = loadAstropyTableFromLSM(lsm_path)
-    
-    table["spec_idx"] = [literal_eval(x) for x in table["spec_idx"]]
+    table["source_id"] = table["source_id"].astype("str")
+    table["component_id"] = table["component_id"].astype("str")
+    table["spec_idx"] = [parseSpectralIndex(x) for x in table["spec_idx"]]
     table = convertExternalTable(table, columnMapping, catalogProperties)
     
     # Reorder columns to match expected schema
@@ -1674,13 +1682,15 @@ def lsmWriter(table, fileName):
                 spec_str = spec_idx.tolist()
             else:
                 spec_str = [spec_idx]
-
+            spec_str = ",".join(
+                [str(spec_str[idx]) if idx < len(spec_str) else "" for idx in range(5)]
+            )
             lsmFile.write(
                 # component_id (Name)
-                f'{row["Name"]},'
+                f'{row["Name"] if row["Name"] != "--" else ""},'
 
                 # source_id (Patch)
-                f"{row['Patch']},"
+                f'{row["Patch"] if row["Patch"] != "--" else ""},'
 
                 # ra_deg, dec_deg
                 f"{float(row['Ra'])},"
@@ -1692,7 +1702,7 @@ def lsmWriter(table, fileName):
                 f"{float(row['Orientation'])},"
                 
                 # spec_idx (as quoted string)
-                f'"{spec_str}",'
+                f'"[{spec_str}]",'
 
                 # log_spec_idx
                 f"{row['LogarithmicSI']},"

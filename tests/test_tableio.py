@@ -1,18 +1,17 @@
-from astropy.table import Table
-import pytest
 import ast
 import csv
 from pathlib import Path
 
 import numpy as np
 import pytest
+from astropy.table import Table
 
 from lsmtool.skymodel import SkyModel
 from lsmtool.tableio import (
     loadAstropyTableFromLSM,
     loadTableFromLSM,
-    validateLSMFormat,
     skyModelReader,
+    validateLSMFormat,
 )
 
 
@@ -49,14 +48,14 @@ def _get_sky_header(path: Path):
                 try:
                     _, header_columns = line.split("=", maxsplit=1)
                 except ValueError as e:
-                    raise InvalidLSMFormatError(f"Invalid header {line}") from e
+                    raise AssertionError(f"Invalid header {line}") from e
 
                 return [
                     part.strip().split("=", maxsplit=1)[0]
                     for part in header_columns.split(",")
                 ]
 
-    raise InvalidLSMFormatError(f"Format line not provided in {path}")
+    raise AssertionError(f"Format line not provided in {path}")
 
 
 def _split_sky_row(line: str):
@@ -184,7 +183,7 @@ def validate_lsm_format(skymodel_path):
         # spec_idx: quoted CSV field containing a python-style list
         spec_field = row[7].strip()
         try:
-            spec_list = ast.literal_eval(spec_field)
+            spec_list = ast.literal_eval(spec_field.replace(",,", ""))
         except Exception as exc:
             raise AssertionError(
                 f"Row {n} spec_idx parse error: (value={spec_field})"
@@ -194,10 +193,12 @@ def validate_lsm_format(skymodel_path):
             f"Row {n} spec_idx is not a list: {spec_list}"
         )
         for v in spec_list:
-            assert isinstance(v, (int, float)), (
-                f"Row {n} spec_idx element not numeric: {v}"
-            )
-
+            if isinstance(v, str):
+                assert v == ""
+            else:
+                assert isinstance(v, (int, float)), (
+                    f"Row {n} spec_idx element not numeric: {v}"
+                )
         log_field = row[8].strip().lower()
         assert log_field in ("true", "false"), (
             f"Row {n} log_spec_idx not boolean: {row[9]}"
@@ -281,6 +282,16 @@ def validate_skymodel_format(skymodel_path):
 @pytest.fixture()
 def lsm_skymodel(test_data_path):
     return test_data_path / "skymodel.lsm"
+
+
+@pytest.fixture()
+def lsm_skymodel_partial_spectral_index(test_data_path):
+    return test_data_path / "sky_model_target.lsm.csv"
+
+
+@pytest.fixture()
+def expected_lsm_skymodel_partial_spectral_index(test_data_path):
+    return test_data_path / "expected_sky_model_target.lsm_stored.csv"
 
 
 @pytest.fixture()
@@ -422,3 +433,19 @@ def test_skymodelreader_headeronly(tmp_path):
 
     assert isinstance(table, Table)
     assert len(table) == 0
+
+
+def test_lsm_skymodel_read_incomplete_spectral_index(
+    lsm_skymodel_partial_spectral_index,
+    expected_lsm_skymodel_partial_spectral_index,
+    tmp_path,
+):
+    """Test that SkyModel can parse partially populated spectral index"""
+    skymodel = SkyModel(str(lsm_skymodel_partial_spectral_index))
+    assert len(skymodel.table) == 9
+    generated_lsm = tmp_path / "lsm.csv"
+    skymodel.write(generated_lsm, format="lsm", clobber=True)
+    assert (
+        expected_lsm_skymodel_partial_spectral_index.read_text()
+        == generated_lsm.read_text()
+    )
