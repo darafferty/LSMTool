@@ -14,89 +14,6 @@ from lsmtool.tableio import (
     validateLSMFormat,
 )
 
-
-def _data_rows(path: Path):
-    with path.open() as f:
-        for line in f:
-            s = line.strip()
-            if not s:
-                continue
-            if s.startswith("#"):
-                continue
-            yield line
-
-
-def _get_lsm_header(path: Path):
-    with path.open() as f:
-        for line in f:
-            if "format" in line:
-                try:
-                    header_columns, *_ = (
-                        line.replace("#", "").replace(" ", "").split("=")
-                    )
-                    header_columns = header_columns.lstrip("(").rstrip(")")
-                    return header_columns.split(",")
-                except ValueError as e:
-                    raise AssertionError(f"Invalid header {line}") from e
-        raise AssertionError("Format line not provided in {path}")
-
-
-def _get_sky_header(path: Path):
-    with path.open() as f:
-        for line in f:
-            if "format" in line.lower():
-                try:
-                    _, header_columns = line.split("=", maxsplit=1)
-                except ValueError as e:
-                    raise AssertionError(f"Invalid header {line}") from e
-
-                return [
-                    part.strip().split("=", maxsplit=1)[0]
-                    for part in header_columns.split(",")
-                ]
-
-    raise AssertionError(f"Format line not provided in {path}")
-
-
-def _split_sky_row(line: str):
-    parts = []
-    token = []
-    bracket_depth = 0
-
-    for ch in line:
-        if ch == "[":
-            bracket_depth += 1
-        elif ch == "]":
-            bracket_depth = max(0, bracket_depth - 1)
-
-        if ch == "," and bracket_depth == 0:
-            parts.append("".join(token).strip())
-            token = []
-            continue
-
-        token.append(ch)
-
-    if token:
-        parts.append("".join(token).strip())
-
-    return parts
-
-
-def _skymodel_rows(path: Path):
-    with path.open() as f:
-        for line in f:
-            s = line.strip()
-            if not s:
-                continue
-            if s.startswith("#"):
-                continue
-            if "format" in s.lower():
-                continue
-            if s.startswith(","):
-                continue
-            yield s
-
-
 _EXPECTED_LSM_COLUMN_NAMES = [
     "component_id",
     "source_id",
@@ -110,21 +27,6 @@ _EXPECTED_LSM_COLUMN_NAMES = [
     "i_pol_jy",
     "ref_freq_hz",
     "epoch",
-]
-
-_EXPECTED_SKYMODEL_COLUMN_NAMES = [
-    "Name",
-    "Type",
-    "Patch",
-    "Ra",
-    "Dec",
-    "I",
-    "SpectralIndex",
-    "LogarithmicSI",
-    "ReferenceFrequency",
-    "MajorAxis",
-    "MinorAxis",
-    "Orientation",
 ]
 
 
@@ -191,11 +93,18 @@ def test_load_table_from_lsm(lsm_skymodel, expected_lsm_content):
             assert list(table[key]) == list(expected_values), f"{key}"
 
 
-def test_validation_succeed(lsm_skymodel, apparent_skymodel):
+def test_validation_succeed(
+    lsm_skymodel,
+    apparent_skymodel,
+    lsm_skymodel_partial_spectral_index,
+    expected_lsm_skymodel_partial_spectral_index,
+):
     """
     Verifies that the validation function work properly
     """
     assert validateLSMFormat(lsm_skymodel)
+    assert validateLSMFormat(lsm_skymodel_partial_spectral_index)
+    assert validateLSMFormat(expected_lsm_skymodel_partial_spectral_index)
     assert not validateLSMFormat(apparent_skymodel)
 
 
@@ -250,11 +159,12 @@ def test_instantiate_lsm_skymodel_store_lsm(lsm_skymodel, tmpdir):
     skymodel = SkyModel(str(lsm_skymodel))
 
     # Write to temporary file
-    output_path = str(Path(tmpdir) / "saved_skymodel.sky")
-    skymodel.write(output_path, format="lsm")
-
+    output_path = str(tmpdir / "saved_skymodel.sky")
+    skymodel.write(output_path, format="lsm", clobber=True)
     assert Path(output_path).exists()
-    assert Path(output_path).read_text()
+    # Read back and verify
+    loaded_skymodel = SkyModel(output_path)
+    assert_tables_equal(skymodel.table, loaded_skymodel.table)
 
 
 def test_skymodelreader_emptyfile(tmp_path):
@@ -283,6 +193,7 @@ def test_skymodelreader_headeronly(tmp_path):
 
 def test_lsm_skymodel_read_incomplete_spectral_index(
     lsm_skymodel_partial_spectral_index,
+    expected_lsm_skymodel_partial_spectral_index,
     tmp_path,
 ):
     """Test that SkyModel can parse partially populated spectral index"""
@@ -307,4 +218,7 @@ def test_lsm_skymodel_read_incomplete_spectral_index(
     generated_lsm = tmp_path / "lsm.csv"
     skymodel.write(generated_lsm, format="lsm", clobber=True)
     assert generated_lsm.exists()
-    assert generated_lsm.read_text()
+    assert (
+        generated_lsm.read_text()
+        == expected_lsm_skymodel_partial_spectral_index.read_text()
+    )

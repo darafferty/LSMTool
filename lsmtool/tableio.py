@@ -1649,20 +1649,20 @@ def lsmWriter(table, fileName):
     with  open(fileName, 'w') as lsmFile:
         log.debug('Writing LSM model to {0}'.format(fileName))
 
-        # Column name mapping from makesourcedb to LSM format
+
         lsmColumnNames = [
             'component_id',
             'source_id',
             'ra_deg',
             'dec_deg',
+            'i_pol_jy',
+            'ref_freq_hz',
+            'epoch',
             'a_arcsec',
             'b_arcsec',
             'pa_deg',
             'spec_idx',
-            'log_spec_idx',
-            'i_pol_jy',
-            'ref_freq_hz',
-            'epoch'
+            'log_spec_idx'
         ]
 
         # Write format line
