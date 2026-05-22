@@ -1681,10 +1681,14 @@ def lsmWriter(table, fileName):
             if isinstance((spec_idx := row['SpectralIndex']), np.ndarray):
                 spec_str = spec_idx.tolist()
             else:
-                spec_str = [spec_idx]
+                spec_str = spec_idx
             spec_str = ",".join(
                 [str(spec_str[idx]) if idx < len(spec_str) else "" for idx in range(5)]
             )
+
+
+            # (component_id,source_id,ra_deg,dec_deg,i_pol_jy,ref_freq_hz,epoch,a_arcsec,b_arcsec,pa_deg,spec_idx,log_spec_idx) = format
+
             lsmFile.write(
                 # component_id (Name)
                 f'{row["Name"] if row["Name"] != "--" else ""},'
@@ -1696,6 +1700,12 @@ def lsmWriter(table, fileName):
                 f"{float(row['Ra'])},"
                 f"{float(row['Dec'])},"
 
+                # i_pol_jy, ref_freq_hz
+                f"{float(row['I'])},"
+                f"{float(row['ReferenceFrequency'])},"
+
+                # epoch (default to 0)
+                '0,'
                 # a_arcsec, b_arcsec, pa_deg
                 f"{float(row['MajorAxis'])},"
                 f"{float(row['MinorAxis'])},"
@@ -1705,14 +1715,7 @@ def lsmWriter(table, fileName):
                 f'"[{spec_str}]",'
 
                 # log_spec_idx
-                f"{row['LogarithmicSI']},"
-                
-                # i_pol_jy, ref_freq_hz
-                f"{float(row['I'])},"
-                f"{float(row['ReferenceFrequency'])},"
-
-                # epoch (default to J2000)
-                'J2000\n'
+                f"{row['LogarithmicSI']}\n"
             )
 
 
