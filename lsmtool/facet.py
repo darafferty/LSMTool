@@ -746,7 +746,7 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
             except AttributeError:  # raised if `re.match()` returns `None`
                 # Try to match to name without any quotes
                 facet_name = (
-                    line.split("text")[1].lstrip("= ").split(" ")[0].strip("/n")
+                    line.split("text")[1].lstrip("= ").split(" ")[0].strip("\n")
                 )
                 if not facet_name:
                     raise ValueError(
