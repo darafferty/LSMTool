@@ -607,7 +607,7 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
     return skymodel
 
 
-def make_ds9_region_file(facets, outfile, enclose_names=True):
+def make_ds9_region_file(facets, outfile, enclose_names=True, associate_names_with_polygons=True):
     """
     Make a ds9 region file for given polygons and centers
 
@@ -622,6 +622,9 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
         compatibility with ds9. Curly brackets may cause issues with
         other tools that use the region file, such as DP3, in which
         case they can be excluded by setting this option to False
+    associate_names_with_polygons : optional
+        If True, the facet names are associated with the "polygon" entries.
+        If False, the names are associated with the "point" entries instead
     """
     lines = []
     lines.append(
@@ -636,19 +639,19 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
         Decs = facet.polygon_decs
         for ra, dec in zip(RAs, Decs):
             radec_list.append("{0}, {1}".format(ra, dec))
-        lines.append("polygon({0})\n".format(", ".join(radec_list)))
+        polygon_string = ", ".join(radec_list)
+
         if enclose_names:
-            lines.append(
-                "point({0}, {1}) # text={{{2}}}\n".format(
-                    facet.ra, facet.dec, facet.name
-                )
-            )
+            name_string = f"text={{{facet.name}}}"
         else:
-            lines.append(
-                "point({0}, {1}) # text={2}\n".format(
-                    facet.ra, facet.dec, facet.name
-                )
-            )
+            name_string = f"text={facet.name}"
+
+        if associate_names_with_polygons:
+            lines.append(f"polygon({polygon_string} # {name_string})\n")
+            lines.append(f"point({facet.ra}, {facet.dec})\n")
+        else:
+            lines.append(f"polygon({polygon_string})\n")
+            lines.append(f"point({facet.ra}, {facet.dec}) # {name_string}\n")
 
     with open(outfile, "w") as f:
         f.writelines(lines)
