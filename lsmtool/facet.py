@@ -4,6 +4,7 @@ Module that holds functions and classes related to faceting.
 
 import ast
 import logging
+import re
 import tempfile
 
 import astropy.units as u
@@ -739,15 +740,20 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         # Note: if a name is defined for both the facet polygon and the facet
         # reference point, the one for the point takes precedence
         if line.count("text") == 1:
-            facet_name = (
-                line.split("text")[1].lstrip("= ").split(" ")[0].strip("{}\"' ")
-            )
-            if not facet_name:
-                raise ValueError(
-                    f'Error parsing region file "{region_file}": '
-                    '"text" property could not be parsed for line: '
-                    f"{line}"
+            pattern = r'^[^#]*#\s*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$'
+            try:
+                facet_name = re.match(pattern, line).group(1)
+            except AttributeError:  # raised if `re.match()` returns `None`
+                # Try to match to name without any quotes
+                facet_name = (
+                    line.split("text")[1].lstrip("= ").split(" ")[0].strip("/n")
                 )
+                if not facet_name:
+                    raise ValueError(
+                        f'Error parsing region file "{region_file}": '
+                        '"text" property could not be parsed for line: '
+                        f"{line}"
+                    )
 
             # Replace characters that are potentially problematic for Rapthor,
             # DP3, etc. with an underscore
