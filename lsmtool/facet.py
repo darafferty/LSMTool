@@ -606,7 +606,9 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
     return skymodel
 
 
-def make_ds9_region_file(facets, outfile, enclose_names=True, associate_names_with_polygons=True):
+def make_ds9_region_file(
+    facets, outfile, enclose_names=True, associate_names_with_polygons=True
+):
     """
     Make a ds9 region file for given polygons and centers
 
@@ -737,7 +739,9 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         # Note: if a name is defined for both the facet polygon and the facet
         # reference point, the one for the point takes precedence
         if line.count("text") == 1:
-            facet_name = line.split("text")[1].lstrip("= ").split(" ")[0].strip("{}\"' ")
+            facet_name = (
+                line.split("text")[1].lstrip("= ").split(" ")[0].strip("{}\"' ")
+            )
             if not facet_name:
                 raise ValueError(
                     f'Error parsing region file "{region_file}": '
