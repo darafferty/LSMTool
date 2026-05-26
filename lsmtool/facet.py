@@ -4,7 +4,6 @@ Module that holds functions and classes related to faceting.
 
 import ast
 import logging
-import re
 import tempfile
 
 import astropy.units as u
@@ -732,15 +731,14 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         # Note: ds9 format allows strings to be quoted with " or ' or {}
         # (see https://ds9.si.edu/doc/ref/region.html#RegionProperties),
         # so we match everything between "", '', or {}, if the line contains
-        # anything like `... # text = ...`
+        # anything like `... text = ...`. We also allow the name to have
+        # no quotes (e.g., text = Patch_1)
         #
         # Note: if a name is defined for both the facet polygon and the facet
         # reference point, the one for the point takes precedence
-        if "text" in line:
-            pattern = r'^[^#]*#\s*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$'
-            try:
-                facet_name = re.match(pattern, line).group(1)
-            except AttributeError:  # raised if `re.match()` returns `None`
+        if line.count("text") == 1:
+            facet_name = line.split("text")[1].lstrip("= ").split(" ")[0].strip("{}\"' ")
+            if not facet_name:
                 raise ValueError(
                     f'Error parsing region file "{region_file}": '
                     '"text" property could not be parsed for line: '
@@ -751,6 +749,12 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
             # DP3, etc. with an underscore
             for invalid_char in [" ", "{", "}", '"', "'"]:
                 facet_name = facet_name.replace(invalid_char, "_")
+        elif line.count("text") > 1:
+            raise ValueError(
+                f'Error parsing region file "{region_file}": '
+                '"text" appears more than once in line: '
+                f"{line}"
+            )
         else:
             facet_name = f"facet_{indx}"
 
