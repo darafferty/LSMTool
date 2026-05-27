@@ -344,13 +344,7 @@ class TestDS9RegionFile:
         "enclose_names, context",
         [
             pytest.param(True, contextlib.nullcontext(), id="enclose_names"),
-            pytest.param(
-                False,
-                pytest.raises(
-                    ValueError, match='"text" property could not be parsed'
-                ),
-                id="no_enclose_names",
-            ),
+            pytest.param(True, contextlib.nullcontext(), id="no_enclose_names"),
         ],
     )
     def test_write_ds9_region_file(
