@@ -611,7 +611,7 @@ def make_ds9_region_file(
     facets, outfile, enclose_names=True, associate_names_with_polygons=True
 ):
     """
-    Make a ds9 region file for given polygons and centers
+    Make a ds9 region file for given facet polygons and centers
 
     Parameters
     ----------
@@ -702,6 +702,7 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
             # Make a temporary facet to get centroid and make new facet with
             # reference point at centroid (this point may be overridden by
             # a following 'point' line)
+            facet_name = None
             facet_tmp = Facet(
                 "temp",
                 polygon_ras[0],
@@ -765,7 +766,7 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
                 '"text" appears more than once in line: '
                 f"{line}"
             )
-        else:
+        elif facet_name is None:
             facet_name = f"facet_{indx}"
 
         # Lastly, add the facet to the list
