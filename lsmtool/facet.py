@@ -649,7 +649,7 @@ def make_ds9_region_file(
             name_string = f"text={facet.name}"
 
         if associate_names_with_polygons:
-            lines.append(f"polygon({polygon_string} # {name_string})\n")
+            lines.append(f"polygon({polygon_string}) # {name_string}\n")
             lines.append(f"point({facet.ra}, {facet.dec})\n")
         else:
             lines.append(f"polygon({polygon_string})\n")
