@@ -625,8 +625,11 @@ def make_ds9_region_file(
         other tools that use the region file, such as DP3, in which
         case they can be excluded by setting this option to False
     associate_names_with_polygons : optional
-        If True, the facet names are associated with the "polygon" entries.
-        If False, the names are associated with the "point" entries instead
+        If True, the facet names are associated with the "polygon" entries. This
+        convention matches that used by WSClean (see
+        https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html#adding-a-text-label).
+        If False, the names are associated with the "point" entries instead (required by
+        some DP3 steps)
     """
     lines = []
     lines.append(
