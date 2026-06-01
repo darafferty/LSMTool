@@ -739,37 +739,33 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         # (see https://ds9.si.edu/doc/ref/region.html#RegionProperties),
         # so we match everything between "", '', or {}, if the line contains
         # anything like `... text = ...`. We also allow the name to have
-        # no quotes (e.g., text = Patch_1)
+        # no quotes (e.g., `text = Patch_1`), as this is supported by DP3. In
+        # this case, the name should not contain any spaces (if it does, only
+        # the first word is matched)
         #
         # Note: if a name is defined for both the facet polygon and the facet
         # reference point, the one for the point takes precedence
-        if line.count("text") == 1:
-            pattern = r'^[^#]*#\s*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$'
-            try:
-                facet_name = re.match(pattern, line).group(1)
-            except AttributeError:  # raised if `re.match()` returns `None`
-                # Try to match to name without any quotes
-                facet_name = (
-                    line.split("text")[1].lstrip("= ").split(" ")[0].strip("\n")
-                )
-                if not facet_name:
-                    raise ValueError(
-                        f'Error parsing region file "{region_file}": '
-                        '"text" property could not be parsed for line: '
-                        f"{line}"
-                    )
+        if line.count("text") > 0:
+            patterns = [
+                r'#.*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$',  # match to quoted name
+                r"#.*text\s*=\s*(\w*).*$",  # match to unquoted name
+            ]
+            for pattern in patterns:
+                facet_name_match = re.search(pattern, line)
+                if facet_name_match is not None:
+                    facet_name = facet_name_match.group(1)
 
-            # Replace characters that are potentially problematic for Rapthor,
-            # DP3, etc. with an underscore
-            for invalid_char in [" ", "{", "}", '"', "'"]:
-                facet_name = facet_name.replace(invalid_char, "_")
-        elif line.count("text") > 1:
-            raise ValueError(
-                f'Error parsing region file "{region_file}": '
-                '"text" appears more than once in line: '
-                f"{line}"
-            )
-        elif facet_name is None:
+                    # Replace characters that are potentially problematic for Rapthor,
+                    # DP3, etc. with an underscore
+                    for invalid_char in [" ", "{", "}", '"', "'"]:
+                        facet_name = facet_name.replace(invalid_char, "_")
+                    break
+            if facet_name == "":
+                raise ValueError(
+                    f'Error parsing region file "{region_file}": '
+                    f'Parsing of the "text" attribute results in an empty string for line: {line}'
+                )
+        if facet_name is None:
             facet_name = f"facet_{indx}"
 
         # Lastly, add the facet to the list
