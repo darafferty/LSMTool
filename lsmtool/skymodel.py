@@ -25,31 +25,13 @@ from . import tableio
 from . import operations
 from .operations_lib import make_wcs, normalize_ra_dec
 
-# Python 3 compatibility
-try:
-    dict.iteritems
-except AttributeError:
-    # Python 3
-    def itervalues(d):
-        return iter(d.values())
-
-    def iteritems(d):
-        return iter(d.items())
-    numpy_type = "U"
-else:
-    # Python 2
-    def itervalues(d):
-        return d.itervalues()
-
-    def iteritems(d):
-        return d.iteritems()
-    numpy_type = "S"
 
 
 class SkyModel(object):
     """
     Object that stores the sky model and provides methods for accessing it.
     """
+
     def __init__(self, fileName, beamMS=None, checkDup=False, VOPosition=None,
                  VORadius=None):
         """
@@ -104,11 +86,14 @@ class SkyModel(object):
             if VOPosition is not None and VORadius is not None:
                 try:
                     if fileName.lower() in tableio.allowedVOServices:
-                        self.log.debug("Attempting to load model from VO service '{0}'...".format(fileName))
+                        self.log.debug(
+                            "Attempting to load model from VO service '{0}'...".format(fileName))
                         self.table = tableio.coneSearch(fileName, VOPosition, VORadius)
-                        self.log.debug("Successfully loaded model from VO service '{0}'".format(fileName))
+                        self.log.debug(
+                            "Successfully loaded model from VO service '{0}'".format(fileName))
                         self._fileName = fileName.lower() + "_vo"
-                        self._addHistory("LOAD (from {0} at position {1})".format(fileName, VOPosition))
+                        self._addHistory(
+                            "LOAD (from {0} at position {1})".format(fileName, VOPosition))
                     elif fileName.lower() == 'tgss':
                         self.log.debug("Attempting to load model from TGSS...")
                         self.table = tableio.getTGSS(VOPosition, VORadius)
@@ -639,13 +624,13 @@ class SkyModel(object):
                                                        perPatchProjection=perPatchProjection)
             else:
                 # Get positions for those patches that need them
-                patchNames = [patch for patch, pos in iteritems(patchDict) if pos is None]
+                patchNames = [patch for patch, pos in patchDict.items() if pos is None]
                 patchDictNoPos = self.getPatchPositions(method=method, applyBeam=applyBeam,
                                                         patchName=patchNames,
                                                         perPatchProjection=False)
                 patchDict.update(patchDictNoPos)
 
-            for patch, pos in iteritems(patchDict):
+            for patch, pos in patchDict.items():
                 if type(pos[0]) is str or type(pos[0]) is float:
                     pos = RADec2Angle(pos[0], pos[1])
                 self.table.meta[patch] = list(pos)
@@ -678,7 +663,6 @@ class SkyModel(object):
 
         if len(self.table) == 0:
             return [0], [0], 0, 0
-
 
         if byPatch:
             if 'Patch' not in self.table.keys():
@@ -753,7 +737,7 @@ class SkyModel(object):
             >>> s.setDefaultValues({'ReferenceFrequency': 140e6})
 
         """
-        for colName, default in iteritems(colDict):
+        for colName, default in colDict.items():
             self.table.meta[colName] = default
 
     def ungroup(self):
@@ -938,7 +922,7 @@ class SkyModel(object):
             else:
                 data = [0] * len(self.table)
                 mask = [True] * len(self.table)
-            for sourceName, value in iteritems(values):
+            for sourceName, value in values.items():
                 indx = self._getNameIndx(sourceName)
                 if colName == 'Ra' or colName == 'Dec':
                     val = Angle(value, unit=u.deg)
@@ -967,7 +951,7 @@ class SkyModel(object):
         else:
             if colName == 'Patch':
                 # Specify length of 50 characters
-                newCol = Column(name=colName, data=data, dtype='{}50'.format(numpy_type))
+                newCol = Column(name=colName, data=data, dtype='U50')
             else:
                 newCol = Column(name=colName, data=data)
             self.table.add_column(newCol, index=index)

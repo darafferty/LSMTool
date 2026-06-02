@@ -33,40 +33,6 @@ from copy import deepcopy
 from .operations_lib import normalize_ra_dec
 from ast import literal_eval
 
-# Python 3 compatibility
-try:
-    dict.iteritems
-except AttributeError:
-    # Python 3
-    def itervalues(d):
-        return iter(d.values())
-
-    def iteritems(d):
-        return iter(d.items())
-    numpy_type = "U"
-else:
-    # Python 2
-    def itervalues(d):
-        return d.itervalues()
-
-    def iteritems(d):
-        return d.iteritems()
-    numpy_type = "S"
-try:
-    unicode = unicode
-except NameError:
-    # Python 3
-    basestring = (str, bytes)
-else:
-    # Python 2
-    basestring = basestring
-import io
-try:
-    # Python 2
-    file_types = (file, io.IOBase)
-except NameError:
-    # Python 3
-    file_types = (io.IOBase,)
 
 # Define the valid columns here as dictionaries. The entry key is the lower-case
 # name of the column, the entry value is the key used in the astropy table of the
@@ -682,7 +648,7 @@ def skyModelIdentify(origin, *args, **kwargs):
     """
     # Search for a format line. If found, assume file is valid
     try:
-        if isinstance(args[0], basestring):
+        if isinstance(args[0], (str, bytes)):
             f = open(args[0])
         elif isinstance(args[0], file_types):
             f = args[0]
