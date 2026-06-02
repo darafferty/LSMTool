@@ -344,10 +344,10 @@ class TestDS9RegionFile:
         "enclose_names, context",
         [
             pytest.param(True, contextlib.nullcontext(), id="enclose_names"),
-            pytest.param(True, contextlib.nullcontext(), id="no_enclose_names"),
+            pytest.param(False, contextlib.nullcontext(), id="no_enclose_names"),
         ],
     )
-    def test_write_ds9_region_file(
+    def test_write_ds9_region_file_enclose_names(
         self,
         tmp_path,
         ds9_region_file,
@@ -363,7 +363,49 @@ class TestDS9RegionFile:
         facets = read_ds9_region_file(ds9_region_file)
 
         # Act
-        make_ds9_region_file(facets, reg_out, enclose_names=enclose_names)
+        make_ds9_region_file(
+            facets,
+            reg_out,
+            enclose_names=enclose_names,
+        )
+
+        # Assert
+        with context:
+            self.test_read_ds9_region_file(reg_out, expected_facet_attributes)
+
+    @pytest.mark.parametrize(
+        "ds9_region_file, expected_facet_attributes",
+        [("test.reg", "test.reg")],
+        indirect=True,
+    )
+    @pytest.mark.parametrize(
+        "associate_names_with_polygons, context",
+        [
+            pytest.param(True, contextlib.nullcontext(), id="associate_names_with_polygons"),
+            pytest.param(False, contextlib.nullcontext(), id="no_associate_names_with_polygons"),
+        ],
+    )
+    def test_write_ds9_region_file_associate_names(
+        self,
+        tmp_path,
+        ds9_region_file,
+        expected_facet_attributes,
+        associate_names_with_polygons,
+        context,
+    ):
+        """
+        Test writing a DS9 region file.
+        """
+        # Arrange
+        reg_out = tmp_path / "test_region_write.reg"
+        facets = read_ds9_region_file(ds9_region_file)
+
+        # Act
+        make_ds9_region_file(
+            facets,
+            reg_out,
+            associate_names_with_polygons=associate_names_with_polygons,
+        )
 
         # Assert
         with context:
