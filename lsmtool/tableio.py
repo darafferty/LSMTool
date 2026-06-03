@@ -277,14 +277,14 @@ def createTable(outlines, metaDict, colNames, colDefaults):
         logSICol = 'LogarithmicSI'
         orienCol = 'OrientationIsAbsolute'
     converters = {}
-    converters[nameCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
-    converters[typeCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
+    converters[nameCol] = [ascii.convert_numpy('U100')]
+    converters[typeCol] = [ascii.convert_numpy('U100')]
     if 'Patch' in colNames:
-        converters[patchCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
+        converters[patchCol] = [ascii.convert_numpy('U100')]
     if 'LogarithmicSI' in colNames:
-        converters[logSICol] = [ascii.convert_numpy('{}5'.format(numpy_type))]
+        converters[logSICol] = [ascii.convert_numpy('U5')]
     if 'OrientationIsAbsolute' in colNames:
-        converters[orienCol] = [ascii.convert_numpy('{}5'.format(numpy_type))]
+        converters[orienCol] = [ascii.convert_numpy('U5')]
 
     log.debug('Creating table...')
     table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
@@ -1274,7 +1274,7 @@ def convertExternalTable(table, columnMapping, catalogProperties):
 
     # Make sure Name is a str column
     NameRaw = table['Name'].data.tolist()
-    NameCol = Column(name='Name', data=NameRaw, dtype='{}100'.format(numpy_type))
+    NameCol = Column(name='Name', data=NameRaw, dtype='U100')
     table.remove_column('Name')
     table.add_column(NameCol, index=0)
 
@@ -1307,7 +1307,7 @@ def convertExternalTable(table, columnMapping, catalogProperties):
                 table[allowedColumnNames['majoraxis']][i] = 0.0
                 if 'orientation' in columnMapping.values():
                     table[allowedColumnNames['orientation']][i] = 0.0
-    col = Column(name='Type', data=types, dtype='{}100'.format(numpy_type))
+    col = Column(name='Type', data=types, dtype='U100')
     table.add_column(col, index=1)
 
     # Add reference-frequency column if missing
@@ -1589,9 +1589,9 @@ def makeEmptyTable():
     colNames = ['Name', 'Type', 'Ra', 'Dec', 'I']
     converters = {}
     nameCol = 'col{0}'.format(colNames.index('Name')+1)
-    converters[nameCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
+    converters[nameCol] = [ascii.convert_numpy('U100')]
     typeCol = 'col{0}'.format(colNames.index('Type')+1)
-    converters[typeCol] = [ascii.convert_numpy('{}100'.format(numpy_type))]
+    converters[typeCol] = [ascii.convert_numpy('U100')]
     table = Table.read(outlines, guess=False, format='ascii.no_header', delimiter=',',
                        names=colNames, comment='#', data_start=0, converters=converters)
     table.remove_rows(0)
