@@ -751,7 +751,7 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         ]
         if line.count("text") > 0:
             for pattern in patterns:
-                facet_name_match = re.search(pattern, line)
+                facet_name_match = pattern.search(line)
                 if facet_name_match is not None:
                     if facet_name := facet_name_match.group(1):
                         # Replace characters that are potentially problematic for Rapthor,
