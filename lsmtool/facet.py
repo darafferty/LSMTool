@@ -745,26 +745,25 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         #
         # Note: if a name is defined for both the facet polygon and the facet
         # reference point, the one for the point takes precedence
+        patterns = [
+            re.compile(r'#.*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$'),  # match to quoted name
+            re.compile(r"#.*text\s*=\s*(\w*).*$"),  # match to unquoted name
+        ]
         if line.count("text") > 0:
-            patterns = [
-                r'#.*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$',  # match to quoted name
-                r"#.*text\s*=\s*(\w*).*$",  # match to unquoted name
-            ]
             for pattern in patterns:
                 facet_name_match = re.search(pattern, line)
                 if facet_name_match is not None:
-                    facet_name = facet_name_match.group(1)
-
-                    # Replace characters that are potentially problematic for Rapthor,
-                    # DP3, etc. with an underscore
-                    for invalid_char in [" ", "{", "}", '"', "'"]:
-                        facet_name = facet_name.replace(invalid_char, "_")
-                    break
-            if facet_name == "":
-                raise ValueError(
-                    f'Error parsing region file "{region_file}": '
-                    f'Parsing of the "text" attribute results in an empty string for line: {line}'
-                )
+                    if facet_name := facet_name_match.group(1):
+                        # Replace characters that are potentially problematic for Rapthor,
+                        # DP3, etc. with an underscore
+                        for invalid_char in [" ", "{", "}", '"', "'"]:
+                            facet_name = facet_name.replace(invalid_char, "_")
+                        break
+                    else:
+                        raise ValueError(
+                            f'Error parsing region file "{region_file}": '
+                            f'Parsing of the "text" attribute results in an empty string for line: {line}'
+                        )
         if facet_name is None:
             facet_name = f"facet_{indx}"
 
