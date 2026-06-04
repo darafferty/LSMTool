@@ -684,6 +684,12 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
     with open(region_file, "r") as f:
         lines = f.readlines()
 
+    # Compile the regex patterns used later to find the facet names
+    patterns = [
+        re.compile(r'#.*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$'),  # match to quoted name
+        re.compile(r"#.*text\s*=\s*(\w*).*$"),  # match to unquoted name
+    ]
+
     indx = 0
     for line in lines:
         # Each facet in the region file is defined by a polygon line that starts
@@ -745,11 +751,7 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         #
         # Note: if a name is defined for both the facet polygon and the facet
         # reference point, the one for the point takes precedence
-        patterns = [
-            re.compile(r'#.*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$'),  # match to quoted name
-            re.compile(r"#.*text\s*=\s*(\w*).*$"),  # match to unquoted name
-        ]
-        if line.count("text") > 0:
+        if "text" in line:
             for pattern in patterns:
                 facet_name_match = pattern.search(line)
                 if facet_name_match is not None:
