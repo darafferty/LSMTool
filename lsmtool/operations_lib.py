@@ -20,6 +20,8 @@ from collections import namedtuple
 
 from astropy.coordinates import Angle
 
+from .constants import WCS_PIXEL_SCALE
+
 NormalizedRADec = namedtuple("NormalizedRADec", ["ra", "dec"])
 
 
@@ -199,7 +201,7 @@ def make_wcs(refRA, refDec, crdelt=None):
     w = WCS(naxis=2)
     w.wcs.crpix = [1000, 1000]
     if crdelt is None:
-        crdelt = 0.066667  # 4 arcmin
+        crdelt = WCS_PIXEL_SCALE
     w.wcs.cdelt = np.array([-crdelt, crdelt])
     w.wcs.crval = [refRA, refDec]
     w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
