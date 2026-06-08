@@ -74,4 +74,4 @@ wheelhouse/
 .python-version
 
 # Downloaded test data
-tests/resources/LOFAR_HBA_MOCK.ms
+LOFAR_HBA_MOCK.ms

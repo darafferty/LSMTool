@@ -31,6 +31,7 @@ import logging
 import os
 from copy import deepcopy
 from .operations_lib import normalize_ra_dec
+from ast import literal_eval
 
 # Python 3 compatibility
 try:
@@ -112,8 +113,39 @@ allowedVOServices = {
 # Define the various non-VO URLs used for downloading sky models
 TGSS_URL = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv5.cgi'
 GSM_URL = 'https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi'
-LOTSS_URL = 'https://vo.astron.nl/lotss_dr2/q/gaus_cone/form'
+LOTSS_URL = 'https://vo.astron.nl/lotss_dr3/q/gaus_cone/form'
 
+
+_EXPECTED_LSM_COLUMN_NAMES = [
+    "component_id",
+    "source_id",
+    "ra_deg",
+    "dec_deg",
+    "a_arcsec",
+    "b_arcsec",
+    "pa_deg",
+    "spec_idx",
+    "log_spec_idx",
+    "i_pol_jy",
+    "ref_freq_hz",
+    "epoch"
+]
+
+FORMAT_LINE_REGEX = re.compile(
+    r"""(?xsmi)
+    \#?\s*                      # optional comment opens format string
+    (?P<fmt>format\s*=\s*)?     # optional opening "format" specifier
+    (?P<bracket>\()?            # optional opening bracket "("
+        (?P<columns>[^\n\)]+?)  # column definitions (match anything except
+                                # newline non-greedily)
+    (?(bracket)\)|)             # optional closing bracket matched only if
+                                # opening bracket present
+    (?P<fmt_tail>               # optional format specifier following column
+      (?(fmt)|(\s*=\s*)format)  # definitions. Only matched if opening "format"
+    )                           # is missing.
+    \s*$                        # trailing whitespace up to line end
+    """
+)
 
 def raformat(val):
     """
@@ -219,6 +251,12 @@ def skyModelReader(fileName, header_start=0):
             outline, metaDict = processLine(line, metaDict, colNames)
             if outline is not None:
                 outlines.append(outline)
+
+    # Handle empty skymodels
+    if len(outlines) == 0:
+        log.warning("Sky model contains no sources. Check that it is a valid skymodel for this dataset")
+        return makeEmptyTable()
+
     outlines.append('\n')  # needed in case of single-line sky models
 
     # Create table
@@ -1306,10 +1344,11 @@ def convertExternalTable(table, columnMapping, catalogProperties):
     col = Column(name='Type', data=types, dtype='{}100'.format(numpy_type))
     table.add_column(col, index=1)
 
-    # Add reference-frequency column
-    refFreq = catalogProperties['referencefrequency']
-    col = Column(name='ReferenceFrequency', data=np.array([refFreq]*len(table), dtype=float))
-    table.add_column(col)
+    # Add reference-frequency column if missing
+    if not 'referencefrequency' in columnMapping.values():
+        refFreq = catalogProperties['referencefrequency']
+        col = Column(name='ReferenceFrequency', data=np.array([refFreq]*len(table), dtype=float))
+        table.add_column(col)
 
     # Set column units and default values
     for i, colName in enumerate(table.colnames):
@@ -1458,6 +1497,89 @@ def getGSM(position, radius):
 
     return table
 
+def _readLSMFormatLine(lsm_path):
+    with open(lsm_path, "r") as f_stream:
+        for line in f_stream:
+            if match := FORMAT_LINE_REGEX.match(line):
+                return match['columns']
+
+        raise IOError(f"Format line not found in: {lsm_path}")
+
+def _parseLSMFormatLine(lsm_format):
+    return lsm_format.split(",") 
+
+def _columnNamesFromLSM(lsm_path):
+    return _parseLSMFormatLine(_readLSMFormatLine(lsm_path))
+
+def validateLSMFormat(lsm_path):
+    try:
+        columns = _columnNamesFromLSM(lsm_path)
+        return (set(columns) ^ set(_EXPECTED_LSM_COLUMN_NAMES)) == set()
+    except ValueError:
+        return False
+    
+
+def loadAstropyTableFromLSM(lsm_path):
+    colnames = _columnNamesFromLSM(lsm_path)
+
+    table = Table.read(
+        lsm_path,
+        format="ascii.csv",
+        delimiter=",",
+        comment="#",
+        fast_reader=False,
+        header_start=None,
+        data_start=0,
+        names=colnames,
+    )
+    return table
+
+def parseSpectralIndex(spectral_index_string):
+    returned = [literal_eval(x) for x in spectral_index_string.strip("[]").split(",") if x]
+    if returned:
+        return returned
+    else:
+        return []
+
+def loadTableFromLSM(lsm_path):
+
+    columnMapping = {'component_id': 'name',
+                     'source_id': 'patch',
+                     'ra_deg': 'ra', 
+                     'dec_deg': 'dec',
+                     'i_pol_jy': 'i',
+                     'a_arcsec': 'majoraxis',
+                     'b_arcsec': 'minoraxis',
+                     'pa_deg': 'orientation',
+                     'ref_freq_hz': 'referencefrequency',
+                     'spec_idx': 'spectralindex',
+                     'log_spec_idx':'logarithmicsi',
+                     }
+    catalogProperties = {'fluxunits': 'Jy', 'deconvolved':False, 'psf':0, 'fluxtype': 'total'}
+    table = loadAstropyTableFromLSM(lsm_path)
+    table["source_id"] = table["source_id"].astype("str")
+    table["component_id"] = table["component_id"].astype("str")
+    table["spec_idx"] = [parseSpectralIndex(x) for x in table["spec_idx"]]
+    table = convertExternalTable(table, columnMapping, catalogProperties)
+    
+    # Reorder columns to match expected schema
+    expected_order = [
+        "Name",
+        "Type",
+        "Patch",
+        "Ra",
+        "Dec",
+        "I",
+        "SpectralIndex",
+        "LogarithmicSI",
+        "ReferenceFrequency",
+        "MajorAxis",
+        "MinorAxis",
+        "Orientation",
+    ]
+    table = table[expected_order]
+    return table
+
 
 def getLoTSS(position, radius):
     """
@@ -1510,10 +1632,99 @@ def makeEmptyTable():
     return table
 
 
+def lsmWriter(table, fileName):
+    """
+    Writes table to an LSM (LOFAR Sky Model) file.
+
+    Parameters
+    ----------
+    table : astropy.table.Table
+        Input sky model table
+    fileName : str
+        Output ASCII file to which the sky model is written
+
+    """
+    log = logging.getLogger('LSMTool.Write')
+
+    with  open(fileName, 'w') as lsmFile:
+        log.debug('Writing LSM model to {0}'.format(fileName))
+
+
+        lsmColumnNames = [
+            'component_id',
+            'source_id',
+            'ra_deg',
+            'dec_deg',
+            'i_pol_jy',
+            'ref_freq_hz',
+            'epoch',
+            'a_arcsec',
+            'b_arcsec',
+            'pa_deg',
+            'spec_idx',
+            'log_spec_idx'
+        ]
+
+        # Write format line
+        format_line = '# ({0}) = format\n'.format(','.join(lsmColumnNames))
+        lsmFile.write(format_line)
+        
+        # Write metadata comments if available
+        if 'History' in table.meta:
+            lsmFile.write('# LSMTool history:\n# ')
+            lsmFile.write('\n# '.join(table.meta['History']))
+            lsmFile.write('\n')
+
+        # Write data rows
+        for row in table:
+            # spec_idx
+            if isinstance((spec_idx := row['SpectralIndex']), np.ndarray):
+                spec_str = spec_idx.tolist()
+            else:
+                spec_str = spec_idx
+            spec_str = ",".join(
+                [str(spec_str[idx]) if idx < len(spec_str) else "" for idx in range(5)]
+            )
+
+
+            # (component_id,source_id,ra_deg,dec_deg,i_pol_jy,ref_freq_hz,epoch,a_arcsec,b_arcsec,pa_deg,spec_idx,log_spec_idx) = format
+
+            lsmFile.write(
+                # component_id (Name)
+                f'{row["Name"] if row["Name"] != "--" else ""},'
+
+                # source_id (Patch)
+                f'{row["Patch"] if row["Patch"] != "--" else ""},'
+
+                # ra_deg, dec_deg
+                f"{float(row['Ra'])},"
+                f"{float(row['Dec'])},"
+
+                # i_pol_jy, ref_freq_hz
+                f"{float(row['I'])},"
+                f"{float(row['ReferenceFrequency'])},"
+
+                # epoch (default to 0)
+                '0,'
+                # a_arcsec, b_arcsec, pa_deg
+                f"{float(row['MajorAxis'])},"
+                f"{float(row['MinorAxis'])},"
+                f"{float(row['Orientation'])},"
+                
+                # spec_idx (as quoted string)
+                f'"[{spec_str}]",'
+
+                # log_spec_idx
+                f"{row['LogarithmicSI']}\n"
+            )
+
+
+
 # Register the file reader, identifier, and writer functions with astropy.io
 registry.register_reader('makesourcedb', Table, skyModelReader)
 registry.register_identifier('makesourcedb', Table, skyModelIdentify)
 registry.register_writer('makesourcedb', Table, skyModelWriter)
+registry.register_writer('lsm', Table, lsmWriter)
 registry.register_writer('ds9', Table, ds9RegionWriter)
 registry.register_writer('kvis', Table, kvisAnnWriter)
 registry.register_writer('casa', Table, casaRegionWriter)

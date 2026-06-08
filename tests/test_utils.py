@@ -7,7 +7,6 @@ import pytest
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.table import Table
-from conftest import TEST_DATA_PATH
 
 from lsmtool.io import WCS_ORIGIN
 from lsmtool.skymodel import SkyModel
@@ -318,10 +317,10 @@ def test_table_to_array(table_data, dtype, expected_shape, expected_dtype):
 # ---------------------------------------------------------------------------- #
 
 
-def test_transfer_patches():
+def test_transfer_patches(test_data_path):
     # Arrange
-    from_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_from.sky"))
-    to_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_to.sky"))
+    from_skymodel = SkyModel(str(test_data_path / "transfer_patches_from.sky"))
+    to_skymodel = SkyModel(str(test_data_path / "transfer_patches_to.sky"))
 
     # Act
     transfer_patches(from_skymodel, to_skymodel)
@@ -331,10 +330,10 @@ def test_transfer_patches():
     assert all(to_skymodel.table["Patch"] == expected_patches)
 
 
-def test_transfer_patches_no_patches():
+def test_transfer_patches_no_patches(test_data_path):
     # Arrange
-    from_skymodel = SkyModel(str(TEST_DATA_PATH / "no_patches.sky"))
-    to_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_to.sky"))
+    from_skymodel = SkyModel(str(test_data_path / "no_patches.sky"))
+    to_skymodel = SkyModel(str(test_data_path / "transfer_patches_to.sky"))
 
     # Act & Assert
     with pytest.raises(
@@ -345,11 +344,11 @@ def test_transfer_patches_no_patches():
         transfer_patches(from_skymodel, to_skymodel)
 
 
-def test_transfer_patches_non_matching_skymodels():
+def test_transfer_patches_non_matching_skymodels(test_data_path):
     # Arrange
-    from_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_from.sky"))
+    from_skymodel = SkyModel(str(test_data_path / "transfer_patches_from.sky"))
     to_skymodel = SkyModel(
-        str(TEST_DATA_PATH / "transfer_patches_no_overlap.sky")
+        str(test_data_path / "transfer_patches_no_overlap.sky")
     )
 
     # Act & Assert
@@ -361,10 +360,10 @@ def test_transfer_patches_non_matching_skymodels():
         transfer_patches(from_skymodel, to_skymodel)
 
 
-def test_transfer_patches_with_patch_dict():
+def test_transfer_patches_with_patch_dict(test_data_path):
     # Arrange
-    from_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_from.sky"))
-    to_skymodel = SkyModel(str(TEST_DATA_PATH / "transfer_patches_to.sky"))
+    from_skymodel = SkyModel(str(test_data_path / "transfer_patches_from.sky"))
+    to_skymodel = SkyModel(str(test_data_path / "transfer_patches_to.sky"))
 
     patch_dict = {
         "Patch1": ["17:23:39.8208", "+52.36.48.8520"],

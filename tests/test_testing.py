@@ -3,20 +3,22 @@ Tests for skymodel assertion helpers.
 """
 
 import pytest
-from conftest import TEST_DATA_PATH
 
 from lsmtool import load
 from lsmtool.testing import check_skymodels_equal
 
+# ---------------------------------------------------------------------------- #
+# Fixtures
 
-@pytest.fixture(scope="session")
-def input_skymodel():
-    return TEST_DATA_PATH / "expected.true_sky.txt"
+
+@pytest.fixture(scope="module")
+def input_skymodel(test_data_path):
+    return test_data_path / "expected.true_sky.txt"
 
 
 @pytest.fixture
 def modified_skymodel(request, tmp_path):
-    # Use the input skymodel fixture value
+    # Use the input_skymodel fixture value
     input_skymodel = request.getfixturevalue("input_skymodel")
     return _modify_patches(input_skymodel, *request.param, tmp_path)
 
@@ -53,6 +55,10 @@ def _update_patch_names(skymodel):
 
     patches = skymodel.table.groups.keys["Patch"]
     patches[patches == last_patch_name] = new_name
+
+
+# ---------------------------------------------------------------------------- #
+# Tests
 
 
 @pytest.mark.parametrize(
@@ -166,13 +172,17 @@ def test_check_skymodels_equal_patches(
     ],
 )
 def test_check_skymodels_equal(
-    left_filename, right_filename, check_patch_names_sizes, expected_equal
+    test_data_path,
+    left_filename,
+    right_filename,
+    check_patch_names_sizes,
+    expected_equal,
 ):
     # Assert
     assert (
         check_skymodels_equal(
-            TEST_DATA_PATH / left_filename,
-            TEST_DATA_PATH / right_filename,
+            test_data_path / left_filename,
+            test_data_path / right_filename,
             check_patch_names_sizes,
         )
         is expected_equal

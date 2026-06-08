@@ -612,9 +612,11 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
     return skymodel
 
 
-def make_ds9_region_file(facets, outfile, enclose_names=True):
+def make_ds9_region_file(
+    facets, outfile, enclose_names=True, associate_names_with_polygons=True
+):
     """
-    Make a ds9 region file for given polygons and centers
+    Make a ds9 region file for given facet polygons and centers
 
     Parameters
     ----------
@@ -627,6 +629,12 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
         compatibility with ds9. Curly brackets may cause issues with
         other tools that use the region file, such as DP3, in which
         case they can be excluded by setting this option to False
+    associate_names_with_polygons : optional
+        If True, the facet names are associated with the "polygon" entries. This
+        convention matches that used by WSClean (see
+        https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html#adding-a-text-label).
+        If False, the names are associated with the "point" entries instead (required by
+        some DP3 steps)
     """
     lines = []
     lines.append(
@@ -641,19 +649,19 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
         Decs = facet.polygon_decs
         for ra, dec in zip(RAs, Decs):
             radec_list.append("{0}, {1}".format(ra, dec))
-        lines.append("polygon({0})\n".format(", ".join(radec_list)))
+        polygon_string = ", ".join(radec_list)
+
         if enclose_names:
-            lines.append(
-                "point({0}, {1}) # text={{{2}}}\n".format(
-                    facet.ra, facet.dec, facet.name
-                )
-            )
+            name_string = f"text={{{facet.name}}}"
         else:
-            lines.append(
-                "point({0}, {1}) # text={2}\n".format(
-                    facet.ra, facet.dec, facet.name
-                )
-            )
+            name_string = f"text={facet.name}"
+
+        if associate_names_with_polygons:
+            lines.append(f"polygon({polygon_string}) # {name_string}\n")
+            lines.append(f"point({facet.ra}, {facet.dec})\n")
+        else:
+            lines.append(f"polygon({polygon_string})\n")
+            lines.append(f"point({facet.ra}, {facet.dec}) # {name_string}\n")
 
     with open(outfile, "w") as f:
         f.writelines(lines)
@@ -685,6 +693,12 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE, wcs_obj=N
     with open(region_file, "r") as f:
         lines = f.readlines()
 
+    # Compile the regex patterns used later to find the facet names
+    patterns = [
+        re.compile(r'#.*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$'),  # match to quoted name
+        re.compile(r"#.*text\s*=\s*(\w*).*$"),  # match to unquoted name
+    ]
+
     indx = 0
     for line in lines:
         # Each facet in the region file is defined by a polygon line that starts
@@ -706,6 +720,7 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE, wcs_obj=N
             # Make a temporary facet to get centroid and make new facet with
             # reference point at centroid (this point may be overridden by
             # a following 'point' line)
+            facet_name = None
             facet_tmp = Facet(
                 "temp",
                 polygon_ras[0],
@@ -739,26 +754,29 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE, wcs_obj=N
         # Note: ds9 format allows strings to be quoted with " or ' or {}
         # (see https://ds9.si.edu/doc/ref/region.html#RegionProperties),
         # so we match everything between "", '', or {}, if the line contains
-        # anything like `... # text = ...`
+        # anything like `... text = ...`. We also allow the name to have
+        # no quotes (e.g., `text = Patch_1`), as this is supported by DP3. In
+        # this case, the name should not contain any spaces (if it does, only
+        # the first word is matched)
         #
         # Note: if a name is defined for both the facet polygon and the facet
         # reference point, the one for the point takes precedence
         if "text" in line:
-            pattern = r'^[^#]*#\s*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$'
-            try:
-                facet_name = re.match(pattern, line).group(1)
-            except AttributeError:  # raised if `re.match()` returns `None`
-                raise ValueError(
-                    f'Error parsing region file "{region_file}": '
-                    '"text" property could not be parsed for line: '
-                    f"{line}"
-                )
-
-            # Replace characters that are potentially problematic for Rapthor,
-            # DP3, etc. with an underscore
-            for invalid_char in [" ", "{", "}", '"', "'"]:
-                facet_name = facet_name.replace(invalid_char, "_")
-        else:
+            for pattern in patterns:
+                facet_name_match = pattern.search(line)
+                if facet_name_match is not None:
+                    if facet_name := facet_name_match.group(1):
+                        # Replace characters that are potentially problematic for Rapthor,
+                        # DP3, etc. with an underscore
+                        for invalid_char in [" ", "{", "}", '"', "'"]:
+                            facet_name = facet_name.replace(invalid_char, "_")
+                        break
+                    else:
+                        raise ValueError(
+                            f'Error parsing region file "{region_file}": '
+                            f'Parsing of the "text" attribute results in an empty string for line: {line}'
+                        )
+        if facet_name is None:
             facet_name = f"facet_{indx}"
 
         # Lastly, add the facet to the list

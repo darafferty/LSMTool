@@ -70,7 +70,7 @@ run_unit_tests_coverage:
   extends: .run_unit_test_version_base
   script:
    - tox -e coverage
-  coverage: '/TOTAL.+?(\d+%(\.\d*)?)$/'
+  coverage: '/TOTAL.+?(\d+(?:\.\d+)?%)$/'
   artifacts:
     reports:
       coverage_report:

@@ -6,7 +6,6 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from astropy.wcs import WCS
-from conftest import TEST_DATA_PATH
 
 from lsmtool.io import (
     _restore_tmpdir,
@@ -83,23 +82,23 @@ EXPECTED_VERTICES_RA_DEC = (
     "filename",
     [
         pytest.param(
-            (TEST_DATA_PATH / "expected_sector_1_vertices.npy"),
+            ("expected_sector_1_vertices.npy"),
             id="path_input",
         ),
         pytest.param(
-            str(TEST_DATA_PATH / "expected_sector_1_vertices.npy"),
+            str("expected_sector_1_vertices.npy"),
             id="string_input",
         ),
     ],
 )
-def test_read_vertices_ra_dec(filename):
+def test_read_vertices_ra_dec(test_data_path, filename):
     """Test reading vertices from npy file."""
-    verts = read_vertices_ra_dec(filename)
+    verts = read_vertices_ra_dec(test_data_path / filename)
     np.testing.assert_allclose(verts, EXPECTED_VERTICES_RA_DEC)
 
 
-def test_read_vertices_x_y(test_image_wcs):
-    filename = TEST_DATA_PATH / "expected_sector_1_vertices.npy"
+def test_read_vertices_x_y(test_data_path, test_image_wcs):
+    filename = test_data_path / "expected_sector_1_vertices.npy"
     vertices_pixel = read_vertices_x_y(filename, test_image_wcs)
     np.testing.assert_allclose(vertices_pixel, EXPECTED_VERTICES_XY)
 

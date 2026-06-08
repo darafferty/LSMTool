@@ -23,7 +23,7 @@ import numpy as np
 
 from lsmtool.io import check_file_exists, load
 from lsmtool.utils import format_coordinates
-
+from lsmtool.tableio import FORMAT_LINE_REGEX
 # ---------------------------------------------------------------------------- #
 # Init logger
 logger = logging.getLogger(__name__)
@@ -69,21 +69,6 @@ MAKESOURCEDB_COLUMN_DESCRIPTIONS = {
 OUTPUT_ORDER = [0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8]
 OSKAR_DEFAULT_COLUMN_NAMES = list(
     np.take(list(MAKESOURCEDB_OUTPUT_FORMAT.keys()), np.add(OUTPUT_ORDER, 2))
-)
-FORMAT_LINE_REGEX = re.compile(
-    r"""(?xsmi)
-    \#?\s*                      # optional comment opens format string
-    (?P<fmt>format\s*=\s*)?     # optional opening "format" specifier
-    (?P<bracket>\()?            # optional opening bracket "("
-        (?P<columns>[^\n\)]+?)  # column definitions (match anything except
-                                # newline non-greedily)
-    (?(bracket)\)|)             # optional closing bracket matched only if
-                                # opening bracket present
-    (?P<fmt_tail>               # optional format specifier following column
-      (?(fmt)|(\s*=\s*)format)  # definitions. Only matched if opening "format"
-    )                           # is missing.
-    \s*$                        # trailing whitespace up to line end
-    """
 )
 COLUMN_NAME_REGEX = re.compile(r"\b[a-zA-Z]+\b")
 
