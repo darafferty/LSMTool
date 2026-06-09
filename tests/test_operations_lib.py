@@ -48,7 +48,7 @@ def test_make_wcs_default():
     """Test `make_wcs` with default parameters."""
     ref_ra = 10
     ref_dec = -42
-    crdelt = 0.066667
+    crdelt = 20 / 3600
     w = make_wcs(ref_ra, ref_dec)
     assert w is not None
     assert w.naxis == 2
