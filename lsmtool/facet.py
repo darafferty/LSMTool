@@ -286,7 +286,7 @@ def tessellate(
     bbox_midpoint,
     bbox_size,
     *,
-    wcs=wcs,
+    wcs=None,
 ):
     """
     Make a Voronoi tessellation.
@@ -327,7 +327,7 @@ def tessellate(
     coords_sky = np.column_stack([directions.ra.deg, directions.dec.deg])
     ra_mid, dec_mid = bbox_midpoint.ra.deg, bbox_midpoint.dec.deg
 
-    wcs = wcs or make_wcs(self.ra, self.dec)
+    wcs = wcs or make_wcs(ra_mid, dec_mid)
     coords_pixel = wcs.wcs_world2pix(coords_sky, WCS_ORIGIN)
     x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
     width_x = width_ra / abs(wcs.wcs.cdelt[0]) / 2.0
