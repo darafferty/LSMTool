@@ -834,7 +834,7 @@ def read_skymodel(
     )
 
     # Do the tessellation
-    wcs = wcs or make_wcs(self.ra, self.dec)
+    wcs = wcs or make_wcs(ra_mid, dec_mid)
     facet_points, facet_polys = tessellate(
         SkyCoord(ra_cal, dec_cal, unit="deg"),
         SkyCoord(ra_mid, dec_mid, unit="deg"),
