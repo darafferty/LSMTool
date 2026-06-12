@@ -83,7 +83,7 @@ def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
         - 'facet' => group by facets using as an input a fits file. It requires
             the use of the additional parameter 'facet' to enter the name of the
             fits file.
-        - 'voronoi' => given a previously grouped sky model, Voronoi tesselate
+        - 'voronoi' => given a previously grouped sky model, Voronoi tessellate
             using the patch positions for patches above the target flux
             (specified by the targetFlux parameter) or whose names match the
             input names (specified by the patchNames parameter)
@@ -158,6 +158,7 @@ def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
         from . import _meanshiftc as _meanshift
     except ImportError:
         from . import _meanshift
+    from .. import constants
     import numpy as np
     import os
     from itertools import groupby
@@ -316,7 +317,10 @@ def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
             addEvery(LSM)
             x, y, midRA, midDec = LSM._getXY()
             f = LSM.getColValues('I', applyBeam=applyBeam)
-        crdelt = 0.066667  # WCS delta in deg/pixel, as used by LSM._getXY()
+
+        # For the following, we use the default WCS delta in deg/pixel, as used in the
+        # LSM._getXY() calls above
+        crdelt = constants.WCS_PIXEL_SCALE
         grouper = _meanshift.Grouper(list(zip(x, y)), f, kernelSize/crdelt, nIterations,
                                      lookDistance/crdelt, groupingDistance/crdelt)
         grouper.run()
