@@ -224,7 +224,7 @@ above in the section `Example parset`_:
 
     >>> LSM.select('I > 1.0 mJy')
     >>> LSM.add({'Name':'new_source', 'Type':'POINT', 'Ra':277.4232, 'Dec':48.3689, 'I':0.69})
-    >>> LSM.group(algorithm='tesselate', targetFlux='10.0 Jy')
+    >>> LSM.group(algorithm='tessellate', targetFlux='10.0 Jy')
     >>> LSM.select("Patch = 'Patch_1'")
     >>> LSM.setPatchPositions(method='mid')
 
