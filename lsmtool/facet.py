@@ -19,7 +19,7 @@ from shapely.geometry import Polygon
 from lsmtool.io import check_file_exists
 
 from . import tableio
-from .constants import WCS_ORIGIN, WCS_PIXEL_SCALE
+from .constants import WCS_ORIGIN
 from .download_skymodel import download_skymodel
 from .io import load
 from .operations_lib import make_wcs, normalize_ra_dec
@@ -64,14 +64,13 @@ class Facet(object):
         format supported by astropy.coordinates.Angle
     vertices : list of tuples
         List of (RA, Dec) tuples, one for each vertex of the facet
-    wcs_pixel_scale : float, optional
-        The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel. The default value is
-        `lsmtool.constants.WCS_PIXEL_SCALE`
+    wcs : astropy.wcs.WCS, optional
+        WCS object that defines the world coordinate system to use. If None, a
+        generic WCS is used
     """
 
     def __init__(
-        self, name, ra, dec, vertices, *, wcs_pixel_scale=WCS_PIXEL_SCALE
+        self, name, ra, dec, vertices, *, wcs=None
     ):
         self.name = name
         self.log = logging.getLogger("lsmtool:{0}".format(self.name))
@@ -86,14 +85,18 @@ class Facet(object):
         self.vertices = np.array(vertices)
 
         # Convert input (RA, Dec) vertices to (x, y) polygon
-        self.wcs = make_wcs(self.ra, self.dec, wcs_pixel_scale)
+        self.wcs = make_wcs(self.ra, self.dec)
         xy_values = self.wcs.world_to_pixel_values(self.vertices)
         self.polygon = Polygon(xy_values)
 
         # Find the size and center coordinates of the facet
         xmin, ymin, xmax, ymax = self.polygon.bounds
         self.size = min(
-            0.5, max(xmax - xmin, ymax - ymin) * abs(self.wcs.wcs.cdelt[0])
+            0.5,
+            max(
+                (xmax - xmin) * abs(self.wcs.wcs.cdelt[0]),
+                (ymax - ymin) * abs(self.wcs.wcs.cdelt[1]),
+            ),
         )  # degrees
         self.x_center = xmin + (xmax - xmin) / 2
         self.y_center = ymin + (ymax - ymin) / 2
@@ -263,21 +266,20 @@ class SquareFacet(Facet):
         format supported by astropy.coordinates.Angle
     width : float
         Width in degrees of facet
-    wcs_pixel_scale : float, optional
-        The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel. Default value is taken from default
-        `lsmtool.constants.WCS_PIXEL_SCALE`
+    wcs : astropy.wcs.WCS, optional
+        WCS object that defines the world coordinate system to use. If None, a
+        generic WCS is used
     """
 
     def __init__(
-        self, name, ra, dec, width, *, wcs_pixel_scale=WCS_PIXEL_SCALE
+        self, name, ra, dec, width, *, wcs=None
     ):
         if type(ra) is str:
             ra = Angle(ra).to("deg").value
         if type(dec) is str:
             dec = Angle(dec).to("deg").value
         ra, dec = normalize_ra_dec(ra, dec)
-        wcs = make_wcs(ra, dec, wcs_pixel_scale)
+        wcs = wcs or make_wcs(ra, dec)
 
         # Make the vertices.
         xmin = wcs.wcs.crpix[0] - width / 2 / abs(wcs.wcs.cdelt[0])
@@ -292,7 +294,7 @@ class SquareFacet(Facet):
         vertices = list(zip(corners_ra, corners_dec, strict=True))
 
         super().__init__(
-            name, ra, dec, vertices, wcs_pixel_scale=wcs_pixel_scale
+            name, ra, dec, vertices, wcs=wcs
         )
 
 
@@ -301,7 +303,7 @@ def tessellate(
     bbox_midpoint,
     bbox_size,
     *,
-    wcs_pixel_scale=WCS_PIXEL_SCALE,
+    wcs=None,
 ):
     """
     Make a Voronoi tessellation.
@@ -320,10 +322,9 @@ def tessellate(
     bbox_size : tuple of float
         Size of bounding box (RA, Dec). Should be a 2-tuple of numbers in
         degrees.
-    wcs_pixel_scale : float, optional
-        The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel. Default value is taken from default
-        `lsmtool.constants.WCS_PIXEL_SCALE`
+    wcs : astropy.wcs.WCS, optional
+        WCS object that defines the world coordinate system to use. If None, a
+        generic WCS is used
 
     Returns
     -------
@@ -343,11 +344,11 @@ def tessellate(
     coords_sky = np.column_stack([directions.ra.deg, directions.dec.deg])
     ra_mid, dec_mid = bbox_midpoint.ra.deg, bbox_midpoint.dec.deg
 
-    wcs = make_wcs(ra_mid, dec_mid, wcs_pixel_scale)
+    wcs = wcs or make_wcs(ra_mid, dec_mid)
     coords_pixel = wcs.wcs_world2pix(coords_sky, WCS_ORIGIN)
     x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
-    width_x = width_ra / wcs_pixel_scale / 2.0
-    width_y = width_dec / wcs_pixel_scale / 2.0
+    width_x = width_ra / abs(wcs.wcs.cdelt[0]) / 2.0
+    width_y = width_dec / abs(wcs.wcs.cdelt[1]) / 2.0
     bounding_box = [
         x_mid - width_x,
         x_mid + width_x,
@@ -605,9 +606,11 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
     return skymodel
 
 
-def make_ds9_region_file(facets, outfile, enclose_names=True):
+def make_ds9_region_file(
+    facets, outfile, enclose_names=True, associate_names_with_polygons=True
+):
     """
-    Make a ds9 region file for given polygons and centers
+    Make a ds9 region file for given facet polygons and centers
 
     Parameters
     ----------
@@ -619,7 +622,13 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
         If True, enclose patch names in curly brackets for full
         compatibility with ds9. Curly brackets may cause issues with
         other tools that use the region file, such as DP3, in which
-        case they can be excluded by setting this option to False.
+        case they can be excluded by setting this option to False
+    associate_names_with_polygons : optional
+        If True, the facet names are associated with the "polygon" entries. This
+        convention matches that used by WSClean (see
+        https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html#adding-a-text-label).
+        If False, the names are associated with the "point" entries instead (required by
+        some DP3 steps)
     """
     with open(outfile, "w") as stream:
         stream.write(
@@ -629,9 +638,25 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
             "fk5\n"
         )
 
-        for facet in facets:
-            radec_list = ", ".join(map(str, facet.vertices.ravel()))
-            stream.write(f"polygon({radec_list})\n")
+    for facet in facets:
+        radec_list = []
+        RAs = facet.polygon_ras
+        Decs = facet.polygon_decs
+        for ra, dec in zip(RAs, Decs):
+            radec_list.append("{0}, {1}".format(ra, dec))
+        polygon_string = ", ".join(radec_list)
+
+        if enclose_names:
+            name_string = f"text={{{facet.name}}}"
+        else:
+            name_string = f"text={facet.name}"
+
+        if associate_names_with_polygons:
+            lines.append(f"polygon({polygon_string}) # {name_string}\n")
+            lines.append(f"point({facet.ra}, {facet.dec})\n")
+        else:
+            lines.append(f"polygon({polygon_string})\n")
+            lines.append(f"point({facet.ra}, {facet.dec}) # {name_string}\n")
 
             facet_name = f"{{{facet.name}}}" if enclose_names else facet.name
             stream.write(
@@ -639,18 +664,17 @@ def make_ds9_region_file(facets, outfile, enclose_names=True):
             )
 
 
-def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
+def read_ds9_region_file(region_file, wcs=None):
     """
     Read a ds9 facet region file and return facets.
 
     Parameters
     ----------
     region_file : str
-        Filename of input ds9 region file.
-    wcs_pixel_scale : float, optional
-        The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel. Default value is taken from default
-        `lsmtool.constants.WCS_PIXEL_SCALE`.
+        Filename of input ds9 region file
+    wcs : astropy.wcs.WCS, optional
+        WCS object that defines the world coordinate system to use. If None, a
+        generic WCS is used
 
     Returns
     -------
@@ -676,7 +700,7 @@ def read_ds9_region_file(region_file, wcs_pixel_scale=WCS_PIXEL_SCALE):
         # Lastly, add the facet to the list
         facets.append(
             Facet(
-                facet_name, ra, dec, vertices, wcs_pixel_scale=wcs_pixel_scale
+                facet_name, ra, dec, vertices, wcs=wcs
             )
         )
 
@@ -760,7 +784,7 @@ def read_from_skymodel(
     width_ra,
     width_dec,
     *,
-    wcs_pixel_scale=WCS_PIXEL_SCALE,
+    wcs=None,
 ):
     """
     Reads a sky model file and returns facets
@@ -777,10 +801,9 @@ def read_from_skymodel(
         Width of bounding box in RA in degrees, corrected to Dec = 0
     width_dec : float
         Width of bounding box in Dec in degrees
-    wcs_pixel_scale : float, optional
-        The pixel scale to use for the conversion to pixel coordinates in
-        degrees per pixel. Default value is taken from default
-        `lsmtool.constants.WCS_PIXEL_SCALE`
+    wcs : astropy.wcs.WCS, optional
+        WCS object that defines the world coordinate system to use. If None, a
+        generic WCS is used
 
     Returns
     -------
@@ -803,11 +826,12 @@ def read_from_skymodel(
     patch_coords = SkyCoord(coordinates, unit="deg")
 
     # Do the tessellation
+    wcs = wcs or make_wcs(ra_mid, dec_mid)
     facet_points, facet_polys = tessellate(
         patch_coords,
         SkyCoord(ra_mid, dec_mid, unit="deg"),
         [width_ra, width_dec],
-        wcs_pixel_scale=wcs_pixel_scale,
+        wcs=wcs,
     )
 
     # For each facet, match the correct patch name (i.e., the name of the patch

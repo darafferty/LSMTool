@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
+from lsmtool.constants import WCS_PIXEL_SCALE
 from lsmtool.operations_lib import apply_beam, make_wcs, normalize_ra_dec
 
 
@@ -48,7 +49,7 @@ def test_make_wcs_default():
     """Test `make_wcs` with default parameters."""
     ref_ra = 10
     ref_dec = -42
-    crdelt = 0.066667
+    crdelt = WCS_PIXEL_SCALE
     w = make_wcs(ref_ra, ref_dec)
     assert w is not None
     assert w.naxis == 2

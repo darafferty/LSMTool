@@ -2067,7 +2067,7 @@ class SkyModel(object):
             - 'facet' => group by facets using as an input a fits file. It requires
               the use of the additional parameter 'facet' to enter the name of the
               fits file.
-            - 'voronoi' => given a previously grouped sky model, Voronoi tesselate
+            - 'voronoi' => given a previously grouped sky model, Voronoi tessellate
               using the patch positions for patches above the target flux
               (specified by the targetFlux parameter) or whose names match the
               input names (specified by the patchNames parameter)
