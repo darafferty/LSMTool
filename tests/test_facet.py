@@ -3,7 +3,6 @@ Tests for the lsmtool.facet module.
 """
 
 import contextlib
-from dataclasses import dataclass
 
 import astropy.units as u
 import matplotlib as mpl
@@ -367,7 +366,9 @@ class TestDS9RegionFile:
         "enclose_names, context",
         [
             pytest.param(True, contextlib.nullcontext(), id="enclose_names"),
-            pytest.param(False, contextlib.nullcontext(), id="no_enclose_names"),
+            pytest.param(
+                False, contextlib.nullcontext(), id="no_enclose_names"
+            ),
         ],
     )
     def test_write_ds9_region_file_enclose_names(
@@ -404,8 +405,16 @@ class TestDS9RegionFile:
     @pytest.mark.parametrize(
         "associate_names_with_polygons, context",
         [
-            pytest.param(True, contextlib.nullcontext(), id="associate_names_with_polygons"),
-            pytest.param(False, contextlib.nullcontext(), id="no_associate_names_with_polygons"),
+            pytest.param(
+                True,
+                contextlib.nullcontext(),
+                id="associate_names_with_polygons",
+            ),
+            pytest.param(
+                False,
+                contextlib.nullcontext(),
+                id="no_associate_names_with_polygons",
+            ),
         ],
     )
     def test_write_ds9_region_file_associate_names(

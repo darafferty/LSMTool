@@ -69,9 +69,7 @@ class Facet(object):
         generic WCS is used
     """
 
-    def __init__(
-        self, name, ra, dec, vertices, *, wcs=None
-    ):
+    def __init__(self, name, ra, dec, vertices, *, wcs=None):
         self.name = name
         self.log = logging.getLogger("lsmtool:{0}".format(self.name))
 
@@ -271,9 +269,7 @@ class SquareFacet(Facet):
         generic WCS is used
     """
 
-    def __init__(
-        self, name, ra, dec, width, *, wcs=None
-    ):
+    def __init__(self, name, ra, dec, width, *, wcs=None):
         if type(ra) is str:
             ra = Angle(ra).to("deg").value
         if type(dec) is str:
@@ -293,9 +289,7 @@ class SquareFacet(Facet):
 
         vertices = list(zip(corners_ra, corners_dec, strict=True))
 
-        super().__init__(
-            name, ra, dec, vertices, wcs=wcs
-        )
+        super().__init__(name, ra, dec, vertices, wcs=wcs)
 
 
 def tessellate(
@@ -698,11 +692,7 @@ def read_ds9_region_file(region_file, wcs=None):
             facet_name = f"facet_{index}"
 
         # Lastly, add the facet to the list
-        facets.append(
-            Facet(
-                facet_name, ra, dec, vertices, wcs=wcs
-            )
-        )
+        facets.append(Facet(facet_name, ra, dec, vertices, wcs=wcs))
 
     return facets
 

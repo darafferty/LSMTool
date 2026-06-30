@@ -138,7 +138,7 @@ def get_context(expected, **kws):
 
 
 # ---------------------------------------------------------------------------- #
-# Helper classes for generating random sRAPTHOR_MAX_THREADSkymodel data
+# Helper classes for generating random skymodel data
 
 
 class rv_constant:
