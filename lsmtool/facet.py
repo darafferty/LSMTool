@@ -632,31 +632,15 @@ def make_ds9_region_file(
             "fk5\n"
         )
 
-    for facet in facets:
-        radec_list = []
-        RAs = facet.polygon_ras
-        Decs = facet.polygon_decs
-        for ra, dec in zip(RAs, Decs):
-            radec_list.append("{0}, {1}".format(ra, dec))
-        polygon_string = ", ".join(radec_list)
-
-        if enclose_names:
-            name_string = f"text={{{facet.name}}}"
-        else:
-            name_string = f"text={facet.name}"
-
-        if associate_names_with_polygons:
-            lines.append(f"polygon({polygon_string}) # {name_string}\n")
-            lines.append(f"point({facet.ra}, {facet.dec})\n")
-        else:
-            lines.append(f"polygon({polygon_string})\n")
-            lines.append(f"point({facet.ra}, {facet.dec}) # {name_string}\n")
-
+        for facet in facets:
+            polygon_string = ", ".join(map(str, facet.vertices.ravel()))
+            lines = [
+                f"polygon({polygon_string})\n",
+                f"point({facet.ra}, {facet.dec})\n"
+            ]
             facet_name = f"{{{facet.name}}}" if enclose_names else facet.name
-            stream.write(
-                f"point({facet.ra}, {facet.dec}) # text={facet_name}\n"
-            )
-
+            lines[0 if associate_names_with_polygons else 1] += f"# text={facet_name}\n"
+            stream.writelines(lines)
 
 def read_ds9_region_file(region_file, wcs=None):
     """
