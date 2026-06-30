@@ -382,28 +382,6 @@ class SkyModelGenerator:
         )
 
 
-@dataclass
-class SourceGridGenerator(SkyModelGenerator):
-    """
-    A mock sky model generator that creates sources on a regular grid in RA and
-    Dec. This is used for testing the `filter_skymodel` function.
-    """
-
-    ra: RVType = None
-    dec: RVType = None
-    ra_range: InitVar[tuple] = (0, 360)
-    dec_range: InitVar[tuple] = (-90, 90)
-
-    def get_coords(self, n_sources, state):
-        # Create a regular grid of sources in RA and Dec
-
-        n = int(np.sqrt(n_sources))
-        ra0, ra1 = self.ra_range
-        dec0, dec1 = self.dec_range
-        ra, dec = np.mgrid[
-            ra0 : ra1 : (n * 1j), dec0 : dec1 : (n * 1j)
-        ].reshape(2, -1)
-        return super().get_coords(n_sources, {"ra": ra, "dec": dec})
 
 
 # ---------------------------------------------------------------------------- #

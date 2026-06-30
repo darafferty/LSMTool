@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 import shapely
 from astropy.coordinates import SkyCoord
-from conftest import SourceGridGenerator, get_context
+from conftest import SkyModelGenerator, get_context
 from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
@@ -998,7 +998,7 @@ class TestFilterSkymodel:
         """
         path = tmp_path / "test_filter_skymodel.sky"
         config = getattr(request, "param", {})
-        skymodel_generator = SourceGridGenerator(**config)
+        skymodel_generator = SkyModelGenerator(**config)
         skymodel_generator.to_file(path, n_sources=144)
         return load(path)
 
