@@ -973,7 +973,7 @@ class TestFilterSkymodel:
     """Test the `filter_skymodel` function."""
 
     @pytest.fixture()
-    def skymodel(self, tmp_path, request):
+    def skymodel(self, tmp_path, request, rng):
         """
         Fixture that creates a mock skymodel for testing the `filter_skymodel`
         function.
@@ -981,7 +981,7 @@ class TestFilterSkymodel:
         path = tmp_path / "test_filter_skymodel.sky"
         config = getattr(request, "param", {})
         skymodel_generator = SkyModelGenerator(**config)
-        skymodel_generator.to_file(path, n_sources=144)
+        skymodel_generator.to_file(path, n_sources=144, random_state=rng)
         return load(path)
 
     @pytest.mark.parametrize(

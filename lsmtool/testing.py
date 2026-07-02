@@ -269,6 +269,9 @@ class SkyModelGenerator:
         ----------
         n_sources : int
             The number of sources to generate in the skymodel.
+        random_state : int, RandomState instance or None, optional
+            The random state to use for reproducibility. If None (or
+            np.random), the numpy.random.RandomState singleton is used.
 
         Returns
         -------
@@ -295,6 +298,9 @@ class SkyModelGenerator:
         ----------
         n_sources : int
             The number of sources to generate in the skymodel.
+        random_state : int, RandomState instance or None, optional
+            The random state to use for reproducibility. If None (or
+            np.random), the numpy.random.RandomState singleton is used.
 
         Returns
         -------

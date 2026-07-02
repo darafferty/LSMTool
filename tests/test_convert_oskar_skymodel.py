@@ -45,7 +45,7 @@ OSKAR_NUMPY_DTYPE = np.dtype(
 # Helper functions
 
 
-def generate_oskar_skymodel_data(n_sources):
+def generate_oskar_skymodel_data(n_sources, rng):
     """
     Generate a random sample of sources for testing skymodel conversion.
 
@@ -58,6 +58,8 @@ def generate_oskar_skymodel_data(n_sources):
     ----------
     n_sources : int
         Number of sources to generate.
+    rng : numpy.random.Generator
+        Random number generator.
 
     Returns
     -------
@@ -67,11 +69,11 @@ def generate_oskar_skymodel_data(n_sources):
         measure, FWHM major, FWHM minor, Position angle.
     """
 
-    samples = SkyModelGenerator().sample(n_sources)
+    samples = SkyModelGenerator().sample(n_sources, rng)
     return np.column_stack(list(samples.values())).view(OSKAR_NUMPY_DTYPE)
 
 
-def random_skymodel(n_sources):
+def random_skymodel(n_sources, rng):
     """Generate a random skymodel dataset and header for testing."""
     return (
         [
@@ -81,7 +83,7 @@ def random_skymodel(n_sources):
             "FWHM major (arcsec), FWHM minor (arcsec), Position angle (deg)",
             MAKESOURCEDB_FORMAT_STRING,
         ],
-        generate_oskar_skymodel_data(n_sources),
+        generate_oskar_skymodel_data(n_sources, rng),
     )
 
 
@@ -822,7 +824,7 @@ def test_cli(command, expected_args):
     mock_convert_skymodel.assert_called_once_with(*expected_args)
 
 
-def test_performance(tmp_path, n_sources=10_000, time_limit=1):
+def test_performance(tmp_path, rng, n_sources=10_000, time_limit=1):
     """
     Test that we can process a certain number sources within a time limit in
     seconds.
@@ -834,7 +836,7 @@ def test_performance(tmp_path, n_sources=10_000, time_limit=1):
     with mock.patch(
         "lsmtool.convert_oskar_skymodel.read_oskar_skymodel"
     ) as mock_read_oskar_skymodel:
-        mock_read_oskar_skymodel.return_value = random_skymodel(n_sources)
+        mock_read_oskar_skymodel.return_value = random_skymodel(n_sources, rng)
 
         # Time execution
         t0 = time.time()

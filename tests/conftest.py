@@ -16,7 +16,6 @@ from astropy.io import fits
 from astropy.wcs import WCS
 
 from lsmtool.io import PathLike, PathLikeOptional, check_file_exists, load
-from lsmtool.utils import format_coordinates
 
 # ---------------------------------------------------------------------------- #
 # Module constants
@@ -29,7 +28,6 @@ LOFAR_HBA_URL = "https://support.astron.nl/software/ci_data/EveryBeam/L258627-on
 
 # Random number generator seed for reproducibility
 RNG_SEED = 881726
-RNG = np.random.default_rng(seed=RNG_SEED)
 
 # ---------------------------------------------------------------------------- #
 
@@ -106,6 +104,12 @@ def test_data_path(request):
         if test_data_path.exists()
         else request.config.resource_dir
     )
+
+
+@pytest.fixture(scope="session")
+def rng():
+    """Random number generator as a fixture."""
+    return np.random.default_rng(seed=RNG_SEED)
 
 
 @pytest.fixture
