@@ -261,7 +261,7 @@ class SkyModelGenerator:
     minor_axis: RVType = uniform_range(0, 1)
     orientation: RVType = uniform_range(0, 180)
 
-    def __call__(self, n_sources):
+    def __call__(self, n_sources, random_state=None):
         """
         Generate a random skymodel.
 
@@ -276,7 +276,7 @@ class SkyModelGenerator:
             A dictionary with arrays of `n_sources` sampled values for each
             parameter.
         """
-        samples = self.sample(n_sources)
+        samples = self.sample(n_sources, random_state)
         ra, dec = self.get_coords(n_sources, samples)
         samples.update(ra=ra, dec=dec)
         return {
@@ -285,7 +285,7 @@ class SkyModelGenerator:
             **samples,
         }
 
-    def sample(self, n_sources):
+    def sample(self, n_sources, random_state=None):
         """
         Generate a random sample of sources from the specified distributions,
         returning a dictionary with parameter names as keys and arrays of
@@ -310,17 +310,17 @@ class SkyModelGenerator:
             if sampler := getattr(self, f"get_{name}", None):
                 samples[name] = sampler(n_sources, samples)
             else:
-                samples[name] = dist.rvs(n_sources, random_state=RNG)
+                samples[name] = dist.rvs(n_sources, random_state=random_state)
 
         return samples
 
-    def get_coords(self, n_sources, state):
+    def get_coords(self, n_sources, samples):
         """
         Generate the RA and Dec coordinates for the sources in the skymodel.
         """
-        return format_coordinates(state["ra"], state["dec"], pad=True)
+        return format_coordinates(samples["ra"], samples["dec"], pad=True)
 
-    def get_names(self, n_sources, state):
+    def get_names(self, n_sources, samples):
         """
         Generate unique source names for the specified number of sources.
 
@@ -331,7 +331,7 @@ class SkyModelGenerator:
         ----------
         n_sources : int
             The number of sources to generate in the skymodel.
-        state : dict
+        samples : dict
             A dictionary containing the random samples of other parameters.
 
         Returns
@@ -340,7 +340,7 @@ class SkyModelGenerator:
             An array of unique source names as strings.
         """
         ra, dec = np.array(
-            np.char.rsplit([state["ra"], state["dec"]], ".", 1).tolist()
+            np.char.rsplit([samples["ra"], samples["dec"]], ".", 1).tolist()
         )[..., 0]
         return np.char.add(
             "J",
@@ -350,7 +350,7 @@ class SkyModelGenerator:
             ),
         )
 
-    def get_types(self, n_sources, state):
+    def get_types(self, n_sources, samples):
         """
         Generate source types for the specified number of sources.
 
@@ -361,7 +361,7 @@ class SkyModelGenerator:
         ----------
         n_sources : int
             The number of sources to generate in the skymodel.
-        state : dict
+        samples : dict
             A dictionary containing the random samples of other parameters.
 
         Returns
@@ -371,7 +371,7 @@ class SkyModelGenerator:
         """
         return np.full(n_sources, "GAUSSIAN")
 
-    def get_minor_axis(self, n_sources, state):
+    def get_minor_axis(self, n_sources, samples):
         """
         Generate values for the minor axis of the sources, ensuring that they
         are smaller than the corresponding major axis values.
@@ -380,7 +380,7 @@ class SkyModelGenerator:
         ----------
         n_sources : int
             The number of sources to generate in the skymodel.
-        state : dict
+        samples : dict
             A dictionary containing the random samples of other parameters.
 
         Returns
@@ -388,16 +388,16 @@ class SkyModelGenerator:
         minor_axis : numpy.ndarray
             An array of values for the minor axis of the sources.
         """
-        major_axis = state["major_axis"]
+        major_axis = samples["major_axis"]
         return major_axis * self.minor_axis.rvs(len(major_axis))
 
-    def get_header(self, state):
+    def get_header(self, samples):
         """
         Generate the makesourcedb format string for the header.
 
         Parameters
         ----------
-        state : dict
+        samples : dict
             A dictionary containing the random samples of other parameters.
 
         Returns
@@ -406,10 +406,10 @@ class SkyModelGenerator:
             The makesourcedb format string for the header.
         """
         return "FORMAT = " + ", ".join(
-            np.char.replace(np.char.title(list(state.keys())), "_", "")
+            np.char.replace(np.char.title(list(samples.keys())), "_", "")
         )
 
-    def to_file(self, filename, n_sources):
+    def to_file(self, filename, n_sources, random_state=None):
         """
         Generate a random skymodel and save it to a file.
 
@@ -419,8 +419,11 @@ class SkyModelGenerator:
             The path to the file where the generated skymodel should be saved.
         n_sources : int
             The number of sources to generate in the skymodel.
+        random_state : int, RandomState instance or None, optional
+            The random state to use for reproducibility. If None (or
+            np.random), the numpy.random.RandomState singleton is used.
         """
-        samples = self(n_sources)
+        samples = self(n_sources, random_state)
         np.savetxt(
             filename,
             np.column_stack(list(samples.values())),
