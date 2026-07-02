@@ -31,17 +31,21 @@ INDEX_OUTSIDE_DIAGRAM = -1
 FACET_NAME_REGEX = re.compile(
     r"""(?x)                    # verbose mode
         ^[^#]*                  # any text preceding the comment character
-        \#\s*                   # comment character maybe followed whitespace
+        \#.*                    # comment character maybe followed by other parameters
         text\s*=\s*             # the text= keyword with optional whitespace
-        (                       # opening quote / brace
-            (?P<quote>["'])
+        (
+            (?P<quote>["'])     # opening quote
+            |                   # or
+            (?P<brace>\{)       # opening brace
+        )?                      # quote or brace are optional
+        (?P<text>[^"'\}\n]+)    # the text value
+        (?(quote)               # match closing quote or brace if opening was found
+            (?P=quote)
             |
-            (?P<brace>\{)
-        )
-        (?P<text>[^}"']*)       # capture the text value
-        (?(quote)(?P=quote)|\}) # closing quote / brace for the text value
-        .*
-        $
+            (?(brace)\})
+        )?                      # closing quote or brace are optional
+        .*                      # any trailing text
+        $                       # end of line
     """
 )
 
@@ -631,16 +635,17 @@ def make_ds9_region_file(
             "edit=1  move=1 delete=1 include=1 fixed=0 source=1\n"
             "fk5\n"
         )
-
         for facet in facets:
             polygon_string = ", ".join(map(str, facet.vertices.ravel()))
             lines = [
-                f"polygon({polygon_string})\n",
-                f"point({facet.ra}, {facet.dec})\n"
+                f"polygon({polygon_string})",
+                f"point({facet.ra}, {facet.dec})",
             ]
             facet_name = f"{{{facet.name}}}" if enclose_names else facet.name
-            lines[0 if associate_names_with_polygons else 1] += f"# text={facet_name}\n"
-            stream.writelines(lines)
+            append_name_to_line = 0 if associate_names_with_polygons else 1
+            lines[append_name_to_line] += f" # text={facet_name}"
+            stream.write("\n".join(lines) + "\n")
+
 
 def read_ds9_region_file(region_file, wcs=None):
     """
@@ -659,21 +664,17 @@ def read_ds9_region_file(region_file, wcs=None):
     facets : list
         List of Facet objects.
     """
-
     region_file = check_file_exists(region_file)
-
     facets = []
     for index, (polygon, *_, points) in enumerate(
         parse_ds9_facets(region_file)
     ):
-        vertices = ast.literal_eval(polygon.split("polygon")[1])
         ra, dec = ast.literal_eval(points.split("point")[1])
+        vertices = ast.literal_eval(polygon.split("polygon")[1])
         vertices = np.reshape(vertices, (-1, 2))
 
-        if "text" in points:
-            facet_name = parse_facet_name(region_file, points)
-        else:
-            facet_name = f"facet_{index}"
+        facet_name = parse_facet_name(region_file, (polygon, points))
+        facet_name = facet_name or f"facet_{index}"
 
         # Lastly, add the facet to the list
         facets.append(Facet(facet_name, ra, dec, vertices, wcs=wcs))
@@ -717,9 +718,9 @@ def parse_ds9_facets(region_file):
             yield buffer
 
 
-def parse_facet_name(region_file, line):
+def parse_facet_name(region_file, lines):
     """
-    Parse the facet name from the polgon definition string.
+    Parse the facet name from the polgon / point definition string.
 
     In the region file, the name is defined using the 'text' property. E.g.:
         'polygon(3.6, 60.9, 3.4, 58.9, 3.1, 59.2) # text = {Patch_1} width = 2'
@@ -734,21 +735,21 @@ def parse_facet_name(region_file, line):
     reference point, the one for the point takes precedence.
     """
 
-    if not (match := FACET_NAME_REGEX.match(line)):
-        raise ValueError(
-            f'Error parsing region file "{region_file}": '
-            '"text" property could not be parsed for line: '
-            f"{line}"
-        )
+    for line in lines:
+        if match := FACET_NAME_REGEX.match(line):
+            if not (facet_name := match["text"]):
+                raise ValueError(
+                    f'Error parsing region file "{region_file}": '
+                    '"text" property could not be parsed for lines: '
+                    f"{lines}"
+                )
 
-    facet_name = match["text"]
+            # Replace characters that are potentially problematic for Rapthor,
+            # DP3, etc. with an underscore
+            for invalid_char in [" ", "{", "}", '"', "'"]:
+                facet_name = facet_name.replace(invalid_char, "_")
 
-    # Replace characters that are potentially problematic for Rapthor,
-    # DP3, etc. with an underscore
-    for invalid_char in [" ", "{", "}", '"', "'"]:
-        facet_name = facet_name.replace(invalid_char, "_")
-
-    return facet_name
+            return facet_name
 
 
 def read_from_skymodel(
@@ -820,12 +821,7 @@ def read_from_skymodel(
 
     # Create the facets
     return [
-        Facet(
-            name,
-            *center_coords,
-            vertices,
-            wcs_pixel_scale=wcs_pixel_scale,
-        )
+        Facet(name, *center_coords, vertices, wcs=wcs)
         for name, center_coords, vertices in zip(
             facet_names, facet_points, facet_polys, strict=True
         )
