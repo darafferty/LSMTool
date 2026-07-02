@@ -5,7 +5,6 @@ from unittest import mock
 
 import numpy as np
 import pytest
-from conftest import SkyModelGenerator
 
 from lsmtool.convert_oskar_skymodel import (
     MAKESOURCEDB_FORMAT_STRING,
@@ -19,6 +18,7 @@ from lsmtool.convert_oskar_skymodel import (
     read_oskar_skymodel,
     write_to_makesourcedb,
 )
+from lsmtool.testing import SkyModelGenerator
 
 # ---------------------------------------------------------------------------- #
 # Module constants

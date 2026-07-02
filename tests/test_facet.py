@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 import shapely
 from astropy.coordinates import SkyCoord
-from conftest import SkyModelGenerator, get_context
 from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
@@ -26,6 +25,7 @@ from lsmtool.facet import (
     voronoi,
 )
 from lsmtool.io import load
+from lsmtool.testing import SkyModelGenerator, get_context, uniform_range
 
 # ---------------------------------------------------------------------------- #
 # Tests
