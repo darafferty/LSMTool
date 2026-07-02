@@ -42,7 +42,7 @@ dependencies = [
     "lofar-parameterset >= 1.1",
     "matplotlib",
     "mocpy",
-    "numpy",
+    "numpy < 2.3",
     "python-casacore",
     "pyvo",
     "scipy >= 0.11",
