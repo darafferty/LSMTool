@@ -347,13 +347,16 @@ class SquareFacet(Facet):
         ymin = wcs.wcs.crpix[1] - width / 2 / abs(wcs.wcs.cdelt[1])
         ymax = wcs.wcs.crpix[1] + width / 2 / abs(wcs.wcs.cdelt[1])
         # Corner order: lower-left, top-left, top-right and lower-right.
-        corners_ra, corners_dec = wcs.wcs_pix2world(
-            [xmin, xmin, xmax, xmax], [ymin, ymax, ymax, ymin], WCS_ORIGIN
+        vertices = wcs.wcs_pix2world(
+            [
+                (xmin, ymin),
+                (xmin, ymax),
+                (xmax, ymax),
+                (xmax, ymin),
+            ],
+            WCS_ORIGIN,
         )
-
-        vertices = list(zip(corners_ra, corners_dec, strict=True))
-
-        super().__init__(name, ra, dec, vertices, wcs=wcs)
+        super().__init__(name, ra, dec, vertices, wcs)
 
 
 def tessellate(
@@ -381,8 +384,9 @@ def tessellate(
         Size of bounding box (RA, Dec). Should be a 2-tuple of numbers in
         degrees.
     wcs : astropy.wcs.WCS, optional
-        WCS object that defines the world coordinate system to use. If None, a
-        generic WCS is used
+        The WCS object to use for the conversion to pixel coordinates. If not
+        given, a WCS object is created using the reference RA and Dec and the
+        default pixel scale from `lsmtool.constants.WCS_PIXEL_SCALE`
 
     Returns
     -------
@@ -402,16 +406,18 @@ def tessellate(
     coords_sky = np.column_stack([directions.ra.deg, directions.dec.deg])
     ra_mid, dec_mid = bbox_midpoint.ra.deg, bbox_midpoint.dec.deg
 
-    wcs = wcs or make_wcs(ra_mid, dec_mid)
+    if wcs is None:
+        wcs = make_wcs(ra_mid, dec_mid, WCS_PIXEL_SCALE)
+
     coords_pixel = wcs.wcs_world2pix(coords_sky, WCS_ORIGIN)
     x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
-    width_x = width_ra / abs(wcs.wcs.cdelt[0]) / 2.0
-    width_y = width_dec / abs(wcs.wcs.cdelt[1]) / 2.0
+    half_width_x = width_ra / abs(wcs.wcs.cdelt[0]) / 2.0
+    half_width_y = width_dec / abs(wcs.wcs.cdelt[1]) / 2.0
     bounding_box = [
-        x_mid - width_x,
-        x_mid + width_x,
-        y_mid - width_y,
-        y_mid + width_y,
+        x_mid - half_width_x,
+        x_mid + half_width_x,
+        y_mid - half_width_y,
+        y_mid + half_width_y,
     ]
 
     # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
