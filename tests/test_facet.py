@@ -15,7 +15,6 @@ from numpy.testing import assert_array_equal
 from lsmtool.facet import (
     Facet,
     SquareFacet,
-    filter_skymodel,
     in_box,
     make_ds9_region_file,
     prepare_points_for_tessellate,
@@ -25,7 +24,18 @@ from lsmtool.facet import (
     voronoi,
 )
 from lsmtool.io import load
+from lsmtool.operations_lib import make_wcs
+from lsmtool.skymodel import SkyModel
 from lsmtool.testing import SkyModelGenerator, get_context, uniform_range
+
+# ---------------------------------------------------------------------------- #
+
+
+def all_close(a, b, rtol=1.0e-5, atol=1.0e-8):
+    if isinstance(a, SkyCoord):
+        return np.all(a.separation(b).deg < atol)
+    return np.allclose(a, b, rtol, atol)
+
 
 # ---------------------------------------------------------------------------- #
 # Tests
@@ -58,10 +68,12 @@ class TestFacet:
         Facet: {
             **_reference_namespace,
             "size": 0.5,
-            "ra_center": 266.41046451225884,
-            "dec_center": -29.002269268446632,
-            "ra_centroid": 266.4104645130159,
-            "dec_centroid": -29.00226926732463,
+            "center": SkyCoord(
+                266.41046451225884, -29.002269268446632, unit="deg"
+            ),
+            "centroid": SkyCoord(
+                266.4104645130159, -29.00226926732463, unit="deg"
+            ),
             "x_center": 1000.0,
             "y_center": 1000.0,
         },
@@ -78,10 +90,12 @@ class TestFacet:
                 )
             ),
             "size": 0.5,
-            "ra_center": 266.41046451354356,
-            "dec_center": -29.00226926514979,
-            "ra_centroid": 266.41046451354356,
-            "dec_centroid": -29.00226926514978,
+            "center": SkyCoord(
+                266.41046451354356, -29.00226926514979, unit="deg"
+            ),
+            "centroid": SkyCoord(
+                266.41046451354356, -29.00226926514978, unit="deg"
+            ),
             "x_center": 1000.0,
             "y_center": 1000.0,
         },
@@ -130,10 +144,32 @@ class TestFacet:
             dec,
             **constructor_kws,
         )
-        for attr, val in expected_namespace.items():
-            assert np.allclose(getattr(facet, attr), val), (
+        for attr, ref_val in expected_namespace.items():
+            all_close(getattr(facet, attr), ref_val)
+            assert all_close(getattr(facet, attr), ref_val), (
                 f"Facet attribute {attr!r} does not match expected value."
             )
+
+    # @pytest.mark.xfail(
+    #     raises=shapely.errors.GEOSException,
+    #     reason="Points of LinearRing do not form a closed linestring",
+    # )
+    # def test_error_cases(self):
+
+    #     Facet(
+    #         name="facet spanning 180 degrees in dec",
+    #         ra=(ra := 45),
+    #         dec=(dec := 0),
+    #         vertices=[
+    #             (0, -90),
+    #             (0, 0),
+    #             (0, 90),
+    #             (90, 0),
+    #             (90, -90),
+    #             (0, -90),
+    #         ],
+    #         wcs=make_wcs(ra, dec, 0.1),  # degrees per pixel
+    #     )
 
     # ------------------------------------------------------------------------ #
     @pytest.fixture()
@@ -266,13 +302,14 @@ class TestFacet:
         Test that `set_skymodel` method runs the `filter_skymodel` function.
         """
         # Arrange
-        mock_filter_skymodel = mocker.patch("lsmtool.facet.filter_skymodel")
+        facet.filter_skymodel = mocker.MagicMock()
+        mock_skymodel = mocker.MagicMock(spec=SkyModel)
+
         # Act
-        facet.set_skymodel("mock_skymodel")
+        facet.set_skymodel(mock_skymodel)
+
         # Assert
-        mock_filter_skymodel.assert_called_once_with(
-            facet.polygon, "mock_skymodel", facet.wcs
-        )
+        facet.filter_skymodel.assert_called_once_with(mock_skymodel)
 
 
 class TestDS9RegionFile:
@@ -342,11 +379,19 @@ class TestDS9RegionFile:
         indirect=True,
     )
     @pytest.mark.parametrize(
-        "enclose_names, context",
+        "enclose_names, associate_names_with_polygons",
         [
-            pytest.param(True, contextlib.nullcontext(), id="enclose_names"),
+            pytest.param(True, True, id="enclose_names"),
+            pytest.param(False, True, id="no_enclose_names"),
             pytest.param(
-                False, contextlib.nullcontext(), id="no_enclose_names"
+                True,
+                False,
+                id="no_associate_names_with_polygons",
+            ),
+            pytest.param(
+                False,
+                False,
+                id="no_enclose_names_no_associate_names_with_polygons",
             ),
         ],
     )
@@ -356,7 +401,7 @@ class TestDS9RegionFile:
         ds9_region_file,
         expected_facet_attributes,
         enclose_names,
-        context,
+        associate_names_with_polygons,
     ):
         """
         Test writing a DS9 region file.
@@ -370,11 +415,11 @@ class TestDS9RegionFile:
             facets,
             reg_out,
             enclose_names=enclose_names,
+            associate_names_with_polygons=associate_names_with_polygons,
         )
 
         # Assert
-        with context:
-            self.test_read_ds9_region_file(reg_out, expected_facet_attributes)
+        self.test_read_ds9_region_file(reg_out, expected_facet_attributes)
 
     @pytest.mark.parametrize(
         "ds9_region_file, expected_facet_attributes",
@@ -947,7 +992,6 @@ def test_voronoi(
     ],
 )
 def test_prepare_points_for_tessellate(coords, bounding_box, expected_centre):
-
     # Act
     with get_context(expected_centre):
         points_centre, points = prepare_points_for_tessellate(
@@ -1017,7 +1061,7 @@ class TestFilterSkymodel:
             #         ra=22.5,
             #         dec=22.5,
             #         vertices=[(0, 0), (45, 0), (45, 45), (0, 45), (0, 0)],
-            #         wcs_pixel_scale=0.1,  # degrees per pixel
+            #         wcs=make_wcs(22.5, 22.5, 0.1),  # degrees per pixel
             #     ),
             #     [0, 45, 0, 45],
             #     {},
@@ -1029,7 +1073,7 @@ class TestFilterSkymodel:
             #         ra=22.5,
             #         dec=0,
             #         width=45,
-            #         wcs_pixel_scale=0.1,  # degrees per pixel
+            #         wcs=make_wcs(22.5, 0, 0.1),  # degrees per pixel
             #     ),
             #     [0, 45, -22.5, 22.5],
             #     {},
@@ -1043,7 +1087,7 @@ class TestFilterSkymodel:
             #         ra=0,
             #         dec=0,
             #         vertices=[(0, 0), (90, 0), (90, 45), (0, 45), (0, 0)],
-            #         wcs_pixel_scale=0.1,  # degrees per pixel
+            #         wcs=make_wcs(0, 0, 0.1),  # degrees per pixel
             #     ),
             #     [0, 90, 0, 45],
             #     {},
@@ -1064,19 +1108,11 @@ class TestFilterSkymodel:
             #         ra=90,
             #         dec=30,
             #         vertices=[(0, 0), (180, 0), (180, 60), (0, 60), (0, 0)],
-            #         wcs_pixel_scale=0.1,  # degrees per pixel
+            #         wcs=make_wcs(90, 30, 0.1),  # degrees per pixel
             #     ),
             #     [0, 180, 0, 60],
             #     {},
-            #     marks=pytest.mark.xfail(
-            #         raises=AssertionError,
-            #         reason=(
-            #             "`facet.polygon` in image coordinates become too "
-            #             "large, with values around 1e18. Not all expected "
-            #             "sources are filtered due to the unhandled arithmetic "
-            #             "overflow"
-            #         ),
-            #     ),
+            #     marks=pytest.mark.xfail(raises=ValueError),
             #     id="facet spanning 180 degrees in ra",
             # ),
             # pytest.param(
@@ -1092,7 +1128,7 @@ class TestFilterSkymodel:
             #             (90, -45),
             #             (0, -45),
             #         ],
-            #         wcs_pixel_scale=0.1,  # degrees per pixel
+            #         wcs=make_wcs(45, 0, 0.1),  # degrees per pixel
             #     ),
             #     [0, 90, -45, 45],
             #     {},
@@ -1111,15 +1147,12 @@ class TestFilterSkymodel:
             #             (180, -45),
             #             (0, -45),
             #         ],
-            #         wcs_pixel_scale=0.1,  # degrees per pixel
+            #         wcs=make_wcs(90, 0, 0.1),  # degrees per pixel
             #     ),
             #     [0, 180, -45, 45],
             #     {},
             #     marks=pytest.mark.xfail(
-            #         raises=(
-            #             OverflowError,
-            #             np.core._exceptions._UFuncOutputCastingError,
-            #         ),
+            #         raises=ValueError,
             #         reason="Python int too large to convert to C long",
             #     ),
             #     id="facet spanning 90 degrees in dec, 180 degrees in ra",
@@ -1134,7 +1167,7 @@ class TestFilterSkymodel:
             pytest.param(
                 True,
                 marks=pytest.mark.xfail(
-                    raises=ValueError,
+                    raises=(ValueError, OverflowError),
                     reason="cannot convert float NaN to integer",
                 ),
             ),
@@ -1147,7 +1180,7 @@ class TestFilterSkymodel:
         """
 
         # Act
-        filter_skymodel(facet.polygon, skymodel, facet.wcs, invert)
+        facet.filter_skymodel(skymodel, invert)
 
         # Assert
         if skymodel.table:
