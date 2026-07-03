@@ -52,71 +52,132 @@ FACET_NAME_REGEX = re.compile(
 # ---------------------------------------------------------------------------- #
 
 
-class Facet(object):
+def resolve_coordinates(ra, dec):
     """
-    Base Facet class
+    Resolve the given RA and Dec coordinates to a SkyCoord object.
 
     Parameters
     ----------
-    name : str
-        Name of facet
     ra : float or str
-        RA of reference coordinate in degrees (if float) or as a string in a
-        format supported by astropy.coordinates.Angle
+        Right Ascension in degrees (if float) or as a string in a format
+        supported by astropy.coordinates.Angle
     dec : float or str
-        Dec of reference coordinate in degrees (if float) or as a string in a
-        format supported by astropy.coordinates.Angle
-    vertices : list of tuples
-        List of (RA, Dec) tuples, one for each vertex of the facet
-    wcs : astropy.wcs.WCS, optional
-        WCS object that defines the world coordinate system to use. If None, a
-        generic WCS is used
+        Declination in degrees (if float) or as a string in a format
+        supported by astropy.coordinates.Angle
+
+    Returns
+    -------
+    astropy.coordinates.SkyCoord
+        The resolved SkyCoord object.
+    """
+    if isinstance(ra, str):
+        ra = Angle(ra).to("deg").value
+
+    if isinstance(dec, str):
+        dec = Angle(dec).to("deg").value
+
+    ra, dec = normalize_ra_dec(ra, dec)
+    return SkyCoord(ra, dec, unit="deg")
+
+
+class Facet(object):
+    """
+    Base class for representing an image facet.
+
+    A facet is a named region of the sky defined by a polygon in celestial
+    coordinates (RA, Dec) and a reference point (RA, Dec). The transformation
+    between celestial and image coordinates is handled by a `astropy.wcs.WCS`
+    object. A facet can have a sky model containing the sources that lie inside
+    it and can also be visualized as a matplotlib patch.
     """
 
-    def __init__(self, name, ra, dec, vertices, *, wcs=None):
+    def __init__(self, name, ra, dec, vertices, wcs=None):
+        """
+        Create a Facet object with a given name, located at the coordinates
+        (ra, dec) and defined by the vertices in celestial coordinates (RA,
+        Dec).
+
+        Parameters
+        ----------
+        name : str
+            Name of facet
+        ra : float or str
+            RA of reference coordinate in degrees (if float) or as a string in a
+            format supported by astropy.coordinates.Angle
+        dec : float or str
+            Dec of reference coordinate in degrees (if float) or as a string in a
+            format supported by astropy.coordinates.Angle
+        vertices : list of tuples
+            List of (RA, Dec) tuples, one for each vertex of the facet
+        wcs : astropy.wcs.WCS, optional
+            The WCS object that defines the world coordinate system to use. If
+            not given, a WCS object is created using the reference RA and Dec
+            and the default pixel scale from `lsmtool.constants.WCS_PIXEL_SCALE`
+        """
         self.name = name
         self.log = logging.getLogger("lsmtool:{0}".format(self.name))
 
-        if isinstance(ra, str):
-            ra = Angle(ra).to("deg").value
+        self.coords = resolve_coordinates(ra, dec)
 
-        if isinstance(dec, str):
-            dec = Angle(dec).to("deg").value
+        if wcs is None:
+            wcs = make_wcs(self.ra, self.dec, WCS_PIXEL_SCALE)
 
-        self.ra, self.dec = normalize_ra_dec(ra, dec)
+        self.wcs = wcs
         self.vertices = np.array(vertices)
-
-        # Convert input (RA, Dec) vertices to (x, y) polygon
-        self.wcs = make_wcs(self.ra, self.dec)
-        xy_values = self.wcs.world_to_pixel_values(self.vertices)
-        self.polygon = Polygon(xy_values)
 
         # Find the size and center coordinates of the facet
         xmin, ymin, xmax, ymax = self.polygon.bounds
         self.size = min(
-            0.5,
-            max(
-                (xmax - xmin) * abs(self.wcs.wcs.cdelt[0]),
-                (ymax - ymin) * abs(self.wcs.wcs.cdelt[1]),
-            ),
+            0.5, max(xmax - xmin, ymax - ymin) * abs(self.wcs.wcs.cdelt[0])
         )  # degrees
-        self.x_center = xmin + (xmax - xmin) / 2
-        self.y_center = ymin + (ymax - ymin) / 2
 
-        self.ra_center, self.dec_center = map(
-            float,
-            self.wcs.wcs_pix2world(self.x_center, self.y_center, WCS_ORIGIN),
-        )
+        # skymodel is set in the `set_skymodel` method
+        self.skymodel = None
 
-        # Find the centroid of the facet
-        self.ra_centroid, self.dec_centroid = map(
-            float,
-            self.wcs.wcs_pix2world(
-                self.polygon.centroid.x,
-                self.polygon.centroid.y,
-                WCS_ORIGIN,
-            ),
-        )
+    @property
+    def ra(self):
+        return self.coords.ra.deg
+
+    @property
+    def dec(self):
+        return self.coords.dec.deg
+
+    @property
+    def wcs(self):
+        return self._wcs
+
+    @wcs.setter
+    def wcs(self, wcs):
+        if not isinstance(wcs, WCS):
+            raise TypeError("wcs must be an astropy.wcs.WCS object")
+        self._wcs = wcs
+
+    @property
+    def vertices_xy(self):
+        return self.wcs.world_to_pixel_values(self.vertices)
+
+    @property
+    def polygon(self):
+        return Polygon(self.vertices_xy)
+
+    @property
+    def x_center(self):
+        xmin, _, xmax, _ = self.polygon.bounds
+        return xmin + (xmax - xmin) / 2
+
+    @property
+    def y_center(self):
+        _, ymin, _, ymax = self.polygon.bounds
+        return ymin + (ymax - ymin) / 2
+
+    @property
+    def center(self):
+        return self.wcs.pixel_to_world(self.x_center, self.y_center)
+
+    @property
+    def centroid(self):
+        centroid = self.polygon.centroid
+        return self.wcs.pixel_to_world(centroid.x, centroid.y)
 
     def set_skymodel(self, skymodel):
         """
@@ -154,8 +215,8 @@ class Facet(object):
         try:
             with tempfile.NamedTemporaryFile() as fp:
                 skymodel_cone_params = {
-                    "ra": self.ra_center,
-                    "dec": self.dec_center,
+                    "ra": self.center.ra,
+                    "dec": self.center.dec,
                     "radius": min(max_search_cone_radius, self.size / 2),
                 }
                 download_skymodel(
@@ -274,12 +335,11 @@ class SquareFacet(Facet):
     """
 
     def __init__(self, name, ra, dec, width, *, wcs=None):
-        if type(ra) is str:
-            ra = Angle(ra).to("deg").value
-        if type(dec) is str:
-            dec = Angle(dec).to("deg").value
-        ra, dec = normalize_ra_dec(ra, dec)
-        wcs = wcs or make_wcs(ra, dec)
+
+        self.coords = resolve_coordinates(ra, dec)
+
+        if wcs is None:
+            wcs = make_wcs(self.ra, self.dec, WCS_PIXEL_SCALE)
 
         # Make the vertices.
         xmin = wcs.wcs.crpix[0] - width / 2 / abs(wcs.wcs.cdelt[0])
