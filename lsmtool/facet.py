@@ -43,9 +43,9 @@ FACET_NAME_REGEX = re.compile(
         )?                      # quote or brace are optional
         (?P<text>[^"'\}\n]+)    # the text value
         (?(quote)               # match closing quote or brace if opening was found
-            (?P=quote)
-            |
-            (?(brace)\})
+            (?P=quote)          # match the previously matched quote character
+            |                   # or 
+            (?(brace)\})        # match the closing brace if opening brace was found
         )?                      # closing quote or brace are optional
         .*                      # any trailing text
         $                       # end of line
@@ -690,16 +690,16 @@ def make_ds9_region_file(
     outfile : str
         Name of output region file.
     enclose_names : bool, optional
-        If True, enclose patch names in curly brackets for full
-        compatibility with ds9. Curly brackets may cause issues with
-        other tools that use the region file, such as DP3, in which
-        case they can be excluded by setting this option to False
+        If True, enclose patch names in curly brackets for full compatibility
+        with ds9. Curly brackets may cause issues with other tools that use the
+        region file, such as DP3, in which case they can be excluded by setting
+        this option to False.
     associate_names_with_polygons : optional
-        If True, the facet names are associated with the "polygon" entries. This
-        convention matches that used by WSClean (see
+        If True, the facet names are associated with the "polygon" entries.
+        This convention matches that used by WSClean (see
         https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html#adding-a-text-label).
-        If False, the names are associated with the "point" entries instead (required by
-        some DP3 steps)
+        If False, the names are associated with the "point" entries instead
+        (required by some DP3 steps).
     """
     with open(outfile, "w") as stream:
         stream.write(
@@ -727,17 +727,21 @@ def read_ds9_region_file(region_file, wcs=None):
     Parameters
     ----------
     region_file : str
-        Filename of input ds9 region file
+        Filename of input ds9 region file.
     wcs : astropy.wcs.WCS, optional
-        WCS object that defines the world coordinate system to use. If None, a
-        generic WCS is used
+        WCS object that defines the world coordinate system to use for the
+        conversion to pixel coordinates. If None, a generic WCS object is
+        created using the reference point of the facet and the default pixel
+        scale from `lsmtool.constants.WCS_PIXEL_SCALE`.
 
     Returns
     -------
     facets : list
         List of Facet objects.
     """
+
     region_file = check_file_exists(region_file)
+
     facets = []
     for index, (polygon, *_, points) in enumerate(
         parse_ds9_facets(region_file)
@@ -850,8 +854,10 @@ def read_from_skymodel(
     width_dec : float
         Width of bounding box in Dec in degrees
     wcs : astropy.wcs.WCS, optional
-        WCS object that defines the world coordinate system to use. If None, a
-        generic WCS is used
+        The world coordinate system (WCS) object to use for the conversion
+        between celestial and pixel coordinate systems. If None, a generic WCS
+        object is created using the reference point of the facet and the
+        default pixel scale from `lsmtool.constants.WCS_PIXEL_SCALE`.
 
     Returns
     -------
@@ -874,7 +880,6 @@ def read_from_skymodel(
     patch_coords = SkyCoord(coordinates, unit="deg")
 
     # Do the tessellation
-    wcs = wcs or make_wcs(ra_mid, dec_mid)
     facet_points, facet_polys = tessellate(
         patch_coords,
         SkyCoord(ra_mid, dec_mid, unit="deg"),
