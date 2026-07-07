@@ -2,10 +2,17 @@
 Tests for skymodel assertion helpers.
 """
 
+import numpy as np
 import pytest
+from scipy.stats import kstest
+from scipy.stats.distributions import uniform
 
 from lsmtool import load
-from lsmtool.testing import check_skymodels_equal
+from lsmtool.testing import (
+    SkyModelGenerator,
+    check_skymodels_equal,
+    uniform_range,
+)
 
 # ---------------------------------------------------------------------------- #
 # Fixtures
@@ -187,3 +194,39 @@ def test_check_skymodels_equal(
         )
         is expected_equal
     )
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        pytest.param({}, id="default"),
+        pytest.param(
+            {"ra": uniform_range(0, 45), "dec": uniform_range(-45, 45)},
+            id="custom",
+        ),
+    ],
+)
+def test_skymodel_generator(config, rng):
+
+    # create skymodel generator and sample 100 sources
+    generator = SkyModelGenerator(**config)
+    samples = generator.sample(n_sources=100, random_state=rng)
+
+    # Check that the samples are within the expected ranges and have the
+    # expected distribution.
+    ra0 = generator.ra.kwds["loc"]
+    ra1 = ra0 + generator.ra.kwds["scale"]
+    dec0 = generator.dec.kwds["loc"]
+    dec1 = dec0 + generator.dec.kwds["scale"]
+
+    assert np.all((ra0 < samples["ra"]) & (samples["ra"] < ra1))
+    assert np.all((dec0 < samples["dec"]) & (samples["dec"] < dec1))
+    assert not any(
+        map(len, np.nonzero([samples["q"], samples["u"], samples["v"]]))
+    )
+    assert np.all(samples["reference_frequency"] == 1.44e8)
+    assert np.all(samples["minor_axis"] < samples["major_axis"])
+
+    # test that samples are drawn from the correct distributions
+    assert kstest(samples["ra"], uniform(ra0, ra1 - ra0).cdf).pvalue > 0.05
+    assert kstest(samples["dec"], uniform(dec0, dec1 - dec0).cdf).pvalue > 0.05

@@ -170,10 +170,10 @@ def check_patches_equal(left, right, check_patch_names_sizes):
 # Helper classes for generating random skymodel data
 
 
-class rv_constant:
+class constant:
     """
-    A constant value "random variable" that emulates the
-    `scipy.stats.distributions` API.
+    A frozen constant distribution that emulates the `scipy.stats.distributions`
+    API.
     """
 
     def __init__(self, value):
@@ -202,7 +202,7 @@ def uniform_range(a, b):
     return uniform(loc=a, scale=b - a)
 
 
-RVType = rv_frozen | rv_constant | None
+RVType = rv_frozen | constant | None
 
 
 @dataclass
@@ -251,12 +251,12 @@ class SkyModelGenerator:
     ra: RVType = uniform_range(0, 360)
     dec: RVType = uniform_range(-90, 90)
     i: RVType = uniform_range(0.001, 20)
-    q: RVType = rv_constant(0)
-    u: RVType = rv_constant(0)
-    v: RVType = rv_constant(0)
-    reference_frequency: RVType = rv_constant(1.44e8)
+    q: RVType = constant(0)
+    u: RVType = constant(0)
+    v: RVType = constant(0)
+    reference_frequency: RVType = constant(1.44e8)
     spectral_index: RVType = uniform_range(-1, 0)
-    rotation_measure: RVType = rv_constant(0)
+    rotation_measure: RVType = constant(0)
     major_axis: RVType = uniform_range(0.01, 20)
     minor_axis: RVType = uniform_range(0, 1)
     orientation: RVType = uniform_range(0, 180)
@@ -316,6 +316,7 @@ class SkyModelGenerator:
             if sampler := getattr(self, f"get_{name}", None):
                 samples[name] = sampler(n_sources, samples)
             else:
+                dist = getattr(self, name)
                 samples[name] = dist.rvs(n_sources, random_state=random_state)
 
         return samples
