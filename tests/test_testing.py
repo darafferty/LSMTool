@@ -2,10 +2,17 @@
 Tests for skymodel assertion helpers.
 """
 
+import numpy as np
 import pytest
+from scipy.stats import kstest
+from scipy.stats.distributions import uniform
 
 from lsmtool import load
-from lsmtool.testing import check_skymodels_equal
+from lsmtool.testing import (
+    SkyModelGenerator,
+    check_skymodels_equal,
+    uniform_range,
+)
 
 # ---------------------------------------------------------------------------- #
 # Fixtures
@@ -187,3 +194,68 @@ def test_check_skymodels_equal(
         )
         is expected_equal
     )
+
+
+class TestSkyModelGenerator:
+    """
+    Test the SkyModelGenerator class.
+    """
+
+    def test_minimal(self, tmp_path, rng):
+
+        # create skymodel generator and sample 100 sources
+        generator = SkyModelGenerator(
+            q=None,
+            u=None,
+            v=None,
+            reference_frequency=None,
+            spectral_index=None,
+            rotation_measure=None,
+            major_axis=None,
+            minor_axis=None,
+            orientation=None,
+        )
+        # check that we can write and read the skymodel without errors
+        path = tmp_path / "test_skymodel_generator.sky"
+        generator.to_file(path, 10, rng)
+
+        skymodel = load(path)
+        assert skymodel.getColNames() == ["Name", "Type", "Ra", "Dec", "I"]
+        assert len(skymodel) == 10
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            pytest.param({}, id="default"),
+            pytest.param(
+                {"ra": uniform_range(0, 45), "dec": uniform_range(-45, 45)},
+                id="custom",
+            ),
+        ],
+    )
+    def test_skymodel_generator(self, config, rng):
+
+        # create skymodel generator and sample 100 sources
+        generator = SkyModelGenerator(**config)
+        samples = generator.sample(n_sources=100, random_state=rng)
+
+        # Check that the samples are within the expected ranges and have the
+        # expected distribution.
+        ra0 = generator.ra.kwds["loc"]
+        ra1 = ra0 + generator.ra.kwds["scale"]
+        dec0 = generator.dec.kwds["loc"]
+        dec1 = dec0 + generator.dec.kwds["scale"]
+
+        assert np.all((ra0 < samples["ra"]) & (samples["ra"] < ra1))
+        assert np.all((dec0 < samples["dec"]) & (samples["dec"] < dec1))
+        assert not any(
+            map(len, np.nonzero([samples["q"], samples["u"], samples["v"]]))
+        )
+        assert np.all(samples["reference_frequency"] == 1.44e8)
+        assert np.all(samples["minor_axis"] < samples["major_axis"])
+
+        # test that samples are drawn from the correct distributions
+        assert kstest(samples["ra"], uniform(ra0, ra1 - ra0).cdf).pvalue > 0.05
+        assert (
+            kstest(samples["dec"], uniform(dec0, dec1 - dec0).cdf).pvalue > 0.05
+        )

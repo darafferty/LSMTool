@@ -3,13 +3,13 @@ Configuration for python tests.
 """
 
 import contextlib
-import inspect
 import shutil
 import tarfile
 from pathlib import Path
 
 import astropy.units as u
 import mocpy
+import numpy as np
 import pytest
 import requests
 from astropy.coordinates import Latitude, Longitude
@@ -18,7 +18,7 @@ from astropy.wcs import WCS
 
 from lsmtool.io import PathLike, PathLikeOptional, check_file_exists, load
 
-# ---------------------------------------------------------------------------- #\
+# ---------------------------------------------------------------------------- #
 # Module constants
 
 TEST_PATH = Path(__file__).parent
@@ -27,6 +27,8 @@ TEST_DATA_PATH = TEST_PATH / "resources"
 # Path to the LOFAR HBA mock measurement set
 LOFAR_HBA_URL = "https://support.astron.nl/software/ci_data/EveryBeam/L258627-one-timestep.tar.bz2"
 
+# Random number generator seed for reproducibility
+RNG_SEED = 881726
 
 # ---------------------------------------------------------------------------- #
 
@@ -138,13 +140,19 @@ def get_context(expected, **kws):
 def test_data_path(request):
     """Path to the test data subfolder for the test module."""
 
-    test_module = inspect.getmodule(request._pyfuncitem.parent._obj)
-    test_data_path = request.config.resource_dir / test_module.__name__
+    test_module_name = request.node.module.__name__
+    test_data_path = request.config.resource_dir / test_module_name
     return (
         test_data_path
         if test_data_path.exists()
         else request.config.resource_dir
     )
+
+
+@pytest.fixture(scope="session")
+def rng():
+    """Random number generator as a fixture."""
+    return np.random.default_rng(seed=RNG_SEED)
 
 
 @pytest.fixture
