@@ -2,8 +2,6 @@
 Tests for the lsmtool.facet module.
 """
 
-import contextlib
-
 import astropy.units as u
 import matplotlib as mpl
 import numpy as np
@@ -20,7 +18,7 @@ from lsmtool.facet import (
     make_ds9_region_file,
     prepare_points_for_tessellate,
     read_ds9_region_file,
-    read_skymodel,
+    read_from_skymodel,
     tessellate,
     voronoi,
 )
@@ -287,7 +285,7 @@ class TestDS9RegionFile:
         """
         return test_data_path / request.param
 
-    @pytest.fixture(params=["test.reg", "invalid.reg"])
+    @pytest.fixture()
     def expected_facet_attributes(self, ds9_region_file):
         if ds9_region_file.name == "test.reg":
             return [
@@ -336,29 +334,38 @@ class TestDS9RegionFile:
                     )
 
     @pytest.mark.parametrize(
-        "ds9_region_file, expected_facet_attributes",
-        [("test.reg", "test.reg")],
-        indirect=True,
-    )
-    @pytest.mark.parametrize(
-        "enclose_names, context",
+        "ds9_region_file, enclose_names, associate_names_with_polygons",
         [
-            pytest.param(True, contextlib.nullcontext(), id="enclose_names"),
-            pytest.param(False, contextlib.nullcontext(), id="no_enclose_names"),
+            pytest.param("test.reg", True, True, id="enclose_names"),
+            pytest.param("test.reg", False, True, id="no_enclose_names"),
+            pytest.param(
+                "test.reg",
+                True,
+                False,
+                id="no_associate_names_with_polygons",
+            ),
+            pytest.param(
+                "test.reg",
+                False,
+                False,
+                id="no_enclose_names_no_associate_names_with_polygons",
+            ),
         ],
+        indirect=["ds9_region_file"],
     )
-    def test_write_ds9_region_file_enclose_names(
+    def test_write_ds9_region_file(
         self,
         tmp_path,
         ds9_region_file,
-        expected_facet_attributes,
         enclose_names,
-        context,
+        associate_names_with_polygons,
+        expected_facet_attributes,
     ):
         """
         Test writing a DS9 region file.
         """
         # Arrange
+        facets = read_ds9_region_file(ds9_region_file)
         reg_out = tmp_path / "test_region_write.reg"
         facets = read_ds9_region_file(ds9_region_file)
 
@@ -367,53 +374,15 @@ class TestDS9RegionFile:
             facets,
             reg_out,
             enclose_names=enclose_names,
-        )
-
-        # Assert
-        with context:
-            self.test_read_ds9_region_file(reg_out, expected_facet_attributes)
-
-    @pytest.mark.parametrize(
-        "ds9_region_file, expected_facet_attributes",
-        [("test.reg", "test.reg")],
-        indirect=True,
-    )
-    @pytest.mark.parametrize(
-        "associate_names_with_polygons, context",
-        [
-            pytest.param(True, contextlib.nullcontext(), id="associate_names_with_polygons"),
-            pytest.param(False, contextlib.nullcontext(), id="no_associate_names_with_polygons"),
-        ],
-    )
-    def test_write_ds9_region_file_associate_names(
-        self,
-        tmp_path,
-        ds9_region_file,
-        expected_facet_attributes,
-        associate_names_with_polygons,
-        context,
-    ):
-        """
-        Test writing a DS9 region file.
-        """
-        # Arrange
-        reg_out = tmp_path / "test_region_write.reg"
-        facets = read_ds9_region_file(ds9_region_file)
-
-        # Act
-        make_ds9_region_file(
-            facets,
-            reg_out,
             associate_names_with_polygons=associate_names_with_polygons,
         )
 
         # Assert
-        with context:
-            self.test_read_ds9_region_file(reg_out, expected_facet_attributes)
+        self.test_read_ds9_region_file(reg_out, expected_facet_attributes)
 
 
-class TestReadSkymodel:
-    """Tests for the `lsmtool.facet.read_skymodel` function."""
+class TestReadFromSkymodel:
+    """Tests for the `lsmtool.facet.read_from_skymodel` function."""
 
     @pytest.fixture(autouse=True)
     def mock_skymodel(self, mocker, request):
@@ -429,12 +398,13 @@ class TestReadSkymodel:
         return mock_skymodel
 
     @pytest.mark.parametrize("mock_skymodel", [None], indirect=True)
-    def test_read_skymodel_no_patches(self):
+    def test_no_patches(self):
         """
-        Test that read_skymodel raises ValueError if sky model has no patches.
+        Test that read_from_skymodel raises ValueError if sky model has no
+        patches.
         """
         with pytest.raises(ValueError, match="must be grouped into patches"):
-            read_skymodel("fake.sky", 180.0, 45.0, 2.0, 2.0)
+            read_from_skymodel("fake.sky", 180.0, 45.0, 2.0, 2.0)
 
     @pytest.mark.parametrize(
         "mock_skymodel",
@@ -447,13 +417,14 @@ class TestReadSkymodel:
         ],
         indirect=True,
     )
-    def test_read_skymodel_returns_facets(self):
+    def test_returns_facets(self):
         """
-        Test that read_skymodel returns correct facets from a patched sky model.
+        Test that read_from_skymodel returns correct facets from a patched sky
+        model.
         """
 
         # Act
-        facets = read_skymodel("fake.sky", 180.0, 45.0, 2.0, 2.0)
+        facets = read_from_skymodel("fake.sky", 180.0, 45.0, 2.0, 2.0)
 
         # Assert
         assert all(isinstance(facet, Facet) for facet in facets)
