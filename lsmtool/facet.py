@@ -769,7 +769,6 @@ def parse_facet_name(lines):
     """
 
     for line in sorted(lines):
-
         if match := FACET_NAME_REGEX.search(line):
             facet_name = match["text0"] or match["text1"] or match["text2"]
             if not (facet_name := facet_name.strip()):

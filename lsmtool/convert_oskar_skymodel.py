@@ -22,8 +22,9 @@ from pathlib import Path
 import numpy as np
 
 from lsmtool.io import check_file_exists, load
-from lsmtool.utils import format_coordinates
 from lsmtool.tableio import FORMAT_LINE_REGEX
+from lsmtool.utils import format_coordinates
+
 # ---------------------------------------------------------------------------- #
 # Init logger
 logger = logging.getLogger(__name__)

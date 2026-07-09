@@ -318,52 +318,37 @@ class TestDS9RegionFile:
         "definition, expected_name",
         [
             pytest.param(
-                [
-                    "point(318.2, 52.2) # text = Patch_1"
-                ],
+                ["point(318.2, 52.2) # text = Patch_1"],
                 "Patch_1",
                 id="nominal",
             ),
-            
             pytest.param(
-                [
-                    "point(318.2, 52.2) #  something=else text = Patch_1"
-                ],
+                ["point(318.2, 52.2) #  something=else text = Patch_1"],
                 "Patch_1",
                 id="preceding_text",
             ),
             pytest.param(
-                [
-                    "point(318.2, 52.2) # text = {Patch_1} something=else"
-                ],
+                ["point(318.2, 52.2) # text = {Patch_1} something=else"],
                 "Patch_1",
                 id="trailing_text",
             ),
             pytest.param(
-                [
-                    "point(318.2, 52.2) # text = {Patch_1}"
-                ],
+                ["point(318.2, 52.2) # text = {Patch_1}"],
                 "Patch_1",
                 id="braced",
             ),
             pytest.param(
-                [
-                    "point(312.6, 50.4) # text={Patch 10 with spaces}"
-                ],
+                ["point(312.6, 50.4) # text={Patch 10 with spaces}"],
                 "Patch_10_with_spaces",
                 id="braced_with_spaces",
             ),
             pytest.param(
-                [
-                    'point(312.6, 50.4) # text="Patch 10 with spaces"'
-                ],
+                ['point(312.6, 50.4) # text="Patch 10 with spaces"'],
                 "Patch_10_with_spaces",
                 id="quoted_with_spaces",
             ),
             pytest.param(
-                [
-                    "point(312.6, 50.4) # text='Patch  with spaces'"
-                ],
+                ["point(312.6, 50.4) # text='Patch  with spaces'"],
                 "Patch__with_spaces",
                 id="single_quoted_with_spaces",
             ),
@@ -389,7 +374,7 @@ class TestDS9RegionFile:
                 ['point(318.2, 52.2) # text={"some name with quotes"}'],
                 "_some_name_with_quotes_",
                 id="name_with_braces_and_quotes",
-            )
+            ),
         ],
     )
     def test_parse_facet_name(self, definition, expected_name):
