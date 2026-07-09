@@ -194,7 +194,7 @@ def get_panstarrs_request():
     url = "https://vizier.cds.unistra.fr/viz-bin/votable/-A?-source=II/389/ps1_dr2&amp;-out.max=unlimited&amp;"
     url += "-out=objID&amp;"  # output objID
     url += "-out=RAJ2000&amp;-out=DEJ2000&amp;"  # output RA, Dec
-    url += "nD=5&amp;"  # require detection in at least 5 epochs
+    url += "Nd=5&amp;"  # require detection in at least 5 epochs
     return url
 
 
@@ -225,7 +225,7 @@ def download_skymodel_panstarrs(cone_params, skymodel_path):
             # Convert the result to makesourcedb format and write to
             # the output file. Split and remove header line.
             lines = []
-            for row in result.table:
+            for row in result.to_table():
                 lines.append(f"{row['objID']}, {row['RAJ2000']}, {row['DEJ2000']}")
             out_lines = [
                 "FORMAT = Name, Ra, Dec, Type, I, ReferenceFrequency=1e6\n"
