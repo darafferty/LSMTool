@@ -10,6 +10,7 @@ from pathlib import Path
 
 import astropy.units as u
 import mocpy
+import pyvo
 import requests
 
 import lsmtool
@@ -38,15 +39,20 @@ def download_skymodel(
         'ra': Right ascension of the target position.
         'dec': Declination of the target position.
         'radius': Search radius in degrees.
-        For Pan-STARRS, the radius must be <= 0.5 degrees.
     skymodel_path : str
         Full name (with path) to the output skymodel.
     overwrite : bool, optional
         Overwrite the existing skymodel pointed to by skymodel_path.
     survey : str, optional
-        Survey to obtain a skymodel from. Can be one of: TGSS, GSM,
-        LOTSS, or PANSTARRS. Note: the PANSTARRS sky model is only suitable
-        for use in astrometry checks and should not be used for calibration.
+        Survey to obtain a skymodel from. Can be one of:
+        'GSM': Global Sky Model
+        'LOTSS': LOFAR Two-Meter Sky Survey
+        'NVSS': NRAO VLA Sky Survey
+        'PANSTARRS': Pan-STARRS optical survey (only suitable for use in
+            astrometry checks and should not be used for calibration)
+        'TGSS': TIFR GMRT Sky Survey
+        'VLSSR': VLA Low-Frequency Sky Survey Redux
+        'WENSS': Westerbork Northern Sky Survey
     target_name : str, default="Patch"
         Give the patch a certain name.
     """
@@ -78,7 +84,8 @@ def download_skymodel_from_survey(
             'dec': Declination of the target position.
             'radius': Search radius in degrees.
     survey : str
-        Source of the skymodel (e.g. "LOTSS", "TGSS", "GSM", "PANSTARRS").
+        Source of the skymodel (e.g. "LOTSS", "TGSS", "GSM", "NVSS", "VLSSR",
+        "WENSS", or "PANSTARRS").
     skymodel_path : str
         Path to the output skymodel file.
     retries : int, default=4
@@ -100,7 +107,7 @@ def download_skymodel_from_survey(
 
     for attempt in range(retries + 1):
         match survey:
-            case "LOTSS" | "TGSS" | "GSM":
+            case "LOTSS" | "TGSS" | "GSM" | "NVSS" | "VLSSR" | "WENSS":
                 success = download_skymodel_catalog(
                     cone_params, survey, skymodel_path
                 )
@@ -111,7 +118,8 @@ def download_skymodel_from_survey(
             case _:
                 raise ValueError(
                     "Unsupported sky model survey specified! "
-                    "Please use LOTSS, TGSS, GSM, or PANSTARRS."
+                    "Please use LOTSS, TGSS, GSM, NVSS, VLSSR, WENSS, or "
+                    "PANSTARRS."
                 )
         if success:
             logger.info(
@@ -142,6 +150,7 @@ def download_skymodel_from_survey(
 def download_skymodel_catalog(cone_params, survey, skymodel_path):
     """
     Download a skymodel from the specified source catalog.
+
     Parameters
     ----------
     cone_params : dict
@@ -152,7 +161,8 @@ def download_skymodel_catalog(cone_params, survey, skymodel_path):
     skymodel_path : str
         Path to the output skymodel file.
     survey : str
-        Source of the skymodel (must be one of "LOTSS", "TGSS", "GSM").
+        Source of the skymodel (must be one of "LOTSS", "TGSS", "GSM", "NVSS",
+        "VLSSR", or "WENSS").
 
     Returns
     -------
@@ -172,45 +182,20 @@ def download_skymodel_catalog(cone_params, survey, skymodel_path):
     return False
 
 
-def get_panstarrs_request(cone_params):
+def get_panstarrs_request():
     """
-    Create a Pan-STARRS request URL and parameters.
-
-    Parameters
-    ----------
-    cone_params : dict
-        Dictionary containing the cone search parameters:
-        'ra': Right ascension of the target position.
-        'dec': Declination of the target position.
-        'radius': Search radius in degrees.
+    Create a Pan-STARRS VO URL.
 
     Returns
     -------
     url : str
-        The Pan-STARRS API URL.
-    search_params : dict
-        The search parameters for the request.
-
-    Raises
-    ------
-    ValueError
-        If the radius is greater than 0.5 degrees.
+        The Pan-STARRS VO URL.
     """
-    if cone_params["radius"] > 0.5:
-        raise ValueError("The radius for Pan-STARRS must be <= 0.5 deg")
-    baseurl = "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs"
-    release = "dr1"  # the release with the mean data
-    table = "mean"  # the main catalog, with the mean data
-    cat_format = "csv"  # use csv format for the intermediate file
-    url = f"{baseurl}/{release}/{table}.{cat_format}"
-    search_params = {
-        "ra": cone_params["ra"],
-        "dec": cone_params["dec"],
-        "radius": cone_params["radius"],
-        "nDetections.min": "5",  # require detection in at least 5 epochs
-        "columns": ["objID", "ramean", "decmean"],  # get only the info we need
-    }
-    return url, search_params
+    url = "https://vizier.cds.unistra.fr/viz-bin/votable/-A?-source=II/389/ps1_dr2&amp;-out.max=unlimited&amp;"
+    url += "-out=objID&amp;"  # output objID
+    url += "-out=RAJ2000&amp;-out=DEJ2000&amp;"  # output RA, Dec
+    url += "nD=5&amp;"  # require detection in at least 5 epochs
+    return url
 
 
 def download_skymodel_panstarrs(cone_params, skymodel_path):
@@ -231,24 +216,17 @@ def download_skymodel_panstarrs(cone_params, skymodel_path):
     -------
     bool
         True if download was successful, False otherwise.
-
-    Raises
-    ------
-    requests.exceptions.Timeout
-        If the request times out.
     """
     logger.info("Downloading skymodel from Pan-STARRS into %s", skymodel_path)
     try:
-        url, search_params = get_panstarrs_request(cone_params)
-        result = requests.get(
-            url,
-            params=search_params,
-            timeout=(REQUEST_CONNECT_TIMEOUT, REQUEST_READ_TIMEOUT),
-        )
-        if result.ok:
+        url = get_panstarrs_request()
+        result = pyvo.conesearch(url, [cone_params["ra"], cone_params["dec"]], cone_params["radius"])
+        if result.status[0] == "OK":
             # Convert the result to makesourcedb format and write to
             # the output file. Split and remove header line.
-            lines = result.text.split("\n")[1:]
+            lines = []
+            for row in result.table:
+                lines.append(f"{row['objID']}, {row['RAJ2000']}, {row['DEJ2000']}")
             out_lines = [
                 "FORMAT = Name, Ra, Dec, Type, I, ReferenceFrequency=1e6\n"
             ]
@@ -264,7 +242,7 @@ def download_skymodel_panstarrs(cone_params, skymodel_path):
                 f.writelines(out_lines)
             return True
         return False
-    except requests.exceptions.RequestException as exc:
+    except (vo.dal.exceptions.DALQueryError, vo.dal.DALServiceError) as exc:
         logger.warning("Pan-STARRS request failed: %s", exc)
         return False
 
