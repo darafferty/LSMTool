@@ -269,11 +269,11 @@ class SkyModelGenerator:
             if dist is None:
                 continue
 
+            if dist := getattr(self, name):
+                samples[name] = dist.rvs(n_sources, random_state=random_state)
+
             if sampler := getattr(self, f"get_{name}", None):
                 samples[name] = sampler(samples)
-            else:
-                dist = getattr(self, name)
-                samples[name] = dist.rvs(n_sources, random_state=random_state)
 
         return samples
 
