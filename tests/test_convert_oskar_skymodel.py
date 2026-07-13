@@ -1,7 +1,6 @@
 import shlex
 import sys
 import time
-from pathlib import Path
 from unittest import mock
 
 import numpy as np
@@ -19,6 +18,7 @@ from lsmtool.convert_oskar_skymodel import (
     read_oskar_skymodel,
     write_to_makesourcedb,
 )
+from lsmtool.testing import SkyModelGenerator
 
 # ---------------------------------------------------------------------------- #
 # Module constants
@@ -56,10 +56,10 @@ def generate_oskar_skymodel_data(n_sources, rng):
 
     Parameters
     ----------
-    rng : numpy.random.Generator
-        Random number generator.
     n_sources : int
         Number of sources to generate.
+    rng : numpy.random.Generator
+        Random number generator.
 
     Returns
     -------
@@ -69,32 +69,8 @@ def generate_oskar_skymodel_data(n_sources, rng):
         measure, FWHM major, FWHM minor, Position angle.
     """
 
-    ra = rng.uniform(0, 360, n_sources)
-    dec = rng.uniform(-90, 90, n_sources)
-    i = rng.uniform(0.001, 20, n_sources)
-    q = u = v = np.zeros(n_sources)
-    ref_freq = np.full(n_sources, 1.44e8)
-    spectral_index = rng.uniform(-1, 0, n_sources)
-    rotation_measure = np.zeros(n_sources)
-    fwhm_major = rng.uniform(0.01, 20, n_sources)
-    fwhm_minor = rng.uniform(0, 1, n_sources) * fwhm_major
-    position_angle = rng.uniform(0, 180, n_sources)
-    return np.column_stack(
-        (
-            ra,
-            dec,
-            i,
-            q,
-            u,
-            v,
-            ref_freq,
-            spectral_index,
-            rotation_measure,
-            fwhm_major,
-            fwhm_minor,
-            position_angle,
-        )
-    ).view(OSKAR_NUMPY_DTYPE)
+    samples = SkyModelGenerator().sample(n_sources, rng)
+    return np.column_stack(list(samples.values())).view(OSKAR_NUMPY_DTYPE)
 
 
 def random_skymodel(n_sources, rng):
@@ -113,12 +89,6 @@ def random_skymodel(n_sources, rng):
 
 # ---------------------------------------------------------------------------- #
 # Fixtures
-
-
-@pytest.fixture(scope="session")
-def rng():
-    """Random number generator fixture for reproducibility."""
-    return np.random.default_rng(seed=881726)
 
 
 @pytest.fixture()
