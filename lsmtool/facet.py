@@ -6,8 +6,8 @@ import ast
 import logging
 import re
 import tempfile
+from pathlib import Path
 
-import astropy.units as u
 import numpy as np
 import scipy
 from astropy.coordinates import Angle, SkyCoord
@@ -19,11 +19,41 @@ from shapely.prepared import prep
 from . import tableio
 from .constants import WCS_ORIGIN
 from .download_skymodel import download_skymodel
-from .io import load
+from .io import check_file_exists, load
 from .operations_lib import make_wcs, normalize_ra_dec
 
 # Module constants
+# ---------------------------------------------------------------------------- #
 INDEX_OUTSIDE_DIAGRAM = -1
+
+FACET_NAME_REGEX = re.compile(
+    r"""(?x)                    # verbose mode
+        ^[^#]*                  # any text preceding the comment character
+        \#.*?                   # comment character maybe followed by other text
+        text\s*=\s*             # the text= keyword with optional whitespace
+        (
+            (?P<quote>["'])     # opening quote
+        |                       # or
+            (?P<brace>\{)       # opening brace
+        |                       # or empty (no quotes or braces)
+        )
+        (?(quote)               # if opening quote was found
+            (?P<text0>[^"\n]+)   # match any text that is not a quote or newline
+            (?P=quote)          # match the previously matched quote character
+        |                       # or 
+            (?(brace)           # if opening brace was found
+                (?P<text1>[^\}\n]+) # match any text that is not a closing brace
+                \}              # match the closing brace
+            |
+                (?P<text2>[^"'\{\}\n]+)
+            )
+        )
+        .*                      # any trailing text
+        $                       # end of line
+    """
+)
+
+# ---------------------------------------------------------------------------- #
 
 
 class Facet(object):
@@ -47,9 +77,7 @@ class Facet(object):
         generic WCS is used
     """
 
-    def __init__(
-        self, name, ra, dec, vertices, *, wcs=None
-    ):
+    def __init__(self, name, ra, dec, vertices, *, wcs=None):
         self.name = name
         self.log = logging.getLogger("lsmtool:{0}".format(self.name))
         if type(ra) is str:
@@ -254,9 +282,7 @@ class SquareFacet(Facet):
         generic WCS is used
     """
 
-    def __init__(
-        self, name, ra, dec, width, *, wcs=None
-    ):
+    def __init__(self, name, ra, dec, width, *, wcs=None):
         if type(ra) is str:
             ra = Angle(ra).to("deg").value
         if type(dec) is str:
@@ -276,9 +302,7 @@ class SquareFacet(Facet):
 
         vertices = list(zip(corners_ra, corners_dec))
 
-        super().__init__(
-            name, ra, dec, vertices, wcs=wcs
-        )
+        super().__init__(name, ra, dec, vertices, wcs=wcs)
 
 
 def tessellate(
@@ -618,169 +642,147 @@ def make_ds9_region_file(
     Parameters
     ----------
     facets : list of Facet objects
-        List of Facet objects to include
+        List of Facet objects to include.
     outfile : str
-        Name of output region file
+        Name of output region file.
     enclose_names : bool, optional
-        If True, enclose patch names in curly brackets for full
-        compatibility with ds9. Curly brackets may cause issues with
-        other tools that use the region file, such as DP3, in which
-        case they can be excluded by setting this option to False
+        If True, enclose patch names in curly brackets for full compatibility
+        with ds9. Curly brackets may cause issues with other tools that use the
+        region file, such as DP3, in which case they can be excluded by setting
+        this option to False.
     associate_names_with_polygons : optional
-        If True, the facet names are associated with the "polygon" entries. This
-        convention matches that used by WSClean (see
+        If True, the facet names are associated with the "polygon" entries.
+        This convention matches that used by WSClean (see
         https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html#adding-a-text-label).
-        If False, the names are associated with the "point" entries instead (required by
-        some DP3 steps)
+        If False, the names are associated with the "point" entries instead
+        (required by some DP3 steps).
     """
-    lines = []
-    lines.append(
-        "# Region file format: DS9 version 4.0\nglobal color=green "
-        'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
-        "move=1 delete=1 include=1 fixed=0 source=1\nfk5\n"
-    )
-
-    for facet in facets:
-        radec_list = []
-        RAs = facet.polygon_ras
-        Decs = facet.polygon_decs
-        for ra, dec in zip(RAs, Decs):
-            radec_list.append("{0}, {1}".format(ra, dec))
-        polygon_string = ", ".join(radec_list)
-
-        if enclose_names:
-            name_string = f"text={{{facet.name}}}"
-        else:
-            name_string = f"text={facet.name}"
-
-        if associate_names_with_polygons:
-            lines.append(f"polygon({polygon_string}) # {name_string}\n")
-            lines.append(f"point({facet.ra}, {facet.dec})\n")
-        else:
-            lines.append(f"polygon({polygon_string})\n")
-            lines.append(f"point({facet.ra}, {facet.dec}) # {name_string}\n")
-
-    with open(outfile, "w") as f:
-        f.writelines(lines)
+    with open(outfile, "w") as stream:
+        stream.write(
+            "# Region file format: DS9 version 4.0\n"
+            'global color=green font="helvetica 10 normal" select=1 highlite=1 '
+            "edit=1  move=1 delete=1 include=1 fixed=0 source=1\n"
+            "fk5\n"
+        )
+        for facet in facets:
+            polygon_string = ", ".join(map(str, facet.vertices.ravel()))
+            lines = [
+                f"polygon({polygon_string})",
+                f"point({facet.ra}, {facet.dec})",
+            ]
+            facet_name = f"{{{facet.name}}}" if enclose_names else facet.name
+            append_name_to_line = 0 if associate_names_with_polygons else 1
+            lines[append_name_to_line] += f" # text={facet_name}"
+            stream.write("\n".join(lines) + "\n")
 
 
 def read_ds9_region_file(region_file, wcs=None):
     """
-    Read a ds9 facet region file and return facets
+    Read a ds9 facet region file and return facets.
 
     Parameters
     ----------
     region_file : str
-        Filename of input ds9 region file
+        Filename of input ds9 region file.
     wcs : astropy.wcs.WCS, optional
-        WCS object that defines the world coordinate system to use. If None, a
-        generic WCS is used
+        WCS object that defines the world coordinate system to use for the
+        conversion to pixel coordinates. If None, a generic WCS object is
+        created using the reference point of the facet and the default pixel
+        scale from `lsmtool.constants.WCS_PIXEL_SCALE`.
 
     Returns
     -------
     facets : list
-        List of Facet objects
+        List of Facet objects.
     """
+
+    region_file = check_file_exists(region_file)
+
     facets = []
-    with open(region_file, "r") as f:
-        lines = f.readlines()
+    for index, (polygon, *_, points) in enumerate(
+        parse_ds9_facets(region_file)
+    ):
+        ra, dec = ast.literal_eval(points.split("point")[1])
+        vertices = ast.literal_eval(polygon.split("polygon")[1])
+        vertices = np.reshape(vertices, (-1, 2))
 
-    # Compile the regex patterns used later to find the facet names
-    patterns = [
-        re.compile(r'#.*text\s*=\s*[{"\']([^}"\']*)[}"\'].*$'),  # match to quoted name
-        re.compile(r"#.*text\s*=\s*(\w*).*$"),  # match to unquoted name
-    ]
-
-    indx = 0
-    for line in lines:
-        # Each facet in the region file is defined by a polygon line that starts
-        # with 'polygon' and gives the (RA, Dec) vertices
-        #
-        # Each facet polygon line may be followed by a line giving the reference
-        # point that starts with 'point' and gives the reference (RA, Dec)
-        #
-        # The facet name may be set in the text property of either line
-        # (see https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html)
-        if line.startswith("polygon"):
-            # New facet definition begins
-            indx += 1
-            vertices = ast.literal_eval(line.split("polygon")[1])
-            polygon_ras = [ra for ra in vertices[::2]]
-            polygon_decs = [dec for dec in vertices[1::2]]
-            vertices = [(ra, dec) for ra, dec in zip(polygon_ras, polygon_decs)]
-
-            # Make a temporary facet to get centroid and make new facet with
-            # reference point at centroid (this point may be overridden by
-            # a following 'point' line)
-            facet_name = None
-            facet_tmp = Facet(
-                "temp",
-                polygon_ras[0],
-                polygon_decs[0],
-                vertices,
-                wcs=wcs,
-            )
-            ra = facet_tmp.ra_centroid
-            dec = facet_tmp.dec_centroid
-
-        elif line.startswith("point"):
-            # Facet definition continues
-            if not len(facets):
-                raise ValueError(
-                    f'Error parsing region file "{region_file}": "point" '
-                    'line found without a preceding "polygon" line'
-                )
-            facet_tmp = facets.pop()
-            vertices = facet_tmp.vertices
-            ra, dec = ast.literal_eval(line.split("point")[1])
-
-        else:
-            continue
-
-        # Read the facet name, if any. The name is defined using the 'text'
-        # property. E.g.:
-        #     'polygon(309.6, 60.9, 310.4, 58.9, 309.1, 59.2) # text = {Patch_1} width = 2'
-        #     'point(0.1, 1.2) # text = {Patch_1} width = 2'
-        #
-        # Note: ds9 format allows strings to be quoted with " or ' or {}
-        # (see https://ds9.si.edu/doc/ref/region.html#RegionProperties),
-        # so we match everything between "", '', or {}, if the line contains
-        # anything like `... text = ...`. We also allow the name to have
-        # no quotes (e.g., `text = Patch_1`), as this is supported by DP3. In
-        # this case, the name should not contain any spaces (if it does, only
-        # the first word is matched)
-        #
-        # Note: if a name is defined for both the facet polygon and the facet
-        # reference point, the one for the point takes precedence
-        if "text" in line:
-            for pattern in patterns:
-                facet_name_match = pattern.search(line)
-                if facet_name_match is not None:
-                    if facet_name := facet_name_match.group(1):
-                        # Replace characters that are potentially problematic for Rapthor,
-                        # DP3, etc. with an underscore
-                        for invalid_char in [" ", "{", "}", '"', "'"]:
-                            facet_name = facet_name.replace(invalid_char, "_")
-                        break
-                    else:
-                        raise ValueError(
-                            f'Error parsing region file "{region_file}": '
-                            f'Parsing of the "text" attribute results in an empty string for line: {line}'
-                        )
-        if facet_name is None:
-            facet_name = f"facet_{indx}"
+        facet_name = parse_facet_name((polygon, points))
+        facet_name = facet_name or f"facet_{index}"
 
         # Lastly, add the facet to the list
-        facets.append(
-            Facet(
-                facet_name, ra, dec, vertices, wcs=wcs
-            )
-        )
+        facets.append(Facet(facet_name, ra, dec, vertices, wcs=wcs))
 
     return facets
 
 
-def read_skymodel(
+def parse_ds9_facets(region_file):
+    """
+    Parse facet definitions from a ds9 region file.
+
+    Each facet in the region file is defined by a polygon line that starts
+    with 'polygon' and gives the (RA, Dec) vertices.
+
+    Each facet polygon line may be followed by a line giving the reference
+    point that starts with 'point' and gives the reference (RA, Dec).
+
+    The facet name may be set in the text property of either line
+    (see https://wsclean.readthedocs.io/en/latest/ds9_facet_file.html).
+    """
+
+    with Path(region_file).open("r") as stream:
+        buffer = []
+        for line in stream:
+            if not line.startswith(("polygon", "point")):
+                continue
+
+            if line.startswith("polygon") and buffer:
+                yield buffer
+                buffer = []
+
+            elif line.startswith("point") and not buffer:
+                raise ValueError(
+                    f'Error parsing region file "{region_file}": "point" '
+                    'line found without a preceding "polygon" line'
+                )
+
+            buffer.append(line)
+
+        if buffer:
+            yield buffer
+
+
+def parse_facet_name(lines):
+    """
+    Parse the facet name from the polygon / point definition string.
+
+    In the region file, the name is defined using the 'text' property. E.g.:
+        'polygon(3.6, 60.9, 3.4, 58.9, 3.1, 59.2) # text = {Patch_1} width = 2'
+        'point(0.1, 1.2) # text = {Patch_1} width = 2'
+
+    Note: ds9 format allows strings to be quoted with " or ' or {}
+    (see https://ds9.si.edu/doc/ref/region.html#RegionProperties),
+    so we match everything between "", '', or {}, if the line contains
+    anything like `... # text = ...`
+
+    Note: if a name is defined for both the facet polygon and the facet
+    reference point, the one for the point takes precedence.
+    """
+
+    for line in sorted(lines):
+        if match := FACET_NAME_REGEX.search(line):
+            facet_name = match["text0"] or match["text1"] or match["text2"]
+            if not (facet_name := facet_name.strip()):
+                return
+
+            # Replace characters that are potentially problematic for Rapthor,
+            # DP3, etc. with an underscore
+            for invalid_char in [" ", "{", "}", '"', "'"]:
+                facet_name = facet_name.replace(invalid_char, "_")
+
+            return facet_name
+
+
+def read_from_skymodel(
     skymodel,
     ra_mid,
     dec_mid,
@@ -805,8 +807,10 @@ def read_skymodel(
     width_dec : float
         Width of bounding box in Dec in degrees
     wcs : astropy.wcs.WCS, optional
-        WCS object that defines the world coordinate system to use. If None, a
-        generic WCS is used
+        The world coordinate system (WCS) object to use for the conversion
+        between celestial and pixel coordinate systems. If None, a generic WCS
+        object is created using the reference point of the facet and the
+        default pixel scale from `lsmtool.constants.WCS_PIXEL_SCALE`.
 
     Returns
     -------
@@ -820,52 +824,36 @@ def read_skymodel(
     # Set the position of the calibration patches to those of
     # the input sky model
     source_dict = skymod.getPatchPositions()
-    name_cal = []
-    ra_cal = []
-    dec_cal = []
-    for k, v in source_dict.items():
-        name_cal.append(k)
-        # Make sure RA is between [0, 360) deg and Dec between [-90, 90]
-        ra, dec = normalize_ra_dec(v[0].value, v[1].value)
-        ra_cal.append(ra)
-        dec_cal.append(dec)
-    patch_coords = SkyCoord(
-        ra=np.array(ra_cal) * u.degree, dec=np.array(dec_cal) * u.degree
-    )
+
+    # Make sure RA is between [0, 360) deg and Dec between [-90, 90]
+    coordinates = [
+        normalize_ra_dec(ra.value, dec.value)
+        for (ra, dec) in source_dict.values()
+    ]
+    patch_coords = SkyCoord(coordinates, unit="deg")
 
     # Do the tessellation
-    wcs = wcs or make_wcs(ra_mid, dec_mid)
     facet_points, facet_polys = tessellate(
-        SkyCoord(ra_cal, dec_cal, unit="deg"),
+        patch_coords,
         SkyCoord(ra_mid, dec_mid, unit="deg"),
         [width_ra, width_dec],
         wcs=wcs,
     )
-    facet_names = []
-    for facet_point in facet_points:
-        # For each facet, match the correct patch name (i.e., the name of the
-        # patch closest to the facet reference point). This step is needed
-        # because some patches in the sky model may not appear in the facet list if
-        # they lie outside the bounding box
-        facet_coord = SkyCoord(
-            ra=facet_point[0] * u.degree, dec=facet_point[1] * u.degree
-        )
-        separations = facet_coord.separation(patch_coords)
-        facet_names.append(np.array(name_cal)[np.argmin(separations)])
+
+    # For each facet, match the correct patch name (i.e., the name of the patch
+    # closest to the facet reference point). This step is needed because some
+    # patches in the sky model may not appear in the facet list if they lie
+    # outside the bounding box.
+    names = np.array(list(source_dict.keys()))
+    facet_coords = SkyCoord(facet_points, unit="deg")
+    facet_names = names[
+        facet_coords[:, None].separation(patch_coords).argmin(1)
+    ]
 
     # Create the facets
-    facets = []
-    for name, center_coord, vertices in zip(
-        facet_names, facet_points, facet_polys
-    ):
-        facets.append(
-            Facet(
-                name,
-                center_coord[0],
-                center_coord[1],
-                vertices,
-                wcs=wcs,
-            )
+    return [
+        Facet(name, *center_coords, vertices, wcs=wcs)
+        for name, center_coords, vertices in zip(
+            facet_names, facet_points, facet_polys, strict=True
         )
-
-    return facets
+    ]
