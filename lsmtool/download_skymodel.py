@@ -191,7 +191,9 @@ def get_panstarrs_request():
     url : str
         The Pan-STARRS VO URL.
     """
-    url = "https://vizier.cds.unistra.fr/viz-bin/votable/-A?-source=II/389/ps1_dr2&amp;-out.max=unlimited&amp;"
+    url = "https://vizier.cds.unistra.fr/viz-bin/votable/"  # VO service URL
+    url += "-A?-source=II/389/ps1_dr2&amp;"  # Pan-STARRS DR2 catalog
+    url += "-out.max=unlimited&amp;"  # unlimited number of output lines
     url += "-out=objID&amp;"  # output objID
     url += "-out=RAJ2000&amp;-out=DEJ2000&amp;"  # output RA, Dec
     url += "Nd=5&amp;"  # require detection in at least 5 epochs
@@ -220,13 +222,16 @@ def download_skymodel_panstarrs(cone_params, skymodel_path):
     logger.info("Downloading skymodel from Pan-STARRS into %s", skymodel_path)
     try:
         url = get_panstarrs_request()
-        result = pyvo.conesearch(url, [cone_params["ra"], cone_params["dec"]], cone_params["radius"])
+        result = pyvo.conesearch(
+            url, [cone_params["ra"], cone_params["dec"]], cone_params["radius"]
+        )
         if result.status[0] == "OK":
             # Convert the result to makesourcedb format and write to
-            # the output file. Split and remove header line.
-            lines = []
-            for row in result.to_table():
-                lines.append(f"{row['objID']}, {row['RAJ2000']}, {row['DEJ2000']}")
+            # the output file
+            lines = [
+                f"{row['objID']}, {row['RAJ2000']}, {row['DEJ2000']}"
+                for row in result.to_table()
+            ]
             out_lines = [
                 "FORMAT = Name, Ra, Dec, Type, I, ReferenceFrequency=1e6\n"
             ]
@@ -242,7 +247,7 @@ def download_skymodel_panstarrs(cone_params, skymodel_path):
                 f.writelines(out_lines)
             return True
         return False
-    except (vo.dal.exceptions.DALQueryError, vo.dal.DALServiceError) as exc:
+    except (pyvo.dal.exceptions.DALQueryError, pyvo.dal.DALServiceError) as exc:
         logger.warning("Pan-STARRS request failed: %s", exc)
         return False
 
