@@ -229,7 +229,7 @@ def download_skymodel_panstarrs(cone_params, skymodel_path):
             # Convert the result to makesourcedb format and write to
             # the output file
             lines = [
-                f"{row['objID']}, {row['RAJ2000']}, {row['DEJ2000']}"
+                f"{row['objID']},{row['RAJ2000']},{row['DEJ2000']}"
                 for row in result.to_table()
             ]
             out_lines = [
