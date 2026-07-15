@@ -2,8 +2,6 @@
 Tests for the lsmtool.facet module.
 """
 
-import contextlib
-
 import astropy.units as u
 import matplotlib as mpl
 import numpy as np
@@ -17,6 +15,7 @@ from lsmtool.facet import (
     SquareFacet,
     in_box,
     make_ds9_region_file,
+    parse_facet_name,
     prepare_points_for_tessellate,
     read_ds9_region_file,
     read_from_skymodel,
@@ -325,7 +324,7 @@ class TestDS9RegionFile:
         """
         return test_data_path / request.param
 
-    @pytest.fixture(params=["test.reg", "invalid.reg"])
+    @pytest.fixture()
     def expected_facet_attributes(self, ds9_region_file):
         if ds9_region_file.name == "test.reg":
             return [
@@ -353,6 +352,76 @@ class TestDS9RegionFile:
 
         return ValueError
 
+    @pytest.mark.parametrize(
+        "definition, expected_name",
+        [
+            pytest.param(
+                ["point(318.2, 52.2) # text = Patch_1"],
+                "Patch_1",
+                id="nominal",
+            ),
+            pytest.param(
+                ["point(318.2, 52.2) #  something=else text = Patch_1"],
+                "Patch_1",
+                id="preceding_text",
+            ),
+            pytest.param(
+                ["point(318.2, 52.2) # text = {Patch_1} something=else"],
+                "Patch_1",
+                id="trailing_text",
+            ),
+            pytest.param(
+                ["point(318.2, 52.2) # text = {Patch_1}"],
+                "Patch_1",
+                id="braced",
+            ),
+            pytest.param(
+                ["point(312.6, 50.4) # text={Patch 10 with spaces}"],
+                "Patch_10_with_spaces",
+                id="braced_with_spaces",
+            ),
+            pytest.param(
+                ['point(312.6, 50.4) # text="Patch 10 with spaces"'],
+                "Patch_10_with_spaces",
+                id="quoted_with_spaces",
+            ),
+            pytest.param(
+                ["point(312.6, 50.4) # text='Patch  with spaces'"],
+                "Patch__with_spaces",
+                id="single_quoted_with_spaces",
+            ),
+            pytest.param(
+                ["point(318.2, 52.2) # text={}"],
+                None,
+                id="empty_braces",
+            ),
+            pytest.param(
+                ['point(318.2, 52.2) # text=""'],
+                None,
+                id="empty_quotes",
+            ),
+            pytest.param(
+                [
+                    "polygon(315., 62., 316., 61., 320., 60.)) # text=not_used",
+                    "point(318.2, 52.2) # text=_used_",
+                ],
+                "_used_",
+                id="multiple_names",
+            ),
+            pytest.param(
+                ['point(318.2, 52.2) # text={"some name with quotes"}'],
+                "_some_name_with_quotes_",
+                id="name_with_braces_and_quotes",
+            ),
+        ],
+    )
+    def test_parse_facet_name(self, definition, expected_name):
+        """
+        Test the parse_facet_name function.
+        """
+        name = parse_facet_name(definition)
+        assert name == expected_name
+
     def test_read_ds9_region_file(
         self, ds9_region_file, expected_facet_attributes
     ):
@@ -374,41 +443,38 @@ class TestDS9RegionFile:
                     )
 
     @pytest.mark.parametrize(
-        "ds9_region_file, expected_facet_attributes",
-        [("test.reg", "test.reg")],
-        indirect=True,
-    )
-    @pytest.mark.parametrize(
-        "enclose_names, associate_names_with_polygons",
+        "ds9_region_file, enclose_names, associate_names_with_polygons",
         [
-            pytest.param(True, True, id="enclose_names"),
-            pytest.param(False, True, id="no_enclose_names"),
+            pytest.param("test.reg", True, True, id="enclose_names"),
+            pytest.param("test.reg", False, True, id="no_enclose_names"),
             pytest.param(
+                "test.reg",
                 True,
                 False,
                 id="no_associate_names_with_polygons",
             ),
             pytest.param(
+                "test.reg",
                 False,
                 False,
                 id="no_enclose_names_no_associate_names_with_polygons",
             ),
         ],
+        indirect=["ds9_region_file"],
     )
-    def test_write_ds9_region_file_enclose_names(
+    def test_write_ds9_region_file(
         self,
         tmp_path,
         ds9_region_file,
-        expected_facet_attributes,
         enclose_names,
         associate_names_with_polygons,
+        expected_facet_attributes,
     ):
-        """
-        Test writing a DS9 region file.
-        """
+        """Test writing a DS9 region file."""
+
         # Arrange
-        reg_out = tmp_path / "test_region_write.reg"
         facets = read_ds9_region_file(ds9_region_file)
+        reg_out = tmp_path / "test_region_write.reg"
 
         # Act
         make_ds9_region_file(
@@ -420,52 +486,6 @@ class TestDS9RegionFile:
 
         # Assert
         self.test_read_ds9_region_file(reg_out, expected_facet_attributes)
-
-    @pytest.mark.parametrize(
-        "ds9_region_file, expected_facet_attributes",
-        [("test.reg", "test.reg")],
-        indirect=True,
-    )
-    @pytest.mark.parametrize(
-        "associate_names_with_polygons, context",
-        [
-            pytest.param(
-                True,
-                contextlib.nullcontext(),
-                id="associate_names_with_polygons",
-            ),
-            pytest.param(
-                False,
-                contextlib.nullcontext(),
-                id="no_associate_names_with_polygons",
-            ),
-        ],
-    )
-    def test_write_ds9_region_file_associate_names(
-        self,
-        tmp_path,
-        ds9_region_file,
-        expected_facet_attributes,
-        associate_names_with_polygons,
-        context,
-    ):
-        """
-        Test writing a DS9 region file.
-        """
-        # Arrange
-        reg_out = tmp_path / "test_region_write.reg"
-        facets = read_ds9_region_file(ds9_region_file)
-
-        # Act
-        make_ds9_region_file(
-            facets,
-            reg_out,
-            associate_names_with_polygons=associate_names_with_polygons,
-        )
-
-        # Assert
-        with context:
-            self.test_read_ds9_region_file(reg_out, expected_facet_attributes)
 
 
 class TestReadFromSkymodel:

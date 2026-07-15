@@ -23,7 +23,7 @@ from lsmtool.io import check_file_exists
 from . import tableio
 from .constants import WCS_ORIGIN, WCS_PIXEL_SCALE
 from .download_skymodel import download_skymodel
-from .io import load
+from .io import check_file_exists, load
 from .operations_lib import make_wcs, normalize_ra_dec
 from .skymodel import SkyModel
 
@@ -34,19 +34,25 @@ INDEX_OUTSIDE_DIAGRAM = -1
 FACET_NAME_REGEX = re.compile(
     r"""(?x)                    # verbose mode
         ^[^#]*                  # any text preceding the comment character
-        \#.*                    # comment character maybe followed by other parameters
+        \#.*?                   # comment character maybe followed by other text
         text\s*=\s*             # the text= keyword with optional whitespace
         (
             (?P<quote>["'])     # opening quote
-            |                   # or
+        |                       # or
             (?P<brace>\{)       # opening brace
-        )?                      # quote or brace are optional
-        (?P<text>[^"'\}\n]+)    # the text value
-        (?(quote)               # match closing quote or brace if opening was found
+        |                       # or empty (no quotes or braces)
+        )
+        (?(quote)               # if opening quote was found
+            (?P<text0>[^"\n]+)   # match any text that is not a quote or newline
             (?P=quote)          # match the previously matched quote character
-            |                   # or 
-            (?(brace)\})        # match the closing brace if opening brace was found
-        )?                      # closing quote or brace are optional
+        |                       # or 
+            (?(brace)           # if opening brace was found
+                (?P<text1>[^\}\n]+) # match any text that is not a closing brace
+                \}              # match the closing brace
+            |
+                (?P<text2>[^"'\{\}\n]+)
+            )
+        )
         .*                      # any trailing text
         $                       # end of line
     """
@@ -750,7 +756,7 @@ def read_ds9_region_file(region_file, wcs=None):
         vertices = ast.literal_eval(polygon.split("polygon")[1])
         vertices = np.reshape(vertices, (-1, 2))
 
-        facet_name = parse_facet_name(region_file, (polygon, points))
+        facet_name = parse_facet_name((polygon, points))
         facet_name = facet_name or f"facet_{index}"
 
         # Lastly, add the facet to the list
@@ -795,9 +801,9 @@ def parse_ds9_facets(region_file):
             yield buffer
 
 
-def parse_facet_name(region_file, lines):
+def parse_facet_name(lines):
     """
-    Parse the facet name from the polgon / point definition string.
+    Parse the facet name from the polygon / point definition string.
 
     In the region file, the name is defined using the 'text' property. E.g.:
         'polygon(3.6, 60.9, 3.4, 58.9, 3.1, 59.2) # text = {Patch_1} width = 2'
@@ -812,14 +818,11 @@ def parse_facet_name(region_file, lines):
     reference point, the one for the point takes precedence.
     """
 
-    for line in lines:
-        if match := FACET_NAME_REGEX.match(line):
-            if not (facet_name := match["text"]):
-                raise ValueError(
-                    f'Error parsing region file "{region_file}": '
-                    '"text" property could not be parsed for lines: '
-                    f"{lines}"
-                )
+    for line in sorted(lines):
+        if match := FACET_NAME_REGEX.search(line):
+            facet_name = match["text0"] or match["text1"] or match["text2"]
+            if not (facet_name := facet_name.strip()):
+                return
 
             # Replace characters that are potentially problematic for Rapthor,
             # DP3, etc. with an underscore

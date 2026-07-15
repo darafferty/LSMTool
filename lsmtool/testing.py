@@ -2,58 +2,14 @@
 Utility functions used for testing.
 """
 
-import contextlib
 from dataclasses import asdict, dataclass
 
 import numpy as np
-import pytest
 from astropy.coordinates import Angle
 from scipy.stats.distributions import rv_frozen, uniform
 
 from .io import load
 from .utils import format_coordinates
-
-
-def get_context(expected, **kws):
-    """
-    Get the appropriate runtime context for executing test code based on
-    whether the expected result is an exception or not.
-
-    Parameters
-    ----------
-    expected : Exception or object
-        The expected result of the test. If this object is an exception class,
-        the context manager will be `pytest.raises(expected, **kws)`. Otherwise,
-        it will be a null context manager.
-
-    Examples
-    --------
-    For tests that are expected to succeed:
-    >>> @pytest.mark.parametrize("expected", [1])
-    ... def test_success(expected):
-    ...     with get_context(expected):
-    ...         assert expected == 1
-
-    For tests that are expected to fail:
-    The following example will raise an IndexError, which will get caught by
-    the `pytest.raises` context manager, leading to a successful test
-    >>> @pytest.mark.parametrize("expected", [LookupError])
-    ... def test_expected_failure(expected):
-    ...     with get_context(expected):
-    ...         [][1]
-
-    Returns
-    -------
-    contextlib.AbstractContextManager
-    """
-    if isinstance(expected, type):
-        if isinstance(expected, contextlib.AbstractContextManager):
-            return expected
-
-        if issubclass(expected, BaseException):
-            return pytest.raises(expected, **kws)
-
-    return contextlib.nullcontext(expected)
 
 
 def check_skymodels_equal(
@@ -280,11 +236,11 @@ class SkyModelGenerator:
             parameter.
         """
         samples = self.sample(n_sources, random_state)
-        ra, dec = self.get_coords(n_sources, samples)
+        ra, dec = self.get_coords(samples)
         samples.update(ra=ra, dec=dec)
         return {
-            "name": self.get_names(n_sources, samples),
-            "type": self.get_types(n_sources, samples),
+            "name": self.get_names(samples),
+            "type": self.get_types(samples),
             **samples,
         }
 
@@ -313,21 +269,31 @@ class SkyModelGenerator:
             if dist is None:
                 continue
 
-            if sampler := getattr(self, f"get_{name}", None):
-                samples[name] = sampler(n_sources, samples)
-            else:
-                dist = getattr(self, name)
+            if dist := getattr(self, name):
                 samples[name] = dist.rvs(n_sources, random_state=random_state)
+
+            if sampler := getattr(self, f"get_{name}", None):
+                samples[name] = sampler(samples)
 
         return samples
 
-    def get_coords(self, n_sources, samples):
+    def get_coords(self, samples):
         """
         Generate the RA and Dec coordinates for the sources in the skymodel.
+
+        Parameters
+        ----------
+        samples : dict
+            A dictionary containing the random samples of other parameters.
+
+        Returns
+        -------
+        coords : tuple[numpy.ndarray, numpy.ndarray]
+            Arrays of RA and Dec coordinates for the sources.
         """
         return format_coordinates(samples["ra"], samples["dec"], pad=True)
 
-    def get_names(self, n_sources, samples):
+    def get_names(self, samples):
         """
         Generate unique source names for the specified number of sources.
 
@@ -336,8 +302,6 @@ class SkyModelGenerator:
 
         Parameters
         ----------
-        n_sources : int
-            The number of sources to generate in the skymodel.
         samples : dict
             A dictionary containing the random samples of other parameters.
 
@@ -357,7 +321,7 @@ class SkyModelGenerator:
             ),
         )
 
-    def get_types(self, n_sources, samples):
+    def get_types(self, samples):
         """
         Generate source types for the specified number of sources.
 
@@ -366,8 +330,6 @@ class SkyModelGenerator:
 
         Parameters
         ----------
-        n_sources : int
-            The number of sources to generate in the skymodel.
         samples : dict
             A dictionary containing the random samples of other parameters.
 
@@ -376,17 +338,16 @@ class SkyModelGenerator:
         types : numpy.ndarray
             An array of source types as strings.
         """
+        n_sources = len(samples["ra"])
         return np.full(n_sources, "GAUSSIAN")
 
-    def get_minor_axis(self, n_sources, samples):
+    def get_minor_axis(self, samples):
         """
         Generate values for the minor axis of the sources, ensuring that they
         are smaller than the corresponding major axis values.
 
         Parameters
         ----------
-        n_sources : int
-            The number of sources to generate in the skymodel.
         samples : dict
             A dictionary containing the random samples of other parameters.
 
