@@ -1042,11 +1042,25 @@ class TestFilterSkymodel:
         Fixture that creates a mock skymodel for testing the `filter_skymodel`
         function.
         """
-        path = tmp_path / "test_filter_skymodel.sky"
-        config = getattr(request, "param", {})
+        config = getattr(request, "param", {}).copy()
+        n_sources = config.pop("n_sources", 10)
+        additional_sources = config.pop("extra_sources", None)
         skymodel_generator = SkyModelGenerator(**config)
-        skymodel_generator.to_file(path, n_sources=144, random_state=rng)
-        return load(path)
+        samples = skymodel_generator(n_sources, rng)
+        data = np.column_stack(list(samples.values()))
+
+        if additional_sources:
+            data = np.vstack([data, additional_sources])
+
+        path = tmp_path / "test_filter_skymodel.sky"
+        np.savetxt(
+            path,
+            data,
+            header=skymodel_generator.get_header(samples),
+            delimiter=", ",
+            fmt="%s",
+        )
+        return path
 
     @pytest.mark.parametrize(
         "facet, extent, skymodel",
@@ -1181,37 +1195,96 @@ class TestFilterSkymodel:
         indirect=["skymodel"],
     )
     @pytest.mark.parametrize(
-        "invert",
+        "facet, skymodel",
         [
-            False,
+            # ---------------------------------------------------------------- #
+            # Nominal cases
             pytest.param(
-                True,
-                marks=pytest.mark.xfail(
-                    raises=(ValueError, OverflowError),
-                    reason="cannot convert float NaN to integer",
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=10,
+                    dec=0,
+                    vertices=[(5, 5), (15, 5), (15, -5), (5, -5)],
                 ),
+                {
+                    "ra": uniform_range(5, 15),
+                    "dec": uniform_range(-5, 5),
+                    "extra_sources": [
+                        (
+                            "OUTLIER",
+                            "GAUSSIAN",
+                            "00:57:53.455837",
+                            "-06.13.09.791355",
+                            "3.98900890999396",
+                            "0",
+                            "0",
+                            "0",
+                            "144000000.0",
+                            "-0.2668463365635031",
+                            "0",
+                            "19.92474020631723",
+                            "17.016649919671078",
+                            "108.61916555472459",
+                        )
+                    ],
+                },
+                id="one source outside facet",
+            ),
+            pytest.param(
+                SquareFacet(
+                    name="test_filter_skymodel",
+                    ra=255,
+                    dec=55,
+                    width=10,
+                ),
+                {
+                    "ra": uniform_range(250, 260),
+                    "dec": uniform_range(50, 60),
+                    "extra_sources": [
+                        (
+                            "OUTLIER",
+                            "GAUSSIAN",
+                            "16:57:53.455837",
+                            "49.00.00.0",
+                            "3.98900890999396",
+                            "0",
+                            "0",
+                            "0",
+                            "144000000.0",
+                            "-0.2668463365635031",
+                            "0",
+                            "19.92474020631723",
+                            "17.016649919671078",
+                            "108.61916555472459",
+                        )
+                    ],
+                },
+                id="one source outside square facet",
             ),
         ],
+        indirect=["skymodel"],
     )
-    def test_filter_skymodel(self, facet, extent, skymodel, invert):
+    @pytest.mark.parametrize(
+        "invert",
+        [False, True],
+    )
+    def test_filter_skymodel_removes_exterior_source(
+        self, facet, skymodel, invert
+    ):
         """
-        Test that `facet.filter_skymodel` selects only sources that lie inside the
-        input facet.
+        Test that `facet.filter_skymodel` selects only sources that lie inside
+        the input facet.
         """
 
+        # Arrange
+        skymodel = load(skymodel)
+        
         # Act
         facet.filter_skymodel(skymodel, invert)
 
-        # Assert
-        if skymodel.table:
-            assert (
-                "FILTER (with array of indices/bools)" in skymodel.history[-1]
-            )
+        # if has_outlier:
+        if invert:
+            assert list(skymodel.table["Name"]) == ["OUTLIER"]
+        else:
+            assert "OUTLIER" not in skymodel.table["Name"]
 
-        ra = skymodel.table["Ra"]
-        dec = skymodel.table["Dec"]
-
-        ra0, ra1, dec0, dec1 = extent
-        inside = (ra0 <= ra) & (ra <= ra1) & (dec0 <= dec) & (dec <= dec1)
-        selected = ~inside if invert else inside
-        assert np.all(selected)
