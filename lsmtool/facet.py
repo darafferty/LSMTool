@@ -236,59 +236,6 @@ class Facet(object):
         else:
             skymodel.select(sources_inside_facet)
 
-        if len(skymodel) == 0:
-            return skymodel
-
-        # Now check the actual boundary against filtered sky model. We first do a
-        # quick (but coarse) check using ImageDraw with a padding of at least a few
-        # pixels to ensure the quick check does not remove sources spuriously. We
-        # then do a slow (but precise) check using Shapely
-        ra = skymodel.getColValues("Ra")
-        dec = skymodel.getColValues("Dec")
-        x, y = self.wcs.wcs_world2pix(ra, dec, WCS_ORIGIN)
-
-        if any(np.isnan(x) | np.isnan(y)):
-            raise ValueError(
-                "Source coordinates contains NaN values in pixel coordinates. "
-                "This may be due to invalid RA/Dec values in the sky model or "
-                "an issue with the WCS transformation."
-            )
-
-        # Keep only those sources inside the bounding box
-        polygon = self.polygon
-        xmin, ymin, xmax, ymax = polygon.bounds
-        inside = (x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax)
-
-        xy = np.array([x, y])[:, inside]
-        xy_ranges = np.ptp(xy, 1)
-        xy_padding = (0.1 * xy_ranges).astype(int).clip(3, None)
-        xy_bottom_left = xy.min(1).astype(int) - xy_padding
-        xy_sizes = tuple(np.ceil(xy_ranges).astype(int) + 2 * xy_padding)
-        xy -= xy_bottom_left[:, None]
-
-        # Unmask everything outside of the polygon + its border (outline)
-        mask = Image.new("1", xy_sizes, 0)
-        verts = (
-            polygon.exterior.coords.xy - xy_bottom_left[:, None]
-        ).T.tolist()
-        ImageDraw.Draw(mask).polygon(verts, outline=1, fill=1)
-        inside = np.array(mask)[tuple(xy.astype(int))[::-1]]
-
-        # Now check sources in the border precisely
-        mask = Image.new("1", xy_sizes, 0)
-        ImageDraw.Draw(mask).polygon(verts, outline=1, fill=0)
-        border = np.array(mask)[tuple(xy.astype(int))[::-1]]
-
-        if border.any():
-            (border_indices,) = np.nonzero(border)
-            border_pixels_contain = shapely.contains_xy(polygon, *xy[:, border])
-            inside[border_indices[~border_pixels_contain]] = False
-
-        if invert:
-            skymodel.remove(inside)
-        else:
-            skymodel.select(inside)
-
         return skymodel
 
     def download_panstarrs(self, max_search_cone_radius=0.5):
