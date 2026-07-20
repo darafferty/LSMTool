@@ -188,6 +188,19 @@ class Facet(object):
         centroid = self.polygon.centroid
         return self.wcs.pixel_to_world(centroid.x, centroid.y)
 
+    @property
+    def moc(self):
+        """
+        Returns a MOC object for the facet's polygon
+
+        Returns
+        -------
+        moc : mocpy.MOC
+            The MOC object for the facet's polygon
+        """
+        polygon_sky = SkyCoord(*self.vertices.T, unit="deg")
+        return MOC.from_polygon_skycoord(polygon_sky)
+
     def set_skymodel(self, skymodel):
         """
         Sets the facet's sky model
@@ -212,10 +225,7 @@ class Facet(object):
         ra = skymodel.getColValues("Ra")
         dec = skymodel.getColValues("Dec")
         coords = SkyCoord(ra, dec, unit="deg")
-
-        polygon_sky = SkyCoord(*self.vertices.T, unit="deg")
-        moc = MOC.from_polygon_skycoord(polygon_sky)
-        return moc.contains_skycoords(coords)
+        return self.moc.contains_skycoords(coords)
 
     def filter_skymodel(self, skymodel, invert=False):
 
