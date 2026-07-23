@@ -5,6 +5,7 @@ Module for functions to download sky models.
 import logging
 import os
 import time
+from collections import namedtuple
 from contextlib import suppress
 from pathlib import Path
 
@@ -20,6 +21,9 @@ logger = logging.getLogger("LSMTool")
 
 REQUEST_CONNECT_TIMEOUT = 10
 REQUEST_READ_TIMEOUT = 300
+
+Catalogs = namedtuple("Catalogs", ["names"])
+NATIVE_CATALOGS = Catalogs(["LOTSS", "TGSS", "GSM", "NVSS", "VLSSR", "WENSS"])
 
 
 def download_skymodel(
@@ -84,8 +88,7 @@ def download_skymodel_from_survey(
             'dec': Declination of the target position.
             'radius': Search radius in degrees.
     survey : str
-        Source of the skymodel (e.g. "LOTSS", "TGSS", "GSM", "NVSS", "VLSSR",
-        "WENSS", or "PANSTARRS").
+        Survey name to use as the source of the skymodel (e.g. "LOTSS").
     skymodel_path : str
         Path to the output skymodel file.
     retries : int, default=4
@@ -107,9 +110,9 @@ def download_skymodel_from_survey(
 
     for attempt in range(retries + 1):
         match survey:
-            case "LOTSS" | "TGSS" | "GSM" | "NVSS" | "VLSSR" | "WENSS":
+            case catalog if catalog in NATIVE_CATALOGS.names:
                 success = download_skymodel_catalog(
-                    cone_params, survey, skymodel_path
+                    cone_params, catalog, skymodel_path
                 )
             case "PANSTARRS":
                 success = download_skymodel_panstarrs(
@@ -118,7 +121,7 @@ def download_skymodel_from_survey(
             case _:
                 raise ValueError(
                     "Unsupported sky model survey specified! "
-                    "Please use LOTSS, TGSS, GSM, NVSS, VLSSR, WENSS, or "
+                    f"Please use {','.join(NATIVE_CATALOGS.names)}, or "
                     "PANSTARRS."
                 )
         if success:
@@ -147,7 +150,7 @@ def download_skymodel_from_survey(
     )
 
 
-def download_skymodel_catalog(cone_params, survey, skymodel_path):
+def download_skymodel_catalog(cone_params, catalog, skymodel_path):
     """
     Download a skymodel from the specified source catalog.
 
@@ -160,19 +163,21 @@ def download_skymodel_catalog(cone_params, survey, skymodel_path):
         'radius': Search radius in degrees.
     skymodel_path : str
         Path to the output skymodel file.
-    survey : str
-        Source of the skymodel (must be one of "LOTSS", "TGSS", "GSM", "NVSS",
-        "VLSSR", or "WENSS").
+    catalog : str
+        Source of the skymodel (must be one defined in NATIVE_CATALOGS).
 
     Returns
     -------
     bool
         True if download was successful, False otherwise.
     """
-    logger.info("Downloading skymodel from %s into %s", survey, skymodel_path)
+    if catalog not in NATIVE_CATALOGS.names:
+        raise ValueError(f"The catalog {catalog} is not supported.")
+
+    logger.info("Downloading skymodel from %s into %s", catalog, skymodel_path)
     with suppress(ConnectionError):
         skymodel = SkyModel(
-            survey,
+            catalog,
             VOPosition=[cone_params["ra"], cone_params["dec"]],
             VORadius=cone_params["radius"],
         )
