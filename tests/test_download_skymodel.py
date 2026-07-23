@@ -7,6 +7,7 @@ from pathlib import Path
 
 import mocpy
 import pytest
+import pyvo
 import requests
 from conftest import copy_test_data
 
@@ -271,36 +272,21 @@ def test_check_lotss_coverage_outside_coverage(tmp_path, mocker):
         check_lotss_coverage(cone_params, tmp_path)
 
 
-def test_get_panstarrs_request(cone_params):
+def test_get_panstarrs_request():
     """Test the get_panstarrs_request function."""
 
     # Arrange
     expected_url = (
-        "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr1/mean.csv"
+        "https://vizier.cds.unistra.fr/viz-bin/votable/-A?-source=II/389/"
+        "ps1_dr2&amp;-out.max=unlimited&amp;-out=objID&amp;-out=RAJ2000&amp;"
+        "-out=DEJ2000&amp;Nd=5&amp;"
     )
-    expected_search_params = {
-        "ra": cone_params["ra"],
-        "dec": cone_params["dec"],
-        "radius": cone_params["radius"],
-        "nDetections.min": "5",
-        "columns": ["objID", "ramean", "decmean"],
-    }
 
     # Act
-    request_url, search_params = get_panstarrs_request(cone_params)
+    request_url = get_panstarrs_request()
 
     # Assert
     assert request_url == expected_url
-    assert search_params == expected_search_params
-
-
-def test_get_panstarrs_request_raises_error_large_radius():
-    """Test the get_panstarrs_request function."""
-
-    radius_limit = 0.5
-    cone_params = {"ra": 10.0, "dec": 10.0, "radius": radius_limit + 0.001}
-    with pytest.raises(ValueError):
-        _, _ = get_panstarrs_request(cone_params)
 
 
 def test_download_skymodel_panstarrs(cone_params, tmp_path, mocker):
@@ -310,10 +296,14 @@ def test_download_skymodel_panstarrs(cone_params, tmp_path, mocker):
     skymodel_path = tmp_path / "panstarrs.sky"
 
     mock_response = mocker.Mock()
-    mock_response.ok = True
-    mock_response.text = "objID,ramean,decmean\n1,10.75,5.34\n"
+    mock_response.status = ["OK"]
+
+    def mock_to_table():
+        return [{"objID": "1", "RAJ2000": 10.75, "DEJ2000": 5.34}]
+
+    mock_response.to_table = mock_to_table
     mocker.patch(
-        "lsmtool.download_skymodel.requests.get", return_value=mock_response
+        "lsmtool.download_skymodel.pyvo.conesearch", return_value=mock_response
     )
 
     # Act
@@ -335,10 +325,10 @@ def test_download_skymodel_panstarrs_not_ok(cone_params, tmp_path, mocker):
     skymodel_path = tmp_path / "panstarrs.sky"
 
     mock_response = mocker.Mock()
-    mock_response.ok = False
-    mock_response.text = ""
+    mock_response.status = ["NOT_OK"]
+    mock_response.to_table = [{}]
     mocker.patch(
-        "lsmtool.download_skymodel.requests.get", return_value=mock_response
+        "lsmtool.download_skymodel.pyvo.conesearch", return_value=mock_response
     )
 
     # Act
@@ -352,14 +342,14 @@ def test_download_skymodel_panstarrs_not_ok(cone_params, tmp_path, mocker):
 def test_download_skymodel_panstarrs_request_exception(
     cone_params, tmp_path, mocker
 ):
-    """Test Pan-STARRS download handles request exceptions."""
+    """Test Pan-STARRS download handles pyvo exceptions."""
 
     # Arrange
     skymodel_path = tmp_path / "panstarrs.sky"
 
     mocker.patch(
-        "lsmtool.download_skymodel.requests.get",
-        side_effect=requests.exceptions.RequestException("network error"),
+        "lsmtool.download_skymodel.pyvo.conesearch",
+        side_effect=pyvo.dal.exceptions.DALServiceError("network error"),
     )
     mock_warning = mocker.patch("lsmtool.download_skymodel.logger.warning")
 
@@ -378,6 +368,9 @@ def test_download_skymodel_panstarrs_request_exception(
         ("LOTSS", 190.0, 30.0, 0.5),
         ("TGSS", 12.34, 56.78, 0.6),
         ("GSM", 123.23, 23.34, 0.6),
+        ("NVSS", 12.34, 56.78, 0.6),
+        ("VLSSR", 12.34, 56.78, 0.6),
+        ("WENSS", 12.34, 56.78, 0.6),
     ],
 )
 def test_download_skymodel_catalog(
@@ -427,6 +420,9 @@ def test_download_skymodel_catalog_empty_result(cone_params, tmp_path, mocker):
         "LOTSS",
         "TGSS",
         "GSM",
+        "NVSS",
+        "VLSSR",
+        "WENSS",
         "PANSTARRS",
     ],
 )
