@@ -5,7 +5,6 @@ Module for functions to download sky models.
 import logging
 import os
 import time
-from collections import namedtuple
 from contextlib import suppress
 from pathlib import Path
 
@@ -21,9 +20,7 @@ logger = logging.getLogger("LSMTool")
 
 REQUEST_CONNECT_TIMEOUT = 10
 REQUEST_READ_TIMEOUT = 300
-
-Catalogs = namedtuple("Catalogs", ["names"])
-NATIVE_CATALOGS = Catalogs(["LOTSS", "TGSS", "GSM", "NVSS", "VLSSR", "WENSS"])
+NATIVE_CATALOGS = ("LOTSS", "TGSS", "GSM", "NVSS", "VLSSR", "WENSS")
 
 
 def download_skymodel(
@@ -89,6 +86,8 @@ def download_skymodel_from_survey(
             'radius': Search radius in degrees.
     survey : str
         Survey name to use as the source of the skymodel (e.g. "LOTSS").
+        The name should either be one included in NATIVE_CATALOGS or
+        "PANSTARRS".
     skymodel_path : str
         Path to the output skymodel file.
     retries : int, default=4
@@ -109,21 +108,12 @@ def download_skymodel_from_survey(
     logger.info("Downloading skymodel for the target into %s", skymodel_path)
 
     for attempt in range(retries + 1):
-        match survey:
-            case catalog if catalog in NATIVE_CATALOGS.names:
-                success = download_skymodel_catalog(
-                    cone_params, catalog, skymodel_path
-                )
-            case "PANSTARRS":
-                success = download_skymodel_panstarrs(
-                    cone_params, skymodel_path
-                )
-            case _:
-                raise ValueError(
-                    "Unsupported sky model survey specified! "
-                    f"Please use {', '.join(NATIVE_CATALOGS.names)}, or "
-                    "PANSTARRS."
-                )
+        if survey == "PANSTARRS":
+            success = download_skymodel_panstarrs(cone_params, skymodel_path)
+        else:
+            success = download_skymodel_catalog(
+                cone_params, survey, skymodel_path
+            )
         if success:
             logger.info(
                 "Download of %s sky model completed successfully.", survey
@@ -171,7 +161,7 @@ def download_skymodel_catalog(cone_params, catalog, skymodel_path):
     bool
         True if download was successful, False otherwise.
     """
-    if catalog not in NATIVE_CATALOGS.names:
+    if catalog not in NATIVE_CATALOGS:
         raise ValueError(f"The catalog {catalog} is not supported.")
 
     logger.info("Downloading skymodel from %s into %s", catalog, skymodel_path)
