@@ -121,7 +121,7 @@ def download_skymodel_from_survey(
             case _:
                 raise ValueError(
                     "Unsupported sky model survey specified! "
-                    f"Please use {','.join(NATIVE_CATALOGS.names)}, or "
+                    f"Please use {', '.join(NATIVE_CATALOGS.names)}, or "
                     "PANSTARRS."
                 )
         if success:
