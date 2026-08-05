@@ -134,7 +134,11 @@ class Facet(object):
         # Find the size and center coordinates of the facet
         xmin, ymin, xmax, ymax = self.polygon.bounds
         self.size = min(
-            0.5, max(xmax - xmin, ymax - ymin) * abs(self.wcs.wcs.cdelt[0])
+            0.5,
+            max(
+                (xmax - xmin) * abs(self.wcs.wcs.cdelt[0]),
+                (ymax - ymin) * abs(self.wcs.wcs.cdelt[1]),
+            ),
         )  # degrees
 
         # skymodel is set in the `set_skymodel` method
