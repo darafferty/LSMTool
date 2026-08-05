@@ -10,12 +10,10 @@ from pathlib import Path
 
 import numpy as np
 import scipy
-import shapely
 from astropy.coordinates import Angle, SkyCoord
 from astropy.wcs import WCS
 from matplotlib import patches
 from mocpy import MOC
-from PIL import Image, ImageDraw
 from shapely.geometry import Polygon
 
 from . import tableio
@@ -32,7 +30,7 @@ INDEX_OUTSIDE_DIAGRAM = -1
 FACET_NAME_REGEX = re.compile(
     r"""(?x)                    # verbose mode
         ^[^#]*                  # any text preceding the comment character
-        \#.*?                   # comment character maybe followed by other text
+        \#.*?                   # comment character and anything preceding text
         text\s*=\s*             # the text= keyword with optional whitespace
         (
             (?P<quote>["'])     # opening quote
@@ -41,11 +39,11 @@ FACET_NAME_REGEX = re.compile(
         |                       # or empty (no quotes or braces)
         )
         (?(quote)               # if opening quote was found
-            (?P<text0>[^"\n]+)   # match any text that is not a quote or newline
+            (?P<text0>[^"\n]+)  # match any text that is not a quote or newline
             (?P=quote)          # match the previously matched quote character
-        |                       # or 
+        |                       # or
             (?(brace)           # if opening brace was found
-                (?P<text1>[^\}\n]+) # match any text that is not a closing brace
+                (?P<text1>[^\}\n]+) # match anything except closing brace
                 \}              # match the closing brace
             |
                 (?P<text2>[^"'\{\}\n]+)
@@ -109,17 +107,18 @@ class Facet(object):
         name : str
             Name of facet
         ra : float or str
-            RA of reference coordinate in degrees (if float) or as a string in a
-            format supported by astropy.coordinates.Angle
+            RA of reference coordinate in degrees (if float) or as a string in
+            a format supported by astropy.coordinates.Angle
         dec : float or str
-            Dec of reference coordinate in degrees (if float) or as a string in a
-            format supported by astropy.coordinates.Angle
+            Dec of reference coordinate in degrees (if float) or as a string in
+            a format supported by astropy.coordinates.Angle
         vertices : list of tuples
             List of (RA, Dec) tuples, one for each vertex of the facet
         wcs : astropy.wcs.WCS, optional
             The WCS object that defines the world coordinate system to use. If
             not given, a WCS object is created using the reference RA and Dec
-            and the default pixel scale from `lsmtool.constants.WCS_PIXEL_SCALE`
+            and the default pixel scale from
+            `lsmtool.constants.WCS_PIXEL_SCALE`
         """
         self.name = name
         self.log = logging.getLogger("lsmtool:{0}".format(self.name))
@@ -246,8 +245,9 @@ class Facet(object):
         Parameters
         ----------
         max_search_cone_radius : float, optional
-            The maximum radius in degrees to use in the cone search. The smaller
-            of this radius and the minimum radius that covers the facet is used
+            The maximum radius in degrees to use in the cone search. The
+            smaller of this radius and the minimum radius that covers the facet
+            is used
 
         Returns
         -------
@@ -340,7 +340,8 @@ class Facet(object):
         ----------
         wcs : astropy.wcs.WCS, optional
             WCS object defining the celestial coordinate (RA, Dec) to image
-            (x, y) transformation. If not given, the facet's WCS object is used.
+            (x, y) transformation. If not given, the facet's WCS object is
+            used.
 
         Returns
         -------
@@ -496,10 +497,10 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     points_centre : numpy.ndarray
         Centre points of the Voronoi cells.
     vertices : numpy.ndarray
-        Vertices of the Voronoi grid. To obtain the vertices of the polygon that
-        encloses any particular point, use the indices provided in the return
-        value `filtered_regions` to select the corresponding vertices for a
-        given cell.
+        Vertices of the Voronoi grid. To obtain the vertices of the polygon
+        that encloses any particular point, use the indices provided in the
+        return value `filtered_regions` to select the corresponding vertices
+        for a given cell.
     filtered_regions : list of list of int
         For each cell in the tesselation, a list of index points for the
         vertices that enclose the cell. For example
@@ -665,8 +666,8 @@ def make_ds9_region_file(
     with open(outfile, "w") as stream:
         stream.write(
             "# Region file format: DS9 version 4.0\n"
-            'global color=green font="helvetica 10 normal" select=1 highlite=1 '
-            "edit=1  move=1 delete=1 include=1 fixed=0 source=1\n"
+            'global color=green font="helvetica 10 normal" select=1 highlite=1'
+            " edit=1  move=1 delete=1 include=1 fixed=0 source=1\n"
             "fk5\n"
         )
         for facet in facets:
