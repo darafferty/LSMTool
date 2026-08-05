@@ -863,3 +863,34 @@ def read_from_skymodel(
             facet_names, facet_points, facet_polys, strict=True
         )
     ]
+
+
+def filter_skymodel(polygon, skymodel, wcs, invert=False):
+    """
+    Filters input skymodel to select only sources that lie inside the input
+    region defined by a polygon in celestial coordinates.
+
+    Parameters
+    ----------
+    polygon : Shapely polygon object.
+        Polygon object to use for filtering.
+    skymodel : LSMTool skymodel object
+        Input sky model to be filtered.
+    wcs : WCS object
+        WCS object defining image to sky transformations.
+    invert : bool, optional
+        If True, invert the selection (so select only sources that lie outside
+        the facet).
+
+    Returns
+    -------
+    filtered_skymodel : LSMTool skymodel object
+        Skymodel object with only sources inside the facet either retained
+        (invert=False, the default) or removed (invert=True).
+    """
+    x, y = polygon.xy
+    ra, dec = wcs.pixel_to_world_values(x, y, WCS_ORIGIN)
+    vertices = list(zip(ra, dec, strict=True))
+    facet = Facet("filter_skymodel", ra[0], dec[0], vertices)
+    return facet.filter_skymodel(skymodel, invert)
+
