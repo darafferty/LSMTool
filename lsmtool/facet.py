@@ -99,8 +99,8 @@ class Facet(object):
     def __init__(self, name, ra, dec, vertices, wcs=None):
         """
         Create a Facet object with a given name, located at the coordinates
-        (ra, dec) and defined by the vertices in celestial coordinates (RA,
-        Dec).
+        (ra, dec) and defined by the vertices in celestial coordinates
+        (RA, Dec).
 
         Parameters
         ----------
@@ -334,7 +334,7 @@ class Facet(object):
 
     def get_matplotlib_patch(self, wcs=None):
         """
-        Returns a matplotlib patch for the facet polygon
+        Returns a matplotlib patch for the facet polygon.
 
         Parameters
         ----------
@@ -346,7 +346,7 @@ class Facet(object):
         Returns
         -------
         patch : matplotlib patch object
-            The patch for the facet polygon
+            The patch for the facet polygon.
         """
         if wcs is not None:
             x, y = wcs.wcs_world2pix(*self.vertices.T, WCS_ORIGIN)

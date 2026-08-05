@@ -2,16 +2,11 @@
 Tests for the lsmtool.facet module.
 """
 
-import itertools as itt
-from pathlib import Path
-
 import astropy.units as u
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
-from mocpy import MOC, WCS
 from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
