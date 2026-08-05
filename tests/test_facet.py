@@ -153,27 +153,6 @@ class TestFacet:
                 f"Facet attribute {attr!r} does not match expected value."
             )
 
-    # @pytest.mark.xfail(
-    #     raises=shapely.errors.GEOSException,
-    #     reason="Points of LinearRing do not form a closed linestring",
-    # )
-    # def test_error_cases(self):
-
-    #     Facet(
-    #         name="facet spanning 180 degrees in dec",
-    #         ra=(ra := 45),
-    #         dec=(dec := 0),
-    #         vertices=[
-    #             (0, -90),
-    #             (0, 0),
-    #             (0, 90),
-    #             (90, 0),
-    #             (90, -90),
-    #             (0, -90),
-    #         ],
-    #         wcs=make_wcs(ra, dec, 0.1),  # degrees per pixel
-    #     )
-
     # ------------------------------------------------------------------------ #
     @pytest.fixture()
     def facet(self, mocker):
