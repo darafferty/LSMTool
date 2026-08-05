@@ -125,7 +125,7 @@ class Facet(object):
         vertices = list(zip(ra, dec, strict=True))
         return Facet(name, ra[0], dec[0], vertices)
 
-    def __init__(self, name, ra, dec, vertices, wcs=None):
+    def __init__(self, name, ra, dec, vertices, *, wcs=None):
         """
         Create a Facet object with a given name, located at the coordinates
         (ra, dec) and defined by the vertices in celestial coordinates
@@ -432,7 +432,7 @@ class SquareFacet(Facet):
             ],
             WCS_ORIGIN,
         )
-        super().__init__(name, ra, dec, vertices, wcs)
+        super().__init__(name, ra, dec, vertices, wcs=wcs)
 
 
 def tessellate(
