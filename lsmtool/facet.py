@@ -811,7 +811,7 @@ def parse_facet_name(lines):
         if match := FACET_NAME_REGEX.search(line):
             facet_name = match["text0"] or match["text1"] or match["text2"]
             if not (facet_name := facet_name.strip()):
-                return
+                return None
 
             # Replace characters that are potentially problematic for Rapthor,
             # DP3, etc. with an underscore
@@ -819,6 +819,8 @@ def parse_facet_name(lines):
                 facet_name = facet_name.replace(invalid_char, "_")
 
             return facet_name
+
+    return None
 
 
 def read_from_skymodel(
