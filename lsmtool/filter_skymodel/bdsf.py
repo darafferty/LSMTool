@@ -187,7 +187,7 @@ def filter_skymodel(
         outfile=mask_file, clobber=True, img_type="island_mask"
     )
 
-    # Filter the sky model (if it was given) and at least one source is detected
+    # Filter the sky model, if it was given and at least one source is detected
     if img_true_sky.nisl > 0 and (input_true_skymodel or input_bright_skymodel):
         # Reduce RAM memory usage
         del img_true_sky
