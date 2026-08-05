@@ -18,8 +18,6 @@ from mocpy import MOC
 from PIL import Image, ImageDraw
 from shapely.geometry import Polygon
 
-from lsmtool.io import check_file_exists
-
 from . import tableio
 from .constants import WCS_ORIGIN, WCS_PIXEL_SCALE
 from .download_skymodel import download_skymodel
