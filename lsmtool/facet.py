@@ -96,6 +96,35 @@ class Facet(object):
     it and can also be visualized as a matplotlib patch.
     """
 
+    @classmethod
+    def from_polygon(cls, polygon, wcs, name="from_polygon"):
+        """
+        Filters input skymodel to select only sources that lie inside the input
+        region defined by a polygon in celestial coordinates.
+
+        Parameters
+        ----------
+        polygon : Shapely polygon object.
+            Polygon object to use for filtering.
+        skymodel : LSMTool skymodel object
+            Input sky model to be filtered.
+        wcs : WCS object
+            WCS object defining image to sky transformations.
+        invert : bool, optional
+            If True, invert the selection (so select only sources that lie
+            outside the facet).
+
+        Returns
+        -------
+        filtered_skymodel : LSMTool skymodel object
+            Skymodel object with only sources inside the facet either retained
+            (invert=False, the default) or removed (invert=True).
+        """
+        x, y = polygon.xy
+        ra, dec = wcs.pixel_to_world_values(x, y, WCS_ORIGIN)
+        vertices = list(zip(ra, dec, strict=True))
+        return Facet(name, ra[0], dec[0], vertices)
+
     def __init__(self, name, ra, dec, vertices, wcs=None):
         """
         Create a Facet object with a given name, located at the coordinates
@@ -892,9 +921,5 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
         Skymodel object with only sources inside the facet either retained
         (invert=False, the default) or removed (invert=True).
     """
-    x, y = polygon.xy
-    ra, dec = wcs.pixel_to_world_values(x, y, WCS_ORIGIN)
-    vertices = list(zip(ra, dec, strict=True))
-    facet = Facet("filter_skymodel", ra[0], dec[0], vertices)
+    facet = Facet.from_polygon(polygon, wcs, "filter_skymodel")
     return facet.filter_skymodel(skymodel, invert)
-
