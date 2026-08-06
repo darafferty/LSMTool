@@ -1011,11 +1011,6 @@ def test_prepare_points_for_tessellate(coords, bounding_box, expected_centre):
         np.testing.assert_array_equal(points_centre, expected_centre)
 
 
-def line(a, b, n=10):
-    """Generate n points on a line between points a and b."""
-    return np.array([np.linspace(*coords, n) for coords in zip(a, b)]).T
-
-
 class TestFilterSkymodel:
     """Test the `filter_skymodel` function."""
 
