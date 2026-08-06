@@ -120,8 +120,8 @@ class Facet(object):
             Skymodel object with only sources inside the facet either retained
             (invert=False, the default) or removed (invert=True).
         """
-        x, y = polygon.xy
-        ra, dec = wcs.pixel_to_world_values(x, y, WCS_ORIGIN)
+        x, y = polygon.exterior.xy
+        ra, dec = wcs.wcs_pix2world(x, y, WCS_ORIGIN)
         vertices = list(zip(ra, dec, strict=True))
         return Facet(name, ra[0], dec[0], vertices)
 
