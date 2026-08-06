@@ -1248,7 +1248,7 @@ class TestFilterSkymodel:
         [False, True],
     )
     def test_filter_skymodel_removes_exterior_source(
-        self, facet, invert, config, request, rng, tmp_path
+        self, facet, invert, config, rng, tmp_path
     ):
         """
         Test that `facet.filter_skymodel` selects only sources that lie inside
@@ -1300,7 +1300,10 @@ class TestFilterSkymodel:
                         )
                     ],
                 },
-                id="large number of sources small facet region around one source",
+                id=(
+                    "large number of sources with small facet region around one"
+                    "source"
+                ),
             ),
         ],
     )
