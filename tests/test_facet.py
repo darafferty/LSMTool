@@ -298,6 +298,15 @@ class TestFacet:
         with pytest.raises(TypeError):
             facet.set_skymodel(None)
 
+    def test_set_wcs_raises_on_invalid(self, facet):
+        """
+        Test that `set_wcs` method raises an error on invalid WCS.
+        """
+
+        # Act & Assert
+        with pytest.raises(TypeError):
+            facet.wcs = None
+
 
 class TestDS9RegionFile:
     """
