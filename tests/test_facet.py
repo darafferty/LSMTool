@@ -1322,9 +1322,11 @@ class TestFilterSkymodel:
         facet.filter_skymodel(skymodel, invert)
 
         if invert:
+            # Assert that the test source has been removed
             assert "TEST_SOURCE" not in skymodel.table["Name"]
             assert len(skymodel.table) == 10_000
         else:
+            # Assert that only the test source remains
             assert list(skymodel.table["Name"]) == ["TEST_SOURCE"]
 
     @pytest.mark.parametrize(
@@ -1336,12 +1338,11 @@ class TestFilterSkymodel:
                     ra=45,
                     dec=0,
                     vertices=[
-                        (0, -45),
                         (0, 0),
-                        (0, 45),
+                        (0, 90),
+                        (90, 90),
                         (90, 0),
-                        (90, -45),
-                        (0, -45),
+                        (0, 0),
                     ],
                     wcs=make_wcs(45, 0, 0.1),  # degrees per pixel
                 ),
@@ -1366,7 +1367,7 @@ class TestFilterSkymodel:
         skymodel = self.generate_skymodel(tmp_path, config, rng)
         skymodel = load(skymodel)
         skymodel.table["Ra"][0] = 0
-        skymodel.table["Dec"][0] = 0
+        skymodel.table["Dec"][0] = 90
         skymodel.table["Name"][0] = "TEST_SOURCE"
 
         # Act
