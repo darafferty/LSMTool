@@ -12,6 +12,7 @@ from numpy.testing import assert_array_equal
 from lsmtool.facet import (
     Facet,
     SquareFacet,
+    filter_skymodel,
     in_box,
     make_ds9_region_file,
     parse_facet_name,
@@ -274,7 +275,7 @@ class TestFacet:
         assert np.allclose(extents.max, np.max(facet.polygon.exterior.xy, 1))
         assert np.allclose(extents.min, np.min(facet.polygon.exterior.xy, 1))
 
-    def test_set_skymodel(self, mocker, facet):
+    def test_set_skymodel_calls_filter_skymodel(self, mocker, facet):
         """
         Test that `set_skymodel` method runs the `filter_skymodel` function.
         """
@@ -287,6 +288,15 @@ class TestFacet:
 
         # Assert
         facet.filter_skymodel.assert_called_once_with(mock_skymodel)
+
+    def test_set_skymodel_raises_on_invalid_skymodel(self, facet):
+        """
+        Test that `set_skymodel` method raises an error on invalid skymodel.
+        """
+
+        # Act & Assert
+        with pytest.raises(TypeError):
+            facet.set_skymodel(None)
 
 
 class TestDS9RegionFile:
@@ -1251,16 +1261,40 @@ class TestFilterSkymodel:
         """
 
         # Arrange
-        skymodel = self.generate_skymodel(tmp_path, config, rng)
-        skymodel_ = load(skymodel)
+        skymodel_path = self.generate_skymodel(tmp_path, config, rng)
+        skymodel = load(skymodel_path)
 
         # Act
-        facet.filter_skymodel(skymodel_, invert)
+        facet.filter_skymodel(skymodel, invert)
 
         if invert:
-            assert list(skymodel_.table["Name"]) == ["TEST_SOURCE"]
+            # Assert that only the test source remains
+            assert list(skymodel.table["Name"]) == ["TEST_SOURCE"]
         else:
-            assert "TEST_SOURCE" not in skymodel_.table["Name"]
+            # Assert that the test source has been removed
+            assert "TEST_SOURCE" not in skymodel.table["Name"]
+
+        # Test that the `filter_skymodel` function behaves the same as the method
+        self._test_filter_skymodel_function(
+            facet.polygon, skymodel_path, facet.wcs, invert
+        )
+
+    def _test_filter_skymodel_function(
+        self, polygon, skymodel_path, wcs, invert
+    ):
+
+        # Arrange
+        skymodel = load(skymodel_path)
+
+        # Act
+        skymodel = filter_skymodel(polygon, skymodel, wcs, invert)
+
+        if invert:
+            # Assert that only the test source remains
+            assert list(skymodel.table["Name"]) == ["TEST_SOURCE"]
+        else:
+            # Assert that the test source has been removed
+            assert "TEST_SOURCE" not in skymodel.table["Name"]
 
     @pytest.mark.parametrize(
         "facet, config",
