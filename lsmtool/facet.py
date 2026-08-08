@@ -99,26 +99,22 @@ class Facet(object):
     @classmethod
     def from_polygon(cls, polygon, wcs, name="from_polygon"):
         """
-        Filters input skymodel to select only sources that lie inside the input
-        region defined by a polygon in celestial coordinates.
+        Creates a Facet object from a polygon. The first point in the polygon
+        is used as the reference point for the facet.
 
         Parameters
         ----------
         polygon : Shapely polygon object.
-            Polygon object to use for filtering.
-        skymodel : LSMTool skymodel object
-            Input sky model to be filtered.
+            Polygon object defining the facet region.
         wcs : WCS object
             WCS object defining image to sky transformations.
-        invert : bool, optional
-            If True, invert the selection (so select only sources that lie
-            outside the facet).
+        name : str, optional
+            Name of the facet. Defaults to "from_polygon".
 
         Returns
         -------
-        filtered_skymodel : LSMTool skymodel object
-            Skymodel object with only sources inside the facet either retained
-            (invert=False, the default) or removed (invert=True).
+        facet : Facet object
+            Facet object created from the polygon.
         """
         x, y = polygon.exterior.xy
         ra, dec = wcs.wcs_pix2world(x, y, WCS_ORIGIN)
@@ -175,14 +171,17 @@ class Facet(object):
 
     @property
     def ra(self):
+        """Right Ascension of the facet's reference coordinate in degrees."""
         return self.coords.ra.deg
 
     @property
     def dec(self):
+        """Declination of the facet's reference coordinate in degrees."""
         return self.coords.dec.deg
 
     @property
     def wcs(self):
+        """WCS object defining the world coordinate system to use."""
         return self._wcs
 
     @wcs.setter
@@ -193,40 +192,49 @@ class Facet(object):
 
     @property
     def vertices_xy(self):
+        """Polygon vertices in image coordinates (x, y) as a numpy array."""
         return self.wcs.world_to_pixel_values(self.vertices)
 
     @property
     def polygon(self):
+        """Shapely Polygon object representing the facet's polygon in image
+        coordinates."""
         return Polygon(self.vertices_xy)
 
     @property
     def x_center(self):
+        """The x-coordinate of the facet's center in the image."""
         xmin, _, xmax, _ = self.polygon.bounds
         return xmin + (xmax - xmin) / 2
 
     @property
     def y_center(self):
+        """The y-coordinate of the facet's center in the image."""
         _, ymin, _, ymax = self.polygon.bounds
         return ymin + (ymax - ymin) / 2
 
     @property
     def center(self):
+        """Centre of the facet in celestial coordinates (RA, Dec) as a SkyCoord
+        object."""
         return self.wcs.pixel_to_world(self.x_center, self.y_center)
 
     @property
     def centroid(self):
+        """Centroid of the facet in celestial coordinates (RA, Dec) as a
+        SkyCoord object."""
         centroid = self.polygon.centroid
         return self.wcs.pixel_to_world(centroid.x, centroid.y)
 
     @property
     def moc(self):
         """
-        Returns a MOC object for the facet's polygon
+        Returns a MOC object for the facet's polygon.
 
         Returns
         -------
         moc : mocpy.MOC
-            The MOC object for the facet's polygon
+            The MOC object for the facet's polygon.
         """
         polygon_sky = SkyCoord(*self.vertices.T, unit="deg")
         return MOC.from_polygon_skycoord(polygon_sky)
@@ -251,6 +259,21 @@ class Facet(object):
         self.skymodel = self.filter_skymodel(skymodel)
 
     def get_contained_sources(self, skymodel):
+        """
+        Check whether the sources in a skymodel are contained within the facet.
+
+        Parameters
+        ----------
+        skymodel : lsmtool.skymodel.SkyModel
+            Input sky model - sources inside the facet will be marked as
+            True.
+
+        Returns
+        -------
+        np.ndarray
+            Boolean array indicating which sources in the input skymodel are
+            contained within the facet's polygon.
+        """
         # Make list of sources
         ra = skymodel.getColValues("Ra")
         dec = skymodel.getColValues("Dec")
@@ -258,6 +281,22 @@ class Facet(object):
         return self.moc.contains_skycoords(coords)
 
     def filter_skymodel(self, skymodel, invert=False):
+        """
+        Filters input skymodel to select only sources that lie inside the facet.
+
+        Parameters
+        ----------
+        skymodel : lsmtool.skymodel.SkyModel
+            Input sky model to be filtered.
+        invert : bool, optional
+            If True, select sources outside the facet instead of inside, by
+            default False.
+
+        Returns
+        -------
+        lsmtool.skymodel.SkyModel
+            Filtered sky model containing only sources inside the facet.
+        """
 
         sources_inside_facet = self.get_contained_sources(skymodel)
 
@@ -909,7 +948,7 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
     ----------
     polygon : Shapely polygon object.
         Polygon object to use for filtering.
-    skymodel : LSMTool skymodel object
+    skymodel : lsmtool.skymodel.SkyModel
         Input sky model to be filtered.
     wcs : WCS object
         WCS object defining image to sky transformations.
@@ -919,7 +958,7 @@ def filter_skymodel(polygon, skymodel, wcs, invert=False):
 
     Returns
     -------
-    filtered_skymodel : LSMTool skymodel object
+    filtered_skymodel : lsmtool.skymodel.SkyModel
         Skymodel object with only sources inside the facet either retained
         (invert=False, the default) or removed (invert=True).
     """
