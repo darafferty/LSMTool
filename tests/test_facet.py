@@ -144,7 +144,6 @@ class TestFacet:
             **constructor_kws,
         )
         for attr, ref_val in expected_namespace.items():
-            all_close(getattr(facet, attr), ref_val)
             assert all_close(getattr(facet, attr), ref_val), (
                 f"Facet attribute {attr!r} does not match expected value."
             )
