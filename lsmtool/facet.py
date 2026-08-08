@@ -30,7 +30,7 @@ INDEX_OUTSIDE_DIAGRAM = -1
 FACET_NAME_REGEX = re.compile(
     r"""(?x)                    # verbose mode
         ^[^#]*                  # any text preceding the comment character
-        \#.*?                   # comment character and anything preceding text
+        \#.*?                   # comment character and any following text
         text\s*=\s*             # the text= keyword with optional whitespace
         (
             (?P<quote>["'])     # opening quote
