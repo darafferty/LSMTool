@@ -7,7 +7,6 @@ import matplotlib as mpl
 import numpy as np
 import pytest
 from astropy.coordinates import SkyCoord
-from conftest import get_context
 from numpy.testing import assert_array_equal
 
 from lsmtool.facet import (
@@ -24,6 +23,18 @@ from lsmtool.facet import (
     voronoi,
 )
 from lsmtool.io import load
+from lsmtool.operations_lib import make_wcs
+from lsmtool.skymodel import SkyModel
+from lsmtool.testing import SkyModelGenerator, get_context, uniform_range
+
+# ---------------------------------------------------------------------------- #
+
+
+def all_close(a, b, rtol=1.0e-5, atol=1.0e-8):
+    if isinstance(a, SkyCoord):
+        return np.all(a.separation(b).deg < atol)
+    return np.allclose(a, b, rtol, atol)
+
 
 # ---------------------------------------------------------------------------- #
 # Tests
@@ -56,10 +67,12 @@ class TestFacet:
         Facet: {
             **_reference_namespace,
             "size": 0.5,
-            "ra_center": 266.41046451225884,
-            "dec_center": -29.002269268446632,
-            "ra_centroid": 266.4104645130159,
-            "dec_centroid": -29.00226926732463,
+            "center": SkyCoord(
+                266.41046451225884, -29.002269268446632, unit="deg"
+            ),
+            "centroid": SkyCoord(
+                266.4104645130159, -29.00226926732463, unit="deg"
+            ),
             "x_center": 1000.0,
             "y_center": 1000.0,
         },
@@ -76,10 +89,12 @@ class TestFacet:
                 )
             ),
             "size": 0.5,
-            "ra_center": 266.41046451354356,
-            "dec_center": -29.00226926514979,
-            "ra_centroid": 266.41046451354356,
-            "dec_centroid": -29.00226926514978,
+            "center": SkyCoord(
+                266.41046451354356, -29.00226926514979, unit="deg"
+            ),
+            "centroid": SkyCoord(
+                266.41046451354356, -29.00226926514978, unit="deg"
+            ),
             "x_center": 1000.0,
             "y_center": 1000.0,
         },
@@ -128,8 +143,8 @@ class TestFacet:
             dec,
             **constructor_kws,
         )
-        for attr, val in expected_namespace.items():
-            assert np.allclose(getattr(facet, attr), val), (
+        for attr, ref_val in expected_namespace.items():
+            assert all_close(getattr(facet, attr), ref_val), (
                 f"Facet attribute {attr!r} does not match expected value."
             )
 
@@ -204,7 +219,7 @@ class TestFacet:
             facet.skymodel.compare.assert_called_once()
 
     @pytest.mark.disable_socket
-    def test_find_astrometry_offsets_with_comparison_skymodel_does_not_access_internet(
+    def test_find_astrometry_offsets_with_comparison_skymodel_no_internet(
         self, facet
     ):
         """
@@ -259,18 +274,37 @@ class TestFacet:
         assert np.allclose(extents.max, np.max(facet.polygon.exterior.xy, 1))
         assert np.allclose(extents.min, np.min(facet.polygon.exterior.xy, 1))
 
-    def test_set_skymodel(self, mocker, facet):
+    def test_set_skymodel_calls_filter_skymodel(self, mocker, facet):
         """
         Test that `set_skymodel` method runs the `filter_skymodel` function.
         """
         # Arrange
-        mock_filter_skymodel = mocker.patch("lsmtool.facet.filter_skymodel")
+        facet.filter_skymodel = mocker.MagicMock()
+        mock_skymodel = mocker.MagicMock(spec=SkyModel)
+
         # Act
-        facet.set_skymodel("mock_skymodel")
+        facet.set_skymodel(mock_skymodel)
+
         # Assert
-        mock_filter_skymodel.assert_called_once_with(
-            facet.polygon, "mock_skymodel", facet.wcs
-        )
+        facet.filter_skymodel.assert_called_once_with(mock_skymodel)
+
+    def test_set_skymodel_raises_on_invalid_skymodel(self, facet):
+        """
+        Test that `set_skymodel` method raises an error on invalid skymodel.
+        """
+
+        # Act & Assert
+        with pytest.raises(TypeError):
+            facet.set_skymodel(None)
+
+    def test_set_wcs_raises_on_invalid(self, facet):
+        """
+        Test that `set_wcs` method raises an error on invalid WCS.
+        """
+
+        # Act & Assert
+        with pytest.raises(TypeError):
+            facet.wcs = None
 
 
 class TestDS9RegionFile:
@@ -995,47 +1029,393 @@ def test_prepare_points_for_tessellate(coords, bounding_box, expected_centre):
         np.testing.assert_array_equal(points_centre, expected_centre)
 
 
-@pytest.mark.parametrize(
-    "facet, extent",
-    [
-        (
-            SquareFacet(
-                name="test_filter_skymodel",
-                ra=255,
-                dec=55,
-                width=5,
+class TestFilterSkymodel:
+    """Test the `filter_skymodel` function."""
+
+    def generate_skymodel(self, tmp_path, config, rng):
+        """
+        Function that creates a mock skymodel for testing the `filter_skymodel`
+        function.
+        """
+
+        config = config.copy()
+        n_sources = config.pop("n_sources", 10)
+        additional_sources = config.pop("extra_sources", None)
+        skymodel_generator = SkyModelGenerator(**config)
+        samples = skymodel_generator(n_sources, rng)
+        data = np.column_stack(list(samples.values()))
+
+        if additional_sources is not None:
+            data = np.vstack([data, additional_sources])
+
+        path = tmp_path / "test_filter_skymodel.sky"
+        np.savetxt(
+            path,
+            data,
+            header=skymodel_generator.get_header(samples),
+            delimiter=", ",
+            fmt="%s",
+        )
+
+        return path
+
+    @pytest.mark.parametrize(
+        "facet, config",
+        [
+            # ---------------------------------------------------------------- #
+            # Nominal cases
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=10,
+                    dec=0,
+                    vertices=[(5, 5), (15, 5), (15, -5), (5, -5)],
+                ),
+                {
+                    "ra": uniform_range(5, 15),
+                    "dec": uniform_range(-5, 5),
+                    "extra_sources": [
+                        (
+                            "TEST_SOURCE",
+                            "GAUSSIAN",
+                            "00:57:53.455837",
+                            "-06.13.09.791355",
+                            "3.98900890999396",
+                            "0",
+                            "0",
+                            "0",
+                            "144000000.0",
+                            "-0.2668463365635031",
+                            "0",
+                            "19.92474020631723",
+                            "17.016649919671078",
+                            "108.61916555472459",
+                        )
+                    ],
+                },
+                id="one source outside facet",
             ),
-            [250, 260, 50, 60],
-        ),
-        (
-            Facet(
-                name="test_filter_skymodel",
-                ra=238.795,
-                dec=50.98242,
-                vertices=[(250, 60), (260, 60), (260, 50), (250, 50)],
+            pytest.param(
+                SquareFacet(
+                    name="test_filter_skymodel",
+                    ra=255,
+                    dec=55,
+                    width=10,
+                ),
+                {
+                    "ra": uniform_range(250, 260),
+                    "dec": uniform_range(50, 60),
+                    "extra_sources": [
+                        (
+                            "TEST_SOURCE",
+                            "GAUSSIAN",
+                            "16:57:53.455837",
+                            "49.00.00.0",
+                            "3.98900890999396",
+                            "0",
+                            "0",
+                            "0",
+                            "144000000.0",
+                            "-0.2668463365635031",
+                            "0",
+                            "19.92474020631723",
+                            "17.016649919671078",
+                            "108.61916555472459",
+                        )
+                    ],
+                },
+                id="one source outside square facet",
             ),
-            [250, 260, 50, 60],
-        ),
-    ],
-)
-def test_filter_skymodel(request, facet, extent):
-    """
-    Test that `facet.filter_skymodel` selects only sources that lie inside the
-    input facet.
-    """
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=22.5,
+                    dec=22.5,
+                    vertices=[(0, 0), (45, 0), (45, 45), (0, 45), (0, 0)],
+                    wcs=make_wcs(22.5, 22.5, 0.1),  # degrees per pixel
+                ),
+                {
+                    "ra": uniform_range(0, 45),
+                    "dec": uniform_range(0, 45),
+                    "extra_sources": [
+                        (
+                            "TEST_SOURCE",
+                            "GAUSSIAN",
+                            "16:57:53.455837",
+                            "49.00.00.0",
+                            "3.98900890999396",
+                            "0",
+                            "0",
+                            "0",
+                            "144000000.0",
+                            "-0.2668463365635031",
+                            "0",
+                            "19.92474020631723",
+                            "17.016649919671078",
+                            "108.61916555472459",
+                        )
+                    ],
+                },
+                id="wide field custom wcs",
+            ),
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=0,
+                    dec=0,
+                    vertices=[(0, 0), (90, 0), (90, 45), (0, 45), (0, 0)],
+                    wcs=make_wcs(0, 0, 0.1),  # degrees per pixel
+                ),
+                {
+                    "ra": uniform_range(0, 90),
+                    "dec": uniform_range(0, 45),
+                    "extra_sources": [
+                        (
+                            "TEST_SOURCE",
+                            "GAUSSIAN",
+                            "16:57:53.455837",
+                            "49.00.00.0",
+                            "3.98900890999396",
+                            "0",
+                            "0",
+                            "0",
+                            "144000000.0",
+                            "-0.2668463365635031",
+                            "0",
+                            "19.92474020631723",
+                            "17.016649919671078",
+                            "108.61916555472459",
+                        )
+                    ],
+                },
+                id="Facet coordinates at lower left corner",
+            ),
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=90,
+                    dec=30,
+                    vertices=[(0, 0), (180, 0), (180, 60), (0, 60), (0, 0)],
+                    wcs=make_wcs(90, 30, 0.1),  # degrees per pixel
+                ),
+                {
+                    "ra": uniform_range(0, 180),
+                    "dec": uniform_range(0, 60),
+                    "extra_sources": [
+                        (
+                            "TEST_SOURCE",
+                            "GAUSSIAN",
+                            "16:57:53.455837",
+                            "-49.00.00.0",
+                            "3.98900890999396",
+                            "0",
+                            "0",
+                            "0",
+                            "144000000.0",
+                            "-0.2668463365635031",
+                            "0",
+                            "19.92474020631723",
+                            "17.016649919671078",
+                            "108.61916555472459",
+                        )
+                    ],
+                },
+                id="facet spanning 180 degrees in ra",
+            ),
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=90,
+                    dec=30,
+                    vertices=[(0, 0), (180, 0), (180, 90), (0, 90), (0, 0)],
+                    wcs=make_wcs(90, 30, 0.1),  # degrees per pixel
+                ),
+                {
+                    "ra": uniform_range(0, 180),
+                    "dec": uniform_range(0, 90),
+                    "extra_sources": [
+                        (
+                            "TEST_SOURCE",
+                            "GAUSSIAN",
+                            "16:57:53.455837",
+                            "-49.00.00.0",
+                            "3.98900890999396",
+                            "0",
+                            "0",
+                            "0",
+                            "144000000.0",
+                            "-0.2668463365635031",
+                            "0",
+                            "19.92474020631723",
+                            "17.016649919671078",
+                            "108.61916555472459",
+                        )
+                    ],
+                },
+                id="facet spanning 180 degrees in ra 90 degrees in dec",
+            ),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "invert",
+        [False, True],
+    )
+    def test_filter_skymodel_removes_exterior_source(
+        self, facet, invert, config, rng, tmp_path
+    ):
+        """
+        Test that `facet.filter_skymodel` selects only sources that lie inside
+        the input facet.
+        """
 
-    # Arrange
-    skymodel = load(request.config.resource_dir / "no_patches.sky")
+        # Arrange
+        skymodel_path = self.generate_skymodel(tmp_path, config, rng)
+        skymodel = load(skymodel_path)
 
-    # Act
-    result = filter_skymodel(facet.polygon, skymodel, facet.wcs)
+        # Act
+        facet.filter_skymodel(skymodel, invert)
 
-    # Assert
-    assert "FILTER (with array of indices/bools)" in result.history[-1]
+        if invert:
+            # Assert that only the test source remains
+            assert list(skymodel.table["Name"]) == ["TEST_SOURCE"]
+        else:
+            # Assert that the test source has been removed
+            assert "TEST_SOURCE" not in skymodel.table["Name"]
 
-    ra = result.table["Ra"]
-    dec = result.table["Dec"]
+        # Test that the `filter_skymodel` function behaves the same as the method
+        self._test_filter_skymodel_function(
+            facet.polygon, skymodel_path, facet.wcs, invert
+        )
 
-    ra0, ra1, dec0, dec1 = extent
-    assert np.all((ra0 < ra) & (ra < ra1))
-    assert np.all((dec0 < dec) & (dec < dec1))
+    def _test_filter_skymodel_function(
+        self, polygon, skymodel_path, wcs, invert
+    ):
+
+        # Arrange
+        skymodel = load(skymodel_path)
+
+        # Act
+        skymodel = filter_skymodel(polygon, skymodel, wcs, invert)
+
+        if invert:
+            # Assert that only the test source remains
+            assert list(skymodel.table["Name"]) == ["TEST_SOURCE"]
+        else:
+            # Assert that the test source has been removed
+            assert "TEST_SOURCE" not in skymodel.table["Name"]
+
+    @pytest.mark.parametrize(
+        "facet, config",
+        [
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=10,
+                    dec=0,
+                    vertices=[(15, 10), (15.1, 10), (15.1, 10.1), (15, 10.1)],
+                ),
+                {
+                    "ra": uniform_range(0, 360),
+                    "dec": uniform_range(-90, 90),
+                    "n_sources": 10_000,
+                    "extra_sources": [
+                        (
+                            "TEST_SOURCE",
+                            "GAUSSIAN",
+                            "1:00:12.000000",
+                            "+10.03.00.000000",
+                            "3.98900890999396",
+                            "0",
+                            "0",
+                            "0",
+                            "144000000.0",
+                            "-0.2668463365635031",
+                            "0",
+                            "19.92474020631723",
+                            "17.016649919671078",
+                            "108.61916555472459",
+                        )
+                    ],
+                },
+                id=(
+                    "large number of sources with small facet region around one"
+                    "source"
+                ),
+            ),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "invert",
+        [False, True],
+    )
+    def test_filter_skymodel_removes_interior_source(
+        self, facet, invert, config, rng, tmp_path
+    ):
+        """
+        Test that `facet.filter_skymodel` selects only sources that lie inside
+        the input facet.
+        """
+
+        # Arrange
+        skymodel = self.generate_skymodel(tmp_path, config, rng)
+        skymodel = load(skymodel)
+
+        # Act
+        facet.filter_skymodel(skymodel, invert)
+
+        if invert:
+            # Assert that the test source has been removed
+            assert "TEST_SOURCE" not in skymodel.table["Name"]
+            assert len(skymodel.table) == 10_000
+        else:
+            # Assert that only the test source remains
+            assert list(skymodel.table["Name"]) == ["TEST_SOURCE"]
+
+    @pytest.mark.parametrize(
+        "facet, config",
+        [
+            pytest.param(
+                Facet(
+                    name="test_filter_skymodel",
+                    ra=45,
+                    dec=0,
+                    vertices=[
+                        (0, 0),
+                        (0, 90),
+                        (90, 90),
+                        (90, 0),
+                        (0, 0),
+                    ],
+                    wcs=make_wcs(45, 0, 0.1),  # degrees per pixel
+                ),
+                {"n_sources": 1},
+                id="filter source at north celestial",
+            ),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "invert",
+        [False, True],
+    )
+    def test_filter_skymodel_removes_ncp_source(
+        self, facet, invert, config, rng, tmp_path
+    ):
+        """
+        Test that `facet.filter_skymodel` selects only sources that lie inside
+        the input facet.
+        """
+
+        # Arrange
+        skymodel = self.generate_skymodel(tmp_path, config, rng)
+        skymodel = load(skymodel)
+        skymodel.table["Ra"][0] = 0
+        skymodel.table["Dec"][0] = 90
+        skymodel.table["Name"][0] = "TEST_SOURCE"
+
+        # Act
+        facet.filter_skymodel(skymodel, invert)
+
+        if invert:
+            assert "TEST_SOURCE" not in skymodel.table["Name"]
+        else:
+            assert list(skymodel.table["Name"]) == ["TEST_SOURCE"]
