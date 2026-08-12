@@ -11,16 +11,17 @@ from pathlib import Path
 import numpy as np
 import scipy
 from astropy.coordinates import Angle, SkyCoord
+from astropy.wcs import WCS
 from matplotlib import patches
-from PIL import Image, ImageDraw
-from shapely.geometry import Point, Polygon
-from shapely.prepared import prep
+from mocpy import MOC
+from shapely.geometry import Polygon
 
 from . import tableio
-from .constants import WCS_ORIGIN
+from .constants import WCS_ORIGIN, WCS_PIXEL_SCALE
 from .download_skymodel import download_skymodel
 from .io import check_file_exists, load
 from .operations_lib import make_wcs, normalize_ra_dec
+from .skymodel import SkyModel
 
 # Module constants
 # ---------------------------------------------------------------------------- #
@@ -29,7 +30,7 @@ INDEX_OUTSIDE_DIAGRAM = -1
 FACET_NAME_REGEX = re.compile(
     r"""(?x)                    # verbose mode
         ^[^#]*                  # any text preceding the comment character
-        \#.*?                   # comment character maybe followed by other text
+        \#.*?                   # comment character and any following text
         text\s*=\s*             # the text= keyword with optional whitespace
         (
             (?P<quote>["'])     # opening quote
@@ -38,11 +39,11 @@ FACET_NAME_REGEX = re.compile(
         |                       # or empty (no quotes or braces)
         )
         (?(quote)               # if opening quote was found
-            (?P<text0>[^"\n]+)   # match any text that is not a quote or newline
+            (?P<text0>[^"\n]+)  # match any text that is not a quote or newline
             (?P=quote)          # match the previously matched quote character
-        |                       # or 
+        |                       # or
             (?(brace)           # if opening brace was found
-                (?P<text1>[^\}\n]+) # match any text that is not a closing brace
+                (?P<text1>[^\}\n]+) # match anything except closing brace
                 \}              # match the closing brace
             |
                 (?P<text2>[^"'\{\}\n]+)
@@ -56,46 +57,104 @@ FACET_NAME_REGEX = re.compile(
 # ---------------------------------------------------------------------------- #
 
 
-class Facet(object):
+def resolve_coordinates(ra, dec):
     """
-    Base Facet class
+    Resolve the given RA and Dec coordinates to a SkyCoord object.
 
     Parameters
     ----------
-    name : str
-        Name of facet
     ra : float or str
-        RA of reference coordinate in degrees (if float) or as a string in a
-        format supported by astropy.coordinates.Angle
+        Right Ascension in degrees (if float) or as a string in a format
+        supported by astropy.coordinates.Angle
     dec : float or str
-        Dec of reference coordinate in degrees (if float) or as a string in a
-        format supported by astropy.coordinates.Angle
-    vertices : list of tuples
-        List of (RA, Dec) tuples, one for each vertex of the facet
-    wcs : astropy.wcs.WCS, optional
-        WCS object that defines the world coordinate system to use. If None, a
-        generic WCS is used
+        Declination in degrees (if float) or as a string in a format
+        supported by astropy.coordinates.Angle
+
+    Returns
+    -------
+    astropy.coordinates.SkyCoord
+        The resolved SkyCoord object.
+    """
+    if isinstance(ra, str):
+        ra = Angle(ra).to("deg").value
+
+    if isinstance(dec, str):
+        dec = Angle(dec).to("deg").value
+
+    ra, dec = normalize_ra_dec(ra, dec)
+    return SkyCoord(ra, dec, unit="deg")
+
+
+class Facet(object):
+    """
+    Base class for representing an image facet.
+
+    A facet is a named region of the sky defined by a polygon in celestial
+    coordinates (RA, Dec) and a reference point (RA, Dec). The transformation
+    between celestial and image coordinates is handled by a `astropy.wcs.WCS`
+    object. A facet can have a sky model containing the sources that lie inside
+    it and can also be visualized as a matplotlib patch.
     """
 
+    @classmethod
+    def from_polygon(cls, polygon, wcs, name="from_polygon"):
+        """
+        Creates a Facet object from a polygon. The first point in the polygon
+        is used as the reference point for the facet.
+
+        Parameters
+        ----------
+        polygon : Shapely polygon object.
+            Polygon object defining the facet region.
+        wcs : WCS object
+            WCS object defining image to sky transformations.
+        name : str, optional
+            Name of the facet. Defaults to "from_polygon".
+
+        Returns
+        -------
+        facet : Facet object
+            Facet object created from the polygon.
+        """
+        x, y = polygon.exterior.xy
+        ra, dec = wcs.wcs_pix2world(x, y, WCS_ORIGIN)
+        vertices = list(zip(ra, dec, strict=True))
+        return Facet(name, ra[0], dec[0], vertices)
+
     def __init__(self, name, ra, dec, vertices, *, wcs=None):
+        """
+        Create a Facet object with a given name, located at the coordinates
+        (ra, dec) and defined by the vertices in celestial coordinates
+        (RA, Dec).
+
+        Parameters
+        ----------
+        name : str
+            Name of facet
+        ra : float or str
+            RA of reference coordinate in degrees (if float) or as a string in
+            a format supported by astropy.coordinates.Angle
+        dec : float or str
+            Dec of reference coordinate in degrees (if float) or as a string in
+            a format supported by astropy.coordinates.Angle
+        vertices : list of tuples
+            List of (RA, Dec) tuples, one for each vertex of the facet
+        wcs : astropy.wcs.WCS, optional
+            The WCS object that defines the world coordinate system to use. If
+            not given, a WCS object is created using the reference RA and Dec
+            and the default pixel scale from
+            `lsmtool.constants.WCS_PIXEL_SCALE`
+        """
         self.name = name
         self.log = logging.getLogger("lsmtool:{0}".format(self.name))
-        if type(ra) is str:
-            ra = Angle(ra).to("deg").value
-        if type(dec) is str:
-            dec = Angle(dec).to("deg").value
-        self.ra, self.dec = normalize_ra_dec(ra, dec)
-        self.vertices = np.array(vertices)
 
-        # Convert input (RA, Dec) vertices to (x, y) polygon
-        self.wcs = wcs or make_wcs(self.ra, self.dec)
-        self.polygon_ras = [radec[0] for radec in self.vertices]
-        self.polygon_decs = [radec[1] for radec in self.vertices]
-        x_values, y_values = self.wcs.wcs_world2pix(
-            self.polygon_ras, self.polygon_decs, WCS_ORIGIN
-        )
-        polygon_vertices = [(x, y) for x, y in zip(x_values, y_values)]
-        self.polygon = Polygon(polygon_vertices)
+        self.coords = resolve_coordinates(ra, dec)
+
+        if wcs is None:
+            wcs = make_wcs(self.ra, self.dec, WCS_PIXEL_SCALE)
+
+        self.wcs = wcs
+        self.vertices = np.array(vertices)
 
         # Find the size and center coordinates of the facet
         xmin, ymin, xmax, ymax = self.polygon.bounds
@@ -106,22 +165,79 @@ class Facet(object):
                 (ymax - ymin) * abs(self.wcs.wcs.cdelt[1]),
             ),
         )  # degrees
-        self.x_center = xmin + (xmax - xmin) / 2
-        self.y_center = ymin + (ymax - ymin) / 2
-        self.ra_center, self.dec_center = map(
-            float,
-            self.wcs.wcs_pix2world(self.x_center, self.y_center, WCS_ORIGIN),
-        )
 
-        # Find the centroid of the facet
-        self.ra_centroid, self.dec_centroid = map(
-            float,
-            self.wcs.wcs_pix2world(
-                self.polygon.centroid.x,
-                self.polygon.centroid.y,
-                WCS_ORIGIN,
-            ),
-        )
+        # skymodel is set in the `set_skymodel` method
+        self.skymodel = None
+
+    @property
+    def ra(self):
+        """Right Ascension of the facet's reference coordinate in degrees."""
+        return self.coords.ra.deg
+
+    @property
+    def dec(self):
+        """Declination of the facet's reference coordinate in degrees."""
+        return self.coords.dec.deg
+
+    @property
+    def wcs(self):
+        """WCS object defining the world coordinate system to use."""
+        return self._wcs
+
+    @wcs.setter
+    def wcs(self, wcs):
+        if not isinstance(wcs, WCS):
+            raise TypeError("wcs must be an astropy.wcs.WCS object")
+        self._wcs = wcs
+
+    @property
+    def vertices_xy(self):
+        """Polygon vertices in image coordinates (x, y) as a numpy array."""
+        return self.wcs.world_to_pixel_values(self.vertices)
+
+    @property
+    def polygon(self):
+        """Shapely Polygon object representing the facet's polygon in image
+        coordinates."""
+        return Polygon(self.vertices_xy)
+
+    @property
+    def x_center(self):
+        """The x-coordinate of the facet's center in the image."""
+        xmin, _, xmax, _ = self.polygon.bounds
+        return xmin + (xmax - xmin) / 2
+
+    @property
+    def y_center(self):
+        """The y-coordinate of the facet's center in the image."""
+        _, ymin, _, ymax = self.polygon.bounds
+        return ymin + (ymax - ymin) / 2
+
+    @property
+    def center(self):
+        """Centre of the facet in celestial coordinates (RA, Dec) as a SkyCoord
+        object."""
+        return self.wcs.pixel_to_world(self.x_center, self.y_center)
+
+    @property
+    def centroid(self):
+        """Centroid of the facet in celestial coordinates (RA, Dec) as a
+        SkyCoord object."""
+        centroid = self.polygon.centroid
+        return self.wcs.pixel_to_world(centroid.x, centroid.y)
+
+    @property
+    def moc(self):
+        """
+        Returns a MOC object for the facet's polygon.
+
+        Returns
+        -------
+        moc : mocpy.MOC
+            The MOC object for the facet's polygon.
+        """
+        polygon_sky = SkyCoord(*self.vertices.T, unit="deg")
+        return MOC.from_polygon_skycoord(polygon_sky)
 
     def set_skymodel(self, skymodel):
         """
@@ -133,10 +249,63 @@ class Facet(object):
 
         Parameters
         ----------
-        skymodel : LSMTool skymodel object
+        skymodel : lsmtool.skymodel.SkyModel
             Input sky model
         """
-        self.skymodel = filter_skymodel(self.polygon, skymodel, self.wcs)
+        if not isinstance(skymodel, SkyModel):
+            raise TypeError(
+                "skymodel must be an lsmtool.skymodel.SkyModel object"
+            )
+        self.skymodel = self.filter_skymodel(skymodel)
+
+    def get_contained_sources(self, skymodel):
+        """
+        Check whether the sources in a skymodel are contained within the facet.
+
+        Parameters
+        ----------
+        skymodel : lsmtool.skymodel.SkyModel
+            Input sky model - sources inside the facet will be marked as
+            True.
+
+        Returns
+        -------
+        np.ndarray
+            Boolean array indicating which sources in the input skymodel are
+            contained within the facet's polygon.
+        """
+        # Make list of sources
+        ra = skymodel.getColValues("Ra")
+        dec = skymodel.getColValues("Dec")
+        coords = SkyCoord(ra, dec, unit="deg")
+        return self.moc.contains_skycoords(coords)
+
+    def filter_skymodel(self, skymodel, invert=False):
+        """
+        Filters input skymodel to select only sources that lie inside the facet.
+
+        Parameters
+        ----------
+        skymodel : lsmtool.skymodel.SkyModel
+            Input sky model to be filtered.
+        invert : bool, optional
+            If True, select sources outside the facet instead of inside, by
+            default False.
+
+        Returns
+        -------
+        lsmtool.skymodel.SkyModel
+            Filtered sky model containing only sources inside the facet.
+        """
+
+        sources_inside_facet = self.get_contained_sources(skymodel)
+
+        if invert:
+            skymodel.remove(sources_inside_facet)
+        else:
+            skymodel.select(sources_inside_facet)
+
+        return skymodel
 
     def download_panstarrs(self, max_search_cone_radius=0.5):
         """
@@ -148,19 +317,20 @@ class Facet(object):
         Parameters
         ----------
         max_search_cone_radius : float, optional
-            The maximum radius in degrees to use in the cone search. The smaller
-            of this radius and the minimum radius that covers the facet is used
+            The maximum radius in degrees to use in the cone search. The
+            smaller of this radius and the minimum radius that covers the facet
+            is used
 
         Returns
         -------
-        skymodel : LSMTool skymodel object
+        skymodel : lsmtool.skymodel.SkyModel
             The Pan-STARRS sky model
         """
         try:
             with tempfile.NamedTemporaryFile() as fp:
                 skymodel_cone_params = {
-                    "ra": self.ra_center,
-                    "dec": self.dec_center,
+                    "ra": self.center.ra,
+                    "dec": self.center.dec,
                     "radius": min(max_search_cone_radius, self.size / 2),
                 }
                 download_skymodel(
@@ -201,7 +371,7 @@ class Facet(object):
 
         Parameters
         ----------
-        comparison_skymodel : LSMTool skymodel object, optional
+        comparison_skymodel : lsmtool.skymodel.SkyModel, optional
             Comparison sky model. If not given, the Pan-STARRS catalog is
             used
         min_number : int, optional
@@ -225,7 +395,7 @@ class Facet(object):
             )
             # Save offsets
             if result is not None:
-                self.astrometry_diagnostics.update(result)
+                self.astrometry_diagnostics |= result
         else:
             self.log.warning(
                 "Too few matches to determine astrometry offsets "
@@ -236,29 +406,26 @@ class Facet(object):
 
     def get_matplotlib_patch(self, wcs=None):
         """
-        Returns a matplotlib patch for the facet polygon
+        Returns a matplotlib patch for the facet polygon.
 
         Parameters
         ----------
-        wcs : WCS object, optional
-            WCS object defining (RA, Dec) <-> (x, y) transformation. If not given,
-            the facet's transformation is used
+        wcs : astropy.wcs.WCS, optional
+            WCS object defining the celestial coordinate (RA, Dec) to image
+            (x, y) transformation. If not given, the facet's WCS object is
+            used.
 
         Returns
         -------
         patch : matplotlib patch object
-            The patch for the facet polygon
+            The patch for the facet polygon.
         """
         if wcs is not None:
-            x, y = wcs.wcs_world2pix(
-                self.polygon_ras, self.polygon_decs, WCS_ORIGIN
-            )
+            x, y = wcs.wcs_world2pix(*self.vertices.T, WCS_ORIGIN)
         else:
             x, y = self.polygon.exterior.coords.xy
         xy = np.vstack([x, y]).transpose()
-        patch = patches.Polygon(xy=xy, edgecolor="black", facecolor="white")
-
-        return patch
+        return patches.Polygon(xy=xy, edgecolor="black", facecolor="white")
 
 
 class SquareFacet(Facet):
@@ -283,12 +450,11 @@ class SquareFacet(Facet):
     """
 
     def __init__(self, name, ra, dec, width, *, wcs=None):
-        if type(ra) is str:
-            ra = Angle(ra).to("deg").value
-        if type(dec) is str:
-            dec = Angle(dec).to("deg").value
-        ra, dec = normalize_ra_dec(ra, dec)
-        wcs = wcs or make_wcs(ra, dec)
+
+        self.coords = resolve_coordinates(ra, dec)
+
+        if wcs is None:
+            wcs = make_wcs(self.ra, self.dec, WCS_PIXEL_SCALE)
 
         # Make the vertices.
         xmin = wcs.wcs.crpix[0] - width / 2 / abs(wcs.wcs.cdelt[0])
@@ -296,12 +462,15 @@ class SquareFacet(Facet):
         ymin = wcs.wcs.crpix[1] - width / 2 / abs(wcs.wcs.cdelt[1])
         ymax = wcs.wcs.crpix[1] + width / 2 / abs(wcs.wcs.cdelt[1])
         # Corner order: lower-left, top-left, top-right and lower-right.
-        corners_ra, corners_dec = wcs.wcs_pix2world(
-            [xmin, xmin, xmax, xmax], [ymin, ymax, ymax, ymin], WCS_ORIGIN
+        vertices = wcs.wcs_pix2world(
+            [
+                (xmin, ymin),
+                (xmin, ymax),
+                (xmax, ymax),
+                (xmax, ymin),
+            ],
+            WCS_ORIGIN,
         )
-
-        vertices = list(zip(corners_ra, corners_dec))
-
         super().__init__(name, ra, dec, vertices, wcs=wcs)
 
 
@@ -330,8 +499,9 @@ def tessellate(
         Size of bounding box (RA, Dec). Should be a 2-tuple of numbers in
         degrees.
     wcs : astropy.wcs.WCS, optional
-        WCS object that defines the world coordinate system to use. If None, a
-        generic WCS is used
+        The WCS object to use for the conversion to pixel coordinates. If not
+        given, a WCS object is created using the reference RA and Dec and the
+        default pixel scale from `lsmtool.constants.WCS_PIXEL_SCALE`
 
     Returns
     -------
@@ -351,16 +521,18 @@ def tessellate(
     coords_sky = np.column_stack([directions.ra.deg, directions.dec.deg])
     ra_mid, dec_mid = bbox_midpoint.ra.deg, bbox_midpoint.dec.deg
 
-    wcs = wcs or make_wcs(ra_mid, dec_mid)
+    if wcs is None:
+        wcs = make_wcs(ra_mid, dec_mid, WCS_PIXEL_SCALE)
+
     coords_pixel = wcs.wcs_world2pix(coords_sky, WCS_ORIGIN)
     x_mid, y_mid = wcs.wcs_world2pix(ra_mid, dec_mid, WCS_ORIGIN)
-    width_x = width_ra / abs(wcs.wcs.cdelt[0]) / 2.0
-    width_y = width_dec / abs(wcs.wcs.cdelt[1]) / 2.0
+    half_width_x = width_ra / abs(wcs.wcs.cdelt[0]) / 2.0
+    half_width_y = width_dec / abs(wcs.wcs.cdelt[1]) / 2.0
     bounding_box = [
-        x_mid - width_x,
-        x_mid + width_x,
-        y_mid - width_y,
-        y_mid + width_y,
+        x_mid - half_width_x,
+        x_mid + half_width_x,
+        y_mid - half_width_y,
+        y_mid + half_width_y,
     ]
 
     # Tessellate and convert resulting facet polygons from (x, y) to (RA, Dec)
@@ -397,10 +569,10 @@ def voronoi(cal_coords, bounding_box, eps=1e-6):
     points_centre : numpy.ndarray
         Centre points of the Voronoi cells.
     vertices : numpy.ndarray
-        Vertices of the Voronoi grid. To obtain the vertices of the polygon that
-        encloses any particular point, use the indices provided in the return
-        value `filtered_regions` to select the corresponding vertices for a
-        given cell.
+        Vertices of the Voronoi grid. To obtain the vertices of the polygon
+        that encloses any particular point, use the indices provided in the
+        return value `filtered_regions` to select the corresponding vertices
+        for a given cell.
     filtered_regions : list of list of int
         For each cell in the tesselation, a list of index points for the
         vertices that enclose the cell. For example
@@ -539,100 +711,6 @@ def is_valid_region(region, vertices, bounding_box):
     return bool(region)
 
 
-def filter_skymodel(polygon, skymodel, wcs, invert=False):
-    """
-    Filters input skymodel to select only sources that lie inside the input facet
-
-    Parameters
-    ----------
-    polygon : Shapely polygon object
-        Polygon object to use for filtering
-    skymodel : LSMTool skymodel object
-        Input sky model to be filtered
-    wcs : WCS object
-        WCS object defining image to sky transformations
-    invert : bool, optional
-        If True, invert the selection (so select only sources that lie outside
-        the facet)
-
-    Returns
-    -------
-    filtered_skymodel : LSMTool skymodel object
-        Filtered sky model
-    """
-    # Make list of sources
-    RA = skymodel.getColValues("Ra")
-    Dec = skymodel.getColValues("Dec")
-    x, y = wcs.wcs_world2pix(RA, Dec, WCS_ORIGIN)
-
-    # Keep only those sources inside the bounding box
-    inside = np.zeros(len(skymodel), dtype=bool)
-    xmin, ymin, xmax, ymax = polygon.bounds
-    inside_ind = np.where((x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax))
-    inside[inside_ind] = True
-    if invert:
-        skymodel.remove(inside)
-    else:
-        skymodel.select(inside)
-    if len(skymodel) == 0:
-        return skymodel
-    RA = skymodel.getColValues("Ra")
-    Dec = skymodel.getColValues("Dec")
-    x, y = wcs.wcs_world2pix(RA, Dec, WCS_ORIGIN)
-
-    # Now check the actual boundary against filtered sky model. We first do a quick (but
-    # coarse) check using ImageDraw with a padding of at least a few pixels to ensure the
-    # quick check does not remove sources spuriously. We then do a slow (but precise)
-    # check using Shapely
-    xpadding = max(int(0.1 * (max(x) - min(x))), 3)
-    ypadding = max(int(0.1 * (max(y) - min(y))), 3)
-    xshift = int(min(x)) - xpadding
-    yshift = int(min(y)) - ypadding
-    xsize = int(np.ceil(max(x) - min(x))) + 2 * xpadding
-    ysize = int(np.ceil(max(y) - min(y))) + 2 * ypadding
-    x -= xshift
-    y -= yshift
-    prepared_polygon = prep(polygon)
-
-    # Unmask everything outside of the polygon + its border (outline)
-    inside = np.zeros(len(skymodel), dtype=bool)
-    mask = Image.new("L", (xsize, ysize), 0)
-    verts = [
-        (xv - xshift, yv - yshift)
-        for xv, yv in zip(
-            polygon.exterior.coords.xy[0], polygon.exterior.coords.xy[1]
-        )
-    ]
-    ImageDraw.Draw(mask).polygon(verts, outline=1, fill=1)
-    inside_ind = np.where(
-        np.array(mask).transpose()[(x.astype(int), y.astype(int))]
-    )
-    inside[inside_ind] = True
-
-    # Now check sources in the border precisely
-    mask = Image.new("L", (xsize, ysize), 0)
-    ImageDraw.Draw(mask).polygon(verts, outline=1, fill=0)
-    border_ind = np.where(
-        np.array(mask).transpose()[(x.astype(int), y.astype(int))]
-    )
-    points = [Point(xs, ys) for xs, ys in zip(x[border_ind], y[border_ind])]
-    indexes = []
-    for i in range(len(points)):
-        indexes.append(border_ind[0][i])
-    i_points = zip(indexes, points)
-    i_outside_points = [
-        (i, p) for (i, p) in i_points if not prepared_polygon.contains(p)
-    ]
-    for idx, _ in i_outside_points:
-        inside[idx] = False
-    if invert:
-        skymodel.remove(inside)
-    else:
-        skymodel.select(inside)
-
-    return skymodel
-
-
 def make_ds9_region_file(
     facets, outfile, enclose_names=True, associate_names_with_polygons=True
 ):
@@ -660,8 +738,8 @@ def make_ds9_region_file(
     with open(outfile, "w") as stream:
         stream.write(
             "# Region file format: DS9 version 4.0\n"
-            'global color=green font="helvetica 10 normal" select=1 highlite=1 '
-            "edit=1  move=1 delete=1 include=1 fixed=0 source=1\n"
+            'global color=green font="helvetica 10 normal" select=1 highlite=1'
+            " edit=1  move=1 delete=1 include=1 fixed=0 source=1\n"
             "fk5\n"
         )
         for facet in facets:
@@ -772,7 +850,7 @@ def parse_facet_name(lines):
         if match := FACET_NAME_REGEX.search(line):
             facet_name = match["text0"] or match["text1"] or match["text2"]
             if not (facet_name := facet_name.strip()):
-                return
+                return None
 
             # Replace characters that are potentially problematic for Rapthor,
             # DP3, etc. with an underscore
@@ -780,6 +858,8 @@ def parse_facet_name(lines):
                 facet_name = facet_name.replace(invalid_char, "_")
 
             return facet_name
+
+    return None
 
 
 def read_from_skymodel(
@@ -857,3 +937,30 @@ def read_from_skymodel(
             facet_names, facet_points, facet_polys, strict=True
         )
     ]
+
+
+def filter_skymodel(polygon, skymodel, wcs, invert=False):
+    """
+    Filters input skymodel to select only sources that lie inside the input
+    region defined by a polygon in celestial coordinates.
+
+    Parameters
+    ----------
+    polygon : Shapely polygon object.
+        Polygon object to use for filtering.
+    skymodel : lsmtool.skymodel.SkyModel
+        Input sky model to be filtered.
+    wcs : WCS object
+        WCS object defining image to sky transformations.
+    invert : bool, optional
+        If True, invert the selection (so select only sources that lie outside
+        the facet).
+
+    Returns
+    -------
+    filtered_skymodel : lsmtool.skymodel.SkyModel
+        Skymodel object with only sources inside the facet either retained
+        (invert=False, the default) or removed (invert=True).
+    """
+    facet = Facet.from_polygon(polygon, wcs, "filter_skymodel")
+    return facet.filter_skymodel(skymodel, invert)

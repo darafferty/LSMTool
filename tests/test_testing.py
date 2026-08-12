@@ -235,9 +235,9 @@ class TestSkyModelGenerator:
     )
     def test_skymodel_generator(self, config, rng):
 
-        # create skymodel generator and sample 100 sources
+        # create skymodel generator and draw a random sample of sources
         generator = SkyModelGenerator(**config)
-        samples = generator.sample(n_sources=100, random_state=rng)
+        samples = generator.sample(n_sources=1_000, random_state=rng)
 
         # Check that the samples are within the expected ranges and have the
         # expected distribution.
