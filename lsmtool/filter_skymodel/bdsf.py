@@ -11,6 +11,7 @@ calibration pipeline`_.
     https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-selfcal/-/blob/3be896/src/ska_sdp_wflow_selfcal/pipeline/support/filter_skymodel.py
 """
 
+import line_profiler
 import logging
 import numbers
 import os
@@ -44,7 +45,7 @@ logger = logging.getLogger(__name__)
 # type aliases
 ListOfCoords = List[Tuple[numbers.Real, numbers.Real]]
 
-
+@line_profiler.profile
 def filter_skymodel(
     flat_noise_image: PathLike,
     true_sky_image: PathLikeOptional,
@@ -215,7 +216,7 @@ def parse_rmsbox(rmsbox: Union[str, None]):
     """Parses the rmsbox parameter."""
     return literal_eval(rmsbox) if isinstance(rmsbox, str) else rmsbox
 
-
+@line_profiler.profile
 def process_images(
     flat_noise_image: PathLike,
     true_sky_image: PathLike,
@@ -301,7 +302,7 @@ def process_images(
 
     return img_true_sky
 
-
+@line_profiler.profile
 def filter_sources(
     mask_file: PathLike,
     vertices_file: PathLike,

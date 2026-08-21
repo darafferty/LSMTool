@@ -16,6 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import line_profiler
 import logging
 import os
 from astropy.coordinates import Angle, SkyCoord
@@ -210,6 +211,7 @@ class SkyModel(object):
         """
         return self.table.__str__()
 
+    @line_profiler.profile
     def _updateGroups(self):
         """
         Updates the grouping of the table by patch name.
@@ -438,7 +440,8 @@ class SkyModel(object):
             colNameKey = None
 
         return colNameKey
-
+    
+    @line_profiler.profile
     def getPatchPositions(self, patchName=None, asArray=False, method=None,
                           applyBeam=False, perPatchProjection=True):
         """
@@ -573,6 +576,7 @@ class SkyModel(object):
         else:
             return None
 
+    @line_profiler.profile
     def setPatchPositions(self, patchDict=None, method='mid', applyBeam=False,
                           perPatchProjection=True):
         """
@@ -1101,6 +1105,7 @@ class SkyModel(object):
         # Concatenate tables
         self.concatenate(tempLSM, matchBy='name', keep='from2', inheritPatches=False)
 
+    @line_profiler.profile
     def getPatchSizes(self, units=None, weight=False, applyBeam=False):
         """
         Returns array of patch sizes.
@@ -2041,6 +2046,7 @@ class SkyModel(object):
         operations.remove.remove(self, filterExpression, aggregate=aggregate,
                                  applyBeam=applyBeam, useRegEx=useRegEx, force=force)
 
+    @line_profiler.profile
     def group(self, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
               numClusters=100, FWHM=None, threshold=0.1, applyBeam=False, root='Patch',
               pad_index=False, method='mid', facet="", byPatch=False, kernelSize=0.1,

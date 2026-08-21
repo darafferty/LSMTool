@@ -8,6 +8,7 @@ import re
 import tempfile
 from pathlib import Path
 
+import line_profiler
 import numpy as np
 import scipy
 from astropy.coordinates import Angle, SkyCoord
@@ -280,6 +281,7 @@ class Facet(object):
         coords = SkyCoord(ra, dec, unit="deg")
         return self.moc.contains_skycoords(coords)
 
+    @line_profiler.profile
     def filter_skymodel(self, skymodel, invert=False):
         """
         Filters input skymodel to select only sources that lie inside the facet.
@@ -938,7 +940,7 @@ def read_from_skymodel(
         )
     ]
 
-
+@line_profiler.profile
 def filter_skymodel(polygon, skymodel, wcs, invert=False):
     """
     Filters input skymodel to select only sources that lie inside the input

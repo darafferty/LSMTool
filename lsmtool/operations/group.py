@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import line_profiler
 import logging
 
 log = logging.getLogger('LSMTool.GROUP')
@@ -57,7 +58,7 @@ def run(step, parset, LSM):
 
     return result
 
-
+@line_profiler.profile
 def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
           numClusters=100, FWHM=None, threshold=0.1, applyBeam=False, root='Patch',
           pad_index=False, method='mid', facet="", byPatch=False, kernelSize=0.1,
