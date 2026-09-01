@@ -2,7 +2,6 @@
 Configuration for python tests.
 """
 
-import contextlib
 import shutil
 import tarfile
 from pathlib import Path
