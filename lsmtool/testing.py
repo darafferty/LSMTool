@@ -23,8 +23,10 @@ def get_context(expected, **kws):
     ----------
     expected : Exception or object
         The expected result of the test. If this object is an exception class,
-        the context manager will be `pytest.raises(expected, **kws)`. Otherwise,
-        it will be a null context manager.
+        the context manager will be `pytest.raises(expected, **kws)`.
+        Otherwise, it will be a do-nothing context manager
+        `contextlib.nullcontext(expected)` that simply returns the input value.
+        If `expected` is already a context manager, it will be returned as-is.
 
     Examples
     --------
@@ -46,12 +48,18 @@ def get_context(expected, **kws):
     -------
     contextlib.AbstractContextManager
     """
-    if isinstance(expected, type):
-        if isinstance(expected, contextlib.AbstractContextManager):
-            return expected
+    # pass exisiting context managers through unchanged
+    if hasattr(expected, "__enter__") and hasattr(expected, "__exit__"):
+        return expected
 
+    if isinstance(expected, type):
         if issubclass(expected, BaseException):
+            # For exception classes, return a pytest.raises context manager
             return pytest.raises(expected, **kws)
+
+        if issubclass(expected, Warning):
+            # For warning classes, return a pytest.warns context manager
+            return pytest.warns(expected, **kws)
 
     return contextlib.nullcontext(expected)
 
