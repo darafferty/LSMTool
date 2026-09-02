@@ -307,7 +307,7 @@ class Facet(object):
 
         return skymodel
 
-    def download_panstarrs(self, max_search_cone_radius=0.5):
+    def download_panstarrs(self, max_search_cone_radius=2.0):
         """
         Returns a Pan-STARRS sky model for the area around the facet
 
