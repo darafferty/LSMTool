@@ -277,9 +277,9 @@ def test_get_panstarrs_request():
 
     # Arrange
     expected_url = (
-        "https://vizier.cds.unistra.fr/viz-bin/votable/-A?-source=II/389/"
-        "ps1_dr2&amp;-out.max=unlimited&amp;-out=objID&amp;-out=RAJ2000&amp;"
-        "-out=DEJ2000&amp;Nd=5&amp;"
+        "https://vizier.cds.unistra.fr/viz-bin/conesearch/"
+        "II/389/ps1_dr2&amp;-out.max=100000&amp;"
+        "-out=objID RAJ2000 DEJ2000&amp;Nd=8&amp;"
     )
 
     # Act
