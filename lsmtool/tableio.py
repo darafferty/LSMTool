@@ -1443,10 +1443,12 @@ def queryNonVOService(url, format='makesourcedb'):
         if cp.returncode != 0:
             raise ConnectionError(cp.stderr)
 
-        try:
-            table = Table.read(outFile.name, format=format, header_start=0)
-        except IOError:
+        # Read the first character to check for an empty file, as VO queries that return no sources
+        # result in empty files
+        if not outFile.read(1):
             table = makeEmptyTable()
+        else:
+            table = Table.read(outFile.name, format=format, header_start=0)
 
     return table
 
