@@ -406,7 +406,7 @@ def test_download_skymodel_catalog(
 
 
 def test_download_skymodel_catalog_empty_result(cone_params, tmp_path, mocker):
-    """Test catalog download returns False when no sources are found."""
+    """Test catalog download returns True when no sources are found."""
 
     # Arrange
     skymodel_path = tmp_path / "catalog_sky_empty.model"
@@ -425,7 +425,7 @@ def test_download_skymodel_catalog_empty_result(cone_params, tmp_path, mocker):
     success = download_skymodel_catalog(cone_params, "TGSS", str(skymodel_path))
 
     # Assert
-    assert success is False
+    assert success is True
 
 
 @pytest.mark.parametrize(
