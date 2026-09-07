@@ -171,8 +171,8 @@ def download_skymodel_catalog(cone_params, catalog, skymodel_path):
             VORadius=cone_params["radius"],
         )
         skymodel.write(skymodel_path)
-        if len(skymodel) > 0:
-            return True
+        return True
+
     return False
 
 

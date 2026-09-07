@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 
 import mocpy
+import numpy
 import pytest
 import pyvo
 import requests
@@ -67,11 +68,25 @@ def patch_download_skymodel_from_survey(mocker):
 
 @pytest.fixture
 def cone_params():
-    """Fixture that provides example cone search parameters for PAN-STARRS."""
-    return {"ra": 10.75, "dec": 5.34, "radius": 0.01}
+    """Fixture that provides example cone search parameters."""
+    return {"ra": 200.0, "dec": 45.0, "radius": 0.5}
 
 
+@pytest.mark.parametrize(
+    "survey,reference_filename",
+    [
+        ("LOTSS", "expected.lotss.sky"),
+        ("TGSS", "expected.tgss.sky"),
+        ("GSM", "expected.gsm.sky"),
+        ("NVSS", "expected.nvss.sky"),
+        ("VLSSR", "expected.vlssr.sky"),
+        ("WENSS", "expected.wenss.sky"),
+        ("PANSTARRS", "expected.panstarrs.sky"),
+    ],
+)
 def test_download_skymodel(
+    survey,
+    reference_filename,
     tmp_path,
     patch_download_skymodel_from_survey,
     mocker,
@@ -80,12 +95,11 @@ def test_download_skymodel(
     """Test downloading a sky model."""
 
     # Arrange
-    copy_test_data("expected.tgss.sky", tmp_path)
+    copy_test_data(reference_filename, tmp_path)
     overwrite = False
-    survey = "TGSS"
     targetname = "Patch"
-    downloaded_skymodel_path = tmp_path / "downloaded.sky"
-    expected_skymodel_path = tmp_path / "expected.tgss.sky"
+    downloaded_skymodel_path = tmp_path / f"{survey}_downloaded.sky"
+    expected_skymodel_path = tmp_path / reference_filename
     skymodel_expected = lsmtool.load(str(expected_skymodel_path))
     patch_download_skymodel_from_survey(expected_skymodel_path)
 
@@ -103,7 +117,7 @@ def test_download_skymodel(
     assert len(skymodel_downloaded) == len(skymodel_expected)
     for col in skymodel_expected.table.columns:
         assert col in skymodel_downloaded.table.columns
-        assert all(
+        assert numpy.all(
             skymodel_downloaded.getColValues(col)
             == skymodel_expected.getColValues(col)
         )
