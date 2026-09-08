@@ -1,0 +1,10 @@
+FORMAT = Name, Type, Patch, Ra, Dec, I, Q, U, V, ReferenceFrequency='60000000.0', SpectralIndex='[0.0]', MajorAxis, MinorAxis, Orientation
+
+# LSMTool history:
+# 2026-09-07 17:40:05: LOAD (from file 'expected.gsm.sky')
+# 2026-09-07 17:40:05: SETPATCHPOSITIONS (method = 'mid')
+# 2026-09-07 17:40:05: GROUP (algorithm = 'single')
+# 2026-09-07 17:40:05: SETPATCHPOSITIONS (method = 'mid')
+
+ , , Patch, 13:19:56.2896, 44.30.55.4040
+1319.9+4430, POINT, Patch, 13:19:56.2896, 44.30.55.404, 0.7598, 0.0, 0.0, 0.0,  , [-1.2282, 0.2434], 0.0, 0.0, 0.0
