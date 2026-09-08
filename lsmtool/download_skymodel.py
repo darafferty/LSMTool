@@ -105,7 +105,6 @@ def download_skymodel_from_survey(
     survey = survey.upper().strip()
     if survey == "LOTSS":
         check_lotss_coverage(cone_params, skymodel_path)
-    logger.info("Downloading skymodel for the target into %s", skymodel_path)
 
     for attempt in range(retries + 1):
         if survey == "PANSTARRS":
@@ -172,8 +171,8 @@ def download_skymodel_catalog(cone_params, catalog, skymodel_path):
             VORadius=cone_params["radius"],
         )
         skymodel.write(skymodel_path)
-        if len(skymodel) > 0:
-            return True
+        return True
+
     return False
 
 
@@ -181,17 +180,19 @@ def get_panstarrs_request():
     """
     Create a Pan-STARRS VO URL.
 
+    See https://vizier.cds.unistra.fr/doc/asu-summary.htx for details
+    of how the URL is constructed.
+
     Returns
     -------
     url : str
         The Pan-STARRS VO URL.
     """
-    url = "https://vizier.cds.unistra.fr/viz-bin/votable/"  # VO service URL
-    url += "-A?-source=II/389/ps1_dr2&amp;"  # Pan-STARRS DR2 catalog
-    url += "-out.max=unlimited&amp;"  # unlimited number of output lines
-    url += "-out=objID&amp;"  # output objID
-    url += "-out=RAJ2000&amp;-out=DEJ2000&amp;"  # output RA, Dec
-    url += "Nd=5&amp;"  # require detection in at least 5 epochs
+    url = "https://vizier.cds.unistra.fr/viz-bin/conesearch/"  # VO service URL
+    url += "II/389/ps1_dr2&amp;"  # Pan-STARRS DR2 catalog
+    url += "-out.max=100000&amp;"  # up to 100000 output lines
+    url += "-out=objID RAJ2000 DEJ2000&amp;"  # output objID, RA, Dec columns
+    url += "Nd=8&amp;"  # require detection in at least 8 epochs
     return url
 
 

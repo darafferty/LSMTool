@@ -714,7 +714,7 @@ def skyModelWriter(table, fileName):
     # Make sure all columns have the correct makesourcedb units
     for colName in table.columns:
         units = allowedColumnUnits[colName.lower()]
-        if units is not None:
+        if units is not None and len(table) > 0:
             table[colName].convert_unit_to(units)
 
     # Add format line
@@ -1443,7 +1443,12 @@ def queryNonVOService(url, format='makesourcedb'):
         if cp.returncode != 0:
             raise ConnectionError(cp.stderr)
 
-        table = Table.read(outFile.name, format=format, header_start=0)
+        # Read the first character to check for an empty file, as VO queries that return no sources
+        # result in empty files
+        if not outFile.read(1):
+            table = makeEmptyTable()
+        else:
+            table = Table.read(outFile.name, format=format, header_start=0)
 
     return table
 
