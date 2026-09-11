@@ -18,6 +18,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import numpy as np
+import scipy.ndimage as nd
+
 
 def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
     pad_index=False):
@@ -25,8 +28,6 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
     Projects sky model to image plane, convolves with Gaussian, and finds islands
     of emission
     """
-    import numpy as np
-
     LSM.ungroup()
 
     # Generate image grid with 1 pix = FWHM / 4
@@ -57,14 +58,12 @@ def blur_image(im, n, ny=None):
     size n. The optional keyword argument ny allows for a different
     size in the y direction.
     """
-    from scipy.ndimage import gaussian_filter
-
     sx = n
     if ny is not None:
         sy = ny
     else:
         sy = n
-    improc = gaussian_filter(im, [sy, sx])
+    improc = nd.gaussian_filter(im, [sy, sx])
 
     return improc
 
@@ -73,9 +72,6 @@ def getPatchNamesFromMask(mask, x, y, root='mask', pad_index=False):
     """
     Returns an array of patch names for each (x, y) pair
     """
-    import scipy.ndimage as nd
-    import numpy as np
-
     act_pixels = mask
     rank = len(act_pixels.shape)
     connectivity = nd.generate_binary_structure(rank, rank)
