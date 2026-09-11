@@ -22,16 +22,18 @@ class MockSkyModel:
         return self.x, self.y, 42, 42
 
 
-def test_get_patch_names_by_threshold_single_source():
+@pytest.mark.parametrize("threshold", [0.1, 0.001])
+def test_get_patch_names_by_threshold_single_source(threshold):
     """Test the grouping of a single source into a patch."""
     sky_model = MockSkyModel([0], [0])
 
     patch_names = getPatchNamesByThreshold(
-        sky_model, fwhmArcsec=1.0, root="island"
+        sky_model, fwhmArcsec=1.0, root="island", threshold=threshold
     )
 
     assert sky_model.ungrouped
-    np.testing.assert_array_equal(patch_names, ["island_patch_1"])
+    expected_name = "island_patch_1" if threshold == 0.001 else "patch_0"
+    np.testing.assert_array_equal(patch_names, [expected_name])
 
 
 def test_get_patch_names_by_threshold_groups_multiple_sources():
@@ -46,7 +48,10 @@ def test_get_patch_names_by_threshold_groups_multiple_sources():
     sky_model = MockSkyModel([0, 1, -5, 12, 12], [3, 3, -2, 6, 6])
 
     patch_names = getPatchNamesByThreshold(
-        sky_model, fwhmArcsec=1.0, root="island"
+        sky_model,
+        fwhmArcsec=1.0,
+        root="island",
+        threshold=0.05,
     )
 
     np.testing.assert_array_equal(
@@ -67,7 +72,11 @@ def test_get_patch_names_by_threshold_pads_patch_indices(pad_index):
     sky_model = MockSkyModel(np.arange(0, 110, 10), np.zeros(11))
 
     patch_names = getPatchNamesByThreshold(
-        sky_model, fwhmArcsec=1.0, root="island", pad_index=pad_index
+        sky_model,
+        fwhmArcsec=1.0,
+        root="island",
+        threshold=0.05,
+        pad_index=pad_index,
     )
 
     if pad_index:

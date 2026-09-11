@@ -30,21 +30,25 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
     """
     LSM.ungroup()
 
+    padding = 4
+
     # Generate image grid with 1 pix = FWHM / 4
     x, y, _, _ = LSM._getXY(crdelt=fwhmArcsec/4.0/3600.0)
     xint = np.array(x, dtype=int)
     yint = np.array(y, dtype=int)
     xint -= min(xint)
     yint -= min(yint)
-    size_x = max(xint) + 1
-    size_y = max(yint) + 1
+    size_x = max(xint) + 1 + 2 * padding  # Add padding on both sides.
+    size_y = max(yint) + 1 + 2 * padding  # Add padding on both sides.
     image = np.zeros((size_x, size_y))
+    xint += padding
+    yint += padding
 
     # Set pixels with sources to one
     image[xint, yint] = 1.0
 
     # Convolve with Gaussian of FWHM = 4 pixels
-    image = blur_image(image, 4.0/2.35482)
+    image = blur_image(image, padding/2.35482)
 
     mask = image / threshold >= 1.0
     patchCol = getPatchNamesFromMask(mask, xint, yint, root=root, pad_index=pad_index)
