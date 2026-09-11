@@ -30,14 +30,14 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
     LSM.ungroup()
 
     # Generate image grid with 1 pix = FWHM / 4
-    x, y, midRA, midDec = LSM._getXY(crdelt=fwhmArcsec/4.0/3600.0)
-    sizeX = int(1.2 * (max(x) - min(x)))
-    sizeY = int(1.2 * (max(y) - min(y)))
-    image = np.zeros((sizeX, sizeY))
+    x, y, _, _ = LSM._getXY(crdelt=fwhmArcsec/4.0/3600.0)
     xint = np.array(x, dtype=int)
-    xint += -1 * min(xint) + 1
     yint = np.array(y, dtype=int)
-    yint += -1 * min(yint) + 1
+    xint -= min(xint)
+    yint -= min(yint)
+    size_x = max(xint) + 1
+    size_y = max(yint) + 1
+    image = np.zeros((size_x, size_y))
 
     # Set pixels with sources to one
     image[xint, yint] = 1.0
@@ -79,7 +79,7 @@ def getPatchNamesFromMask(mask, x, y, root='mask', pad_index=False):
     act_pixels = mask
     rank = len(act_pixels.shape)
     connectivity = nd.generate_binary_structure(rank, rank)
-    mask_labels, count = nd.label(act_pixels, connectivity)
+    mask_labels, _ = nd.label(act_pixels, connectivity)
 
     patchNums = []
     patchNames = []
