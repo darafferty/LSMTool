@@ -39,7 +39,7 @@ def test_get_patch_names_by_threshold_single_source(threshold):
 def test_get_patch_names_by_threshold_groups_multiple_sources():
     """
     Test the grouping of multiple sources into patches.
-    - The first two source should be grouped, since they're close.
+    - The first two sources should be grouped together, since they're adjacent.
     - The third source should be in its own patch.
       It explicitly tests handling of negative coordinates. Because of those
       coordinates, it should be the first patch (with index 1).
