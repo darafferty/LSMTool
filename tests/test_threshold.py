@@ -22,7 +22,7 @@ class MockSkyModel:
         return self.x, self.y, 42, 42
 
 
-@pytest.mark.parametrize("threshold", [0.1, 0.001])
+@pytest.mark.parametrize("threshold", [0.1, 0.01])
 def test_get_patch_names_by_threshold_single_source(threshold):
     """Test the grouping of a single source into a patch."""
     sky_model = MockSkyModel([0], [0])
@@ -32,26 +32,32 @@ def test_get_patch_names_by_threshold_single_source(threshold):
     )
 
     assert sky_model.ungrouped
-    expected_name = "island_patch_1" if threshold == 0.001 else "patch_0"
+    expected_name = "island_patch_1" if threshold == 0.01 else "patch_0"
     np.testing.assert_array_equal(patch_names, [expected_name])
 
 
 def test_get_patch_names_by_threshold_groups_multiple_sources():
     """
     Test the grouping of multiple sources into patches.
-    - The first two sources should be grouped together, since they're adjacent.
-    - The third source should be in its own patch.
-      It explicitly tests handling of negative coordinates. Because of those
-      coordinates, it should be the first patch (with index 1).
-    - The last two sources should be grouped together, since they're equal.
+    - The first two sources are adjacent, therefore reach the threshold and
+      should be grouped together.
+    - The third source is isolated and doesn't reach the threshold.
+      It explicitly tests handling of negative coordinates.
+    - The next two sources are isolated sources at the same position.
+      Since an isolated source doesn't reach the threshold, they should
+      be in their own patch, without the root prefix.
+    - The last four sources form a 2x2 grid and thereby reach the threshold.
+      Because of their low coordinates, they should have the first patch
+      index with a root prefix.
     """
-    sky_model = MockSkyModel([0, 1, -5, 12, 12], [3, 3, -2, 6, 6])
+    sky_model = MockSkyModel(
+        [4, 5, -5, 12, 12, 0, 1, 0, 1], [6, 6, -2, 6, 6, 0, 0, 1, 1]
+    )
 
     patch_names = getPatchNamesByThreshold(
         sky_model,
         fwhmArcsec=1.0,
         root="island",
-        threshold=0.05,
     )
 
     np.testing.assert_array_equal(
@@ -59,9 +65,13 @@ def test_get_patch_names_by_threshold_groups_multiple_sources():
         [
             "island_patch_2",
             "island_patch_2",
+            "patch_0",
+            "patch_1",
+            "patch_2",
             "island_patch_1",
-            "island_patch_3",
-            "island_patch_3",
+            "island_patch_1",
+            "island_patch_1",
+            "island_patch_1",
         ],
     )
 
@@ -75,7 +85,7 @@ def test_get_patch_names_by_threshold_pads_patch_indices(pad_index):
         sky_model,
         fwhmArcsec=1.0,
         root="island",
-        threshold=0.05,
+        threshold=0.01,
         pad_index=pad_index,
     )
 
