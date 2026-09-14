@@ -42,8 +42,8 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
     yint = np.array(y, dtype=int)
     xint -= min(xint)
     yint -= min(yint)
-    size_x = max(xint) + 1 + 2 * padding  # Add padding on both sides.
-    size_y = max(yint) + 1 + 2 * padding  # Add padding on both sides.
+    size_x = computeImageSize(xint, padding)
+    size_y = computeImageSize(yint, padding)
     image = np.zeros((size_x, size_y))
     xint += padding
     yint += padding
@@ -56,6 +56,28 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
 
     mask = image >= threshold
     return getPatchNamesFromMask(mask, xint, yint, root=root, pad_index=pad_index)
+
+
+def computeImageSize(indices, padding):
+    """
+    Computes the required size of the image using indices and padding.
+
+    Parameters
+    ----------
+    indices : list of int
+        Array of indices (either x or y) for which to compute the image size.
+        The minimum index in the array should be 0.
+    padding : int
+        The amount of padding to add on both sides.
+
+    Returns
+    -------
+    int
+        The required size of the image including padding.
+    """
+    # - Add 1 to the maximum index, since indices are zero-based.
+    # - Add 2 * padding, since padding happens on both sides.
+    return max(indices) + 1 + 2 * padding
 
 
 def getPatchNamesFromMask(mask, x, y, root='mask', pad_index=False):

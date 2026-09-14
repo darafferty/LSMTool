@@ -5,7 +5,10 @@ Tests for the `lsmtool.operations._threshold` module.
 import numpy as np
 import pytest
 
-from lsmtool.operations._threshold import getPatchNamesByThreshold
+from lsmtool.operations._threshold import (
+    computeImageSize,
+    getPatchNamesByThreshold,
+)
 
 
 class MockSkyModel:
@@ -94,3 +97,11 @@ def test_get_patch_names_by_threshold_pads_patch_indices(pad_index):
     else:
         expected_names = [f"island_patch_{index}" for index in range(1, 12)]
     np.testing.assert_array_equal(patch_names, expected_names)
+
+
+def test_compute_image_size():
+    """Test the computeImageSize function."""
+    assert computeImageSize([0], 0) == 1
+    assert computeImageSize([0], 2) == 5
+    assert computeImageSize([0, 1, 2, 3], 0) == 4
+    assert computeImageSize([42, 0, 7], 3) == 49
