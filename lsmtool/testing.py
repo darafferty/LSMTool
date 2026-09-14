@@ -53,13 +53,13 @@ def get_context(expected, **kws):
         return expected
 
     if isinstance(expected, type):
-        if issubclass(expected, BaseException):
-            # For exception classes, return a pytest.raises context manager
-            return pytest.raises(expected, **kws)
-
         if issubclass(expected, Warning):
             # For warning classes, return a pytest.warns context manager
             return pytest.warns(expected, **kws)
+
+        if issubclass(expected, BaseException):
+            # For exception classes, return a pytest.raises context manager
+            return pytest.raises(expected, **kws)
 
     return contextlib.nullcontext(expected)
 
@@ -178,7 +178,7 @@ def check_patches_equal(left, right, check_patch_names_sizes):
 # Helper classes for generating random skymodel data
 
 
-class constant:
+class constant:  # noqa: N801
     """
     A frozen constant distribution that emulates the `scipy.stats.distributions`
     API.
@@ -187,7 +187,7 @@ class constant:
     def __init__(self, value):
         self.value = value
 
-    def rvs(self, n, *args, **kws):
+    def rvs(self, n, *args, **kws):  # noqa: ARG002
         return np.full(n, self.value)
 
 
