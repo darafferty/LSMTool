@@ -69,7 +69,7 @@ then groups the sources into patches:
 
 ::
 
-    LSMTool.Steps = [selectbright, addsrc, grp, setpos]
+    LSMTool.Steps = [selectbright, addsrc, grp, selectpatch, setpos]
 
     # Select only sources above 1 mJy
     LSMTool.Steps.selectbright.Operation = SELECT
@@ -88,8 +88,8 @@ then groups the sources into patches:
     LSMTool.Steps.grp.TargetFlux = 50.0 Jy
 
     # Select only sources in 'Patch_1'
-    LSMTool.Steps.selectbright.Operation = SELECT
-    LSMTool.Steps.selectbright.FilterExpression = "Patch = Patch_1"
+    LSMTool.Steps.selectpatch.Operation = SELECT
+    LSMTool.Steps.selectpatch.FilterExpression = "Patch = Patch_1"
 
     # Set the patch positions to their midpoint and write final skymodel
     LSMTool.Steps.setpos.Method = mid
