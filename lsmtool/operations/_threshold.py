@@ -18,6 +18,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import numpy as np
+import scipy.ndimage as nd
+
 
 def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
     pad_index=False):
@@ -25,61 +28,75 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
     Projects sky model to image plane, convolves with Gaussian, and finds islands
     of emission
     """
-    import numpy as np
-
     LSM.ungroup()
 
+    # Convolve with Gaussian of FWHM = 4 pixels
+    fwhm = 4
+    sigma = fwhm/2.35482
+    truncate = 4.0
+    padding = int(np.ceil(truncate * sigma))
+
     # Generate image grid with 1 pix = FWHM / 4
-    x, y, midRA, midDec = LSM._getXY(crdelt=fwhmArcsec/4.0/3600.0)
-    sizeX = int(1.2 * (max(x) - min(x)))
-    sizeY = int(1.2 * (max(y) - min(y)))
-    image = np.zeros((sizeX, sizeY))
-    xint = np.array(x, dtype=int)
-    xint += -1 * min(xint) + 1
-    yint = np.array(y, dtype=int)
-    yint += -1 * min(yint) + 1
+    x_indices, y_indices = gridCoordinates(LSM, fwhmArcsec, padding)
+    size_x = computeImageSize(x_indices, padding)
+    size_y = computeImageSize(y_indices, padding)
+    image = np.zeros((size_x, size_y))
 
     # Set pixels with sources to one
-    image[xint, yint] = 1.0
+    image[x_indices, y_indices] = 1.0
 
-    # Convolve with Gaussian of FWHM = 4 pixels
-    image = blur_image(image, 4.0/2.35482)
+    # Blur the image with a Gaussian filter
+    image = nd.gaussian_filter(image, [sigma, sigma], truncate=truncate)
 
-    mask = image / threshold >= 1.0
-    patchCol = getPatchNamesFromMask(mask, xint, yint, root=root, pad_index=pad_index)
-
-    return patchCol
+    mask = image >= threshold
+    return getPatchNamesFromMask(mask, x_indices, y_indices, root=root, pad_index=pad_index)
 
 
-def blur_image(im, n, ny=None):
+def gridCoordinates(LSM, fwhmArcsec, padding):
+    """Generate image grid coordinates with 1 pix = FWHM / 4"""
+    x, y, _, _ = LSM._getXY(crdelt=fwhmArcsec/4.0/3600.0)
+    # Convert to integer coordinates.
+    x_indices = np.array(x, dtype=int)
+    y_indices = np.array(y, dtype=int)
+    # Shift coordinates so they start from zero.
+    x_indices -= min(x_indices)
+    y_indices -= min(y_indices)
+    # Apply padding to the coordinates
+    x_indices += padding
+    y_indices += padding
+    return x_indices, y_indices
+
+
+def computeImageSize(indices, padding):
     """
-    Blurs the image by convolving with a gaussian kernel of typical
-    size n. The optional keyword argument ny allows for a different
-    size in the y direction.
+    Computes the required size of the image using indices and padding.
+
+    Parameters
+    ----------
+    indices : list of int
+        Array of indices (either x or y) for which to compute the image size.
+        The indices should already include padding for one side.
+    padding : int
+        The amount of padding to add.
+
+    Returns
+    -------
+    int
+        The required size of the image including padding.
     """
-    from scipy.ndimage import gaussian_filter
-
-    sx = n
-    if ny is not None:
-        sy = ny
-    else:
-        sy = n
-    improc = gaussian_filter(im, [sy, sx])
-
-    return improc
+    # - Add 1 to the maximum index, since indices are zero-based.
+    # - Add padding once, since the indices already include padding on one side.
+    return max(indices) + 1 + padding
 
 
 def getPatchNamesFromMask(mask, x, y, root='mask', pad_index=False):
     """
     Returns an array of patch names for each (x, y) pair
     """
-    import scipy.ndimage as nd
-    import numpy as np
-
     act_pixels = mask
     rank = len(act_pixels.shape)
     connectivity = nd.generate_binary_structure(rank, rank)
-    mask_labels, count = nd.label(act_pixels, connectivity)
+    mask_labels, _ = nd.label(act_pixels, connectivity)
 
     patchNums = []
     patchNames = []
