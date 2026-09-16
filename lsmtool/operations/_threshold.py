@@ -37,25 +37,34 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
     padding = int(np.ceil(truncate * sigma))
 
     # Generate image grid with 1 pix = FWHM / 4
-    x, y, _, _ = LSM._getXY(crdelt=fwhmArcsec/4.0/3600.0)
-    xint = np.array(x, dtype=int)
-    yint = np.array(y, dtype=int)
-    xint -= min(xint)
-    yint -= min(yint)
-    size_x = computeImageSize(xint, padding)
-    size_y = computeImageSize(yint, padding)
+    x_indices, y_indices = gridCoordinates(LSM, fwhmArcsec, padding)
+    size_x = computeImageSize(x_indices, padding)
+    size_y = computeImageSize(y_indices, padding)
     image = np.zeros((size_x, size_y))
-    xint += padding
-    yint += padding
 
     # Set pixels with sources to one
-    image[xint, yint] = 1.0
+    image[x_indices, y_indices] = 1.0
 
     # Blur the image with a Gaussian filter
     image = nd.gaussian_filter(image, [sigma, sigma], truncate=truncate)
 
     mask = image >= threshold
-    return getPatchNamesFromMask(mask, xint, yint, root=root, pad_index=pad_index)
+    return getPatchNamesFromMask(mask, x_indices, y_indices, root=root, pad_index=pad_index)
+
+
+def gridCoordinates(LSM, fwhmArcsec, padding):
+    """Generate image grid coordinates with 1 pix = FWHM / 4"""
+    x, y, _, _ = LSM._getXY(crdelt=fwhmArcsec/4.0/3600.0)
+    # Convert to integer coordinates.
+    x_indices = np.array(x, dtype=int)
+    y_indices = np.array(y, dtype=int)
+    # Shift coordinates so they start from zero.
+    x_indices -= min(x_indices)
+    y_indices -= min(y_indices)
+    # Apply padding to the coordinates
+    x_indices += padding
+    y_indices += padding
+    return x_indices, y_indices
 
 
 def computeImageSize(indices, padding):
@@ -66,9 +75,9 @@ def computeImageSize(indices, padding):
     ----------
     indices : list of int
         Array of indices (either x or y) for which to compute the image size.
-        The minimum index in the array should be 0.
+        The indices should already include padding for one side.
     padding : int
-        The amount of padding to add on both sides.
+        The amount of padding to add.
 
     Returns
     -------
@@ -76,8 +85,8 @@ def computeImageSize(indices, padding):
         The required size of the image including padding.
     """
     # - Add 1 to the maximum index, since indices are zero-based.
-    # - Add 2 * padding, since padding happens on both sides.
-    return max(indices) + 1 + 2 * padding
+    # - Add padding once, since the indices already include padding on one side.
+    return max(indices) + 1 + padding
 
 
 def getPatchNamesFromMask(mask, x, y, root='mask', pad_index=False):

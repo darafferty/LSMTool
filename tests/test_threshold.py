@@ -8,6 +8,7 @@ import pytest
 from lsmtool.operations._threshold import (
     computeImageSize,
     getPatchNamesByThreshold,
+    gridCoordinates,
 )
 
 
@@ -99,9 +100,19 @@ def test_get_patch_names_by_threshold_pads_patch_indices(pad_index):
     np.testing.assert_array_equal(patch_names, expected_names)
 
 
+def test_grid_coordinates():
+    """Test the gridCoordinates function."""
+    sky_model = MockSkyModel([42, 43], [-5, -10])
+    fwhmArcsec = 1.0
+    padding = 2
+    x_indices, y_indices = gridCoordinates(sky_model, fwhmArcsec, padding)
+    assert np.array_equal(x_indices, [2, 3])
+    assert np.array_equal(y_indices, [7, 2])
+
+
 def test_compute_image_size():
     """Test the computeImageSize function."""
     assert computeImageSize([0], 0) == 1
-    assert computeImageSize([0], 2) == 5
+    assert computeImageSize([0], 2) == 3
     assert computeImageSize([0, 1, 2, 3], 0) == 4
-    assert computeImageSize([42, 0, 7], 3) == 49
+    assert computeImageSize([42, 0, 7], 3) == 46
