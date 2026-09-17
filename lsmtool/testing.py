@@ -46,7 +46,8 @@ def get_context(expected, **kws):
 
     Returns
     -------
-    contextlib.AbstractContextManager
+    context: contextlib.AbstractContextManager or object
+        Object that acts like a context manager.
     """
     # pass exisiting context managers through unchanged
     if hasattr(expected, "__enter__") and hasattr(expected, "__exit__"):
