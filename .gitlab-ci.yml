@@ -1,1 +1,6 @@
-.gitlab-ci.astron.yml
+# Copyright (C) 2026 ASTRON (Netherlands Institute for Radio Astronomy)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# This file is an alias for .gitlab-ci.astron.yml
+# GitLab requires an actual file: A symbolic link does not work.
+include: .gitlab-ci.astron.yml
