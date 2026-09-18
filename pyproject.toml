@@ -170,7 +170,8 @@ ignore = ["PLR2004", "N803"]
 "tests/*.py" = [
     "S101",     # Use of `assert` detected
     "S108",     # Probable insecure usage of temporary file or directory
-    "PLR0913"   # Too many arguments in function definition
+    "PLR0913",   # Too many arguments in function definition
+    "PLR0917"   # Too many positional arguments
 ]
 ###########################
 # coverage settings       #
