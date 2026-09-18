@@ -6,6 +6,12 @@
   tags:
     - dind
 
+default:
+  cache:
+    paths:
+      - .cache/pip
+      # Do not cache .tox, to recreate virtualenvs for every step
+
 include: .gitlab-ci.common.yml
 
 deploy_on_test_pypi:

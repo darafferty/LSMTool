@@ -1,15 +1,6 @@
 # Copyright (C) 2026 ASTRON (Netherlands Institute for Radio Astronomy)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-default:
-  image:
-    name: $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG
-    pull_policy: always
-  cache:
-    paths:
-      - .cache/pip
-      # Do not cache .tox, to recreate virtualenvs for every step
-
 stages:
   - prepare
   - lint
@@ -49,7 +40,13 @@ build_ci_runner_image:
         docker push $CI_REGISTRY_IMAGE/ci-build-runner:latest
       fi
 
+.default-image:
+  image:
+    name: $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG
+    pull_policy: always
+
 run_lint:
+  extends: .default-image
   stage: lint
   before_script: &install_dependencies
     # WCSLib is required for installing SoFiA which isn't distributed as a
@@ -83,7 +80,7 @@ run_unit_tests:
 # Run code coverage on the base image thus also performing unit tests
 run_unit_tests_coverage:
   stage: test
-  extends: .run_unit_test_version_base
+  extends: [ ".run_unit_test_version_base", ".default-image" ]
   script:
    - tox -e coverage
   coverage: '/TOTAL.+?(\d+(?:\.\d+)?%)$/'
@@ -98,6 +95,7 @@ run_unit_tests_coverage:
 
 # Build and package the project
 package_files:
+  extends: .default-image
   stage: package
   artifacts:
     expire_in: 1w
@@ -110,6 +108,7 @@ package_files:
 
 # Build the sphinx documentation
 package_docs:
+  extends: .default-image
   stage: package
   artifacts:
     expire_in: 1w
