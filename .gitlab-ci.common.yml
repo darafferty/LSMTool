@@ -1,0 +1,141 @@
+# Copyright (C) 2026 ASTRON (Netherlands Institute for Radio Astronomy)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+stages:
+  - prepare
+  - lint
+  - scan
+  - test
+  - package
+  - deploy
+
+# Caching of dependencies to speed up builds
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# Job templates from Gitlab that scan for security issues or leaked secrets
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+# Prepare image to run ci on, image will be used in most jobs
+build_ci_runner_image:
+  extends: .dind
+  stage: prepare
+  image: docker
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - |
+      if docker pull $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG; then
+        docker build --cache-from $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG --tag $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG docker/ci-runner
+      else
+        docker pull $CI_REGISTRY_IMAGE/ci-build-runner:latest || true
+        docker build --cache-from $CI_REGISTRY_IMAGE/ci-build-runner:latest --tag $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG docker/ci-runner
+      fi
+    - docker push $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG  # push the image
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        docker image tag $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG $CI_REGISTRY_IMAGE/ci-build-runner:latest
+        docker push $CI_REGISTRY_IMAGE/ci-build-runner:latest
+      fi
+
+.default-image:
+  image:
+    name: $CI_REGISTRY_IMAGE/ci-build-runner:$CI_COMMIT_REF_SLUG
+    pull_policy: always
+
+run_lint:
+  extends: .default-image
+  stage: lint
+  before_script: &install_dependencies
+    # WCSLib is required for installing SoFiA which isn't distributed as a
+    # binary wheel
+    - apt-get update -y
+    - apt install wcslib-dev -y
+  script:
+    - tox -e lint
+  allow_failure: true
+
+# Basic setup for all Python versions for which we don't have a base image
+.run_unit_test_version_base:
+  before_script:
+    - *install_dependencies
+    - python --version # For debugging
+    - python -m pip install --upgrade pip
+    - python -m pip install --upgrade tox twine
+
+# Run all unit tests for Python versions except the base image
+# The base image is used for the highest Python version
+run_unit_tests:
+  stage: test
+  extends: .run_unit_test_version_base
+  image: python:3.${PY_VERSION}
+  script:
+    - tox -e py3${PY_VERSION}
+  parallel:
+    matrix: # use the matrix for testing
+      - PY_VERSION: [10, 11, 12, 13]
+
+# Run code coverage on the base image thus also performing unit tests
+run_unit_tests_coverage:
+  stage: test
+  extends: [ ".run_unit_test_version_base", ".default-image" ]
+  script:
+   - tox -e coverage
+  coverage: '/TOTAL.+?(\d+(?:\.\d+)?%)$/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - htmlcov/*
+
+
+# Build and package the project
+package_files:
+  extends: .default-image
+  stage: package
+  artifacts:
+    expire_in: 1w
+    paths:
+      - dist/*
+  before_script:
+    - *install_dependencies
+  script:
+    - tox -e build
+
+# Build the sphinx documentation
+package_docs:
+  extends: .default-image
+  stage: package
+  artifacts:
+    expire_in: 1w
+    paths:
+      - docs/build/*
+  before_script:
+    - *install_dependencies
+  script:
+    - tox -e docs
+
+.deploy_package:
+  stage: deploy
+  needs:
+    - package_files
+  image: python:3.12
+  before_script:
+    - pip install tox
+  script:
+    - tox -e deploy
+  rules:
+    # Only deploy when building a release tag, or when requested explicitly.
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"'
+
+deploy_on_gitlab:
+  extends: .deploy_package
+  environment: gitlab
+  variables:
+    TWINE_USERNAME: gitlab-ci-token
+    TWINE_PASSWORD: ${CI_JOB_TOKEN}
+    TWINE_REPOSITORY_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
