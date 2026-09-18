@@ -1,0 +1,31 @@
+# Copyright (C) 2026 ASTRON (Netherlands Institute for Radio Astronomy)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# At Astron GitLab, docker-in-docker jobs require a 'dind' tag.
+.dind:
+  tags:
+    - dind
+
+default:
+  cache:
+    paths:
+      - .cache/pip
+      # Do not cache .tox, to recreate virtualenvs for every step
+
+include: .gitlab-ci.common.yml
+
+deploy_on_test_pypi:
+  extends: .deploy_package
+  environment: pypi-test
+  variables:
+    TWINE_USERNAME: __token__
+    TWINE_PASSWORD: ${TESTPYPI_TOKEN}
+    TWINE_REPOSITORY_URL: https://test.pypi.org/legacy/
+
+deploy_on_pypi:
+  extends: .deploy_package
+  environment: pypi
+  variables:
+    TWINE_USERNAME: __token__
+    TWINE_PASSWORD: ${PYPI_TOKEN}
+    TWINE_REPOSITORY_URL: https://upload.pypi.org/legacy/
