@@ -23,8 +23,10 @@ def get_context(expected, **kws):
     ----------
     expected : Exception or object
         The expected result of the test. If this object is an exception class,
-        the context manager will be `pytest.raises(expected, **kws)`. Otherwise,
-        it will be a null context manager.
+        the context manager will be `pytest.raises(expected, **kws)`.
+        Otherwise, it will be a do-nothing context manager
+        `contextlib.nullcontext(expected)` that simply returns the input value.
+        If `expected` is already a context manager, it will be returned as-is.
 
     Examples
     --------
@@ -44,13 +46,20 @@ def get_context(expected, **kws):
 
     Returns
     -------
-    contextlib.AbstractContextManager
+    context: contextlib.AbstractContextManager or object
+        Object that acts like a context manager.
     """
+    # pass exisiting context managers through unchanged
+    if hasattr(expected, "__enter__") and hasattr(expected, "__exit__"):
+        return expected
+
     if isinstance(expected, type):
-        if isinstance(expected, contextlib.AbstractContextManager):
-            return expected
+        if issubclass(expected, Warning):
+            # For warning classes, return a pytest.warns context manager
+            return pytest.warns(expected, **kws)
 
         if issubclass(expected, BaseException):
+            # For exception classes, return a pytest.raises context manager
             return pytest.raises(expected, **kws)
 
     return contextlib.nullcontext(expected)
@@ -170,7 +179,7 @@ def check_patches_equal(left, right, check_patch_names_sizes):
 # Helper classes for generating random skymodel data
 
 
-class constant:
+class Constant:
     """
     A frozen constant distribution that emulates the `scipy.stats.distributions`
     API.
@@ -179,7 +188,7 @@ class constant:
     def __init__(self, value):
         self.value = value
 
-    def rvs(self, n, *args, **kws):
+    def rvs(self, n, *_, **__):
         return np.full(n, self.value)
 
 
@@ -202,7 +211,7 @@ def uniform_range(a, b):
     return uniform(loc=a, scale=b - a)
 
 
-RVType = rv_frozen | constant | None
+RVType = rv_frozen | Constant | None
 
 
 @dataclass
@@ -251,12 +260,12 @@ class SkyModelGenerator:
     ra: RVType = uniform_range(0, 360)
     dec: RVType = uniform_range(-90, 90)
     i: RVType = uniform_range(0.001, 20)
-    q: RVType = constant(0)
-    u: RVType = constant(0)
-    v: RVType = constant(0)
-    reference_frequency: RVType = constant(1.44e8)
+    q: RVType = Constant(0)
+    u: RVType = Constant(0)
+    v: RVType = Constant(0)
+    reference_frequency: RVType = Constant(1.44e8)
     spectral_index: RVType = uniform_range(-1, 0)
-    rotation_measure: RVType = constant(0)
+    rotation_measure: RVType = Constant(0)
     major_axis: RVType = uniform_range(0.01, 20)
     minor_axis: RVType = uniform_range(0, 1)
     orientation: RVType = uniform_range(0, 180)
