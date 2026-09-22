@@ -49,6 +49,7 @@ dependencies = [
     "shapely",
     "Pillow > 11.1",
     "bdsf",
+    "cmasher>=1.9.2",
 ]
 [project.optional-dependencies]
 sofia = ["sofia2 @ git+https://gitlab.com/SoFiA-Admin/SoFiA-2.git@b10ab4ef"]
@@ -62,7 +63,8 @@ tests = [
     "pytest-cov",
     "pytest-mock",
     "pytest-xdist",
-    "pytest-socket"
+    "pytest-socket",
+    "python-callgraph-mermaid @ git+https://gitlab.com/astromancer/python-callgraph-mermaid.git"
 ]
 dev = [
     "ruff",
