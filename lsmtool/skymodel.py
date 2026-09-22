@@ -686,12 +686,29 @@ class SkyModel(object):
             RA = self.getColValues('Ra', aggregate='wmean')
             Dec = self.getColValues('Dec', aggregate='wmean')
         else:
-            RA = self.getColValues('Ra')
-            Dec = self.getColValues('Dec')
             if patchName is not None:
-                ind = self.getRowIndex(patchName)
-                RA = RA[ind]
-                Dec = Dec[ind]
+                if not self.hasPatches:
+                    raise ValueError('Sky model must be grouped before a patch '
+                                    'name can be specified.')
+
+                # The table is grouped by Patch, so the members of each patch
+                # occupy a contiguous range. Avoid copying the complete Ra,
+                # Dec and Patch columns for every patch.
+                patchNames = self.table.groups.keys['Patch']
+                patchInd = np.where(patchNames == patchName)[0]
+                if len(patchInd) == 0:
+                    raise ValueError("Row name '{0}' not recognized.".format(patchName))
+
+                groupInd = patchInd[0]
+                start = self.table.groups.indices[groupInd]
+                end = self.table.groups.indices[groupInd + 1]
+
+                RA = self.table['Ra'][start:end]
+                Dec = self.table['Dec'][start:end]
+            else:
+                RA = self.table['Ra']
+                Dec = self.table['Dec']
+
         wcs = make_wcs(RA[0], Dec[0], crdelt=crdelt)
         x, y = wcs.wcs_world2pix(RA, Dec, 0)
 
@@ -881,9 +898,9 @@ class SkyModel(object):
             return None
 
         if hasattr(col, 'filled'):
-            outcol = col.filled().copy()
+            outcol = col.filled()
         else:
-            outcol = col.copy()
+            outcol = col
 
         if units is not None:
             outcol.convert_unit_to(units)
@@ -1052,9 +1069,19 @@ class SkyModel(object):
         # logic should work even if a row has the same name for the source and
         # its patch, as in this case the patch and source row index are
         # identical (since such a patch can have only one member source)
-        if self.hasPatches and rowName in self.getPatchNames():
-            return np.where(self.getColValues('Patch') == rowName)[0].tolist()
-        elif rowName in self.getColValues('Name'):
+        if self.hasPatches:
+            patchNames = self.table.groups.keys['Patch']
+            patchInd = np.where(patchNames == rowName)[0]
+
+            if len(patchInd) > 0:
+                groupInd = patchInd[0]
+                start = self.table.groups.indices[groupInd]
+                end = self.table.groups.indices[groupInd + 1]
+                return np.arange(start, end).tolist()
+
+        # Do the exact source-name membership test directly on the table column.
+        # This avoids constructing a copy through getColValues().
+        if rowName in self.table['Name']:
             return self._getNameIndx(rowName)
         else:
             raise ValueError("Row name '{0}' not recognized.".format(rowName))
