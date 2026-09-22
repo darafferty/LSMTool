@@ -440,7 +440,7 @@ class SkyModel(object):
         return colNameKey
 
     def getPatchPositions(self, patchName=None, asArray=False, method=None,
-                          applyBeam=False, perPatchProjection=True):
+                          applyBeam=False, perPatchProjection=False):
         """
         Returns arrays or a dict of patch positions (as {'patchName':(RA, Dec)}).
 
@@ -524,9 +524,7 @@ class SkyModel(object):
                         wcsAll.append(make_wcs(midRA, midDec))
                 else:
                     xAll, yAll, midRA, midDec = self._getXY()
-                    wcsAll = []  # has length = num of patches
-                    for name in patchName:
-                        wcsAll.append(make_wcs(midRA, midDec))
+                    wcsAll = make_wcs(midRA, midDec)
 
                 xCol = Column(name='X', data=xAll)
                 yCol = Column(name='Y', data=yAll)
@@ -541,7 +539,10 @@ class SkyModel(object):
                     midX = minX + (maxX - minX) / 2.0
                     midY = minY + (maxY - minY) / 2.0
                     for i, name in enumerate(patchName):
-                        RA, Dec = wcsAll[i].wcs_pix2world(midX[i], midY[i], 0)
+                        if perPatchProjection:
+                            RA, Dec = wcsAll[i].wcs_pix2world(midX[i], midY[i], 0)
+                        else:
+                            RA, Dec = wcsAll.wcs_pix2world(midX[i], midY[i], 0)
                         RANorm, DecNorm = RADec2Angle(RA.item(), Dec.item())
                         patchDict[name] = [RANorm[0], DecNorm[0]]
                 elif method == 'mean' or method == 'wmean':
@@ -554,7 +555,10 @@ class SkyModel(object):
                     meanY = self._getAveragedColumn('Y', applyBeam=applyBeam,
                                                     weight=weight)
                     for i, name in enumerate(patchName):
-                        RA, Dec = wcsAll[i].wcs_pix2world(meanX[i], meanY[i], 0)
+                        if perPatchProjection:
+                            RA, Dec = wcsAll[i].wcs_pix2world(meanX[i], meanY[i], 0)
+                        else:
+                            RA, Dec = wcsAll.wcs_pix2world(meanX[i], meanY[i], 0)
                         RANorm, DecNorm = RADec2Angle(RA.item(), Dec.item())
                         patchDict[name] = [RANorm[0], DecNorm[0]]
                 self.table.remove_column('X')
@@ -574,7 +578,7 @@ class SkyModel(object):
             return None
 
     def setPatchPositions(self, patchDict=None, method='mid', applyBeam=False,
-                          perPatchProjection=True):
+                          perPatchProjection=False):
         """
         Sets the patch positions.
 
