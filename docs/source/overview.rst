@@ -271,7 +271,10 @@ LSM.getColValues()
     Returns a numpy array of column values
 
 LSM.getRowIndex()
-    Returns the row index or indices for a source or patch
+    Returns an integer index array for an exact source name or a slice for a
+    patch name, suitable for indexing a table or column directly. Patch slices
+    avoid copying the selected data. Patch names take precedence over source
+    names; unknown names raise ValueError.
 
 LSM.getRowValues()
     Returns a table or row for a source or patch

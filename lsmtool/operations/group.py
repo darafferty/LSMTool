@@ -211,7 +211,7 @@ def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
                 origPatchNames = LSM.getPatchNames()
                 patchCol = np.zeros(len(LSM), dtype='U100')
                 for newPatchName, origPatchName in zip(newPatchNames, origPatchNames):
-                    ind = np.array(LSM.getRowIndex(origPatchName))
+                    ind = LSM.getRowIndex(origPatchName)
                     patchCol[ind] = newPatchName
                 LSM.setColValues('Patch', patchCol, index=2)
             else:
