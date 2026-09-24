@@ -5,16 +5,6 @@ import filecmp
 import pytest
 
 
-@pytest.fixture()
-def sky_no_patches():
-    return lsmtool.load('tests/resources/no_patches.sky')
-
-
-@pytest.fixture()
-def sky_patches():
-    return lsmtool.load('tests/resources/patches.sky')
-
-
 def test_select(sky_no_patches):
     """Select individual sources with Stokes I fluxes above 1 Jy."""
     assert len(sky_no_patches) == 1210
@@ -27,6 +17,10 @@ def test_transfer(sky_no_patches, sky_patches):
     assert not sky_no_patches.hasPatches
     sky_no_patches.transfer(sky_patches)
     assert sky_no_patches.hasPatches
+    expected = dict(zip(sky_patches.table['Name'], sky_patches.table['Patch']))
+    for name, patch in zip(sky_no_patches.table['Name'], sky_no_patches.table['Patch']):
+        if name in expected:
+            assert patch == expected[name]
 
 
 def test_remove(sky_no_patches):
@@ -75,13 +69,6 @@ def test_add(sky_no_patches):
     sky_no_patches.add({'Name': 'src1', 'Type': 'POINT', 'Ra': 277.4232, 'Dec': 48.3689,
                         'I': 0.69})
     assert len(sky_no_patches) == original_length + 1
-
-
-@pytest.fixture
-def sky_grouped(sky_no_patches):
-    """Group sky_no_patches using tessellation to a target flux of 50 Jy."""
-    sky_no_patches.group('tessellate', targetFlux='50.0 Jy')
-    return sky_no_patches
 
 
 def test_group(sky_grouped):
