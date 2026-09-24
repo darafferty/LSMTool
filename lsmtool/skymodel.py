@@ -686,12 +686,18 @@ class SkyModel(object):
             RA = self.getColValues('Ra', aggregate='wmean')
             Dec = self.getColValues('Dec', aggregate='wmean')
         else:
-            RA = self.getColValues('Ra')
-            Dec = self.getColValues('Dec')
             if patchName is not None:
+                if not self.hasPatches:
+                    raise ValueError('Sky model must be grouped before a patch '
+                                    'name can be specified.')
+
                 ind = self.getRowIndex(patchName)
-                RA = RA[ind]
-                Dec = Dec[ind]
+                RA = self.table['Ra'][ind]
+                Dec = self.table['Dec'][ind]
+            else:
+                RA = self.table['Ra']
+                Dec = self.table['Dec']
+
         wcs = make_wcs(RA[0], Dec[0], crdelt=crdelt)
         x, y = wcs.wcs_world2pix(RA, Dec, 0)
 
@@ -834,7 +840,8 @@ class SkyModel(object):
         Returns
         -------
         colValues : numpy.ndarray
-            Array of column values. None is returned if column is not found.
+            Independent array of column values. Modifying it does not change
+            the sky model. None is returned if column is not found.
 
         Examples
         --------
@@ -880,10 +887,15 @@ class SkyModel(object):
         if col is None:
             return None
 
+        # Filling a masked column already creates independent storage.
+        # Aggregation and beam attenuation also produce owned columns; only
+        # an unmodified table column needs an explicit copy here.
         if hasattr(col, 'filled'):
-            outcol = col.filled().copy()
-        else:
+            outcol = col.filled()
+        elif col is self.table[colName]:
             outcol = col.copy()
+        else:
+            outcol = col
 
         if units is not None:
             outcol.convert_unit_to(units)
@@ -1019,24 +1031,30 @@ class SkyModel(object):
 
     def getRowIndex(self, rowName):
         """
-        Returns index or indices for specified source or patch as a list.
+        Returns a row selector for the specified source or patch.
 
         Parameters
         ----------
         rowName : str
-            Name of the source or patch
+            Exact name of the source or patch (wildcards are not interpreted).
+            Patch names take precedence over source names.
 
         Returns
         -------
-        indices : list
-            List of indices. ValueError is raised if the source is not found.
+        indices : slice or numpy.ndarray
+            Slice for a patch, or an integer array of matching source indices.
+            Use directly to index a table or column. Patch slices select views
+            without copying data or allocating one index per member source.
+            Selectors refer to the current row order and must be obtained again
+            after regrouping or adding/removing rows.
+            ValueError is raised if neither a patch nor a source matches.
 
         Examples
         --------
         Get row index for the source 'src1'::
 
             >>> s.getRowIndex('src1')
-            [0]
+            array([0])
 
         Get row indices for the patch 'bin1' and verify the patch name::
 
@@ -1047,17 +1065,21 @@ class SkyModel(object):
         """
         import numpy as np
 
-        # Check first for the rowName as a patch name. If no patch matches (or
-        # the model is not grouped into patches), Try it as a source name. This
-        # logic should work even if a row has the same name for the source and
-        # its patch, as in this case the patch and source row index are
-        # identical (since such a patch can have only one member source)
-        if self.hasPatches and rowName in self.getPatchNames():
-            return np.where(self.getColValues('Patch') == rowName)[0].tolist()
-        elif rowName in self.getColValues('Name'):
-            return self._getNameIndx(rowName)
-        else:
-            raise ValueError("Row name '{0}' not recognized.".format(rowName))
+        # Patch members occupy contiguous rows in the grouped table.
+        if self.hasPatches:
+            patchNames = self.table.groups.keys['Patch']
+            patchInd = np.where(patchNames == rowName)[0]
+
+            if len(patchInd) > 0:
+                groupInd = patchInd[0]
+                start = self.table.groups.indices[groupInd]
+                end = self.table.groups.indices[groupInd + 1]
+                return slice(start, end)
+
+        indices = np.flatnonzero(self.table['Name'] == rowName)
+        if indices.size:
+            return indices
+        raise ValueError("Row name '{0}' not recognized.".format(rowName))
 
     def setRowValues(self, values, mask=None, returnVerified=False):
         """
@@ -1225,17 +1247,18 @@ class SkyModel(object):
         Returns
         -------
         col : astropy Column
-            Nonaggregated Column object
+            Nonaggregated Column object. Shares storage with the table unless
+            beam attenuation is applied; callers must copy before modifying it.
 
          """
         colName = self._verifyColName(colName)
         if colName is None:
             return None
 
-        col = self.table[colName].copy()
+        col = self.table[colName]
 
         if applyBeam and colName in ['I', 'Q', 'U', 'V']:
-            col = self._applyBeamToCol(col)
+            col = self._applyBeamToCol(col.copy())
 
         return col
 

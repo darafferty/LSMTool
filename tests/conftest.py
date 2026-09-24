@@ -164,3 +164,20 @@ def mock_moc():
 def cone_params():
     """Fixture that provides cone search parameters for testing."""
     return {"ra": 190.0, "dec": 44.0, "radius": 1.0}
+
+
+@pytest.fixture()
+def sky_no_patches():
+    return load('tests/resources/no_patches.sky')
+
+
+@pytest.fixture()
+def sky_patches():
+    return load('tests/resources/patches.sky')
+
+
+@pytest.fixture
+def sky_grouped(sky_no_patches):
+    """Group sky_no_patches using tessellation to a target flux of 50 Jy."""
+    sky_no_patches.group('tessellate', targetFlux='50.0 Jy')
+    return sky_no_patches

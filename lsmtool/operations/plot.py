@@ -140,8 +140,8 @@ def plot(LSM, fileName=None, labelBy=None):
         for p, patchName in enumerate(LSM.getPatchNames()):
             indices = LSM.getRowIndex(patchName)
             cp.append(sm.to_rgba(p))
-            for ind in indices:
-                c[ind] = sm.to_rgba(p)
+            for ind in range(indices.start, indices.stop):
+                c[ind] = cp[-1]
     else:
         c = [sm.to_rgba(0)] * nsrc
 
