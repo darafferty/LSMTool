@@ -12,7 +12,7 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
-    2026/09/23 - Unreleased
+    2026/09/25 - Version 1.9.0
 
         Improve faceting and region handling
             Add support for custom WCS to Facet class
