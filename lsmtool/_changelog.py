@@ -12,6 +12,42 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
+    2026/09/23 - Unreleased
+
+        Improve faceting and region handling
+            Add support for custom WCS to Facet class
+                (RAP-616, RD/LSMTool!127)
+            Improve ds9 region file I/O
+                (GEC-115, RD/LSMTool!141)
+            Update ds9 region names to match WSClean
+                (RAP-856, RD/LSMTool!137)
+            Add tests for the facet module
+                (GEC-115, RD/LSMTool!129)
+
+        Extend sky-model download and generation support
+            Extend the sky-model download script
+                (RAP-1421, RD/LSMTool!142)
+            Add a skymodel generator
+                (GEC-115, RD/LSMTool!139)
+            Fix the pan-STARRS request URL
+                (fix_panstarrs_request, RD/LSMTool!144)
+            Update the LoTSS URL to point to DR3
+                (update_to_lotss_dr3, RD/LSMTool!136)
+
+        Improve skymodel robustness and compatibility
+            Handle empty skymodels
+                (GEC-462, RD/LSMTool!131)
+            Add reading and writing of LSM/GSM skymodels
+                (GEC-386, RD/LSMTool!128)
+            Update the LSM skymodel format
+                (GEC-481, RD/LSMTool!135)
+            Convert legacy unit tests to pytest
+                (GEC-463, RD/LSMTool!132)
+
+        Reduce memory footprint and speed up handling of sky models
+            Avoid redundant copies in row and column lookups.
+                (RD/LSMTool!149)
+
     2025/11/25 - Version 1.8.0
 
         Merge ICAL and Rapthor versions of filter_skymodel.py
