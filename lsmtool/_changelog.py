@@ -44,6 +44,10 @@ def changelog():
             Convert legacy unit tests to pytest
                 (GEC-463, RD/LSMTool!132)
 
+        Reduce memory footprint and speed up handling of sky models
+            Avoid redundant copies in row and column lookups.
+                (RD/LSMTool!149)
+
     2025/11/25 - Version 1.8.0
 
         Merge ICAL and Rapthor versions of filter_skymodel.py
