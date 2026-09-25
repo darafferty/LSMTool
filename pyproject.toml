@@ -51,6 +51,7 @@ dependencies = [
     "bdsf",
 ]
 [project.optional-dependencies]
+sofia = ["sofia2 @ git+https://gitlab.com/SoFiA-Admin/SoFiA-2.git@b10ab4ef"]
 docs = [
     "setuptools_scm",
     "sphinx>=7.1",
@@ -65,10 +66,11 @@ tests = [
 ]
 dev = [
     "ruff",
-    "lsmtool[docs,tests]"
+    "lsmtool[docs,tests,sofia]"
 ]
 
 [dependency-groups]
+sofia = ["lsmtool[sofia]"]
 docs = ["lsmtool[docs]"]
 tests = ["lsmtool[tests]"]
 dev = ["lsmtool[dev]"]
