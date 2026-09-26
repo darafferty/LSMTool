@@ -708,11 +708,9 @@ def RADec2Angle(RA, Dec):
     # Angle object for every individual coordinate. Work in degrees so input
     # Angle arrays in other units are handled consistently.
     size = min(len(RAAngle), len(DecAngle))
-    RANorm = RAAngle.degree[:size] % 360
-    DecNorm = (DecAngle.degree[:size] + 180) % 360 - 180
-    reflected = np.abs(DecNorm) > 90
-    DecNorm[reflected] = (360 - DecNorm[reflected]) % 360 - 180
-    RANorm[reflected] = (RANorm[reflected] + 180) % 360
+    RANorm, DecNorm = normalize_ra_dec(
+        RAAngle.degree[:size], DecAngle.degree[:size]
+    )
 
     return Angle(RANorm, unit=u.deg), Angle(DecNorm, unit=u.deg)
 

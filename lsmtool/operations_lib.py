@@ -18,6 +18,7 @@
 
 from collections import namedtuple
 
+import numpy as np
 from astropy.coordinates import Angle
 
 from .constants import WCS_PIXEL_SCALE
@@ -32,9 +33,9 @@ def normalize_ra_dec(ra, dec):
 
     Parameters
     ----------
-    ra : float or astropy.coordinates.Angle
+    ra : float, array-like or astropy.coordinates.Angle
         The RA in degrees to be normalized.
-    dec : float or astropy.coordinates.Angle
+    dec : float, array-like or astropy.coordinates.Angle
         The Dec in degrees to be normalized.
 
     Returns
@@ -46,16 +47,25 @@ def normalize_ra_dec(ra, dec):
 
             - NormalizedRADec.ra: RA in degrees
             - NormalizedRADec.dec: Dec in degrees
+
+        Scalar inputs produce scalar results. Array inputs are broadcast
+        together and produce arrays without modifying the inputs.
     """
-    ra = ra.value if type(ra) is Angle else ra
-    dec = dec.value if type(dec) is Angle else dec
+    ra = ra.degree if isinstance(ra, Angle) else ra
+    dec = dec.degree if isinstance(dec, Angle) else dec
+    ra, dec = np.broadcast_arrays(ra, dec)
     normalized_dec = (dec + 180) % 360 - 180
     normalized_ra = ra % 360
-    if abs(normalized_dec) > 90:
-        normalized_dec = 180 - normalized_dec
-        normalized_ra = normalized_ra + 180
-        normalized_dec = (normalized_dec + 180) % 360 - 180
-        normalized_ra = normalized_ra % 360
+    reflected = np.abs(normalized_dec) > 90
+    normalized_dec = np.where(
+        reflected, (360 - normalized_dec) % 360 - 180, normalized_dec
+    )
+    normalized_ra = np.where(
+        reflected, (normalized_ra + 180) % 360, normalized_ra
+    )
+    if normalized_ra.ndim == 0:
+        normalized_ra = normalized_ra.item()
+        normalized_dec = normalized_dec.item()
 
     return NormalizedRADec(normalized_ra, normalized_dec)
 

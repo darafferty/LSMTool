@@ -6,6 +6,7 @@ import filecmp
 
 import numpy as np
 import pytest
+from astropy.coordinates import Angle
 from numpy.testing import assert_allclose, assert_array_equal
 
 from lsmtool.constants import WCS_PIXEL_SCALE
@@ -42,7 +43,49 @@ def test_normalize_ra_dec(coords, expected):
     Test `normalize_ra_dec` function
     """
     result = normalize_ra_dec(*coords)
+    assert np.isscalar(result.ra)
+    assert np.isscalar(result.dec)
     assert_allclose((result.ra, result.dec), expected)
+
+
+@pytest.mark.parametrize("unit", [None, "deg", "rad"])
+def test_normalize_ra_dec_arrays(unit):
+    """Normalize wraps and pole crossings without changing input arrays."""
+    ra = np.array([0.0, 360.0, -360.0, 720.0, -1.0, 180.0, 90.0, 450.0, 450.0])
+    dec = np.array([90.0, -90.0, 180.0, -180.0, 270.0, -270.0, 0.0, 95.0, -95.0])
+    if unit is not None:
+        ra = Angle(ra, unit="deg").to(unit)
+        dec = Angle(dec, unit="deg").to(unit)
+    original_ra, original_dec = ra.copy(), dec.copy()
+
+    result = normalize_ra_dec(ra, dec)
+
+    assert_allclose(result.ra, [0, 0, 180, 180, 359, 180, 90, 270, 270])
+    assert_allclose(result.dec, [90, -90, 0, 0, -90, 90, 0, 85, -85])
+    assert_array_equal(ra, original_ra)
+    assert_array_equal(dec, original_dec)
+
+
+@pytest.mark.parametrize("unit", ["deg", "rad"])
+def test_normalize_ra_dec_scalar_angles(unit):
+    result = normalize_ra_dec(
+        Angle(450, unit="deg").to(unit), Angle(95, unit="deg").to(unit)
+    )
+    assert np.isscalar(result.ra)
+    assert np.isscalar(result.dec)
+    assert_allclose(result, (270, 85))
+
+
+def test_normalize_ra_dec_broadcasting():
+    result = normalize_ra_dec([[0], [90]], [0, 100, -100])
+    assert_array_equal(result.ra, [[0, 180, 180], [90, 270, 270]])
+    assert_array_equal(result.dec, [[0, 80, -80], [0, 80, -80]])
+
+
+def test_normalize_ra_dec_empty():
+    result = normalize_ra_dec([], [])
+    assert result.ra.shape == (0,)
+    assert result.dec.shape == (0,)
 
 
 def test_make_wcs_default():

@@ -31,6 +31,12 @@ creates scalar Angle objects and incurs Python and Astropy overhead for every
 pair. The replacement performs modulo arithmetic and pole reflection on NumPy
 arrays in degrees, then constructs the two output Angle arrays once.
 
+Following review, the array arithmetic lives in `normalize_ra_dec`, called
+once per batch by `RADec2Angle`. The shared helper supports scalar and
+broadcastable array inputs, converts Angle inputs to degrees, and returns
+scalar values for scalar inputs. `RADec2Angle` retains the input parsing and
+truncation to the shorter input described below.
+
 The normalization preserves RA in [0, 360) and Dec in [-90, 90]. Declinations
 beyond a pole are reflected, and their corresponding right ascensions are
 shifted by 180 degrees. Coordinates exactly at either pole are not reflected.
@@ -161,3 +167,55 @@ speedups across machines, coordinate formats, or the optional compiled grouper.
 A second run confirmed similar timings: loading 8.05 → 2.26 seconds,
 patch positions 1.74 → 1.79 seconds, and grouping 24.45 → 13.97 seconds.
 The full-model equality checks passed again.
+
+## Review follow-up: centralize coordinate normalization
+
+The review identified that `RADec2Angle` duplicated the normalization algorithm
+instead of optimizing the shared helper. The array implementation now lives in
+`operations_lib.normalize_ra_dec`; `RADec2Angle` calls it once for the paired
+degree arrays. Parsing, truncation to the shorter input, and construction of
+the output Angle arrays remain in `RADec2Angle`.
+
+The helper retains its named-tuple return and scalar results for scalar inputs,
+and now accepts broadcastable arrays without changing the inputs. Angle inputs
+are explicitly converted to degrees. This also corrects the old helper's use
+of `.value`, which incorrectly treated radians as degrees when called directly.
+
+### Validation and committed artifacts
+
+`tests/test_operations_lib.py` adds fixed expected results for pole crossings
+and wraps, scalar return checks, degree and radian Angle inputs, broadcasting,
+empty arrays, and input immutability. The existing comparisons in
+`tests/test_tableio.py` cover random coordinates and parser equivalence.
+
+The following command passed 93 tests, with the two unrelated beam tests
+excluded:
+
+```sh
+python -m pytest tests/test_operations_lib.py tests/test_tableio.py \
+    tests/test_meanshift.py tests/test_skymodel.py tests/test_io.py \
+    tests/test_lsmtool.py -k 'not apply_beam' -q --tb=short
+```
+
+The initial narrower run of `test_operations_lib.py` and `test_tableio.py`
+passed 39 tests with the same two exclusions. Both runs used the existing
+`/home/marcel/code/rapthor/.tox/py/bin/python` environment and this checkout.
+
+The tracked benchmark was also run twice against the pre-refactor commit:
+
+```sh
+python benchmarks/coordinate_performance.py tests/resources/apparent.sky \
+    --baseline 7e7ac50 --repeats 2
+```
+
+Both runs produced exactly identical patch positions, group memberships, and
+final group positions (67 groups). The 100,000-pair numeric comparison also
+passed exact equality, with indicative runtimes of 1.675 seconds before and
+1.662 seconds after. This review follow-up used the small tracked model, not
+the external full-size model used earlier.
+
+All verification code used for this follow-up is in the tracked test modules
+and `benchmarks/coordinate_performance.py`. The latter consolidates the earlier
+standalone patch-position and grouping scripts and adds equality assertions;
+those local scripts and the external `sector_1.apparent_sky.txt` dataset are
+not required to reproduce the checks above.
