@@ -533,6 +533,7 @@ class SkyModel(object):
                 self.table.add_column(xCol)
                 self.table.add_column(yCol)
 
+                positions = []
                 if method == 'mid':
                     minX = self._getMinColumn('X')
                     maxX = self._getMaxColumn('X')
@@ -542,8 +543,7 @@ class SkyModel(object):
                     midY = minY + (maxY - minY) / 2.0
                     for i, name in enumerate(patchName):
                         RA, Dec = wcsAll[i].wcs_pix2world(midX[i], midY[i], 0)
-                        RANorm, DecNorm = RADec2Angle(RA.item(), Dec.item())
-                        patchDict[name] = [RANorm[0], DecNorm[0]]
+                        positions.append((RA.item(), Dec.item()))
                 elif method == 'mean' or method == 'wmean':
                     if method == 'mean':
                         weight = False
@@ -555,8 +555,13 @@ class SkyModel(object):
                                                     weight=weight)
                     for i, name in enumerate(patchName):
                         RA, Dec = wcsAll[i].wcs_pix2world(meanX[i], meanY[i], 0)
-                        RANorm, DecNorm = RADec2Angle(RA.item(), Dec.item())
-                        patchDict[name] = [RANorm[0], DecNorm[0]]
+                        positions.append((RA.item(), Dec.item()))
+                if positions:
+                    RANorm, DecNorm = RADec2Angle(*map(list, zip(*positions)))
+                    patchDict = {
+                        name: [ra, dec]
+                        for name, ra, dec in zip(patchName, RANorm, DecNorm)
+                    }
                 self.table.remove_column('X')
                 self.table.remove_column('Y')
 

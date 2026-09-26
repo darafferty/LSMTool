@@ -220,3 +220,49 @@ def test_lsm_skymodel_read_incomplete_spectral_index(
         generated_lsm.read_text()
         == expected_lsm_skymodel_partial_spectral_index.read_text()
     )
+
+
+@pytest.mark.parametrize("as_angles", [False, True])
+def test_radec_normalization_matches_scalar(as_angles):
+    """Vector normalization agrees at poles, wraps, and random coordinates."""
+    from astropy.coordinates import Angle
+
+    from lsmtool.operations_lib import normalize_ra_dec
+    from lsmtool.tableio import RADec2Angle
+
+    rng = np.random.default_rng(42)
+    ra = np.concatenate(
+        ([0, 360, -360, 720, -1, 180, 90], rng.uniform(-2000, 2000, 1000))
+    )
+    dec = np.concatenate(
+        ([90, -90, 180, -180, 270, -270, 0], rng.uniform(-2000, 2000, 1000))
+    )
+    expected = np.array(
+        [normalize_ra_dec(r, d) for r, d in zip(ra, dec, strict=True)]
+    )
+    if as_angles:
+        ra = Angle(ra, unit="deg").to("rad")
+        dec = Angle(dec, unit="deg").to("rad")
+    actual_ra, actual_dec = RADec2Angle(ra, dec)
+    np.testing.assert_allclose(actual_ra.degree, expected[:, 0], atol=1e-12)
+    np.testing.assert_allclose(actual_dec.degree, expected[:, 1], atol=1e-12)
+
+
+@pytest.mark.parametrize(
+    ("ra", "dec", "expected_ra", "expected_dec"),
+    [
+        (370.0, 100.0, [190], [80]),
+        ([370.0, -10.0], [100.0, -100.0], [190, 170], [80, -80]),
+        ("12:00:00", "-30.00.00", [180], [-30]),
+        (["12:00:00", "06:00:00"], ["-30:00:00", "45:00:00"],
+         [180, 90], [-30, 45]),
+        ([], [], [], []),
+        ([10, 20], [30], [10], [30]),
+    ],
+)
+def test_radec_input_formats(ra, dec, expected_ra, expected_dec):
+    from lsmtool.tableio import RADec2Angle
+
+    actual_ra, actual_dec = RADec2Angle(ra, dec)
+    np.testing.assert_allclose(actual_ra.degree, expected_ra)
+    np.testing.assert_allclose(actual_dec.degree, expected_dec)

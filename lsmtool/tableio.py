@@ -616,28 +616,28 @@ def RADec2Angle(RA, Dec):
 
     Parameters
     ----------
-    RA : str, float or list of str, float
+    RA : str, float or array-like
         Values of RA to convert. Can be strings in makesourcedb format or
         floats in degrees (`astropy.coordinates.Angle` are also supported)
-    Dec : str, float or list of str, float
+    Dec : str, float or array-like
         Values of Dec to convert. Can be strings in makesourcedb format or
         floats in degrees (`astropy.coordinates.Angle` are also supported)
 
     Returns
     -------
-    RAAngle : list of astropy.coordinates.Angle
+    RAAngle : astropy.coordinates.Angle
         The RA, normalized to [0, 360)
-    DecAngle : list of astropy.coordinates.Angle
+    DecAngle : astropy.coordinates.Angle
         The Dec, normalized to [-90, 90].
     """
     import astropy.units as u
 
-    if type(RA) is not list:
+    if np.ndim(RA) == 0:
         RA = [RA]
-    if type(Dec) is not list:
+    if np.ndim(Dec) == 0:
         Dec = [Dec]
 
-    if type(RA[0]) is str:
+    if len(RA) and isinstance(RA[0], str):
         try:
             RAAngle = Angle(Angle(RA, unit=u.hourangle), unit=u.deg)
         except KeyboardInterrupt:
@@ -648,7 +648,7 @@ def RADec2Angle(RA, Dec):
     else:
         RAAngle = Angle(RA, unit=u.deg)
 
-    if type(Dec[0]) is str:
+    if len(Dec) and isinstance(Dec[0], str):
         try:
             DecAngle = Angle(Dec, unit=u.deg)
         except KeyboardInterrupt:
@@ -666,12 +666,15 @@ def RADec2Angle(RA, Dec):
     else:
         DecAngle = Angle(Dec, unit=u.deg)
 
-    RANorm = []
-    DecNorm = []
-    for RA, Dec in zip(RAAngle, DecAngle):
-        RADec = normalize_ra_dec(RA, Dec)
-        RANorm.append(RADec.ra)
-        DecNorm.append(RADec.dec)
+    # Match the paired-coordinate behavior of zip, without constructing an
+    # Angle object for every individual coordinate. Work in degrees so input
+    # Angle arrays in other units are handled consistently.
+    size = min(len(RAAngle), len(DecAngle))
+    RANorm = RAAngle.degree[:size] % 360
+    DecNorm = (DecAngle.degree[:size] + 180) % 360 - 180
+    reflected = np.abs(DecNorm) > 90
+    DecNorm[reflected] = (360 - DecNorm[reflected]) % 360 - 180
+    RANorm[reflected] = (RANorm[reflected] + 180) % 360
 
     return Angle(RANorm, unit=u.deg), Angle(DecNorm, unit=u.deg)
 
