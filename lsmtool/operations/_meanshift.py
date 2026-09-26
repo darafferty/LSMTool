@@ -57,7 +57,12 @@ class Grouper(object):
         """
         Simple distance from coord to all coords
         """
-        return np.sqrt(np.sum((coord - coords)**2, axis=1))
+        squared = (coord - coords)**2
+        # Pixel coordinates have two components. Adding these directly avoids
+        # the general row reduction in this frequently called operation.
+        if squared.shape[1] == 2 and squared.dtype.kind == 'f':
+            return np.sqrt(squared[:, 0] + squared[:, 1])
+        return np.sqrt(np.sum(squared, axis=1))
 
     def neighbourhood_points(self, centroid, coords, max_distance):
         """

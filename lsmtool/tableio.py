@@ -610,6 +610,40 @@ def processLine(line, metaDict, colNames):
     return ','.join(colLines), metaDict
 
 
+# Restrict the fast path to ordinary sexagesimal coordinates. Astropy handles
+# other formats and boundary values (including its warnings for 60 seconds).
+_SEXAGESIMAL = re.compile(
+    r"([+-]?[0-9]{1,3})([:.])([0-5][0-9])\2([0-5][0-9](?:\.[0-9]+)?)"
+)
+
+
+def _parse_sexagesimal(values, hourangle=False):
+    """Return an Angle array for common sky-model strings, or None to defer."""
+    components = np.empty((3, len(values)))
+    for i, value in enumerate(values):
+        if not isinstance(value, str):
+            return None
+        match = _SEXAGESIMAL.fullmatch(value)
+        if match is None or (hourangle and match[2] != ':'):
+            return None
+        first = float(match[1])
+        if hourangle and abs(first) >= 24:
+            return None
+        seconds = float(match[4])
+        if seconds >= 60:
+            # Decimal values just below 60 can round to 60 in float64.
+            return None
+        components[:, i] = first, float(match[3]), seconds
+
+    first, minutes, seconds = components
+    # Use the same operation order and unit conversion as Astropy, including
+    # the sign of negative zero in coordinates such as -00:30:00.
+    magnitude = np.abs(first) + minutes / 60.0
+    magnitude += seconds / 3600.0
+    values = np.copysign(magnitude, first)
+    return Angle(values, unit='hourangle' if hourangle else 'deg').to('deg')
+
+
 def RADec2Angle(RA, Dec):
     """
     Returns normalized Angle objects for input RA, Dec values.
@@ -639,7 +673,9 @@ def RADec2Angle(RA, Dec):
 
     if len(RA) and isinstance(RA[0], str):
         try:
-            RAAngle = Angle(Angle(RA, unit=u.hourangle), unit=u.deg)
+            RAAngle = _parse_sexagesimal(RA, hourangle=True)
+            if RAAngle is None:
+                RAAngle = Angle(Angle(RA, unit=u.hourangle), unit=u.deg)
         except KeyboardInterrupt:
             raise
         except Exception as e:
@@ -650,7 +686,9 @@ def RADec2Angle(RA, Dec):
 
     if len(Dec) and isinstance(Dec[0], str):
         try:
-            DecAngle = Angle(Dec, unit=u.deg)
+            DecAngle = _parse_sexagesimal(Dec)
+            if DecAngle is None:
+                DecAngle = Angle(Dec, unit=u.deg)
         except KeyboardInterrupt:
             raise
         except ValueError:

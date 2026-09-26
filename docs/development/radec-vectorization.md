@@ -103,3 +103,61 @@ unprofiled elapsed times.
 
 Temporary benchmark scripts, logs, and profiles were stored under `/tmp` and
 are not repository artifacts. No new dependencies were introduced.
+
+## Follow-up: parsing and mean-shift distances
+
+After commit `770343b`, the user asked to continue with the further optimization
+opportunities. The follow-up remains on `perf/vectorize-radec-normalization`.
+
+### Changes and rationale
+
+A restricted fast path now parses ordinary sexagesimal strings with two-digit
+minutes and seconds. It accepts colon-separated RA and colon- or dot-separated
+Dec, including fractional seconds and signed zero. Conversion uses the same
+arithmetic order and Astropy unit conversion as the general parser. Other
+formats, mixed unsupported formats, invalid ranges, and boundary values that
+produce Astropy warnings fall back to the original parser. In particular,
+24 hours and 60 minutes/seconds retain their warnings; decimal seconds that
+round to 60 also fall back. This avoids invoking Astropy's general grammar
+parser and creating an Angle object for every ordinary coordinate string.
+
+The Python mean-shift implementation now computes two-dimensional Euclidean
+distances by adding the two squared components directly. This avoids the
+cost of a general NumPy row reduction for each neighbourhood search. Other
+array dimensions and non-floating dtypes retain the general reduction. The
+algorithm's sequential, in-place coordinate updates, distance thresholds,
+iteration stopping rule, and cluster ordering are unchanged. The optional
+compiled grouper is unaffected.
+
+### Validation
+
+The five focused suites (`test_tableio`, `test_meanshift`, `test_skymodel`,
+`test_io`, and `test_lsmtool`) passed 82 tests. New tests compare the fast parser
+against the Astropy fallback for random and boundary coordinates, alternate
+formats, warnings, and invalid inputs. Mean-shift tests check distances at the
+neighbourhood boundary, integer inputs, and exact agreement of all saved
+iteration coordinates and final clusters for float32 and float64 inputs.
+
+The same full-model comparison used above was repeated against commit
+`770343b`, additionally restoring its original mean-shift distance method for
+the baseline. Patch positions, group memberships, and group positions remained
+exactly identical, with 2,119 final groups.
+
+Initial unprofiled timings for this follow-up:
+
+| Operation | Commit 770343b | Follow-up |
+| --- | ---: | ---: |
+| Model loading | 7.96 s | 2.21 s |
+| Weighted patch positions, per-patch projection | 1.74 s | 1.78 s |
+| Mean-shift grouping, excluding loading | 24.66 s | 13.71 s |
+
+Loading improved by about 3.6× and grouping by about 1.8×. Patch-position
+calculation and numeric-coordinate normalization were not targeted in this
+follow-up. Summing loading and the corresponding operation gives roughly 2.4×
+for the patch-position workload and 2.0× for the grouping workload, excluding
+interpreter startup and printing. These are local measurements, not guaranteed
+speedups across machines, coordinate formats, or the optional compiled grouper.
+
+A second run confirmed similar timings: loading 8.05 → 2.26 seconds,
+patch positions 1.74 → 1.79 seconds, and grouping 24.45 → 13.97 seconds.
+The full-model equality checks passed again.
