@@ -121,3 +121,34 @@ def test_column_values_aggregate_independent(sky_patches, aggregate):
     result[:] = -99
     np.testing.assert_array_equal(sky.table["I"], original)
     assert sky.table["I"].unit == "Jy"
+
+
+@pytest.mark.parametrize(
+    ("position", "expected"),
+    [
+        ([123.231, 23.4321], [123.231, 23.4321]),
+        (["12:00:00", "-30.00.00"], [180.0, -30.0]),
+    ],
+)
+@pytest.mark.parametrize("patch_count", [1, 2])
+def test_set_patch_positions_stores_scalar_angles(
+    sky_patches, position, expected, patch_count
+):
+    """Explicit positions must not add a dimension to patch-coordinate arrays."""
+    names = sky_patches.getPatchNames()[:patch_count]
+    sky_patches.setPatchPositions({name: list(position) for name in names})
+
+    positions = sky_patches.getPatchPositions()
+    for name in names:
+        assert all(angle.isscalar for angle in positions[name])
+        np.testing.assert_allclose(
+            [angle.degree for angle in positions[name]], expected
+        )
+    ra, dec = sky_patches.getPatchPositions(patchName=names, asArray=True)
+    assert ra.shape == dec.shape == (patch_count,)
+    np.testing.assert_allclose(ra, expected[0])
+    np.testing.assert_allclose(dec, expected[1])
+
+    # Updated and untouched patch metadata must also combine into 1-D arrays.
+    ra, dec = sky_patches.getPatchPositions(asArray=True)
+    assert ra.shape == dec.shape == (len(sky_patches.getPatchNames()),)

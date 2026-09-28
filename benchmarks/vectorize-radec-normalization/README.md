@@ -7,14 +7,14 @@ result comparisons, with configurable input, baseline revision, and repetition.
 From an environment with LSMTool's dependencies installed:
 
 ```sh
-python benchmarks/coordinate_performance.py tests/sector_1.apparent_sky.txt --repeats 2
+python benchmarks/vectorize-radec-normalization/coordinate_performance.py tests/sector_1.apparent_sky.txt --repeats 2
 ```
 
 The large sky model is not included in Git. Supply its path, or use a smaller
 tracked model for a smoke test:
 
 ```sh
-python benchmarks/coordinate_performance.py tests/resources/apparent.sky
+python benchmarks/vectorize-radec-normalization/coordinate_performance.py tests/resources/apparent.sky
 ```
 
 The default baseline is `770343b`, the first vectorization commit. To compare
@@ -47,8 +47,38 @@ For profiling the whole comparison:
 
 ```sh
 python -m cProfile -o /tmp/coordinate-performance.prof \
-    benchmarks/coordinate_performance.py tests/sector_1.apparent_sky.txt
+    benchmarks/vectorize-radec-normalization/coordinate_performance.py tests/sector_1.apparent_sky.txt
 ```
 
-See [the investigation record](../docs/development/radec-vectorization.md) for
+See [the investigation record](../../docs/development/radec-vectorization.md) for
 reported results and implementation rationale.
+
+
+## What the equality checks do not establish
+
+The explicit-position bug discussed in MR !154 is covered by
+`test_set_patch_positions_stores_scalar_angles` in `tests/test_skymodel.py`:
+
+```sh
+python -m pytest tests/test_skymodel.py \
+    -k test_set_patch_positions_stores_scalar_angles -q
+```
+
+The benchmark calculates patch positions and runs grouping; it does not set
+explicit numeric or string coordinate dictionaries. Its before/after equality
+checks therefore did not cover that setter path. A bug present in both
+implementations would also pass an equality-only comparison.
+
+Historical `RADec2Angle` already returned one-element Angle arrays for scalar
+input. The bug was that `setPatchPositions` stored those arrays instead of
+extracting scalar elements. The fix belongs in that setter, preserving the
+array-return contract used by other callers. The regression tests check scalar
+metadata and `(N,)` coordinate arrays for one and multiple updated patches,
+including a mix of updated and untouched patches.
+
+The script does not restore historical `setPatchPositions` or shared helpers
+such as `normalize_ra_dec`. Both benchmark variants use the current versions
+of those dependencies. Use the regression tests to verify the setter's contract;
+use this script for the documented performance workloads. The historical
+reproduction and validation results are recorded in the
+[investigation log](../../docs/development/radec-vectorization.md#review-follow-up-explicit-patch-positions-must-be-scalar-2026-09-28).

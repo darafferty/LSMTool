@@ -1,4 +1,11 @@
-"""Compare coordinate workloads with selected functions from a Git revision."""
+"""Compare coordinate workloads with selected functions from a Git revision.
+
+This measures calculated patch positions, not explicit position dictionaries.
+Equality between variants does not verify the setter's scalar-shape contract;
+see test_set_patch_positions_stores_scalar_angles and benchmarks/vectorize-radec-normalization/README.md.
+Historical functions use current dependencies, including setPatchPositions
+and normalize_ra_dec, rather than reproducing an entire historical checkout.
+"""
 
 import argparse
 import ast
@@ -10,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 # Always measure this checkout, even when invoked from another directory.
-REPOSITORY = Path(__file__).resolve().parents[1]
+REPOSITORY = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY))
 
 import lsmtool

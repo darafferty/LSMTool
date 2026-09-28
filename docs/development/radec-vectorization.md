@@ -1,6 +1,8 @@
 # RADec2Angle performance investigation
 
-Date: 2026-09-26
+Started: 2026-09-26
+
+Last updated: 2026-09-28
 
 ## Conversation record
 
@@ -107,8 +109,12 @@ before and 28 seconds after the change. In the original profile,
 loading. Profiling overhead makes these numbers unsuitable as substitutes for
 unprofiled elapsed times.
 
-Temporary benchmark scripts, logs, and profiles were stored under `/tmp` and
-are not repository artifacts. No new dependencies were introduced.
+The original temporary benchmark scripts, logs, and profiles were stored under
+`/tmp`. At the user's request, the scripts were later consolidated into
+[`benchmarks/vectorize-radec-normalization/coordinate_performance.py`](../../benchmarks/vectorize-radec-normalization/coordinate_performance.py)
+with [usage notes](../../benchmarks/vectorize-radec-normalization/README.md), committed as `a23f10a`. The
+further optimizations and their tests were committed as `7e7ac50`. No new
+dependencies were introduced.
 
 ## Follow-up: parsing and mean-shift distances
 
@@ -204,7 +210,7 @@ passed 39 tests with the same two exclusions. Both runs used the existing
 The tracked benchmark was also run twice against the pre-refactor commit:
 
 ```sh
-python benchmarks/coordinate_performance.py tests/resources/apparent.sky \
+python benchmarks/vectorize-radec-normalization/coordinate_performance.py tests/resources/apparent.sky \
     --baseline 7e7ac50 --repeats 2
 ```
 
@@ -215,7 +221,91 @@ passed exact equality, with indicative runtimes of 1.675 seconds before and
 the external full-size model used earlier.
 
 All verification code used for this follow-up is in the tracked test modules
-and `benchmarks/coordinate_performance.py`. The latter consolidates the earlier
+and `benchmarks/vectorize-radec-normalization/coordinate_performance.py`. The latter consolidates the earlier
 standalone patch-position and grouping scripts and adds equality assertions;
 those local scripts and the external `sector_1.apparent_sky.txt` dataset are
 not required to reproduce the checks above.
+
+
+## Review follow-up: explicit patch positions must be scalar (2026-09-28)
+
+### Conversation and finding
+
+The user supplied Greptile's finding and clarification from
+[MR !154](https://git.astron.nl/RD/LSMTool/-/merge_requests/154), asking for a
+fix. Greptile correctly identified that explicit patch coordinates could make
+`getPatchPositions(asArray=True)` return `(N, 1)` arrays. It attributed this to
+vectorization changing `RADec2Angle` from scalar-containing lists to Angle
+arrays. The user questioned that explanation because the cited line was
+unchanged. After the fix, the user asked to update this conversation record
+and the rationale in the benchmark files.
+
+The historical implementation contradicts that attribution. Before the MR,
+`RADec2Angle` collected normalized values in lists but then returned
+`Angle(RANorm, unit=u.deg), Angle(DecNorm, unit=u.deg)`. Scalar input therefore
+already produced one-element Angle arrays. The existing `setPatchPositions`
+conversion path stored those two arrays directly as patch metadata.
+
+A reproduction loaded `RADec2Angle` and `setPatchPositions` from `770343b^`
+into the current environment and called the historical setter with
+`{patch_name: [123.231, 23.4321]}`. Reading that patch as arrays returned shapes
+`[(1, 1), (1, 1)]`. With the fixed setter it returned `[(1,), (1,)]`.
+This confirms a pre-existing caller bug rather than a return-shape regression
+introduced by vectorization. This was a focused historical-function
+reproduction, not a test of an entire historical checkout and its dependencies.
+
+### Fix and rationale
+
+After converting an explicit numeric or string position, `setPatchPositions`
+now extracts `ra[0]` and `dec[0]` before storing them. Each patch represents
+one coordinate pair and its metadata should contain scalar Angles. Extraction
+belongs at this assignment boundary: changing `RADec2Angle` to return scalars
+for scalar inputs would change its established array-return contract and
+break callers that already index its output.
+
+The change leaves batched normalization, calculated patch positions, and
+coordinate values unchanged. It fixes the dimensionality of stored explicit
+positions, including when updated patches are mixed with untouched patches.
+
+### Validation and benchmark scope
+
+Four new regression cases cover numeric and makesourcedb string coordinates,
+each applied to one or two patches. They check scalar metadata, expected
+coordinate values, `(N,)` output for the selected patches, and `(N,)` output
+when updated and untouched metadata are combined. All four failed before the
+fix. After the fix, the following focused run passed 63 tests:
+
+```sh
+PYTHONPATH=. /home/marcel/code/rapthor/.tox/py/bin/python -m pytest \
+    tests/test_skymodel.py tests/test_tableio.py tests/test_lsmtool.py \
+    -q -p no:cacheprovider --disable-warnings
+```
+
+The active checkout is now
+`/home/marcel/code/LSMTool.vectorize-radec-normalization`; the original
+`LSMTool.master` path no longer exists. The scalar fix and regression tests
+were left uncommitted at this stage.
+
+Earlier benchmark equality results remain valid for the measured workloads,
+but they do not establish correctness of explicit `setPatchPositions` calls.
+The benchmark calculates patch positions and groups loaded models; it does
+not supply numeric or string position dictionaries to the setter. Furthermore,
+it substitutes only three historical functions, leaving `setPatchPositions`
+and shared helpers from the current checkout. Comparing two runs can preserve
+a bug common to both. The new regression tests enforce the API's scalar and
+one-dimensional shape requirements independently of baseline equality. No new
+performance measurements were taken for this correctness fix.
+
+
+## Benchmark organization (2026-09-28)
+
+The user requested a dedicated subdirectory so future optimization benchmarks
+can have their own scripts and rationale. This investigation's script and
+README now live in `benchmarks/vectorize-radec-normalization/`; the links and
+commands above use that current location. They were originally committed
+directly under `benchmarks/` in `a23f10a`.
+
+The script's repository-root lookup now traverses one additional parent
+because of the extra directory level. The workload and equality checks are
+unchanged. Each future investigation can use a sibling directory without
+combining unrelated instructions into this README.

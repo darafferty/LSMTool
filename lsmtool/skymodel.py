@@ -652,7 +652,9 @@ class SkyModel(object):
 
             for patch, pos in iteritems(patchDict):
                 if type(pos[0]) is str or type(pos[0]) is float:
-                    pos = RADec2Angle(pos[0], pos[1])
+                    ra, dec = RADec2Angle(pos[0], pos[1])
+                    # Each patch stores scalar Angles, not length-one arrays.
+                    pos = [ra[0], dec[0]]
                 self.table.meta[patch] = list(pos)
             self._addHistory("SETPATCHPOSITIONS (method = '{0}')".format(method))
         else:
