@@ -26,26 +26,6 @@ from . import tableio
 from . import operations
 from .operations_lib import make_wcs, normalize_ra_dec
 
-# Python 3 compatibility
-try:
-    dict.iteritems
-except AttributeError:
-    # Python 3
-    def itervalues(d):
-        return iter(d.values())
-
-    def iteritems(d):
-        return iter(d.items())
-    numpy_type = "U"
-else:
-    # Python 2
-    def itervalues(d):
-        return d.itervalues()
-
-    def iteritems(d):
-        return d.iteritems()
-    numpy_type = "S"
-
 
 class SkyModel(object):
     """
@@ -750,7 +730,7 @@ class SkyModel(object):
             >>> s.setDefaultValues({'ReferenceFrequency': 140e6})
 
         """
-        for colName, default in iteritems(colDict):
+        for colName, default in colDict.items():
             self.table.meta[colName] = default
 
     def ungroup(self):
@@ -938,7 +918,7 @@ class SkyModel(object):
             else:
                 data = [0] * len(self.table)
                 mask = [True] * len(self.table)
-            for sourceName, value in iteritems(values):
+            for sourceName, value in values.items():
                 indx = self._getNameIndx(sourceName)
                 if colName == 'Ra' or colName == 'Dec':
                     val = Angle(value, unit=u.deg)
@@ -967,7 +947,7 @@ class SkyModel(object):
         else:
             if colName == 'Patch':
                 # Specify length of 50 characters
-                newCol = Column(name=colName, data=data, dtype='{}50'.format(numpy_type))
+                newCol = Column(name=colName, data=data, dtype='U50')
             else:
                 newCol = Column(name=colName, data=data)
             self.table.add_column(newCol, index=index)
