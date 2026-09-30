@@ -612,13 +612,13 @@ class SkyModel(object):
                                                        perPatchProjection=perPatchProjection)
             else:
                 # Get positions for those patches that need them
-                patchNames = [patch for patch, pos in iteritems(patchDict) if pos is None]
+                patchNames = [patch for patch, pos in patchDict.items() if pos is None]
                 patchDictNoPos = self.getPatchPositions(method=method, applyBeam=applyBeam,
                                                         patchName=patchNames,
                                                         perPatchProjection=False)
                 patchDict.update(patchDictNoPos)
 
-            for patch, pos in iteritems(patchDict):
+            for patch, pos in patchDict.items():
                 if type(pos[0]) is str or type(pos[0]) is float:
                     pos = tableio.RADec2Angle(pos[0], pos[1])
                 self.table.meta[patch] = list(pos)
