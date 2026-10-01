@@ -152,8 +152,7 @@ class SkyModel(object):
             if outline is not None:
                 outlines.append(outline)
             outlines.append('\n')  # needed in case of single-line sky models
-            table = createTable(outlines, metaDict, colNames, colDefaults)
-            self.table = table
+            self.table = createTable(outlines, metaDict, colNames, colDefaults)
             self.log.debug("Successfully created model from input dict")
             self._fileName = None
             self._addHistory("LOAD (from input dict)")
@@ -493,7 +492,10 @@ class SkyModel(object):
                     yAll = []
                     wcsAll = []
                     for name in patchName:
-                        x, y, midRA, midDec = self._get_xy(patchName=name)
+                        patch_indices = self.getRowIndex(name)
+                        patch_ra = self.table['Ra'][patch_indices]
+                        patch_dec = self.table['Dec'][patch_indices]
+                        x, y, midRA, midDec = self._get_xy(patch_ra, patch_dec)
                         xAll.extend(x)
                         yAll.extend(y)
                         wcsAll.append(make_wcs(midRA, midDec))
@@ -626,51 +628,41 @@ class SkyModel(object):
         else:
             raise RuntimeError('Sky model does not have patches.')
 
-    def _get_xy(self, patchName=None, crdelt=None, byPatch=False):
+    def _get_xy(self, ra=None, dec=None, *, crdelt=None):
         """
-        Returns lists of projected x and y values for all sources.
+        Returns lists of projected x and y values.
 
         Parameters
         ----------
-        patchName : str, optional
-            If given, return x and y for specified patch only
+        ra : array-like, optional
+            Right ascension values in degrees. Normalisation is not required.
+            If None, use the values from the sources in the sky model.
+        dec : array-like, optional
+            Declination values in degrees, normalised to the range [-90, 90].
+            If None, use the values from the sources in the sky model.
         crdelt: float, optional
             Delta in degrees for sky grid
-        byPatch : bool, optional
-            Use patches instead of by sources
 
         Returns
         -------
         x, y : numpy.ndarray
             Arrays of x and y values
         midRA, midDec : float
-            Midpoint RA and Dec values
-
+            Midpoint RA and Dec values, which were used for the projection.
         """
-        if len(self.table) == 0:
+        if ra is None:
+            ra = self.table['Ra']
+        if dec is None:
+            dec = self.table['Dec']
+
+        if len(ra) != len(dec):
+            raise ValueError('RA and Dec lists must have the same length.')
+
+        if len(ra) == 0:
             return [0], [0], 0, 0
 
-
-        if byPatch:
-            if 'Patch' not in self.table.keys():
-                raise ValueError('Sky model must be grouped before "byPatch" can be used.')
-            RA = self.getColValues('Ra', aggregate='wmean')
-            Dec = self.getColValues('Dec', aggregate='wmean')
-        else:
-            if patchName is not None:
-                if not self.hasPatches:
-                    raise ValueError('Sky model must be grouped before a patch '
-                                    'name can be specified.')
-
-                ind = self.getRowIndex(patchName)
-                RA = self.table['Ra'][ind]
-                Dec = self.table['Dec'][ind]
-            else:
-                RA = self.table['Ra']
-                Dec = self.table['Dec']
-
-        wcs = make_wcs(RA[0], Dec[0], crdelt=crdelt)
-        x, y = wcs.wcs_world2pix(RA, Dec, 0)
+        wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
+        x, y = wcs.wcs_world2pix(ra, dec, 0)
 
         # Refine x and y using midpoint
         if len(x) > 1:
@@ -681,16 +673,16 @@ class SkyModel(object):
             try:
                 midxind = np.where(x[xind] > xmid)[0][0]
                 midyind = np.where(y[yind] > ymid)[0][0]
-                midRA = RA[xind[midxind]]
-                midDec = Dec[yind[midyind]]
+                midRA = ra[xind[midxind]]
+                midDec = dec[yind[midyind]]
                 wcs = make_wcs(midRA, midDec, crdelt=crdelt)
-                x, y = wcs.wcs_world2pix(RA, Dec, 0)
+                x, y = wcs.wcs_world2pix(ra, dec, 0)
             except IndexError:
-                midRA = RA[0]
-                midDec = Dec[0]
+                midRA = ra[0]
+                midDec = dec[0]
         else:
-            midRA = RA[0]
-            midDec = Dec[0]
+            midRA = ra[0]
+            midDec = dec[0]
         midRADec = normalize_ra_dec(midRA, midDec)
 
         return x, y, midRADec.ra, midRADec.dec
