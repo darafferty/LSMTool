@@ -634,10 +634,10 @@ class SkyModel(object):
 
         Parameters
         ----------
-        ra : array-like, optional
+        ra : list or numpy.ndarray of float, optional
             Right ascension values in degrees. Normalisation is not required.
             If None, use the values from the sources in the sky model.
-        dec : array-like, optional
+        dec : list or numpy.ndarray of float, optional
             Declination values in degrees, normalised to the range [-90, 90].
             If None, use the values from the sources in the sky model.
         crdelt: float, optional

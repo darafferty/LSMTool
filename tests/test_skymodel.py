@@ -93,8 +93,9 @@ def test_getxy_multiple_sources(crdelt, expected_x, expected_y, ra_dec_args):
             {"Name": "source1", "Type": "point", "Ra": 42, "Dec": 42, "I": 1}
         )
         # Use out-of-order values, since _get_xy should correctly sort them.
-        ra_list = [11, 14, 12, 10, 15, 13]
-        dec_list = [21, 24, 22, 20, 25, 23]
+        # Using numpy arrays provides test coverage for that argument type.
+        ra_list = np.array([11, 14, 12, 10, 15, 13])
+        dec_list = np.array([21, 24, 22, 20, 25, 23])
         x, y, mid_ra, mid_dec = sky._get_xy(ra_list, dec_list, crdelt=crdelt)
     else:
         # Create a SkyModel with the same RA and Dec values as above.
