@@ -243,7 +243,7 @@ class SkyModel(object):
         else:
             logCall = self.log.debug
 
-        _, _, refRA, refDec = self._get_xy()
+        refRA, refDec = self._get_midpoint()
         totFlux = np.sum(self.getColValues('I', units='Jy'))
 
         info = 'Model contains {0} sources in {1} patch{2} of which:\n'\
@@ -628,6 +628,47 @@ class SkyModel(object):
         else:
             raise RuntimeError('Sky model does not have patches.')
 
+    def _get_midpoint(self, ra=None, dec=None, *, crdelt=None):
+        """
+        Compute the midpoint of the given RA and Dec coordinate lists.
+
+        Parameters
+        ----------
+        ra : list or numpy.ndarray of float, optional
+            Right ascension values in degrees. Normalisation is not required.
+            If None, use the values from the sources in the sky model.
+        dec : list or numpy.ndarray of float, optional
+            Declination values in degrees, normalised to the range [-90, 90].
+            If None, use the values from the sources in the sky model.
+        crdelt: float, optional
+            Delta in degrees for sky grid.
+
+        Returns
+        -------
+        midRA, midDec : float
+            Midpoint RA and Dec values.
+        """
+        ra = self.table['Ra'] if ra is None else ra
+        dec = self.table['Dec'] if dec is None else dec
+
+        if len(ra) == 0:
+            return 0, 0
+        elif len(ra) == 1:
+            return ra[0], dec[0]
+
+        wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
+        x, y = wcs.wcs_world2pix(ra, dec, 0)
+        xind = np.argsort(x)
+        yind = np.argsort(y)
+        xsorted = x[xind]
+        ysorted = y[yind]
+        xmid = 0.5 * (xsorted[0] + xsorted[-1])
+        ymid = 0.5 * (ysorted[0] + ysorted[-1])
+        midxind = np.searchsorted(xsorted, xmid)
+        midyind = np.searchsorted(ysorted, ymid)
+        return ra[xind[midxind]], dec[yind[midyind]]
+
+
     def _get_xy(self, ra=None, dec=None, *, crdelt=None):
         """
         Returns lists of projected x and y values.
@@ -641,7 +682,7 @@ class SkyModel(object):
             Declination values in degrees, normalised to the range [-90, 90].
             If None, use the values from the sources in the sky model.
         crdelt: float, optional
-            Delta in degrees for sky grid
+            Delta in degrees for sky grid.
 
         Returns
         -------
@@ -656,25 +697,7 @@ class SkyModel(object):
         if len(ra) == 0:
             return [0], [0], 0, 0
 
-        if len(ra) > 1:
-            # Refine x and y using midpoint
-            wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
-            x, y = wcs.wcs_world2pix(ra, dec, 0)
-
-            xind = np.argsort(x)
-            yind = np.argsort(y)
-            xsorted = x[xind]
-            ysorted = y[yind]
-            xmid = 0.5 * (xsorted[0] + xsorted[-1])
-            ymid = 0.5 * (ysorted[0] + ysorted[-1])
-            midxind = np.searchsorted(xsorted, xmid)
-            midyind = np.searchsorted(ysorted, ymid)
-            ra_midpoint = ra[xind[midxind]]
-            dec_midpoint = dec[yind[midyind]]
-        else:
-            ra_midpoint = ra[0]
-            dec_midpoint = dec[0]
-
+        ra_midpoint, dec_midpoint = self._get_midpoint(ra, dec, crdelt=crdelt)
         wcs = make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
         x, y = wcs.wcs_world2pix(ra, dec, 0)
         ra_midpoint, dec_midpoint = normalize_ra_dec(ra_midpoint, dec_midpoint)
@@ -1722,7 +1745,7 @@ class SkyModel(object):
             if not self.hasPatches:
                 raise ValueError("Model must be grouped into patches when format = 'facet'.")
 
-            _, _, refRA, refDec = self._get_xy()
+            refRA, refDec = self._get_midpoint()
             table.meta['refRA'] = refRA
             table.meta['refDec'] = refDec
 
