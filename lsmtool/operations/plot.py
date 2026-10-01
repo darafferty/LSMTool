@@ -104,7 +104,7 @@ def plot(LSM, fileName=None, labelBy=None):
 
     fig = plt.figure(1,figsize=(7.66,7))
     plt.clf()
-    x, y, midRA, midDec  = LSM._getXY()
+    x, y, midRA, midDec  = LSM._get_xy()
     wcs = make_wcs(midRA, midDec)
     if hasWCSaxes:
         ax = WCSAxes(fig, [0.16, 0.1, 0.8, 0.8], wcs=wcs)

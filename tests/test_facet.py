@@ -1282,7 +1282,8 @@ class TestFilterSkymodel:
             # Assert that the test source has been removed
             assert "TEST_SOURCE" not in skymodel.table["Name"]
 
-        # Test that the `filter_skymodel` function behaves the same as the method
+        # Test that the `filter_skymodel` function behaves the same as the
+        # method
         self._test_filter_skymodel_function(
             facet.polygon, skymodel_path, facet.wcs, invert
         )

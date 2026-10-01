@@ -16,7 +16,7 @@ def test_row_index_sources(grouped, sky_no_patches, monkeypatch):
     if grouped:
         sky.group("single", root="all_sources")
 
-    def unexpected_copy(*args, **kwargs):
+    def unexpected_copy(*_, **__):
         pytest.fail("Row lookup must not use copying name/column helpers")
 
     monkeypatch.setattr(sky, "getColValues", unexpected_copy)
@@ -34,7 +34,7 @@ def test_row_index_patch_views(sky_patches, monkeypatch):
     sky = sky_patches
     names = sky.getPatchNames()
 
-    def unexpected_copy(*args, **kwargs):
+    def unexpected_copy(*_, **__):
         pytest.fail("Patch lookup must not copy full columns")
 
     monkeypatch.setattr(sky, "getColValues", unexpected_copy)
@@ -49,7 +49,7 @@ def test_row_index_patch_views(sky_patches, monkeypatch):
     # A patch name wins even when a source outside that patch has the same name.
     sky.table["Name"][-1] = names[0]
     assert sky.getRowIndex(names[0]) == slice(0, sky.table.groups.indices[1])
-    x, y, _, _ = sky._getXY(patchName=names[0])
+    x, y, _, _ = sky._get_xy(patchName=names[0])
     assert len(x) == len(y) == sky.table.groups.indices[1]
 
 
