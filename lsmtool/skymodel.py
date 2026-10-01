@@ -656,29 +656,27 @@ class SkyModel(object):
         if len(ra) == 0:
             return [0], [0], 0, 0
 
-        wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
-        x, y = wcs.wcs_world2pix(ra, dec, 0)
+        if len(ra) > 1:
+            # Refine x and y using midpoint
+            wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
+            x, y = wcs.wcs_world2pix(ra, dec, 0)
 
-        # Refine x and y using midpoint
-        if len(x) > 1:
-            xmid = x.min() + np.ptp(x) / 2.0
-            ymid = y.min() + np.ptp(y) / 2.0
             xind = np.argsort(x)
             yind = np.argsort(y)
-            try:
-                midxind = np.where(x[xind] > xmid)[0][0]
-                midyind = np.where(y[yind] > ymid)[0][0]
-                ra_midpoint = ra[xind[midxind]]
-                dec_midpoint = dec[yind[midyind]]
-                wcs = make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
-                x, y = wcs.wcs_world2pix(ra, dec, 0)
-            except IndexError:
-                ra_midpoint = ra[0]
-                dec_midpoint = dec[0]
+            xsorted = x[xind]
+            ysorted = y[yind]
+            xmid = 0.5 * (xsorted[0] + xsorted[-1])
+            ymid = 0.5 * (ysorted[0] + ysorted[-1])
+            midxind = np.searchsorted(xsorted, xmid)
+            midyind = np.searchsorted(ysorted, ymid)
+            ra_midpoint = ra[xind[midxind]]
+            dec_midpoint = dec[yind[midyind]]
         else:
             ra_midpoint = ra[0]
             dec_midpoint = dec[0]
 
+        wcs = make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
+        x, y = wcs.wcs_world2pix(ra, dec, 0)
         ra_midpoint, dec_midpoint = normalize_ra_dec(ra_midpoint, dec_midpoint)
 
         return x, y, ra_midpoint, dec_midpoint
