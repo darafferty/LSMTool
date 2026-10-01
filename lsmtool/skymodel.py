@@ -60,7 +60,7 @@ class SkyModel(object):
         fileName : str
             Input ASCII file from which the sky model is read (must respect the
             makesourcedb format or the LSM/GSM format), name of VO service to query
-            (must be one of 'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'), 
+            (must be one of 'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'),
             or dict (single source only)
         beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
@@ -265,7 +265,7 @@ class SkyModel(object):
         else:
             logCall = self.log.debug
 
-        x, y, refRA, refDec = self._getXY()
+        x, y, refRA, refDec = self._get_xy()
         totFlux = np.sum(self.getColValues('I', units='Jy'))
 
         info = 'Model contains {0} sources in {1} patch{2} of which:\n'\
@@ -518,12 +518,12 @@ class SkyModel(object):
                     yAll = []
                     wcsAll = []
                     for name in patchName:
-                        x, y, midRA, midDec = self._getXY(patchName=name)
+                        x, y, midRA, midDec = self._get_xy(patchName=name)
                         xAll.extend(x)
                         yAll.extend(y)
                         wcsAll.append(make_wcs(midRA, midDec))
                 else:
-                    xAll, yAll, midRA, midDec = self._getXY()
+                    xAll, yAll, midRA, midDec = self._get_xy()
                     wcsAll = []  # has length = num of patches
                     for name in patchName:
                         wcsAll.append(make_wcs(midRA, midDec))
@@ -653,7 +653,7 @@ class SkyModel(object):
         else:
             raise RuntimeError('Sky model does not have patches.')
 
-    def _getXY(self, patchName=None, crdelt=None, byPatch=False):
+    def _get_xy(self, patchName=None, crdelt=None, byPatch=False):
         """
         Returns lists of projected x and y values for all sources.
 
@@ -669,7 +669,7 @@ class SkyModel(object):
         Returns
         -------
         x, y : numpy.ndarray
-            Arrays of x and y values 
+            Arrays of x and y values
         midRA, midDec : float
             Midpoint RA and Dec values
 
@@ -1787,7 +1787,7 @@ class SkyModel(object):
             if not self.hasPatches:
                 raise ValueError("Model must be grouped into patches when format = 'facet'.")
 
-            _, _, refRA, refDec = self._getXY()
+            _, _, refRA, refDec = self._get_xy()
             table.meta['refRA'] = refRA
             table.meta['refDec'] = refDec
 
@@ -2552,7 +2552,7 @@ class SkyModel(object):
                     raise IOError("The output file '{0}' exists and clobber = False.".
                                   format(image_name))
 
-        x, y, refRA, refDec = self._getXY(crdelt=cellsize)
+        x, y, refRA, refDec = self._get_xy(crdelt=cellsize)
         if 'GAUSSIAN' in types:
             fwhm = np.max(self.getColValues('MajorAxis', units='degree') * cellsize)
             max_source_size = int(np.ceil(fwhm * 1.5))

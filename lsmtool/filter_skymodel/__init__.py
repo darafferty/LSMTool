@@ -30,7 +30,7 @@ with ctx.suppress(ModuleNotFoundError):
     KNOWN_SOURCE_FINDERS["sofia"] = sofia
 
 
-def filter_skymodel(
+def filter_skymodel(  # noqa: PLR0917
     flat_noise_image: PathLike,
     true_sky_image: PathLikeOptional,
     input_true_skymodel: PathLikeOptional,
