@@ -6,7 +6,7 @@ from lsmtool.skymodel import SkyModel
 
 
 def test_getxy_empty():
-    """Test _getXY on an empty SkyModel."""
+    """Test _get_xy on an empty SkyModel."""
     # The SkyModel constructor does not support creating an empty SkyModel.
     # -> Create a model with a single source, and remove that source.
     sky = SkyModel(
@@ -14,18 +14,18 @@ def test_getxy_empty():
     )
     sky.remove("I>0")
     assert len(sky) == 0
-    assert sky._getXY() == ([0], [0], 0, 0)
+    assert sky._get_xy() == ([0], [0], 0, 0)
 
 
 @pytest.mark.parametrize(
     "ra, dec", [(10.0, 20.0), (730.0, -340.0), (-710, 380.0)]
 )
 def test_getxy_single_source(ra, dec):
-    """Test _getXY on a SkyModel with a single source."""
+    """Test _get_xy on a SkyModel with a single source."""
     sky = SkyModel(
         {"Name": "source1", "Type": "point", "Ra": ra, "Dec": dec, "I": 1.0}
     )
-    x, y, ra, dec = sky._getXY()
+    x, y, ra, dec = sky._get_xy()
     # make_wcs sets the reference pixel coordinates (crpix) to 1000, 1000.
     # Since numpy uses 0-based indexing, the x and y coordinates are 999.
     np.testing.assert_allclose(x, [999])
@@ -36,7 +36,7 @@ def test_getxy_single_source(ra, dec):
 
 
 def test_getxy_identical_sources():
-    """Test _getXY on a SkyModel with sources with identical coordinates."""
+    """Test _get_xy on a SkyModel with sources with identical coordinates."""
     sky = SkyModel(
         {"Name": "source0", "Type": "point", "Ra": 10.0, "Dec": 20.0, "I": 1.0}
     )
@@ -50,7 +50,7 @@ def test_getxy_identical_sources():
                 "I": 1.0,
             }
         )
-    x, y, ra, dec = sky._getXY()
+    x, y, ra, dec = sky._get_xy()
     np.testing.assert_allclose(x, [999, 999, 999, 999])
     np.testing.assert_allclose(y, [999, 999, 999, 999])
     assert ra == 10.0
@@ -58,8 +58,8 @@ def test_getxy_identical_sources():
 
 
 def test_getxy_multiple_sources():
-    """Test _getXY on a SkyModel with multiple sources."""
-    # Add sources out-of-order, since _getXY should correctly sort them.
+    """Test _get_xy on a SkyModel with multiple sources."""
+    # Add sources out-of-order, since _get_xy should correctly sort them.
     sky = SkyModel(
         {"Name": "source1", "Type": "point", "Ra": 11, "Dec": 21, "I": 1}
     )
@@ -73,7 +73,7 @@ def test_getxy_multiple_sources():
                 "I": 1,
             }
         )
-    x, y, ra, dec = sky._getXY()
+    x, y, ra, dec = sky._get_xy()
     # The midpoint RA and Dec values are 12.5 and 22.5, respectively.
     # Since the x value decreases as RA increases, the function returns the
     # first RA value smaller than the midpoint.
