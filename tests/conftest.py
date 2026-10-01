@@ -134,9 +134,10 @@ def test_ms_lofar_hba(test_data_path):
     def filter_(member, _):
         return member.replace(name=Path(*Path(member.path).parts[1:]))
 
-    with requests.get(LOFAR_HBA_URL, stream=True) as req:
+    with requests.get(LOFAR_HBA_URL, stream=True, timeout=10) as req:
         with tarfile.open(fileobj=req.raw, mode="r|bz2") as tarobj:
-            tarobj.extractall(path=path, filter=filter_)
+            # Disable S202, since we trust data from support.astron.nl.
+            tarobj.extractall(path=path, filter=filter_)  # noqa: S202
 
     return path
 
@@ -168,16 +169,16 @@ def cone_params():
 
 @pytest.fixture()
 def sky_no_patches():
-    return load('tests/resources/no_patches.sky')
+    return load("tests/resources/no_patches.sky")
 
 
 @pytest.fixture()
 def sky_patches():
-    return load('tests/resources/patches.sky')
+    return load("tests/resources/patches.sky")
 
 
 @pytest.fixture
 def sky_grouped(sky_no_patches):
     """Group sky_no_patches using tessellation to a target flux of 50 Jy."""
-    sky_no_patches.group('tessellate', targetFlux='50.0 Jy')
+    sky_no_patches.group("tessellate", targetFlux="50.0 Jy")
     return sky_no_patches

@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 ListOfCoords = List[Tuple[numbers.Real, numbers.Real]]
 
 
-def filter_skymodel(
+def filter_skymodel(  # noqa: PLR0917
     flat_noise_image: PathLike,
     true_sky_image: PathLikeOptional,
     input_true_skymodel: PathLikeOptional,
@@ -216,7 +216,7 @@ def parse_rmsbox(rmsbox: Union[str, None]):
     return literal_eval(rmsbox) if isinstance(rmsbox, str) else rmsbox
 
 
-def process_images(
+def process_images(  # noqa: PLR0917
     flat_noise_image: PathLike,
     true_sky_image: PathLike,
     beam_ms: PathLikeOrListOptional,
@@ -302,7 +302,7 @@ def process_images(
     return img_true_sky
 
 
-def filter_sources(
+def filter_sources(  # noqa: PLR0917
     mask_file: PathLike,
     vertices_file: PathLike,
     input_true_skymodel: PathLikeOptional,

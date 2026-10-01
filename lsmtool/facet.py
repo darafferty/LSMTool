@@ -862,7 +862,7 @@ def parse_facet_name(lines):
     return None
 
 
-def read_from_skymodel(
+def read_from_skymodel(  # noqa: PLR0913
     skymodel,
     ra_mid,
     dec_mid,
