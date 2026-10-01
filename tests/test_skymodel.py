@@ -2,6 +2,92 @@ import numpy as np
 import pytest
 from astropy.table import Column, MaskedColumn
 
+from lsmtool.skymodel import SkyModel
+
+
+def test_getxy_empty():
+    """Test _getXY on an empty SkyModel."""
+    # The SkyModel constructor does not support creating an empty SkyModel.
+    # -> Create a model with a single source, and remove that source.
+    sky = SkyModel(
+        {"Name": "source1", "Type": "point", "Ra": 10.0, "Dec": 20.0, "I": 1.0}
+    )
+    sky.remove("I>0")
+    assert len(sky) == 0
+    assert sky._getXY() == ([0], [0], 0, 0)
+
+
+@pytest.mark.parametrize(
+    "ra, dec", [(10.0, 20.0), (730.0, -340.0), (-710, 380.0)]
+)
+def test_getxy_single_source(ra, dec):
+    """Test _getXY on a SkyModel with a single source."""
+    sky = SkyModel(
+        {"Name": "source1", "Type": "point", "Ra": ra, "Dec": dec, "I": 1.0}
+    )
+    x, y, ra, dec = sky._getXY()
+    # make_wcs sets the reference pixel coordinates (crpix) to 1000, 1000.
+    # Since numpy uses 0-based indexing, the x and y coordinates are 999.
+    np.testing.assert_allclose(x, [999])
+    np.testing.assert_allclose(y, [999])
+    # The returned ra, dec coordinates should be normalized to 10, 20.
+    assert ra == 10.0
+    assert dec == 20.0
+
+
+def test_getxy_identical_sources():
+    """Test _getXY on a SkyModel with sources with identical coordinates."""
+    sky = SkyModel(
+        {"Name": "source0", "Type": "point", "Ra": 10.0, "Dec": 20.0, "I": 1.0}
+    )
+    for i in range(1, 4):
+        sky.add(
+            {
+                "Name": f"source{i}",
+                "Type": "point",
+                "Ra": 10.0,
+                "Dec": 20.0,
+                "I": 1.0,
+            }
+        )
+    x, y, ra, dec = sky._getXY()
+    np.testing.assert_allclose(x, [999, 999, 999, 999])
+    np.testing.assert_allclose(y, [999, 999, 999, 999])
+    assert ra == 10.0
+    assert dec == 20.0
+
+
+def test_getxy_multiple_sources():
+    """Test _getXY on a SkyModel with multiple sources."""
+    # Add sources out-of-order, since _getXY should correctly sort them.
+    sky = SkyModel(
+        {"Name": "source1", "Type": "point", "Ra": 11, "Dec": 21, "I": 1}
+    )
+    for i in [4, 2, 0, 5, 3]:
+        sky.add(
+            {
+                "Name": f"source{i}",
+                "Type": "point",
+                "Ra": 10 + i,
+                "Dec": 20 + i,
+                "I": 1,
+            }
+        )
+    x, y, ra, dec = sky._getXY()
+    # The midpoint RA and Dec values are 12.5 and 22.5, respectively.
+    # Since the x value decreases as RA increases, the function returns the
+    # first RA value smaller than the midpoint.
+    assert ra == 12.0
+    # For Dec, the y value increases as Dec increases, so the function returns
+    # the first Dec value larger than the midpoint.
+    assert dec == 23.0
+
+    # Regression test for the x and y values.
+    expected_x = [1167.2, 670.0, 999.0, 1337.9, 509.0, 833.3]
+    expected_y = [639.4, 1181.4, 819.0, 460.5, 1364.6, 999.6]
+    np.testing.assert_allclose(x, expected_x, atol=0.1)
+    np.testing.assert_allclose(y, expected_y, atol=0.1)
+
 
 @pytest.mark.parametrize("grouped", [False, True])
 def test_row_index_sources(grouped, sky_no_patches, monkeypatch):
