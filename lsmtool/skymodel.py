@@ -19,31 +19,12 @@
 import logging
 import os
 from astropy.coordinates import Angle, SkyCoord
+from astropy.table import Column
 import astropy.units as u
-from . import _logging
+import numpy as np
 from . import tableio
 from . import operations
 from .operations_lib import make_wcs, normalize_ra_dec
-
-# Python 3 compatibility
-try:
-    dict.iteritems
-except AttributeError:
-    # Python 3
-    def itervalues(d):
-        return iter(d.values())
-
-    def iteritems(d):
-        return iter(d.items())
-    numpy_type = "U"
-else:
-    # Python 2
-    def itervalues(d):
-        return d.itervalues()
-
-    def iteritems(d):
-        return d.iteritems()
-    numpy_type = "S"
 
 
 class SkyModel(object):
@@ -246,8 +227,6 @@ class SkyModel(object):
         """
         Prints information about the sky model.
         """
-        import numpy as np
-
         if self.hasPatches:
             nPatches = len(set(self.getPatchNames()))
         else:
@@ -492,10 +471,6 @@ class SkyModel(object):
             >>> s.getPatchPositions(method='wmean', asArray=True)
 
         """
-        import numpy as np
-        from astropy.table import Column
-        from .tableio import RADec2Angle
-
         if self.hasPatches:
             if patchName is None:
                 patchName = self.getPatchNames()
@@ -542,7 +517,7 @@ class SkyModel(object):
                     midY = minY + (maxY - minY) / 2.0
                     for i, name in enumerate(patchName):
                         RA, Dec = wcsAll[i].wcs_pix2world(midX[i], midY[i], 0)
-                        RANorm, DecNorm = RADec2Angle(RA.item(), Dec.item())
+                        RANorm, DecNorm = tableio.RADec2Angle(RA.item(), Dec.item())
                         patchDict[name] = [RANorm[0], DecNorm[0]]
                 elif method == 'mean' or method == 'wmean':
                     if method == 'mean':
@@ -555,7 +530,7 @@ class SkyModel(object):
                                                     weight=weight)
                     for i, name in enumerate(patchName):
                         RA, Dec = wcsAll[i].wcs_pix2world(meanX[i], meanY[i], 0)
-                        RANorm, DecNorm = RADec2Angle(RA.item(), Dec.item())
+                        RANorm, DecNorm = tableio.RADec2Angle(RA.item(), Dec.item())
                         patchDict[name] = [RANorm[0], DecNorm[0]]
                 self.table.remove_column('X')
                 self.table.remove_column('Y')
@@ -618,8 +593,6 @@ class SkyModel(object):
             >>> s.setPatchPositions({'bin0': [123.231, 23.4321]})
 
         """
-        from .tableio import RADec2Angle
-
         if self.hasPatches:
             if method not in ['mid', 'mean', 'wmean', 'zero']:
                 raise ValueError('Invalid method parameter')
@@ -639,15 +612,15 @@ class SkyModel(object):
                                                        perPatchProjection=perPatchProjection)
             else:
                 # Get positions for those patches that need them
-                patchNames = [patch for patch, pos in iteritems(patchDict) if pos is None]
+                patchNames = [patch for patch, pos in patchDict.items() if pos is None]
                 patchDictNoPos = self.getPatchPositions(method=method, applyBeam=applyBeam,
                                                         patchName=patchNames,
                                                         perPatchProjection=False)
                 patchDict.update(patchDictNoPos)
 
-            for patch, pos in iteritems(patchDict):
+            for patch, pos in patchDict.items():
                 if type(pos[0]) is str or type(pos[0]) is float:
-                    pos = RADec2Angle(pos[0], pos[1])
+                    pos = tableio.RADec2Angle(pos[0], pos[1])
                 self.table.meta[patch] = list(pos)
             self._addHistory("SETPATCHPOSITIONS (method = '{0}')".format(method))
         else:
@@ -674,8 +647,6 @@ class SkyModel(object):
             Midpoint RA and Dec values
 
         """
-        import numpy as np
-
         if len(self.table) == 0:
             return [0], [0], 0, 0
 
@@ -759,7 +730,7 @@ class SkyModel(object):
             >>> s.setDefaultValues({'ReferenceFrequency': 140e6})
 
         """
-        for colName, default in iteritems(colDict):
+        for colName, default in colDict.items():
             self.table.meta[colName] = default
 
     def ungroup(self):
@@ -931,9 +902,6 @@ class SkyModel(object):
                     False, False, True, False])
 
         """
-        from astropy.table import Column
-        import numpy as np
-
         colName = self._verifyColName(colName, onlyExisting=False)
         if colName is None:
             return None
@@ -950,7 +918,7 @@ class SkyModel(object):
             else:
                 data = [0] * len(self.table)
                 mask = [True] * len(self.table)
-            for sourceName, value in iteritems(values):
+            for sourceName, value in values.items():
                 indx = self._getNameIndx(sourceName)
                 if colName == 'Ra' or colName == 'Dec':
                     val = Angle(value, unit=u.deg)
@@ -979,7 +947,7 @@ class SkyModel(object):
         else:
             if colName == 'Patch':
                 # Specify length of 50 characters
-                newCol = Column(name=colName, data=data, dtype='{}50'.format(numpy_type))
+                newCol = Column(name=colName, data=data, dtype='U50')
             else:
                 newCol = Column(name=colName, data=data)
             self.table.add_column(newCol, index=index)
@@ -1063,8 +1031,6 @@ class SkyModel(object):
             ['bin1', 'bin1', 'bin1']
 
         """
-        import numpy as np
-
         # Patch members occupy contiguous rows in the grouped table.
         if self.hasPatches:
             patchNames = self.table.groups.keys['Patch']
@@ -1195,7 +1161,6 @@ class SkyModel(object):
             List of indices
 
         """
-        import numpy as np
         import fnmatch
 
         if patch:
@@ -1366,8 +1331,6 @@ class SkyModel(object):
             Column object with aggregated sum of values
 
         """
-        import numpy as np
-
         def npsum(array):
             return np.sum(array, axis=0)
 
@@ -1399,8 +1362,6 @@ class SkyModel(object):
             Column object with aggregated min values
 
         """
-        import numpy as np
-
         def npmin(array):
             return np.min(array, axis=0)
 
@@ -1432,8 +1393,6 @@ class SkyModel(object):
             Column object with aggregated max values
 
         """
-        import numpy as np
-
         def npmax(array):
             return np.max(array, axis=0)
 
@@ -1467,9 +1426,6 @@ class SkyModel(object):
             Column object with aggregated mean values
 
         """
-        from astropy.table import Column
-        import numpy as np
-
         if weight:
             def npsum(array):
                 return np.sum(array, axis=0)
@@ -1522,9 +1478,6 @@ class SkyModel(object):
             the model has patches
 
         """
-        from astropy.table import Column
-        import numpy as np
-
         if weight:
             method = 'wmean'
         else:
@@ -1644,8 +1597,6 @@ class SkyModel(object):
             >>> s.getDistance(94.0, 42.0, byPatch=True)
 
         """
-        from .tableio import RADec2Angle
-
         if byPatch and self.hasPatches:
             # Get patch positions
             sRA, sDec = self.getPatchPositions(asArray=True)
@@ -1653,7 +1604,7 @@ class SkyModel(object):
             sRA = self.getColValues('RA')
             sDec = self.getColValues('Dec')
 
-        RA, Dec = RADec2Angle(RA, Dec)
+        RA, Dec = tableio.RADec2Angle(RA, Dec)
 
         dist = self._calculateSeparation(sRA, sDec, RA, Dec)
         if units is not None:
@@ -1725,8 +1676,6 @@ class SkyModel(object):
             >>> s.write('facets.reg', format='facet')
 
         """
-        import os
-        import numpy as np
         from .operations_lib import apply_beam
 
         if fileName is None:
@@ -2508,7 +2457,6 @@ class SkyModel(object):
         clobber : bool, optional
             If True, existing files are overwritten.
         """
-        import numpy as np
         from astropy.io import fits as pyfits
         from astropy import wcs
         from .operations_lib import make_template_image, gaussian_fcn, tessellate
