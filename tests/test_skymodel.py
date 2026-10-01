@@ -57,8 +57,23 @@ def test_getxy_identical_sources():
     assert dec == 20.0
 
 
-def test_getxy_multiple_sources():
-    """Test _get_xy on a SkyModel with multiple sources."""
+@pytest.mark.parametrize(
+    "crdelt, expected_x, expected_y",
+    [
+        (
+            None,
+            [1167.2, 670.0, 999.0, 1337.9, 509.0, 833.3],
+            [639.4, 1181.4, 819.0, 460.5, 1364.6, 999.6],
+        ),
+        (
+            0.042,
+            [1021.2, 955.5, 999.0, 1043.8, 934.2, 977.1],
+            [951.4, 1023.1, 975.2, 927.8, 1047.4, 999.1],
+        ),
+    ],
+)
+def test_getxy_multiple_sources(crdelt, expected_x, expected_y):
+    """Test _get_xy on a SkyModel with multiple sources and varying crdelt."""
     # Add sources out-of-order, since _get_xy should correctly sort them.
     sky = SkyModel(
         {"Name": "source1", "Type": "point", "Ra": 11, "Dec": 21, "I": 1}
@@ -73,7 +88,7 @@ def test_getxy_multiple_sources():
                 "I": 1,
             }
         )
-    x, y, ra, dec = sky._get_xy()
+    x, y, ra, dec = sky._get_xy(crdelt=crdelt)
     # The midpoint RA and Dec values are 12.5 and 22.5, respectively.
     # Since the x value decreases as RA increases, the function returns the
     # first RA value smaller than the midpoint.
@@ -83,10 +98,108 @@ def test_getxy_multiple_sources():
     assert dec == 23.0
 
     # Regression test for the x and y values.
-    expected_x = [1167.2, 670.0, 999.0, 1337.9, 509.0, 833.3]
-    expected_y = [639.4, 1181.4, 819.0, 460.5, 1364.6, 999.6]
     np.testing.assert_allclose(x, expected_x, atol=0.1)
     np.testing.assert_allclose(y, expected_y, atol=0.1)
+
+
+def test_getxy_with_patchname():
+    """Test _get_xy while specifying a patch name."""
+    sky = SkyModel(
+        {
+            "Name": "source0",
+            "Type": "point",
+            "Ra": 10.0,
+            "Dec": 20.0,
+            "I": 1.0,
+            "Patch": "patch_with_single_source",
+        }
+    )
+    for i in range(1, 4):
+        sky.add(
+            {
+                "Name": f"source{i}",
+                "Type": "point",
+                "Ra": 20.0,
+                "Dec": 30.0,
+                "I": 1.0,
+                "Patch": "patch_with_multiple_sources",
+            }
+        )
+
+    x, y, ra, dec = sky._get_xy(patchName="patch_with_single_source")
+    np.testing.assert_allclose(x, [999])
+    np.testing.assert_allclose(y, [999])
+    assert ra == 10.0
+    assert dec == 20.0
+
+    x, y, ra, dec = sky._get_xy(patchName="patch_with_multiple_sources")
+    np.testing.assert_allclose(x, [999, 999, 999])
+    np.testing.assert_allclose(y, [999, 999, 999])
+    assert ra == 20.0
+    assert dec == 30.0
+
+    with pytest.raises(ValueError, match="not recognized"):
+        sky._get_xy(patchName="does_not_exist")
+
+
+def test_getxy_with_patchname_without_patches():
+    """Test _get_xy with a patch name when no patches exist."""
+    sky = SkyModel(
+        {"Name": "source0", "Type": "point", "Ra": 10.0, "Dec": 20.0, "I": 1.0}
+    )
+    with pytest.raises(ValueError, match="Sky model must be grouped"):
+        sky._get_xy(patchName="patch")
+
+
+def test_getxy_bypatch_single_source():
+    """Test _get_xy with byPatch == True and a single source."""
+    sky = SkyModel(
+        {
+            "Name": "source",
+            "Type": "point",
+            "Ra": 10.0,
+            "Dec": 20.0,
+            "I": 1.0,
+            "Patch": "patch",
+        }
+    )
+
+    x, y, ra, dec = sky._get_xy(byPatch=True)
+    np.testing.assert_allclose(x, [999])
+    np.testing.assert_allclose(y, [999])
+    assert ra == 10.0
+    assert dec == 20.0
+
+
+def test_getxy_bypatch_multiple_sources():
+    """Test _get_xy with byPatch == True and multiple sources."""
+    sky = SkyModel(  # Add a patch with a single source.
+        {
+            "Name": "p0source0",
+            "Type": "point",
+            "Ra": 0.0,
+            "Dec": 0.0,
+            "I": 1.0,
+            "Patch": "patch0",
+        }
+    )
+    for p in range(1, 4):  # Add patches with 2, 4 and 6 sources.
+        for s in range(p * 2):
+            sky.add(
+                {
+                    "Name": f"p{p}source{s}",
+                    "Type": "point",
+                    "Ra": p * 10.0 + s,
+                    "Dec": p * 10.0 + s,
+                    "I": 1.0,
+                    "Patch": f"patch{p}",
+                }
+            )
+    x, y, ra, dec = sky._get_xy(byPatch=True, crdelt=0.1)
+    np.testing.assert_allclose(x, [1113.1, 999.0, 895.6, 803.2], atol=0.1)
+    np.testing.assert_allclose(y, [773.3, 887.6, 1002.6, 1131.2], atol=0.1)
+    assert ra == 10.5  # Average RA value of patch1
+    assert dec == 21.5  # Average Dec value of patch2
 
 
 @pytest.mark.parametrize("grouped", [False, True])
