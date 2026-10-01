@@ -650,13 +650,8 @@ class SkyModel(object):
         midRA, midDec : float
             Midpoint RA and Dec values, which were used for the projection.
         """
-        if ra is None:
-            ra = self.table['Ra']
-        if dec is None:
-            dec = self.table['Dec']
-
-        if len(ra) != len(dec):
-            raise ValueError('RA and Dec lists must have the same length.')
+        ra = self.table['Ra'] if ra is None else ra
+        dec = self.table['Dec'] if dec is None else dec
 
         if len(ra) == 0:
             return [0], [0], 0, 0
