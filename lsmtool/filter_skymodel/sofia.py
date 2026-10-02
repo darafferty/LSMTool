@@ -16,7 +16,7 @@ from ..utils import format_coordinates, rotation_matrix_2d, table_to_array
 FWHM_PER_SIGMA = 2 * np.sqrt(2 * np.log(2))
 
 
-def filter_skymodel(
+def filter_skymodel(  # noqa: PLR0917
     flat_noise_image: PathLike,
     true_sky_image: PathLikeOptional,
     output_apparent_sky: PathLike,

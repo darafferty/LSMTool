@@ -54,7 +54,7 @@ def getPatchNamesByThreshold(LSM, fwhmArcsec, threshold=0.1, root='threshold',
 
 def gridCoordinates(LSM, fwhmArcsec, padding):
     """Generate image grid coordinates with 1 pix = FWHM / 4"""
-    x, y, _, _ = LSM._getXY(crdelt=fwhmArcsec/4.0/3600.0)
+    x, y, _, _ = LSM._get_xy(crdelt=fwhmArcsec/4.0/3600.0)
     # Convert to integer coordinates.
     x_indices = np.array(x, dtype=int)
     y_indices = np.array(y, dtype=int)

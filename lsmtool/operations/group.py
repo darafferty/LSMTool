@@ -196,11 +196,13 @@ def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
         if byPatch:
             if 'Patch' not in LSM.table.keys():
                 raise ValueError('Sky model must be grouped before "byPatch" can be used.')
-            x, y, midRA, midDec = LSM._getXY(byPatch=True)
+            ra = LSM.getColValues('RA', aggregate='wmean')
+            dec = LSM.getColValues('Dec', aggregate='wmean')
+            x, y, _, _ = LSM._get_xy(ra, dec)
             f = LSM.getColValues('I', units=units, applyBeam=applyBeam, aggregate='sum')
         else:
             LSM.ungroup()
-            x, y, midRA, midDec = LSM._getXY()
+            x, y, _, _ = LSM._get_xy()
             f = LSM.getColValues('I', units=units, applyBeam=applyBeam)
         vobin = _tessellate.bin2D(np.array(x), np.array(y), f, target_flux=targetFlux)
         try:
@@ -311,15 +313,17 @@ def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
         if byPatch:
             if 'Patch' not in LSM.table.keys():
                 raise ValueError('Sky model must be grouped before "byPatch" can be used.')
-            x, y, midRA, midDec = LSM._getXY(byPatch=True)
+            ra = LSM.getColValues('RA', aggregate='wmean')
+            dec = LSM.getColValues('Dec', aggregate='wmean')
+            x, y, _, _ = LSM._get_xy(ra, dec)
             f = LSM.getColValues('I', applyBeam=applyBeam, aggregate='sum')
         else:
             addEvery(LSM)
-            x, y, midRA, midDec = LSM._getXY()
+            x, y, _, _ = LSM._get_xy()
             f = LSM.getColValues('I', applyBeam=applyBeam)
 
         # For the following, we use the default WCS delta in deg/pixel, as used in the
-        # LSM._getXY() calls above
+        # LSM._get_xy() calls above
         crdelt = constants.WCS_PIXEL_SCALE
         grouper = _meanshift.Grouper(list(zip(x, y)), f, kernelSize/crdelt, nIterations,
                                      lookDistance/crdelt, groupingDistance/crdelt)

@@ -21,7 +21,7 @@ class MockSkyModel:
     def ungroup(self):
         self.ungrouped = True
 
-    def _getXY(self, crdelt):
+    def _get_xy(self, crdelt):
         assert crdelt == 1.0 / 4.0 / 3600.0
         return self.x, self.y, 42, 42
 
@@ -103,9 +103,9 @@ def test_get_patch_names_by_threshold_pads_patch_indices(pad_index):
 def test_grid_coordinates():
     """Test the gridCoordinates function."""
     sky_model = MockSkyModel([42, 43], [-5, -10])
-    fwhmArcsec = 1.0
+    fwhm_arcsec = 1.0
     padding = 2
-    x_indices, y_indices = gridCoordinates(sky_model, fwhmArcsec, padding)
+    x_indices, y_indices = gridCoordinates(sky_model, fwhm_arcsec, padding)
     assert np.array_equal(x_indices, [2, 3])
     assert np.array_equal(y_indices, [7, 2])
 
