@@ -53,7 +53,9 @@ def normalize_ra_dec(ra, dec):
     """
     ra = ra.degree if isinstance(ra, Angle) else ra
     dec = dec.degree if isinstance(dec, Angle) else dec
-    ra, dec = np.broadcast_arrays(ra, dec)
+    ra, dec = np.broadcast_arrays(
+        np.asarray(ra, dtype=float), np.asarray(dec, dtype=float)
+    )
     normalized_dec = (dec + 180) % 360 - 180
     normalized_ra = ra % 360
     reflected = np.abs(normalized_dec) > 90

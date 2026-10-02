@@ -76,6 +76,20 @@ def test_normalize_ra_dec_scalar_angles(unit):
     assert_allclose(result, (270, 85))
 
 
+@pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.uint32, np.uint64])
+def test_normalize_ra_dec_unsigned_arrays(dtype):
+    ra = np.array([10, 200, 250], dtype=dtype)
+    dec = np.array([200, 100, 0], dtype=dtype)
+    original_ra, original_dec = ra.copy(), dec.copy()
+
+    result = normalize_ra_dec(ra, dec)
+
+    assert_array_equal(result.ra, [190, 20, 250])
+    assert_array_equal(result.dec, [-20, 80, 0])
+    assert_array_equal(ra, original_ra)
+    assert_array_equal(dec, original_dec)
+
+
 def test_normalize_ra_dec_broadcasting():
     result = normalize_ra_dec([[0], [90]], [0, 100, -100])
     assert_array_equal(result.ra, [[0, 180, 180], [90, 270, 270]])
