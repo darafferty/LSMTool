@@ -243,7 +243,7 @@ class SkyModel(object):
         else:
             logCall = self.log.debug
 
-        x, y, refRA, refDec = self._get_xy()
+        _, _, refRA, refDec = self._get_xy()
         totFlux = np.sum(self.getColValues('I', units='Jy'))
 
         info = 'Model contains {0} sources in {1} patch{2} of which:\n'\
@@ -668,19 +668,20 @@ class SkyModel(object):
             try:
                 midxind = np.where(x[xind] > xmid)[0][0]
                 midyind = np.where(y[yind] > ymid)[0][0]
-                midRA = ra[xind[midxind]]
-                midDec = dec[yind[midyind]]
-                wcs = make_wcs(midRA, midDec, crdelt=crdelt)
+                ra_midpoint = ra[xind[midxind]]
+                dec_midpoint = dec[yind[midyind]]
+                wcs = make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
                 x, y = wcs.wcs_world2pix(ra, dec, 0)
             except IndexError:
-                midRA = ra[0]
-                midDec = dec[0]
+                ra_midpoint = ra[0]
+                dec_midpoint = dec[0]
         else:
-            midRA = ra[0]
-            midDec = dec[0]
-        midRADec = normalize_ra_dec(midRA, midDec)
+            ra_midpoint = ra[0]
+            dec_midpoint = dec[0]
 
-        return x, y, midRADec.ra, midRADec.dec
+        ra_midpoint, dec_midpoint = normalize_ra_dec(ra_midpoint, dec_midpoint)
+
+        return x, y, ra_midpoint, dec_midpoint
 
     def getDefaultValues(self):
         """
