@@ -6,7 +6,7 @@ from astropy.table import Column, MaskedColumn
 from lsmtool.skymodel import SkyModel
 
 
-def test_getxy_empty():
+def test_get_xy_empty():
     """Test _get_xy on an empty SkyModel / empty RA/Dec lists."""
     # The SkyModel constructor does not support creating an empty SkyModel.
     # -> Create a model with a single source, and remove that source.
@@ -25,7 +25,7 @@ def test_getxy_empty():
     "ra, dec", [(10.0, 20.0), (350.0, -42.0), (-42.0, 90.0), (4242.0, -90.0)]
 )
 @pytest.mark.parametrize("ra_dec_args", [False, True])
-def test_getxy_single_source(ra, dec, ra_dec_args):
+def test_get_xy_single_source(ra, dec, ra_dec_args):
     """Test _get_xy with a single source."""
     if ra_dec_args:
         sky = SkyModel(
@@ -48,7 +48,7 @@ def test_getxy_single_source(ra, dec, ra_dec_args):
 
 
 @pytest.mark.parametrize("ra, dec", [(0.0, -91.0), (0.0, 91.0)])
-def test_getxy_unnormalised_dec(ra, dec):
+def test_get_xy_unnormalised_dec(ra, dec):
     """Test _get_xy with non-normalised RA and Dec values."""
     sky = SkyModel(
         {"Name": "source1", "Type": "point", "Ra": 42, "Dec": 42, "I": 1.0}
@@ -57,7 +57,7 @@ def test_getxy_unnormalised_dec(ra, dec):
         sky._get_xy([ra], [dec])
 
 
-def test_getxy_identical_sources():
+def test_get_xy_identical_sources():
     """Test _get_xy on identical sources."""
     sky = SkyModel(
         {"Name": "source0", "Type": "point", "Ra": 42.0, "Dec": 42.0, "I": 1.0}
@@ -85,7 +85,7 @@ def test_getxy_identical_sources():
     ],
 )
 @pytest.mark.parametrize("ra_dec_args", [False, True])
-def test_getxy_multiple_sources(crdelt, expected_x, expected_y, ra_dec_args):
+def test_get_xy_multiple_sources(crdelt, expected_x, expected_y, ra_dec_args):
     """Test _get_xy on with multiple sources and varying crdelt."""
 
     if ra_dec_args:
