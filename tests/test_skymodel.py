@@ -256,7 +256,7 @@ def test_column_values_aggregate_independent(sky_patches, aggregate):
 def test_set_patch_positions_stores_scalar_angles(
     sky_patches, position, expected, patch_count
 ):
-    """Explicit positions must not add a dimension to patch-coordinate arrays."""
+    """Explicit positions must preserve patch-coordinate array dimensions."""
     names = sky_patches.getPatchNames()[:patch_count]
     sky_patches.setPatchPositions({name: list(position) for name in names})
 

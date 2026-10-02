@@ -2,13 +2,15 @@
 
 This measures calculated patch positions, not explicit position dictionaries.
 Equality between variants does not verify the setter's scalar-shape contract;
-see test_set_patch_positions_stores_scalar_angles and benchmarks/vectorize-radec-normalization/README.md.
+see test_set_patch_positions_stores_scalar_angles and the README.md in this
+benchmark directory.
 Historical functions use current dependencies, including setPatchPositions
 and normalize_ra_dec, rather than reproducing an entire historical checkout.
 """
 
 import argparse
 import ast
+import shutil
 import subprocess
 import sys
 import time
@@ -20,16 +22,20 @@ import numpy as np
 REPOSITORY = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY))
 
-import lsmtool
-import lsmtool.operations._meanshift as meanshift
-import lsmtool.skymodel as skymodel
-import lsmtool.tableio as tableio
+# These imports must follow the checkout path setup above.
+import lsmtool  # noqa: E402
+import lsmtool.operations._meanshift as meanshift  # noqa: E402
+from lsmtool import skymodel, tableio  # noqa: E402
 
 
 def revision_function(revision, path, name, namespace):
     """Load one historical function using the current module's dependencies."""
-    source = subprocess.check_output(
-        ["git", "show", f"{revision}:{path}"], cwd=REPOSITORY, text=True
+    git = shutil.which("git")
+    if git is None:
+        raise FileNotFoundError("git is required to load baseline functions")
+    # The baseline revision is trusted; arguments are passed without a shell.
+    source = subprocess.check_output(  # noqa: S603
+        [git, "show", f"{revision}:{path}"], cwd=REPOSITORY, text=True
     )
     tree = ast.parse(source)
     node = next(
@@ -38,7 +44,10 @@ def revision_function(revision, path, name, namespace):
         if isinstance(node, ast.FunctionDef) and node.name == name
     )
     scope = dict(namespace)
-    exec(compile(ast.Module(body=[node], type_ignores=[]), path, "exec"), scope)
+    # Execute only the selected function from the trusted baseline revision.
+    exec(  # noqa: S102
+        compile(ast.Module(body=[node], type_ignores=[]), path, "exec"), scope
+    )
     return scope[name]
 
 
@@ -73,7 +82,9 @@ def main():
     parser.add_argument(
         "--baseline",
         default="770343b",
-        help="Trusted Git revision for the baseline functions (default: 770343b)",
+        help=(
+            "Trusted Git revision for the baseline functions (default: 770343b)"
+        ),
     )
     parser.add_argument("--repeats", type=int, default=1)
     args = parser.parse_args()

@@ -1,11 +1,16 @@
+import warnings
 from pathlib import Path
 
 import numpy as np
 import pytest
+from astropy.coordinates import Angle
 from astropy.table import Table
 
+from lsmtool import tableio
+from lsmtool.operations_lib import normalize_ra_dec
 from lsmtool.skymodel import SkyModel
 from lsmtool.tableio import (
+    RADec2Angle,
     loadAstropyTableFromLSM,
     loadTableFromLSM,
     skyModelReader,
@@ -225,11 +230,6 @@ def test_lsm_skymodel_read_incomplete_spectral_index(
 @pytest.mark.parametrize("as_angles", [False, True])
 def test_radec_normalization_matches_scalar(as_angles):
     """Vector normalization agrees at poles, wraps, and random coordinates."""
-    from astropy.coordinates import Angle
-
-    from lsmtool.operations_lib import normalize_ra_dec
-    from lsmtool.tableio import RADec2Angle
-
     rng = np.random.default_rng(42)
     ra = np.concatenate(
         ([0, 360, -360, 720, -1, 180, 90], rng.uniform(-2000, 2000, 1000))
@@ -265,8 +265,6 @@ def test_radec_normalization_matches_scalar(as_angles):
     ],
 )
 def test_radec_input_formats(ra, dec, expected_ra, expected_dec):
-    from lsmtool.tableio import RADec2Angle
-
     actual_ra, actual_dec = RADec2Angle(ra, dec)
     np.testing.assert_allclose(actual_ra.degree, expected_ra)
     np.testing.assert_allclose(actual_dec.degree, expected_dec)
@@ -292,10 +290,6 @@ def test_radec_input_formats(ra, dec, expected_ra, expected_dec):
     ],
 )
 def test_sexagesimal_fast_path_matches_astropy(ra, dec, monkeypatch):
-    import warnings
-
-    from lsmtool import tableio
-
     with warnings.catch_warnings(record=True) as actual_warnings:
         warnings.simplefilter("always")
         actual = tableio.RADec2Angle(ra, dec)
@@ -313,8 +307,6 @@ def test_sexagesimal_fast_path_matches_astropy(ra, dec, monkeypatch):
 
 
 def test_sexagesimal_random_coordinates_match_astropy(monkeypatch):
-    from lsmtool import tableio
-
     rng = np.random.default_rng(314)
     ra = [
         f"{rng.integers(24):02d}:{rng.integers(60):02d}:"
@@ -346,7 +338,5 @@ def test_sexagesimal_random_coordinates_match_astropy(monkeypatch):
     ],
 )
 def test_sexagesimal_invalid_input_still_raises(ra, dec):
-    from lsmtool.tableio import RADec2Angle
-
     with pytest.raises(ValueError, match="not understood"):
         RADec2Angle(ra, dec)
