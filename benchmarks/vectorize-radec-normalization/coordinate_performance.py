@@ -33,7 +33,8 @@ def revision_function(revision, path, name, namespace):
     )
     tree = ast.parse(source)
     node = next(
-        node for node in ast.walk(tree)
+        node
+        for node in ast.walk(tree)
         if isinstance(node, ast.FunctionDef) and node.name == name
     )
     scope = dict(namespace)
@@ -50,8 +51,11 @@ def measure(sky_model):
     )
     positioned = time.perf_counter()
     model.group(
-        "meanshift", byPatch=True, applyBeam=False,
-        lookDistance=0.075, groupingDistance=0.01,
+        "meanshift",
+        byPatch=True,
+        applyBeam=False,
+        lookDistance=0.075,
+        groupingDistance=0.01,
     )
     grouped = time.perf_counter()
     results = (
@@ -67,7 +71,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("sky_model", type=Path, help="Input model with patches")
     parser.add_argument(
-        "--baseline", default="770343b",
+        "--baseline",
+        default="770343b",
         help="Trusted Git revision for the baseline functions (default: 770343b)",
     )
     parser.add_argument("--repeats", type=int, default=1)
@@ -93,17 +98,23 @@ def main():
             args.baseline, "lsmtool/tableio.py", "RADec2Angle", vars(tableio)
         ),
         revision_function(
-            args.baseline, "lsmtool/skymodel.py", "getPatchPositions",
+            args.baseline,
+            "lsmtool/skymodel.py",
+            "getPatchPositions",
             vars(skymodel),
         ),
         revision_function(
-            args.baseline, "lsmtool/operations/_meanshift.py", "euclid_distance",
+            args.baseline,
+            "lsmtool/operations/_meanshift.py",
+            "euclid_distance",
             vars(meanshift),
         ),
     )
     print(f"Checkout: {REPOSITORY}\nBaseline: {args.baseline}", flush=True)
-    print("Backend: Python mean-shift; times exclude import and printing",
-          flush=True)
+    print(
+        "Backend: Python mean-shift; times exclude import and printing",
+        flush=True,
+    )
     try:
         for repeat in range(args.repeats):
             results = []
@@ -124,7 +135,8 @@ def main():
                 np.testing.assert_array_equal(before, after)
             print(
                 "Patch positions, group memberships, and group positions "
-                "are exactly identical.", flush=True,
+                "are exactly identical.",
+                flush=True,
             )
 
         ra = np.linspace(-720, 720, 100_000).tolist()

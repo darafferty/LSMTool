@@ -52,7 +52,9 @@ def test_normalize_ra_dec(coords, expected):
 def test_normalize_ra_dec_arrays(unit):
     """Normalize wraps and pole crossings without changing input arrays."""
     ra = np.array([0.0, 360.0, -360.0, 720.0, -1.0, 180.0, 90.0, 450.0, 450.0])
-    dec = np.array([90.0, -90.0, 180.0, -180.0, 270.0, -270.0, 0.0, 95.0, -95.0])
+    dec = np.array(
+        [90.0, -90.0, 180.0, -180.0, 270.0, -270.0, 0.0, 95.0, -95.0]
+    )
     if unit is not None:
         ra = Angle(ra, unit="deg").to(unit)
         dec = Angle(dec, unit="deg").to(unit)

@@ -254,8 +254,12 @@ def test_radec_normalization_matches_scalar(as_angles):
         (370.0, 100.0, [190], [80]),
         ([370.0, -10.0], [100.0, -100.0], [190, 170], [80, -80]),
         ("12:00:00", "-30.00.00", [180], [-30]),
-        (["12:00:00", "06:00:00"], ["-30:00:00", "45:00:00"],
-         [180, 90], [-30, 45]),
+        (
+            ["12:00:00", "06:00:00"],
+            ["-30:00:00", "45:00:00"],
+            [180, 90],
+            [-30, 45],
+        ),
         ([], [], [], []),
         ([10, 20], [30], [10], [30]),
     ],
@@ -295,7 +299,9 @@ def test_sexagesimal_fast_path_matches_astropy(ra, dec, monkeypatch):
     with warnings.catch_warnings(record=True) as actual_warnings:
         warnings.simplefilter("always")
         actual = tableio.RADec2Angle(ra, dec)
-    monkeypatch.setattr(tableio, "_parse_sexagesimal", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        tableio, "_parse_sexagesimal", lambda *_args, **_kwargs: None
+    )
     with warnings.catch_warnings(record=True) as expected_warnings:
         warnings.simplefilter("always")
         expected = tableio.RADec2Angle(ra, dec)
@@ -321,7 +327,9 @@ def test_sexagesimal_random_coordinates_match_astropy(monkeypatch):
         for _ in range(1000)
     ]
     actual = tableio.RADec2Angle(ra, dec)
-    monkeypatch.setattr(tableio, "_parse_sexagesimal", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        tableio, "_parse_sexagesimal", lambda *_args, **_kwargs: None
+    )
     expected = tableio.RADec2Angle(ra, dec)
     for result, reference in zip(actual, expected, strict=True):
         np.testing.assert_array_equal(result.degree, reference.degree)
