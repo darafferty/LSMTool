@@ -32,10 +32,7 @@ def revision_function(revision, path, name, namespace):
     """Load one historical function using the current module's dependencies."""
     git = shutil.which("git")
     if git is None:
-    git = shutil.which("git")
-    if git is None:
         raise FileNotFoundError("git is required to load baseline functions")
-    git = str(Path(git).resolve())
     # The baseline revision is trusted; arguments are passed without a shell.
     source = subprocess.check_output(  # noqa: S603
         [git, "show", f"{revision}:{path}"], cwd=REPOSITORY, text=True
