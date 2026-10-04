@@ -28,6 +28,31 @@ import lsmtool.operations._meanshift as meanshift  # noqa: E402
 from lsmtool import skymodel, tableio  # noqa: E402
 
 
+class ProjectionAPIAdapter(ast.NodeTransformer):
+    """Adapt historical patch projections to the current coordinate API."""
+
+    def visit_Call(self, node):
+        self.generic_visit(node)
+        if (
+            not isinstance(node.func, ast.Attribute)
+            or node.func.attr != "_getXY"
+        ):
+            return node
+        node.func.attr = "_get_xy"
+        for keyword in node.keywords[:]:
+            if keyword.arg == "patchName":
+                # The historical method selected these rows internally.
+                for column in ("Ra", "Dec"):
+                    coordinate = ast.parse(
+                        f"self.table['{column}'][self.getRowIndex(patch)]",
+                        mode="eval",
+                    ).body
+                    coordinate.slice.args[0] = keyword.value
+                    node.args.append(coordinate)
+                node.keywords.remove(keyword)
+        return node
+
+
 def revision_function(revision, path, name, namespace):
     """Load one historical function using the current module's dependencies."""
     git = shutil.which("git")
@@ -43,6 +68,8 @@ def revision_function(revision, path, name, namespace):
         for node in ast.walk(tree)
         if isinstance(node, ast.FunctionDef) and node.name == name
     )
+    node = ProjectionAPIAdapter().visit(node)
+    ast.fix_missing_locations(node)
     scope = dict(namespace)
     # Execute only the selected function from the trusted baseline revision.
     exec(  # noqa: S102

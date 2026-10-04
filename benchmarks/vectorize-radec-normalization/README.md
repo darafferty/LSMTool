@@ -39,7 +39,9 @@ This is a focused comparison, not a general benchmark of two complete checkouts:
 it extracts `RADec2Angle`, `SkyModel.getPatchPositions`, and
 `Grouper.euclid_distance` from the selected revision and runs them with the
 current module dependencies. It is intended for the revisions in this
-investigation; arbitrary revisions may require other historical helpers or
+investigation. Historical `_getXY` calls are adapted to `_get_xy`, with
+patch selections passed as RA and Dec arrays to match the current API.
+Arbitrary revisions may require other historical helpers or
 have incompatible interfaces. It executes code from the selected revision,
 so use trusted revisions only. Monkey patches are restored on completion.
 
