@@ -15,11 +15,11 @@ def test_get_xy_empty():
         {"Name": "source1", "Type": "point", "Ra": 10.0, "Dec": 20.0, "I": 1.0}
     )
     assert len(sky) == 1
-    assert sky._get_xy([], []) == ([0], [0], 0, 0)
+    assert sky._get_xy([], []) == ([], [], None)
 
     sky.remove("I>0")
     assert len(sky) == 0
-    assert sky._get_xy() == ([0], [0], 0, 0)
+    assert sky._get_xy() == ([], [], None)
 
 
 @pytest.mark.parametrize(
@@ -40,12 +40,12 @@ def test_get_xy_single_source(ra, dec, ra_dec_args):
         sky = SkyModel(
             {"Name": "source1", "Type": "point", "Ra": 42, "Dec": 42, "I": 1.0}
         )
-        x, y, mid_ra, mid_dec = sky._get_xy([ra], [dec])
+        x, y, wcs = sky._get_xy([ra], [dec])
     else:
         sky = SkyModel(
             {"Name": "source1", "Type": "point", "Ra": ra, "Dec": dec, "I": 1.0}
         )
-        x, y, mid_ra, mid_dec = sky._get_xy()
+        x, y, wcs = sky._get_xy()
 
     # make_wcs sets the reference pixel coordinates (crpix) to 1000, 1000.
     # Since numpy uses 0-based indexing, the x and y coordinates are 999.
@@ -53,8 +53,8 @@ def test_get_xy_single_source(ra, dec, ra_dec_args):
     np.testing.assert_allclose(y, [999])
     # The returned ra, dec coordinates should be the normalized input values.
     normalized_ra, normalized_dec = normalize_ra_dec(ra, dec)
-    assert mid_ra == normalized_ra
-    assert mid_dec == normalized_dec
+    assert wcs.wcs.crval[0] == normalized_ra
+    assert wcs.wcs.crval[1] == normalized_dec
 
 
 def test_get_xy_identical_sources():
@@ -62,11 +62,11 @@ def test_get_xy_identical_sources():
     sky = SkyModel(
         {"Name": "source0", "Type": "point", "Ra": 42.0, "Dec": 42.0, "I": 1.0}
     )
-    x, y, mid_ra, mid_dec = sky._get_xy([10, 10, 10, 10], [20, 20, 20, 20])
+    x, y, wcs = sky._get_xy([10, 10, 10, 10], [20, 20, 20, 20])
     np.testing.assert_allclose(x, [999, 999, 999, 999])
     np.testing.assert_allclose(y, [999, 999, 999, 999])
-    assert mid_ra == 10.0
-    assert mid_dec == 20.0
+    assert wcs.wcs.crval[0] == 10.0
+    assert wcs.wcs.crval[1] == 20.0
 
 
 @pytest.mark.parametrize(
@@ -96,7 +96,7 @@ def test_get_xy_multiple_sources(crdelt, expected_x, expected_y, ra_dec_args):
         # Using numpy arrays provides test coverage for that argument type.
         ra_list = np.array([11, 14, 12, 10, 15, 13])
         dec_list = np.array([21, 24, 22, 20, 25, 23])
-        x, y, mid_ra, mid_dec = sky._get_xy(ra_list, dec_list, crdelt=crdelt)
+        x, y, wcs = sky._get_xy(ra_list, dec_list, crdelt=crdelt)
     else:
         # Create a SkyModel with the same RA and Dec values as above.
         sky = SkyModel(
@@ -112,15 +112,15 @@ def test_get_xy_multiple_sources(crdelt, expected_x, expected_y, ra_dec_args):
                     "I": 1,
                 }
             )
-        x, y, mid_ra, mid_dec = sky._get_xy(crdelt=crdelt)
+        x, y, wcs = sky._get_xy(crdelt=crdelt)
 
     # The midpoint RA and Dec values are 12.5 and 22.5, respectively.
     # Since the x value decreases as RA increases, the function returns the
     # first RA value smaller than the midpoint.
-    assert mid_ra == 12.0
+    assert wcs.wcs.crval[0] == 12.0
     # For Dec, the y value increases as Dec increases, so the function returns
     # the first Dec value larger than the midpoint.
-    assert mid_dec == 23.0
+    assert wcs.wcs.crval[1] == 23.0
 
     # Regression test for the x and y values.
     np.testing.assert_allclose(x, expected_x, atol=0.1)

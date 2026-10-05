@@ -495,15 +495,14 @@ class SkyModel(object):
                         patch_indices = self.getRowIndex(name)
                         patch_ra = self.table['Ra'][patch_indices]
                         patch_dec = self.table['Dec'][patch_indices]
-                        x, y, midRA, midDec = self._get_xy(patch_ra, patch_dec)
+
+                        x, y, wcs = self._get_xy(patch_ra, patch_dec)
                         xAll.extend(x)
                         yAll.extend(y)
-                        wcsAll.append(make_wcs(midRA, midDec))
+                        wcsAll.append(wcs)
                 else:
-                    xAll, yAll, midRA, midDec = self._get_xy()
-                    wcsAll = []  # has length = num of patches
-                    for name in patchName:
-                        wcsAll.append(make_wcs(midRA, midDec))
+                    xAll, yAll, wcs = self._get_xy()
+                    wcsAll = [wcs] * len(patchName)
 
                 xCol = Column(name='X', data=xAll)
                 yCol = Column(name='Y', data=yAll)
@@ -689,21 +688,21 @@ class SkyModel(object):
         Returns
         -------
         x, y : numpy.ndarray
-            Arrays of x and y values
-        midRA, midDec : float
-            Midpoint RA and Dec values, which were used for the projection.
+            Arrays of x and y values.
+        wcs : astropy.wcs.WCS
+            WCS object used for the projection.
         """
         ra = self.table['Ra'] if ra is None else ra
         dec = self.table['Dec'] if dec is None else dec
 
         if len(ra) == 0:
-            return [0], [0], 0, 0
+            return [], [], None
 
         ra_midpoint, dec_midpoint = self._get_midpoint(ra, dec, crdelt=crdelt)
-        wcs = make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
+        wcs = make_wcs(ra_midpoint % 360.0, dec_midpoint, crdelt=crdelt)
         x, y = wcs.wcs_world2pix(ra, dec, 0)
 
-        return x, y, ra_midpoint, dec_midpoint
+        return x, y, wcs
 
     def getDefaultValues(self):
         """
@@ -2510,7 +2509,7 @@ class SkyModel(object):
                     raise IOError("The output file '{0}' exists and clobber = False.".
                                   format(image_name))
 
-        x, y, refRA, refDec = self._get_xy(crdelt=cellsize)
+        x, y, wcs = self._get_xy(crdelt=cellsize)
         if 'GAUSSIAN' in types:
             fwhm = np.max(self.getColValues('MajorAxis', units='degree') * cellsize)
             max_source_size = int(np.ceil(fwhm * 1.5))
@@ -2530,7 +2529,6 @@ class SkyModel(object):
         # Now we have the size, refine the RA, Dec of the image center
         xcen = np.min(x) + (np.max(x) - np.min(x)) / 2.0
         ycen = np.min(y) + (np.max(y) - np.min(y)) / 2.0
-        wcs = make_wcs(refRA, refDec, crdelt=cellsize)
         refRA, refDec = wcs.wcs_pix2world(xcen, ycen, 0)
         RA = self.getColValues('Ra')
         Dec = self.getColValues('Dec')

@@ -257,8 +257,9 @@ def compare(LSM1, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
     predFlux *= 10.0**(alphas2[matches2] * np.log10(refFreq1[matches1] / refFreq2[matches2]))
 
     # Find reference RA and Dec for center of LSM1
-    x, y, refRA, refDec = LSM1._get_xy()
-    wcs = make_wcs(refRA, refDec)
+    x, y, wcs = LSM1._get_xy()
+    refRA = wcs.wcs.crval[0]
+    refDec = wcs.wcs.crval[1]
     if byPatch:
         x, y = wcs.wcs_world2pix(RA, Dec, 0)
     else:

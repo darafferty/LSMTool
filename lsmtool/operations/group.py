@@ -198,11 +198,11 @@ def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
                 raise ValueError('Sky model must be grouped before "byPatch" can be used.')
             ra = LSM.getColValues('RA', aggregate='wmean')
             dec = LSM.getColValues('Dec', aggregate='wmean')
-            x, y, _, _ = LSM._get_xy(ra, dec)
+            x, y, _ = LSM._get_xy(ra, dec)
             f = LSM.getColValues('I', units=units, applyBeam=applyBeam, aggregate='sum')
         else:
             LSM.ungroup()
-            x, y, _, _ = LSM._get_xy()
+            x, y, _ = LSM._get_xy()
             f = LSM.getColValues('I', units=units, applyBeam=applyBeam)
         vobin = _tessellate.bin2D(np.array(x), np.array(y), f, target_flux=targetFlux)
         try:
@@ -315,11 +315,11 @@ def group(LSM, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
                 raise ValueError('Sky model must be grouped before "byPatch" can be used.')
             ra = LSM.getColValues('RA', aggregate='wmean')
             dec = LSM.getColValues('Dec', aggregate='wmean')
-            x, y, _, _ = LSM._get_xy(ra, dec)
+            x, y, _ = LSM._get_xy(ra, dec)
             f = LSM.getColValues('I', applyBeam=applyBeam, aggregate='sum')
         else:
             addEvery(LSM)
-            x, y, _, _ = LSM._get_xy()
+            x, y, _ = LSM._get_xy()
             f = LSM.getColValues('I', applyBeam=applyBeam)
 
         # For the following, we use the default WCS delta in deg/pixel, as used in the
