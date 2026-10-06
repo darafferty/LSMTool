@@ -648,7 +648,7 @@ def RADec2Angle(RA, Dec):
     """
     import astropy.units as u
 
-    if np.ndim(RA) == 0:
+    if isinstance(RA, (str, float)):
         RA = [RA]
     if np.ndim(Dec) == 0:
         Dec = [Dec]
