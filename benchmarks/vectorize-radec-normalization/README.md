@@ -52,10 +52,6 @@ python -m cProfile -o /tmp/coordinate-performance.prof \
     benchmarks/vectorize-radec-normalization/coordinate_performance.py tests/sector_1.apparent_sky.txt
 ```
 
-See [the investigation record](../../docs/development/radec-vectorization.md) for
-reported results and implementation rationale.
-
-
 ## What the equality checks do not establish
 
 The explicit-position bug discussed in MR !154 is covered by
@@ -81,6 +77,4 @@ including a mix of updated and untouched patches.
 The script does not restore historical `setPatchPositions` or shared helpers
 such as `normalize_ra_dec`. Both benchmark variants use the current versions
 of those dependencies. Use the regression tests to verify the setter's contract;
-use this script for the documented performance workloads. The historical
-reproduction and validation results are recorded in the
-[investigation log](../../docs/development/radec-vectorization.md#review-follow-up-explicit-patch-positions-must-be-scalar-2026-09-28).
+use this script for the documented performance workloads.
