@@ -534,7 +534,7 @@ class SkyModel(object):
                         RA, Dec = wcsAll[i].wcs_pix2world(meanX[i], meanY[i], 0)
                         positions.append((RA.item(), Dec.item()))
                 if positions:
-                    RANorm, DecNorm = tableio.RADec2Angle(*map(list, zip(*positions)))
+                    RANorm, DecNorm = tableio.RADec2Angle(*zip(*positions))
                     patchDict = {
                         name: [ra, dec]
                         for name, ra, dec in zip(patchName, RANorm, DecNorm)
