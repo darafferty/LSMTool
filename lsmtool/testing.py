@@ -513,7 +513,9 @@ class RandomPatchSkyModel(SkyModelGenerator):
         )
 
         n_patches_total = np.prod(n_patches)
-        patch_names = np.char.add("Patch", np.arange(n_patches_total).astype(str))
+        patch_names = np.char.add(
+            "Patch", np.arange(n_patches_total).astype(str)
+        )
 
         xcenter = xedge[:-1] + np.diff(xedge) / 2
         ycenter = yedge[:-1] + np.diff(yedge) / 2

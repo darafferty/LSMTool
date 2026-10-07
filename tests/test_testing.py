@@ -280,7 +280,22 @@ class TestSkyModelGenerator:
         assert path.exists()
 
         skymodel = load(path)
-        assert skymodel.getColNames() == ["Name", "Type", "Ra", "Dec", "I"]
+        assert skymodel.getColNames() == [
+            "Name",
+            "Type",
+            "Ra",
+            "Dec",
+            "I",
+            "Q",
+            "U",
+            "V",
+            "ReferenceFrequency",
+            "SpectralIndex",
+            "RotationMeasure",
+            "MajorAxis",
+            "MinorAxis",
+            "Orientation",
+        ]
         assert len(skymodel) == n_sources
 
     @pytest.mark.parametrize(
