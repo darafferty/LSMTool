@@ -4,11 +4,11 @@ Utility functions used for testing.
 
 import contextlib
 import itertools as itt
-from pathlib import Path
 from dataclasses import asdict, dataclass
+from pathlib import Path
 
-import pytest
 import numpy as np
+import pytest
 from astropy.coordinates import Angle
 from scipy.stats import binned_statistic_2d
 from scipy.stats.distributions import rv_frozen, uniform
@@ -466,9 +466,11 @@ class RandomPatchSkyModel(SkyModelGenerator):
     A sky model generator that assigns sources to random patches on the sky.
     The patch definitions are generated based on the RA and Dec of the sources.
     """
-    
+
     def __call__(self, n_sources, n_patches=(2, 2), random_state=None):
-        samples = super().__call__(n_sources, n_patches, random_state=random_state)
+        samples = super().__call__(
+            n_sources, n_patches, random_state=random_state
+        )
 
         # lsmtool expected the patch definition to come after the type column,
         # so we have to reorder the columns.

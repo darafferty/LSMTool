@@ -9,7 +9,8 @@ from scipy.stats.distributions import uniform
 
 from lsmtool import load
 from lsmtool.testing import (
-    SkyModelGenerator, RandomPatchSkyModel,
+    RandomPatchSkyModel,
+    SkyModelGenerator,
     check_skymodels_equal,
     uniform_range,
 )
@@ -274,7 +275,7 @@ class TestSkyModelGenerator:
         generator.to_file(
             path := tmp_path / "test_skymodel_generator.txt",
             n_sources=n_sources,
-            random_state=rng
+            random_state=rng,
         )
         assert path.exists()
 
@@ -290,7 +291,7 @@ class TestSkyModelGenerator:
             [100, (3, 3)],
             [1000, (10, 10)],
             [10_000, (20, 20)],
-        ]
+        ],
     )
     def test_patches(tmp_path, pytestconfig, rng, n_sources, n_patches):
         """
