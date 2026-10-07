@@ -62,7 +62,8 @@ tests = [
     "pytest-cov",
     "pytest-mock",
     "pytest-xdist",
-    "pytest-socket"
+    "pytest-socket",
+    "pytest-benchmark>=5.3.0",
 ]
 dev = [
     "ruff",
