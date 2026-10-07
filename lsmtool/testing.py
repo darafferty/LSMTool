@@ -3,6 +3,7 @@ Utility functions used for testing.
 """
 
 import contextlib
+import io
 import itertools as itt
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -273,7 +274,7 @@ class SkyModelGenerator:
     minor_axis: RVType = uniform_range(0, 1)
     orientation: RVType = uniform_range(0, 180)
 
-    def __call__(self, n_sources, *args, random_state=None, **kws):
+    def __call__(self, n_sources, n_patches=None, random_state=None, **kws):
         """
         Generate a random skymodel.
 
@@ -291,18 +292,21 @@ class SkyModelGenerator:
             A dictionary with arrays of `n_sources` sampled values for each
             parameter.
         """
-        samples = self.sample(
-            n_sources, *args, random_state=random_state, **kws
+        samples, patches = self.sample(
+            n_sources, n_patches, random_state=random_state, **kws
         )
+
         ra, dec = self.get_coords(samples)
         samples.update(ra=ra, dec=dec)
-        return {
+
+        samples = {
             "name": self.get_names(samples),
             "type": self.get_types(samples),
             **samples,
         }
+        return samples, patches
 
-    def sample(self, n_sources, *args, random_state=None, **kws):
+    def sample(self, n_sources, n_patches=None, random_state=None, **kws):
         """
         Generate a random sample of sources from the specified distributions,
         returning a dictionary with parameter names as keys and arrays of
@@ -323,8 +327,6 @@ class SkyModelGenerator:
             parameter.
         """
         samples = {}
-        # from IPython import embed
-        # embed(header="Embedded interpreter at 'lsmtool/testing.py':325")
         for name, dist in asdict(self).items():
             if dist is None:
                 continue
@@ -333,9 +335,15 @@ class SkyModelGenerator:
                 samples[name] = dist.rvs(n_sources, random_state=random_state)
 
             if sampler := getattr(self, f"get_{name}", None):
-                samples[name] = sampler(samples, *args, **kws)
+                samples[name] = sampler(samples, **kws)
 
-        return samples
+        # Get patch definitions
+        if n_patches:
+            patch_defs, patch_col = self.get_patches(samples, n_patches)
+            samples = {"patch": patch_col, **samples}
+            return samples, patch_defs
+
+        return samples, None
 
     def get_coords(self, samples):
         """
@@ -401,91 +409,7 @@ class SkyModelGenerator:
         n_sources = len(samples["ra"])
         return np.full(n_sources, "GAUSSIAN")
 
-    def get_minor_axis(self, samples):
-        """
-        Generate values for the minor axis of the sources, ensuring that they
-        are smaller than the corresponding major axis values.
-
-        Parameters
-        ----------
-        samples : dict
-            A dictionary containing the random samples of other parameters.
-
-        Returns
-        -------
-        minor_axis : numpy.ndarray
-            An array of values for the minor axis of the sources.
-        """
-        major_axis = samples["major_axis"]
-        return major_axis * self.minor_axis.rvs(len(major_axis))
-
-    def get_header(self, samples):
-        """
-        Generate the makesourcedb format string for the header.
-
-        Parameters
-        ----------
-        samples : dict
-            A dictionary containing the random samples of other parameters.
-
-        Returns
-        -------
-        header : str
-            The makesourcedb format string for the header.
-        """
-        return "FORMAT = " + ", ".join(
-            np.char.replace(np.char.title(list(samples.keys())), "_", "")
-        )
-
-    def to_file(self, filename, n_sources, *args, random_state=None, **kws):
-        """
-        Generate a random skymodel and save it to a file.
-
-        Parameters
-        ----------
-        filename : str or pathlib.Path
-            The path to the file where the generated skymodel should be saved.
-        n_sources : int
-            The number of sources to generate in the skymodel.
-        random_state : int, RandomState instance or None, optional
-            The random state to use for reproducibility. If None (or
-            np.random), the numpy.random.RandomState singleton is used.
-        """
-        samples = self(n_sources, *args, random_state=random_state, **kws)
-        np.savetxt(
-            filename,
-            np.column_stack(list(samples.values())),
-            header=self.get_header(samples),
-            delimiter=", ",
-            fmt="%s",
-        )
-
-
-class RandomPatchSkyModel(SkyModelGenerator):
-    """
-    A sky model generator that assigns sources to random patches on the sky.
-    The patch definitions are generated based on the RA and Dec of the sources.
-    """
-
-    def __call__(self, n_sources, n_patches=(2, 2), random_state=None):
-        samples = super().__call__(
-            n_sources, n_patches, random_state=random_state
-        )
-
-        # lsmtool expected the patch definition to come after the type column,
-        # so we have to reorder the columns.
-        patches = samples.pop("patch")
-        keys, values = map(list, zip(*samples.items()))
-        position = keys.index("type") + 1
-        keys.insert(position, "patch")
-        values.insert(position, patches)
-        return dict(zip(keys, values))
-
-    def sample(self, n_sources, n_patches=(2, 2), random_state=None):
-        samples = super().sample(n_sources, random_state=random_state)
-        return {"patch": self.get_patch(samples, n_patches), **samples}
-
-    def get_patch(self, samples, n_patches):
+    def get_patches(self, samples, n_patches):
         """
         Get the patch definitions and the patch column for the given samples.
 
@@ -530,18 +454,66 @@ class RandomPatchSkyModel(SkyModelGenerator):
         patch_defs[:, 2] = patch_names
         patch_defs[:, 3] = ra_patch
         patch_defs[:, 4] = dec_patch
-        patch_defs = [", ".join(row) for row in patch_defs]
 
         patch_col = patch_names.reshape(n_patches)[tuple(binnumber - 1)]
 
         return patch_defs, patch_col
 
-    def to_file(self, filename, n_sources, n_patches, random_state=None):
-        samples = self(n_sources, n_patches, random_state=random_state)
+    def get_minor_axis(self, samples):
+        """
+        Generate values for the minor axis of the sources, ensuring that they
+        are smaller than the corresponding major axis values.
 
-        # extract the patch definitions and the patch column from the samples
-        patch_defs, patch_col = samples["patch"]
-        samples["patch"] = patch_col
+        Parameters
+        ----------
+        samples : dict
+            A dictionary containing the random samples of other parameters.
+
+        Returns
+        -------
+        minor_axis : numpy.ndarray
+            An array of values for the minor axis of the sources.
+        """
+        major_axis = samples["major_axis"]
+        return major_axis * self.minor_axis.rvs(len(major_axis))
+
+    def get_header(self, samples):
+        """
+        Generate the makesourcedb format string for the header.
+
+        Parameters
+        ----------
+        samples : dict
+            A dictionary containing the random samples of other parameters.
+
+        Returns
+        -------
+        header : str
+            The makesourcedb format string for the header.
+        """
+        return "FORMAT = " + ", ".join(
+            np.char.replace(np.char.title(list(samples.keys())), "_", "")
+        )
+
+    def to_file(
+        self, filename, n_sources, n_patches=None, random_state=None, **kws
+    ):
+        """
+        Generate a random skymodel and save it to a file.
+
+        Parameters
+        ----------
+        filename : str or pathlib.Path
+            The path to the file where the generated skymodel should be saved.
+        n_sources : int
+            The number of sources to generate in the skymodel.
+        random_state : int, RandomState instance or None, optional
+            The random state to use for reproducibility. If None (or
+            np.random), the numpy.random.RandomState singleton is used.
+        """
+        samples, patches = self(
+            n_sources, n_patches, random_state=random_state, **kws
+        )
 
         np.savetxt(
             filename,
@@ -551,6 +523,17 @@ class RandomPatchSkyModel(SkyModelGenerator):
             fmt="%s",
         )
 
-        lines = Path(filename).read_text().splitlines()
-        lines = [*lines[:1], "", *patch_defs, *lines[1:]]
-        Path(filename).write_text("\n".join(lines))
+        if patches is not None:
+            lines = Path(filename).read_text().splitlines()
+            patch_defs = io.StringIO()
+            np.savetxt(patch_defs, patches, delimiter=", ", fmt="%s")
+
+            content = "\n".join(
+                [
+                    *lines[:1],
+                    "",
+                    *patch_defs.getvalue().splitlines(),
+                    *lines[1:],
+                ]
+            )
+            Path(filename).write_text(content)
