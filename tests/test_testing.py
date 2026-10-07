@@ -9,7 +9,6 @@ from scipy.stats.distributions import uniform
 
 from lsmtool import load
 from lsmtool.testing import (
-    RandomPatchSkyModel,
     SkyModelGenerator,
     check_skymodels_equal,
     uniform_range,
@@ -222,7 +221,7 @@ class TestSkyModelGenerator:
         )
         # check that we can write and read the skymodel without errors
         path = tmp_path / "test_skymodel_generator.txt"
-        generator.to_file(path, 10, rng)
+        generator.to_file(path, 10, random_state=rng)
 
         skymodel = load(path)
         assert skymodel.getColNames() == ["Name", "Type", "Ra", "Dec", "I"]
@@ -244,7 +243,7 @@ class TestSkyModelGenerator:
 
         # create skymodel generator and draw a random sample of sources
         generator = SkyModelGenerator(**config)
-        samples = generator.sample(n_sources=1_000, random_state=rng)
+        samples, _ = generator.sample(n_sources=1_000, random_state=rng)
 
         # Check that the samples are within the expected ranges and have the
         # expected distribution.
@@ -308,7 +307,7 @@ class TestSkyModelGenerator:
             [10_000, (20, 20)],
         ],
     )
-    def test_patches(pytestconfig, rng, n_sources, n_patches):
+    def test_patches(self, pytestconfig, rng, n_sources, n_patches):
         """
         Test that we can generate a random skymodel with patches and that we can
         load it.
@@ -323,7 +322,7 @@ class TestSkyModelGenerator:
 
         # Generate the skymodel file with the specified number of sources and
         # patches
-        generator = RandomPatchSkyModel()
+        generator = SkyModelGenerator()
         generator.to_file(path, n_sources, n_patches, rng)
 
         # Check that we can load the skymodel and that it contains the expected
