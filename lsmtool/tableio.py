@@ -23,6 +23,7 @@ from astropy.table import Table, Column, MaskedColumn
 from astropy.coordinates import Angle, SkyCoord
 from astropy.io import registry
 import astropy.io.ascii as ascii
+import numbers
 from packaging.version import Version
 import numpy as np
 import numpy.ma as ma
@@ -648,9 +649,14 @@ def RADec2Angle(RA, Dec):
     """
     import astropy.units as u
 
-    if np.ndim(RA) == 0:
+    def is_scalar(x):
+        if isinstance(x, np.ndarray):  # Includes Astropy Angle and Quantity
+            return x.ndim == 0
+        return isinstance(x, (str, numbers.Real))
+
+    if is_scalar(RA):
         RA = [RA]
-    if np.ndim(Dec) == 0:
+    if is_scalar(Dec):
         Dec = [Dec]
 
     if len(RA) and isinstance(RA[0], str):
