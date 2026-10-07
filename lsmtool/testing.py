@@ -489,7 +489,7 @@ class RandomPatchSkyModel(SkyModelGenerator):
         """
         Get the patch definitions and the patch column for the given samples.
 
-        Parameters
+        Parameters`
         ----------
         samples : dict
             A dictionary containing the source samples with keys "ra" and "dec".
@@ -512,8 +512,8 @@ class RandomPatchSkyModel(SkyModelGenerator):
             expand_binnumbers=True,
         )
 
-        n_patches = np.prod(n_patches)
-        patch_names = np.char.add("Patch", np.arange(n_patches).astype(str))
+        n_patches_total = np.prod(n_patches)
+        patch_names = np.char.add("Patch", np.arange(n_patches_total).astype(str))
 
         xcenter = xedge[:-1] + np.diff(xedge) / 2
         ycenter = yedge[:-1] + np.diff(yedge) / 2
@@ -522,7 +522,7 @@ class RandomPatchSkyModel(SkyModelGenerator):
             {"ra": ra_patch, "dec": dec_patch}
         )
 
-        patch_defs = np.empty((n_patches, 5), object)
+        patch_defs = np.empty((n_patches_total, 5), object)
         patch_defs[:, 0] = " "
         patch_defs[:, 1] = ""
         patch_defs[:, 2] = patch_names
@@ -530,7 +530,7 @@ class RandomPatchSkyModel(SkyModelGenerator):
         patch_defs[:, 4] = dec_patch
         patch_defs = [", ".join(row) for row in patch_defs]
 
-        patch_col = patch_names.reshape((2, 2))[tuple(binnumber - 1)]
+        patch_col = patch_names.reshape(n_patches)[tuple(binnumber - 1)]
 
         return patch_defs, patch_col
 
