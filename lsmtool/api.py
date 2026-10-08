@@ -1,5 +1,9 @@
-import warnings
+"""
+Tools for managing the LSMTool API.
+"""
+
 import functools as ftl
+import warnings
 
 
 class deprecated:
@@ -12,7 +16,7 @@ class deprecated:
         replacement: str = None,
         renamed_parameters: dict = None,
         target_version: str = None,
-        once:bool=True,
+        once: bool = True,
     ):
         """
         Mark a function as deprecated.
@@ -65,7 +69,7 @@ class deprecated:
                 f"This message will become an error in {__package__} version "
                 f"{self.target_version}."
             )
-    
+
     def emit(self, func, kws):
         """
         Emit a deprecation warning for the given function and keyword arguments.
@@ -92,12 +96,16 @@ class deprecated_attribute:
     """
     A descriptor class for marking attributes as deprecated.
     """
+
     def __init__(
-        self, replacement: str, target_version: str = None, once:bool=True,
+        self,
+        replacement: str,
+        target_version: str = None,
+        once: bool = True,
     ):
         """
         Mark an attribute as deprecated and provide a replacement.
-        
+
         Value lookup and assignments are redirected to the replacement attribute
         and a deprecation warning is emitted. By default the warning is emitted
         only on the first lookup or assignment and silenced thereafter.
@@ -128,7 +136,7 @@ class deprecated_attribute:
             message = self._get_message(lookup_origin)
             warnings.warn(message, DeprecationWarning)
             self._emitted = True
-            
+
         return getattr(instance, self.replacement)
 
     def __set__(self, instance, value):
@@ -137,16 +145,16 @@ class deprecated_attribute:
             message = self._get_message(lookup_origin)
             warnings.warn(message, DeprecationWarning)
             self._emitted = True
-            
+
         setattr(instance, self.replacement, value)
-    
+
     def _get_message(self, origin):
-        message =  (
+        message = (
             f"The {self.attribute_name!r} attribute of {origin!r} is "
             "deprecated. Please use the new attribute name "
             f"{self.replacement!r} instead."
         )
-        
+
         if self.target_version:
             message += (
                 f" This message will become an error in {__package__} version "
