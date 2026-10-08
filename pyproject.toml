@@ -144,8 +144,6 @@ exclude = [
     "lsmtool/lsmtool.py",
     "lsmtool/operations",
     "lsmtool/operations_lib.py",
-    "lsmtool/skymodel.py",
-    "lsmtool/tableio.py",
     "lsmtool/_version.py",
     "lsmtool/_changelog.py",
     "tests/test_lsmtool.py",

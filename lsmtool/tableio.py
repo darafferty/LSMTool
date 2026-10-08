@@ -18,20 +18,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-import astropy
-from astropy.table import Table, Column, MaskedColumn
-from astropy.coordinates import Angle, SkyCoord
-from astropy.io import registry
-import astropy.io.ascii as ascii
-from packaging.version import Version
-import numpy as np
-import numpy.ma as ma
-import re
 import logging
 import os
-from copy import deepcopy
-from .operations_lib import normalize_ra_dec
+import re
 from ast import literal_eval
+from copy import deepcopy
+
+import astropy
+import astropy.io.ascii as ascii
+import numpy as np
+import numpy.ma as ma
+from astropy.coordinates import Angle, SkyCoord
+from astropy.io import registry
+from astropy.table import Column, MaskedColumn, Table
+from packaging.version import Version
+
+from .operations_lib import normalize_ra_dec
 
 # Python 3 compatibility
 try:
@@ -43,6 +45,7 @@ else:
     # Python 2
     basestring = basestring
 import io
+
 try:
     # Python 2
     file_types = (file, io.IOBase)
@@ -54,48 +57,103 @@ except NameError:
 # name of the column, the entry value is the key used in the astropy table of the
 # SkyModel object. For details, see:
 # https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb
-allowedColumnNames = {'name': 'Name', 'type': 'Type', 'patch': 'Patch',
-                      'ra': 'Ra', 'dec': 'Dec', 'i': 'I', 'q': 'Q', 'u': 'U', 'v': 'V',
-                      'majoraxis': 'MajorAxis', 'minoraxis': 'MinorAxis',
-                      'orientation': 'Orientation', 'orientationisabsolute': 'OrientationIsAbsolute',
-                      'ishapelet': 'IShapelet', 'qshapelet': 'QShapelet', 'ushapelet': 'UShapelet',
-                      'vshapelet': 'VShapelet', 'category': 'Category', 'logarithmicsi': 'LogarithmicSI',
-                      'rotationmeasure': 'RotationMeasure', 'polarizationangle': 'PolarizationAngle',
-                      'polarizedfraction': 'PolarizedFraction', 'referencewavelength': 'ReferenceWavelength',
-                      'referencefrequency': 'ReferenceFrequency', 'spectralindex': 'SpectralIndex'}
+allowedColumnNames = {
+    "name": "Name",
+    "type": "Type",
+    "patch": "Patch",
+    "ra": "Ra",
+    "dec": "Dec",
+    "i": "I",
+    "q": "Q",
+    "u": "U",
+    "v": "V",
+    "majoraxis": "MajorAxis",
+    "minoraxis": "MinorAxis",
+    "orientation": "Orientation",
+    "orientationisabsolute": "OrientationIsAbsolute",
+    "ishapelet": "IShapelet",
+    "qshapelet": "QShapelet",
+    "ushapelet": "UShapelet",
+    "vshapelet": "VShapelet",
+    "category": "Category",
+    "logarithmicsi": "LogarithmicSI",
+    "rotationmeasure": "RotationMeasure",
+    "polarizationangle": "PolarizationAngle",
+    "polarizedfraction": "PolarizedFraction",
+    "referencewavelength": "ReferenceWavelength",
+    "referencefrequency": "ReferenceFrequency",
+    "spectralindex": "SpectralIndex",
+}
 
-allowedColumnUnits = {'name': None, 'type': None, 'patch': None, 'ra': 'degree',
-                      'dec': 'degree', 'i': 'Jy', 'i-apparent': 'Jy', 'q': 'Jy', 'u': 'Jy', 'v': 'Jy',
-                      'majoraxis': 'arcsec', 'minoraxis': 'arcsec', 'orientation': 'degree',
-                      'orientationisabsolute': None,
-                      'ishapelet': None, 'qshapelet': None, 'ushapelet': None,
-                      'vshapelet': None, 'category': None, 'logarithmicsi': None,
-                      'rotationmeasure': 'rad/m^2', 'polarizationangle': 'rad',
-                      'polarizedfraction': 'PolarizedFraction',
-                      'referencewavelength': 'ReferenceWavelength',
-                      'referencefrequency': 'Hz', 'spectralindex': None}
+allowedColumnUnits = {
+    "name": None,
+    "type": None,
+    "patch": None,
+    "ra": "degree",
+    "dec": "degree",
+    "i": "Jy",
+    "i-apparent": "Jy",
+    "q": "Jy",
+    "u": "Jy",
+    "v": "Jy",
+    "majoraxis": "arcsec",
+    "minoraxis": "arcsec",
+    "orientation": "degree",
+    "orientationisabsolute": None,
+    "ishapelet": None,
+    "qshapelet": None,
+    "ushapelet": None,
+    "vshapelet": None,
+    "category": None,
+    "logarithmicsi": None,
+    "rotationmeasure": "rad/m^2",
+    "polarizationangle": "rad",
+    "polarizedfraction": "PolarizedFraction",
+    "referencewavelength": "ReferenceWavelength",
+    "referencefrequency": "Hz",
+    "spectralindex": None,
+}
 
-allowedColumnDefaults = {'name': 'N/A', 'type': 'N/A', 'patch': 'N/A', 'ra': 0.0,
-                         'dec': 0.0, 'i': 0.0, 'q': 0.0, 'u': 0.0, 'v': 0.0, 'majoraxis': 0.0,
-                         'minoraxis': 0.0, 'orientation': 0.0, 'orientationisabsolute': 'false',
-                         'ishapelet': 'N/A', 'qshapelet': 'N/A', 'ushapelet': 'N/A',
-                         'vshapelet': 'N/A', 'category': 2, 'logarithmicsi': 'true',
-                         'rotationmeasure': 0.0, 'polarizationangle': 0.0,
-                         'polarizedfraction': 0.0, 'referencewavelength': 'N/A',
-                         'referencefrequency': 0.0, 'spectralindex': [0.0]}
+allowedColumnDefaults = {
+    "name": "N/A",
+    "type": "N/A",
+    "patch": "N/A",
+    "ra": 0.0,
+    "dec": 0.0,
+    "i": 0.0,
+    "q": 0.0,
+    "u": 0.0,
+    "v": 0.0,
+    "majoraxis": 0.0,
+    "minoraxis": 0.0,
+    "orientation": 0.0,
+    "orientationisabsolute": "false",
+    "ishapelet": "N/A",
+    "qshapelet": "N/A",
+    "ushapelet": "N/A",
+    "vshapelet": "N/A",
+    "category": 2,
+    "logarithmicsi": "true",
+    "rotationmeasure": 0.0,
+    "polarizationangle": 0.0,
+    "polarizedfraction": 0.0,
+    "referencewavelength": "N/A",
+    "referencefrequency": 0.0,
+    "spectralindex": [0.0],
+}
 
-requiredColumnNames = ['Name', 'Type', 'Ra', 'Dec', 'I']
+requiredColumnNames = ["Name", "Type", "Ra", "Dec", "I"]
 
 allowedVOServices = {
-    'nvss': 'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/65&amp;',
-    'wenss': 'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;',
-    'vlssr': 'http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/97&amp;'
+    "nvss": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/65&amp;",
+    "wenss": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;",
+    "vlssr": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/97&amp;",
 }
 
 # Define the various non-VO URLs used for downloading sky models
-TGSS_URL = 'http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv5.cgi'
-GSM_URL = 'https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi'
-LOTSS_URL = 'https://vo.astron.nl/lotss_dr3/q/gaus_cone/form'
+TGSS_URL = "http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv5.cgi"
+GSM_URL = "https://lcs165.lofar.eu/cgi-bin/gsmv1.cgi"
+LOTSS_URL = "https://vo.astron.nl/lotss_dr3/q/gaus_cone/form"
 
 
 _EXPECTED_LSM_COLUMN_NAMES = [
@@ -110,7 +168,7 @@ _EXPECTED_LSM_COLUMN_NAMES = [
     "log_spec_idx",
     "i_pol_jy",
     "ref_freq_hz",
-    "epoch"
+    "epoch",
 ]
 
 FORMAT_LINE_REGEX = re.compile(
@@ -129,6 +187,7 @@ FORMAT_LINE_REGEX = re.compile(
     """
 )
 
+
 def raformat(val):
     """
     Column formatter for RA values.
@@ -144,7 +203,7 @@ def raformat(val):
         Formatted string as 'hh:mm:ss.s'
 
     """
-    return Angle(val, unit='degree').to_string(unit='hourangle', sep=':')
+    return Angle(val, unit="degree").to_string(unit="hourangle", sep=":")
 
 
 def decformat(val):
@@ -162,7 +221,7 @@ def decformat(val):
         Formatted string as 'dd.mm.ss.s'
 
     """
-    return Angle(val, unit='degree').to_string(unit='degree', sep='.')
+    return Angle(val, unit="degree").to_string(unit="degree", sep=".")
 
 
 def fluxformat(val):
@@ -181,9 +240,9 @@ def fluxformat(val):
 
     """
     if type(val) is ma.core.MaskedConstant:
-        return '{}'.format(val)
+        return "{}".format(val)
     else:
-        return '{0:0.3f}'.format(val)
+        return "{0:0.3f}".format(val)
 
 
 def skyModelReader(fileName, header_start=0):
@@ -207,27 +266,31 @@ def skyModelReader(fileName, header_start=0):
     table : astropy.table.Table
 
     """
-    log = logging.getLogger('LSMTool.Load')
+    log = logging.getLogger("LSMTool.Load")
 
     # Open the input file
     with open(fileName) as modelFile:
-        log.debug('Reading {0}'.format(fileName))
+        log.debug("Reading {0}".format(fileName))
 
         # Read format line
         formatString = None
         for line in modelFile.readlines()[header_start:]:
-            if 'format' in line.lower():
+            if "format" in line.lower():
                 formatString = line
                 break
     if formatString is None:
-        raise IOError("No valid format line found in file '{0}'.".format(fileName))
+        raise IOError(
+            "No valid format line found in file '{0}'.".format(fileName)
+        )
 
     # Process the header
-    colNames, hasPatches, colDefaults, metaDict = processFormatString(formatString)
+    colNames, hasPatches, colDefaults, metaDict = processFormatString(
+        formatString
+    )
 
     # Read model into astropy table object
     outlines = []
-    log.debug('Reading file...')
+    log.debug("Reading file...")
     with open(fileName) as f:
         for line in f:
             outline, metaDict = processLine(line, metaDict, colNames)
@@ -236,10 +299,12 @@ def skyModelReader(fileName, header_start=0):
 
     # Handle empty skymodels
     if len(outlines) == 0:
-        log.warning("Sky model contains no sources. Check that it is a valid skymodel for this dataset")
+        log.warning(
+            "Sky model contains no sources. Check that it is a valid skymodel for this dataset"
+        )
         return makeEmptyTable()
 
-    outlines.append('\n')  # needed in case of single-line sky models
+    outlines.append("\n")  # needed in case of single-line sky models
 
     # Create table
     table = createTable(outlines, metaDict, colNames, colDefaults)
@@ -267,7 +332,7 @@ def createTable(outlines, metaDict, colNames, colDefaults):
     table : astropy.table.Table
 
     """
-    log = logging.getLogger('LSMTool.Load')
+    log = logging.getLogger("LSMTool.Load")
 
     # Before loading table into an astropy Table object, set lengths of Name,
     # Patch, and Type columns to 100 characters to ensure long names are not
@@ -275,41 +340,51 @@ def createTable(outlines, metaDict, colNames, colDefaults):
     # to 5 characters to allow true/false values to be stored as strings without
     # truncation. Due to a change in the astropy table API with v4.1, we have to
     # check the version and use the appropriate column names
-    if Version(astropy.__version__) < Version('4.1'):
+    if Version(astropy.__version__) < Version("4.1"):
         # Use the input column names for the converters
-        nameCol = 'col{0}'.format(colNames.index('Name')+1)
-        typeCol = 'col{0}'.format(colNames.index('Type')+1)
-        if 'Patch' in colNames:
-            patchCol = 'col{0}'.format(colNames.index('Patch')+1)
-        if 'LogarithmicSI' in colNames:
-            logSICol = 'col{0}'.format(colNames.index('LogarithmicSI')+1)
-        if 'OrientationIsAbsolute' in colNames:
-            orienCol = 'col{0}'.format(colNames.index('OrientationIsAbsolute')+1)
+        nameCol = "col{0}".format(colNames.index("Name") + 1)
+        typeCol = "col{0}".format(colNames.index("Type") + 1)
+        if "Patch" in colNames:
+            patchCol = "col{0}".format(colNames.index("Patch") + 1)
+        if "LogarithmicSI" in colNames:
+            logSICol = "col{0}".format(colNames.index("LogarithmicSI") + 1)
+        if "OrientationIsAbsolute" in colNames:
+            orienCol = "col{0}".format(
+                colNames.index("OrientationIsAbsolute") + 1
+            )
     else:
         # Use the output column names for the converters
-        nameCol = 'Name'
-        typeCol = 'Type'
-        patchCol = 'Patch'
-        logSICol = 'LogarithmicSI'
-        orienCol = 'OrientationIsAbsolute'
+        nameCol = "Name"
+        typeCol = "Type"
+        patchCol = "Patch"
+        logSICol = "LogarithmicSI"
+        orienCol = "OrientationIsAbsolute"
     converters = {}
-    converters[nameCol] = [ascii.convert_numpy('U100')]
-    converters[typeCol] = [ascii.convert_numpy('U100')]
-    if 'Patch' in colNames:
-        converters[patchCol] = [ascii.convert_numpy('U100')]
-    if 'LogarithmicSI' in colNames:
-        converters[logSICol] = [ascii.convert_numpy('U5')]
-    if 'OrientationIsAbsolute' in colNames:
-        converters[orienCol] = [ascii.convert_numpy('U5')]
+    converters[nameCol] = [ascii.convert_numpy("U100")]
+    converters[typeCol] = [ascii.convert_numpy("U100")]
+    if "Patch" in colNames:
+        converters[patchCol] = [ascii.convert_numpy("U100")]
+    if "LogarithmicSI" in colNames:
+        converters[logSICol] = [ascii.convert_numpy("U5")]
+    if "OrientationIsAbsolute" in colNames:
+        converters[orienCol] = [ascii.convert_numpy("U5")]
 
-    log.debug('Creating table...')
-    table = Table.read('\n'.join(outlines), guess=False, format='ascii.no_header', delimiter=',',
-                       names=colNames, comment='#', data_start=0, converters=converters)
+    log.debug("Creating table...")
+    table = Table.read(
+        "\n".join(outlines),
+        guess=False,
+        format="ascii.no_header",
+        delimiter=",",
+        names=colNames,
+        comment="#",
+        data_start=0,
+        converters=converters,
+    )
 
     # Convert spectral index values from strings to arrays.
-    if 'SpectralIndex' in table.keys():
-        log.debug('Converting spectral indices...')
-        specOld = table['SpectralIndex'].data.tolist()
+    if "SpectralIndex" in table.keys():
+        log.debug("Converting spectral indices...")
+        specOld = table["SpectralIndex"].data.tolist()
         specVec = []
         maskVec = []
         maxLen = 0
@@ -318,15 +393,19 @@ def createTable(outlines, metaDict, colNames, colDefaults):
                 if type(entry) is float or type(entry) is int:
                     maxLen = 1
                 else:
-                    specEntry = [float(f) for f in entry.split(';')]
+                    specEntry = [float(f) for f in entry.split(";")]
                     if len(specEntry) > maxLen:
                         maxLen = len(specEntry)
             except:
                 pass
-        defSpeclen = len(colDefaults[colNames.index('SpectralIndex')])
+        defSpeclen = len(colDefaults[colNames.index("SpectralIndex")])
         if defSpeclen > maxLen:
             maxLen = defSpeclen
-        log.debug('Maximum number of spectral-index terms in model: {0}'.format(maxLen))
+        log.debug(
+            "Maximum number of spectral-index terms in model: {0}".format(
+                maxLen
+            )
+        )
         for entry in specOld:
             try:
                 # Take existing entry and fix type
@@ -334,11 +413,11 @@ def createTable(outlines, metaDict, colNames, colDefaults):
                     specEntry = [float(entry)]
                     specMask = [False]
                 else:
-                    specEntry = [float(f) for f in entry.split(';')]
+                    specEntry = [float(f) for f in entry.split(";")]
                     specMask = [False] * len(specEntry)
             except:
                 # No entry in table, so use default value
-                specEntry = colDefaults[colNames.index('SpectralIndex')]
+                specEntry = colDefaults[colNames.index("SpectralIndex")]
                 specMask = [False] * len(specEntry)
             while len(specEntry) < maxLen:
                 # Add masked values to any entries that are too short
@@ -346,43 +425,54 @@ def createTable(outlines, metaDict, colNames, colDefaults):
                 specMask.append(True)
             specVec.append(specEntry)
             maskVec.append(specMask)
-        specCol = MaskedColumn(name='SpectralIndex', data=np.array(specVec, dtype=float))
+        specCol = MaskedColumn(
+            name="SpectralIndex", data=np.array(specVec, dtype=float)
+        )
         specCol.mask = maskVec
-        specIndx = table.keys().index('SpectralIndex')
-        table.remove_column('SpectralIndex')
+        specIndx = table.keys().index("SpectralIndex")
+        table.remove_column("SpectralIndex")
         table.add_column(specCol, index=specIndx)
 
     # Convert RA and Dec to Angle objects
-    log.debug('Converting RA and Dec...')
-    RARaw = table['Ra'].data.tolist()
-    DecRaw = table['Dec'].data.tolist()
+    log.debug("Converting RA and Dec...")
+    RARaw = table["Ra"].data.tolist()
+    DecRaw = table["Dec"].data.tolist()
     RANorm, DecNorm = RADec2Angle(RARaw, DecRaw)
 
-    RACol = Column(name='Ra', data=RANorm)
+    RACol = Column(name="Ra", data=RANorm)
     RACol.format = raformat
-    RAIndx = table.keys().index('Ra')
-    table.remove_column('Ra')
+    RAIndx = table.keys().index("Ra")
+    table.remove_column("Ra")
     table.add_column(RACol, index=RAIndx)
 
-    DecCol = Column(name='Dec', data=DecNorm)
+    DecCol = Column(name="Dec", data=DecNorm)
     DecCol.format = decformat
-    DecIndx = table.keys().index('Dec')
-    table.remove_column('Dec')
+    DecIndx = table.keys().index("Dec")
+    table.remove_column("Dec")
     table.add_column(DecCol, index=DecIndx)
 
-    table.columns['I'].format = fluxformat
+    table.columns["I"].format = fluxformat
 
     # Set column units and default values
     for i, colName in enumerate(colNames):
-        log.debug("Setting units for column '{0}' to {1}".format(
-            colName, allowedColumnUnits[colName.lower()]))
+        log.debug(
+            "Setting units for column '{0}' to {1}".format(
+                colName, allowedColumnUnits[colName.lower()]
+            )
+        )
         table.columns[colName].unit = allowedColumnUnits[colName.lower()]
 
-        if hasattr(table.columns[colName], 'filled') and colDefaults[i] is not None:
+        if (
+            hasattr(table.columns[colName], "filled")
+            and colDefaults[i] is not None
+        ):
             fillVal = colDefaults[i]
-            log.debug("Setting default value for column '{0}' to {1}".
-                      format(colName, fillVal))
-            if colName == 'SpectralIndex':
+            log.debug(
+                "Setting default value for column '{0}' to {1}".format(
+                    colName, fillVal
+                )
+            )
+            if colName == "SpectralIndex":
                 # We cannot set the fill value to a list/array, so just use a float
                 fillVal = 0.0
             table.columns[colName].set_fill_value(fillVal)
@@ -413,36 +503,36 @@ def processFormatString(formatString):
 
     """
     formatString = formatString.strip()
-    formatString = formatString.strip('# ')
-    if formatString.lower().endswith('format'):
-        parts = formatString.split('=')[:-1]
-        formatString = 'FORMAT = ' + '='.join(parts).strip('# ()')
-    elif formatString.lower().startswith('format'):
-        parts = formatString.split('=')[1:]
-        formatString = 'FORMAT = ' + '='.join(parts).strip('# ()')
+    formatString = formatString.strip("# ")
+    if formatString.lower().endswith("format"):
+        parts = formatString.split("=")[:-1]
+        formatString = "FORMAT = " + "=".join(parts).strip("# ()")
+    elif formatString.lower().startswith("format"):
+        parts = formatString.split("=")[1:]
+        formatString = "FORMAT = " + "=".join(parts).strip("# ()")
     else:
         raise IOError("Format line not understood.")
 
     # Check whether sky model has patches
-    if 'Patch' in formatString:
+    if "Patch" in formatString:
         hasPatches = True
     else:
         hasPatches = False
 
     # Get column names and default values. Non-string columns have default
     # values of 0.0 unless a different value is given in the header.
-    if ',' not in formatString:
+    if "," not in formatString:
         raise IOError("Sky model must use ',' as a field separator.")
-    colNames = formatString.split(',')
+    colNames = formatString.split(",")
 
     # Check if a default value in the format string is a list. If it is, make
     # sure the list is complete
     cnStart = None
     cnEnd = None
     for cn in colNames:
-        if '[' in cn and ']' not in cn:
+        if "[" in cn and "]" not in cn:
             cnStart = cn
-        if ']' in cn and '[' not in cn:
+        if "]" in cn and "[" not in cn:
             cnEnd = cn
     if cnStart is not None:
         indx1 = colNames.index(cnStart)
@@ -454,11 +544,11 @@ def processFormatString(formatString):
                 colNamesFixed.append(cn)
             elif i >= indx1 and i <= indx2:
                 toJoin.append(cn)
-                if i == len(colNames)-1:
-                    colNamesFixed.append(','.join(toJoin))
+                if i == len(colNames) - 1:
+                    colNamesFixed.append(",".join(toJoin))
             elif i > indx2:
                 if i == indx2 + 1:
-                    colNamesFixed.append(','.join(toJoin))
+                    colNamesFixed.append(",".join(toJoin))
                     colNamesFixed.append(cn)
                 else:
                     colNamesFixed.append(cn)
@@ -467,21 +557,21 @@ def processFormatString(formatString):
     # Now get the defaults
     colDefaults = [None] * len(colNames)
     metaDict = {}
-    colNames[0] = colNames[0].split('=')[1]
+    colNames[0] = colNames[0].split("=")[1]
     for i in range(len(colNames)):
-        parts = colNames[i].split('=')
+        parts = colNames[i].split("=")
         colName = parts[0].strip().lower()
         if len(parts) == 2:
             try:
-                if '[' in parts[1]:
+                if "[" in parts[1]:
                     # Default is a list
-                    defParts = parts[1].strip("'[]").split(',')
+                    defParts = parts[1].strip("'[]").split(",")
                     defaultVal = []
                     for p in defParts:
                         defaultVal.append(float(p.strip()))
-                elif 'true' in parts[1].lower():
+                elif "true" in parts[1].lower():
                     defaultVal = True
-                elif 'false' in parts[1].lower():
+                elif "false" in parts[1].lower():
                     defaultVal = False
                 else:
                     defaultVal = float(parts[1].strip("'"))
@@ -490,10 +580,12 @@ def processFormatString(formatString):
         else:
             defaultVal = None
 
-        if colName == '':
-            raise IOError('Skipping of columns is not yet supported.')
+        if colName == "":
+            raise IOError("Skipping of columns is not yet supported.")
         if colName not in allowedColumnNames:
-            raise IOError("Column '{0}' is not currently allowed".format(colName))
+            raise IOError(
+                "Column '{0}' is not currently allowed".format(colName)
+            )
         else:
             colNames[i] = allowedColumnNames[colName]
             if defaultVal is not None:
@@ -533,7 +625,7 @@ def processLine(line, metaDict, colNames):
         Output meta data
 
     """
-    log = logging.getLogger('LSMTool.Load')
+    log = logging.getLogger("LSMTool.Load")
 
     # Ignore format line and comments
     if line.lower().startswith("format") or line.startswith("#"):
@@ -541,28 +633,34 @@ def processLine(line, metaDict, colNames):
 
     # Check for SpectralIndex entries, which are unreadable as they use
     # the same separator for multiple orders as used for the columns
-    line = line.strip('\n')
-    a = re.search(r'\[.*\]', line)
+    line = line.strip("\n")
+    a = re.search(r"\[.*\]", line)
     if a is not None:
-        b = line[a.start(): a.end()]
-        c = b.strip('[]')
-        if ',' in c:
-            c = c.replace(',', ';')
+        b = line[a.start() : a.end()]
+        c = b.strip("[]")
+        if "," in c:
+            c = c.replace(",", ";")
         line = line.replace(b, c)
-    colLines = line.split(',')
+    colLines = line.split(",")
 
     # Skip empty lines
-    if all([col.strip() == '' for col in colLines]):
+    if all([col.strip() == "" for col in colLines]):
         return None, metaDict
 
     # Check for 'nan' in any column except string columns (indicated by 'N/A' in
     # the defaults dict)
-    checkColNames = [name for name in colNames if allowedColumnDefaults[name.lower()] != 'N/A']
+    checkColNames = [
+        name
+        for name in colNames
+        if allowedColumnDefaults[name.lower()] != "N/A"
+    ]
     for name in checkColNames:
         try:
-            if 'nan' in colLines[colNames.index(name)]:
-                log.warning('One or more NaNs found in the sky model. Sources and '
-                            'patches with NaNs will be ignored.')
+            if "nan" in colLines[colNames.index(name)]:
+                log.warning(
+                    "One or more NaNs found in the sky model. Sources and "
+                    "patches with NaNs will be ignored."
+                )
                 return None, metaDict
         except IndexError:
             # Line does not contain this column
@@ -570,26 +668,30 @@ def processLine(line, metaDict, colNames):
 
     # Check for patch lines as any line with an empty Name entry. If found,
     # store patch positions in the table meta data.
-    nameIndx = colNames.index('Name')
-    if colLines[nameIndx].strip() == '':
+    nameIndx = colNames.index("Name")
+    if colLines[nameIndx].strip() == "":
         if len(colLines) > 4:
-            patchIndx = colNames.index('Patch')
+            patchIndx = colNames.index("Patch")
             patchName = colLines[patchIndx].strip()
-            RAIndx = colNames.index('Ra')
-            DecIndx = colNames.index('Dec')
-            if colLines[RAIndx].strip() == '' or colLines[DecIndx].strip() == '':
-                patchRA = [Angle(0.0, unit='degree')]
-                patchDec = [Angle(0.0, unit='degree')]
+            RAIndx = colNames.index("Ra")
+            DecIndx = colNames.index("Dec")
+            if (
+                colLines[RAIndx].strip() == ""
+                or colLines[DecIndx].strip() == ""
+            ):
+                patchRA = [Angle(0.0, unit="degree")]
+                patchDec = [Angle(0.0, unit="degree")]
             else:
-                patchRA, patchDec = RADec2Angle(colLines[RAIndx].strip(),
-                                                colLines[DecIndx].strip())
+                patchRA, patchDec = RADec2Angle(
+                    colLines[RAIndx].strip(), colLines[DecIndx].strip()
+                )
             metaDict[patchName] = [patchRA[0], patchDec[0]]
         return None, metaDict
 
     while len(colLines) < len(colNames):
-        colLines.append(' ')
+        colLines.append(" ")
 
-    return ','.join(colLines), metaDict
+    return ",".join(colLines), metaDict
 
 
 def RADec2Angle(RA, Dec):
@@ -625,8 +727,10 @@ def RADec2Angle(RA, Dec):
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            raise ValueError('RA not understood (must be string in '
-                             'makesourcedb format or float in degrees): {0}'.format(e))
+            raise ValueError(
+                "RA not understood (must be string in "
+                "makesourcedb format or float in degrees): {0}".format(e)
+            )
     else:
         RAAngle = Angle(RA, unit=u.deg)
 
@@ -637,14 +741,18 @@ def RADec2Angle(RA, Dec):
             raise
         except ValueError:
             try:
-                DecSex = [decstr.replace('.', ':', 2) for decstr in Dec]
+                DecSex = [decstr.replace(".", ":", 2) for decstr in Dec]
                 DecAngle = Angle(DecSex, unit=u.deg)
             except Exception as e:
-                raise ValueError('Dec not understood (must be string in '
-                                 'makesourcedb format or float in degrees): {0}'.format(e))
+                raise ValueError(
+                    "Dec not understood (must be string in "
+                    "makesourcedb format or float in degrees): {0}".format(e)
+                )
         except Exception as e:
-            raise ValueError('Dec not understood (must be string in '
-                             'makesourcedb format or float in degrees): {0}'.format(e))
+            raise ValueError(
+                "Dec not understood (must be string in "
+                "makesourcedb format or float in degrees): {0}".format(e)
+            )
     else:
         DecAngle = Angle(Dec, unit=u.deg)
 
@@ -688,10 +796,10 @@ def skyModelWriter(table, fileName):
         Output ASCII file to which the sky model is written
 
     """
-    log = logging.getLogger('LSMTool.Write')
+    log = logging.getLogger("LSMTool.Write")
 
-    modelFile = open(fileName, 'w')
-    log.debug('Writing model to {0}'.format(fileName))
+    modelFile = open(fileName, "w")
+    log.debug("Writing model to {0}".format(fileName))
 
     # Make sure all columns have the correct makesourcedb units
     for colName in table.columns:
@@ -707,49 +815,56 @@ def skyModelWriter(table, fileName):
             continue
         colName = allowedColumnNames[colKey.lower()]
 
-        if colName in table.meta and colName != 'Patch':
+        if colName in table.meta and colName != "Patch":
             colHeader = "{0}='{1}'".format(colName, table.meta[colName])
-        elif colName == 'SpectralIndex':
+        elif colName == "SpectralIndex":
             colHeader = "{0}='[]'".format(colName)
         else:
             colHeader = colName
         formatString.append(colHeader)
-    outLines.append('FORMAT = {0}'.format(', '.join(formatString)))
-    if 'History' in table.meta:
-        outLines.append('\n\n# LSMTool history:\n# ')
-        outLines.append('\n# '.join(table.meta['History']))
-    outLines.append('\n')
-    outLines.append('\n')
+    outLines.append("FORMAT = {0}".format(", ".join(formatString)))
+    if "History" in table.meta:
+        outLines.append("\n\n# LSMTool history:\n# ")
+        outLines.append("\n# ".join(table.meta["History"]))
+    outLines.append("\n")
+    outLines.append("\n")
 
     # Add source lines
-    if 'Patch' in table.keys():
-        table = table.group_by('Patch')
-        patchNames = table.groups.keys['Patch']
+    if "Patch" in table.keys():
+        table = table.group_by("Patch")
+        patchNames = table.groups.keys["Patch"]
         for i, patchName in enumerate(patchNames):
             if patchName in table.meta:
                 try:
                     gRA, gDec = table.meta[patchName]
                 except ValueError:
-                    raise ValueError('Multiple positions per patch. Please set'
-                                     'the patch positions.')
+                    raise ValueError(
+                        "Multiple positions per patch. Please set"
+                        "the patch positions."
+                    )
             else:
                 gRA = 0.0
                 gDec = 0.0
             gRADec = normalize_ra_dec(gRA, gDec)
-            gRAStr = Angle(gRADec.ra, unit='degree').to_string(unit='hourangle', sep=':', precision=4)
-            gDecStr = Angle(gRADec.dec, unit='degree').to_string(unit='degree', sep='.', precision=4)
+            gRAStr = Angle(gRADec.ra, unit="degree").to_string(
+                unit="hourangle", sep=":", precision=4
+            )
+            gDecStr = Angle(gRADec.dec, unit="degree").to_string(
+                unit="degree", sep=".", precision=4
+            )
 
-            outLines.append(' , , {0}, {1}, {2}\n'.format(patchName, gRAStr,
-                                                          gDecStr))
+            outLines.append(
+                " , , {0}, {1}, {2}\n".format(patchName, gRAStr, gDecStr)
+            )
         for row in table.filled(fill_value=-9999):
             line = rowStr(row, table.meta)
-            outLines.append(', '.join(line))
-            outLines.append('\n')
+            outLines.append(", ".join(line))
+            outLines.append("\n")
     else:
         for row in table.filled(fill_value=-9999):
             line = rowStr(row, table.meta)
-            outLines.append(', '.join(line))
-            outLines.append('\n')
+            outLines.append(", ".join(line))
+            outLines.append("\n")
 
     modelFile.writelines(outLines)
     modelFile.close()
@@ -790,16 +905,16 @@ def rowStr(row, metaDict):
             hasfillVal = False
 
         d = row[colKey]
-        if str(d).startswith('-9999'):
+        if str(d).startswith("-9999"):
             if hasfillVal:
-                dstr = ' '
+                dstr = " "
             else:
                 dstr = str(fillVal)
         else:
             if type(d) is np.ndarray:
                 if np.all(d == -9999):
                     if hasfillVal:
-                        dstr = ' '
+                        dstr = " "
                     else:
                         dstr = str(fillVal)
                 else:
@@ -815,15 +930,19 @@ def rowStr(row, metaDict):
                                 break
                     dstr = str(dlist)
             else:
-                if colKey == 'Ra':
-                    dstr = Angle(d, unit='degree').to_string(unit='hourangle', sep=':')
-                elif colKey == 'Dec':
-                    dstr = Angle(d, unit='degree').to_string(unit='degree', sep='.')
+                if colKey == "Ra":
+                    dstr = Angle(d, unit="degree").to_string(
+                        unit="hourangle", sep=":"
+                    )
+                elif colKey == "Dec":
+                    dstr = Angle(d, unit="degree").to_string(
+                        unit="degree", sep="."
+                    )
                 else:
                     dstr = str(d)
-        line.append('{0}'.format(dstr))
+        line.append("{0}".format(dstr))
 
-    while line[-1] == ' ':
+    while line[-1] == " ":
         line.pop()
     return line
 
@@ -840,15 +959,17 @@ def ds9RegionWriter(table, fileName):
         Output file to which the sky model is written
 
     """
-    log = logging.getLogger('LSMTool.Write')
+    log = logging.getLogger("LSMTool.Write")
 
-    regionFile = open(fileName, 'w')
-    log.debug('Writing ds9 region file to {0}'.format(fileName))
+    regionFile = open(fileName, "w")
+    log.debug("Writing ds9 region file to {0}".format(fileName))
 
     outLines = []
-    outLines.append('# Region file format: DS9 version 4.0\nglobal color=green '
-                    'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
-                    'move=1 delete=1 include=1 fixed=0 source\nfk5\n')
+    outLines.append(
+        "# Region file format: DS9 version 4.0\nglobal color=green "
+        'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
+        "move=1 delete=1 include=1 fixed=0 source\nfk5\n"
+    )
 
     # Make sure all columns have the correct units
     for colName in table.columns:
@@ -857,23 +978,28 @@ def ds9RegionWriter(table, fileName):
             table[colName].convert_unit_to(units)
 
     for row in table:
-        ra = row['Ra']
-        dec = row['Dec']
-        name = row['Name']
-        if row['Type'].lower() == 'gaussian':
-            a = row['MajorAxis'] / 3600.0  # deg
-            b = row['MinorAxis'] / 3600.0  # deg
-            pa = row['Orientation']  # deg
+        ra = row["Ra"]
+        dec = row["Dec"]
+        name = row["Name"]
+        if row["Type"].lower() == "gaussian":
+            a = row["MajorAxis"] / 3600.0  # deg
+            b = row["MinorAxis"] / 3600.0  # deg
+            pa = row["Orientation"]  # deg
 
             # ds9 can't handle 1-D Gaussians, so make sure they are 2-D
             if a < 1.0 / 3600.0:
                 a = 1.0 / 3600.0  # deg
             if b < 1.0 / 3600.0:
                 b = 1.0 / 3600.0  # deg
-            region = 'ellipse({0}, {1}, {2}, {3}, {4}) # text={{{5}}}\n'.format(ra, dec, a, b,
-                                                                                pa+90.0, name)
+            region = "ellipse({0}, {1}, {2}, {3}, {4}) # text={{{5}}}\n".format(
+                ra, dec, a, b, pa + 90.0, name
+            )
         else:
-            region = 'point({0}, {1}) # point=cross width=2 text={{{2}}}\n'.format(ra, dec, name)
+            region = (
+                "point({0}, {1}) # point=cross width=2 text={{{2}}}\n".format(
+                    ra, dec, name
+                )
+            )
         outLines.append(region)
 
     regionFile.writelines(outLines)
@@ -892,10 +1018,10 @@ def kvisAnnWriter(table, fileName):
         Output file to which the sky model is written
 
     """
-    log = logging.getLogger('LSMTool.Write')
+    log = logging.getLogger("LSMTool.Write")
 
-    kvisFile = open(fileName, 'w')
-    log.debug('Writing kvis annotation file to {0}'.format(fileName))
+    kvisFile = open(fileName, "w")
+    log.debug("Writing kvis annotation file to {0}".format(fileName))
 
     # Make sure all columns have the correct units
     for colName in table.columns:
@@ -905,18 +1031,20 @@ def kvisAnnWriter(table, fileName):
 
     outLines = []
     for row in table:
-        ra = row['Ra']
-        dec = row['Dec']
-        name = row['Name']
+        ra = row["Ra"]
+        dec = row["Dec"]
+        name = row["Name"]
 
-        if row['Type'].lower() == 'gaussian':
-            a = row['MajorAxis'] / 3600.0  # degree
-            b = row['MinorAxis'] / 3600.0  # degree
-            pa = row['Orientation']  # degree
-            outLines.append('ELLIPSE W {0} {1} {2} {3} {4}\n'.format(ra, dec, a, b, pa))
+        if row["Type"].lower() == "gaussian":
+            a = row["MajorAxis"] / 3600.0  # degree
+            b = row["MinorAxis"] / 3600.0  # degree
+            pa = row["Orientation"]  # degree
+            outLines.append(
+                "ELLIPSE W {0} {1} {2} {3} {4}\n".format(ra, dec, a, b, pa)
+            )
         else:
-            outLines.append('CIRCLE W {0} {1} 0.02\n'.format(ra, dec))
-        outLines.append('TEXT W {0} {1} {2}\n'.format(ra - 0.07, dec, name))
+            outLines.append("CIRCLE W {0} {1} 0.02\n".format(ra, dec))
+        outLines.append("TEXT W {0} {1} {2}\n".format(ra - 0.07, dec, name))
 
     kvisFile.writelines(outLines)
     kvisFile.close()
@@ -934,14 +1062,14 @@ def casaRegionWriter(table, fileName):
         Output file to which the sky model is written
 
     """
-    log = logging.getLogger('LSMTool.Write')
+    log = logging.getLogger("LSMTool.Write")
 
-    casaFile = open(fileName, 'w')
-    log.debug('Writing CASA box file to {0}'.format(fileName))
+    casaFile = open(fileName, "w")
+    log.debug("Writing CASA box file to {0}".format(fileName))
 
     outLines = []
-    outLines.append('#CRTFv0\n')
-    outLines.append('global coord=J2000\n\n')
+    outLines.append("#CRTFv0\n")
+    outLines.append("global coord=J2000\n\n")
 
     # Make sure all columns have the correct units
     for colName in table.columns:
@@ -951,23 +1079,29 @@ def casaRegionWriter(table, fileName):
 
     minSize = 10.0 / 3600.0  # min size in degrees
     for row in table:
-        ra = row['Ra']
-        dec = row['Dec']
+        ra = row["Ra"]
+        dec = row["Dec"]
 
-        if row['Type'].lower() == 'gaussian':
-            a = row['MajorAxis'] / 3600.0  # degree
+        if row["Type"].lower() == "gaussian":
+            a = row["MajorAxis"] / 3600.0  # degree
             if a < minSize:
                 a = minSize
-            b = row['MinorAxis'] / 3600.0  # degree
+            b = row["MinorAxis"] / 3600.0  # degree
             if b < minSize:
                 b = minSize
 
-            pa = row['Orientation']  # degree
-            outLines.append('ellipse[[{0}deg, {1}deg], [{2}deg, {3}deg], '
-                            '{4}deg]\n'.format(ra, dec, a, b, pa))
+            pa = row["Orientation"]  # degree
+            outLines.append(
+                "ellipse[[{0}deg, {1}deg], [{2}deg, {3}deg], {4}deg]\n".format(
+                    ra, dec, a, b, pa
+                )
+            )
         else:
-            outLines.append('ellipse[[{0}deg, {1}deg], [{2}deg, {3}deg], '
-                            '{4}deg]\n'.format(ra, dec, minSize, minSize, 0.0))
+            outLines.append(
+                "ellipse[[{0}deg, {1}deg], [{2}deg, {3}deg], {4}deg]\n".format(
+                    ra, dec, minSize, minSize, 0.0
+                )
+            )
 
     casaFile.writelines(outLines)
     casaFile.close()
@@ -988,20 +1122,22 @@ def factorDirectionsWriter(table, fileName):
         Output file to which the sky model is written
 
     """
-    log = logging.getLogger('LSMTool.Write')
+    log = logging.getLogger("LSMTool.Write")
 
-    regionFile = open(fileName, 'w')
-    log.debug('Writing Factor directions file to {0}'.format(fileName))
+    regionFile = open(fileName, "w")
+    log.debug("Writing Factor directions file to {0}".format(fileName))
 
     outLines = []
-    outLines.append('# name position atrous_do mscale_field_do cal_imsize '
-                    'solint_ph solint_amp dynamic_range region_selfcal '
-                    'region_facet peel_skymodel outlier_source cal_size_deg cal_flux_mJy\n')
-    if 'History' in table.meta:
-        outLines.append('\n# LSMTool history:\n# ')
-        outLines.append('\n# '.join(table.meta['History']))
-    outLines.append('\n')
-    outLines.append('\n')
+    outLines.append(
+        "# name position atrous_do mscale_field_do cal_imsize "
+        "solint_ph solint_amp dynamic_range region_selfcal "
+        "region_facet peel_skymodel outlier_source cal_size_deg cal_flux_mJy\n"
+    )
+    if "History" in table.meta:
+        outLines.append("\n# LSMTool history:\n# ")
+        outLines.append("\n# ".join(table.meta["History"]))
+    outLines.append("\n")
+    outLines.append("\n")
 
     # Make sure all columns have the correct units
     for colName in table.columns:
@@ -1009,30 +1145,48 @@ def factorDirectionsWriter(table, fileName):
         if units is not None:
             table[colName].convert_unit_to(units)
 
-    table = table.group_by('Patch')
-    patchNames = table.groups.keys['Patch']
-    if 'patch_order' in table.meta:
-        indx = table.meta['patch_order']
+    table = table.group_by("Patch")
+    patchNames = table.groups.keys["Patch"]
+    if "patch_order" in table.meta:
+        indx = table.meta["patch_order"]
     else:
         indx = range(len(table.groups))
-    if 'patch_size' in table.meta:
-        sizes = table.meta['patch_size']
+    if "patch_size" in table.meta:
+        sizes = table.meta["patch_size"]
     else:
-        sizes = [''] * len(table.groups)
-    if 'patch_flux' in table.meta:
-        fluxes = table.meta['patch_flux']
+        sizes = [""] * len(table.groups)
+    if "patch_flux" in table.meta:
+        fluxes = table.meta["patch_flux"]
     else:
-        fluxes = [''] * len(table.groups)
-    for patchName, size, flux in zip(patchNames[indx], sizes[indx], fluxes[indx]):
+        fluxes = [""] * len(table.groups)
+    for patchName, size, flux in zip(
+        patchNames[indx], sizes[indx], fluxes[indx]
+    ):
         if patchName in table.meta:
             gRA, gDec = table.meta[patchName]
         else:
-            gRA = Angle(0.0, unit='degree')
-            gDec = Angle(0.0, unit='degree')
-        outLines.append('{0} {1},{2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} '
-                        '{13} {14}\n'.format(patchName, gRA.to_string(unit='hourangle', sep='hms'),
-                                             gDec.to_string(sep='dms'), 'empty', 'empty', 0, 0, 0,
-                                             'LD', 'empty', 'empty', 'empty', False, size, flux))
+            gRA = Angle(0.0, unit="degree")
+            gDec = Angle(0.0, unit="degree")
+        outLines.append(
+            "{0} {1},{2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} "
+            "{13} {14}\n".format(
+                patchName,
+                gRA.to_string(unit="hourangle", sep="hms"),
+                gDec.to_string(sep="dms"),
+                "empty",
+                "empty",
+                0,
+                0,
+                0,
+                "LD",
+                "empty",
+                "empty",
+                "empty",
+                False,
+                size,
+                flux,
+            )
+        )
 
     regionFile.writelines(outLines)
     regionFile.close()
@@ -1055,11 +1209,11 @@ def facetRegionWriter(table, fileName):
     # TODO: Fix circular import and move to module scope
     from lsmtool.facet import tessellate
 
-    log = logging.getLogger('LSMTool.Write')
+    log = logging.getLogger("LSMTool.Write")
 
     # Get the positions of the calibration patches
-    table = table.group_by('Patch')
-    patchNames = table.groups.keys['Patch']
+    table = table.group_by("Patch")
+    patchNames = table.groups.keys["Patch"]
     patchRA = []
     patchDec = []
     for patchName in patchNames:
@@ -1070,9 +1224,9 @@ def facetRegionWriter(table, fileName):
 
     # Do the tessellation
     facet_points, facet_polys = tessellate(
-        SkyCoord(patchRA, patchDec, unit='deg'),
-        SkyCoord(table.meta['refRA'], table.meta['refDec'], unit='deg'),
-        [table.meta['width'], table.meta['width']]
+        SkyCoord(patchRA, patchDec, unit="deg"),
+        SkyCoord(table.meta["refRA"], table.meta["refDec"], unit="deg"),
+        [table.meta["width"], table.meta["width"]],
     )
 
     # For each facet, match the correct name (some patches in the sky model may have
@@ -1080,29 +1234,41 @@ def facetRegionWriter(table, fileName):
     facet_names = []
     for ra, dec, name in zip(patchRA, patchDec, patchNames):
         for facet_point in facet_points:
-            if np.isclose(ra, facet_point[0]) and np.isclose(dec, facet_point[1]):
+            if np.isclose(ra, facet_point[0]) and np.isclose(
+                dec, facet_point[1]
+            ):
                 facet_names.append(name)
                 break
 
     # Make the ds9 region file
     lines = []
-    lines.append('# Region file format: DS9 version 4.0\nglobal color=green '
-                 'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
-                 'move=1 delete=1 include=1 fixed=0 source=1\nfk5\n')
-    for name, center_coord, vertices in zip(facet_names, facet_points, facet_polys):
+    lines.append(
+        "# Region file format: DS9 version 4.0\nglobal color=green "
+        'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
+        "move=1 delete=1 include=1 fixed=0 source=1\nfk5\n"
+    )
+    for name, center_coord, vertices in zip(
+        facet_names, facet_points, facet_polys
+    ):
         radec_list = []
         RAs = vertices.T[0]
         Decs = vertices.T[1]
         for ra, dec in zip(RAs, Decs):
-            radec_list.append('{0}, {1}'.format(ra, dec))
-        lines.append('polygon({0})\n'.format(', '.join(radec_list)))
+            radec_list.append("{0}, {1}".format(ra, dec))
+        lines.append("polygon({0})\n".format(", ".join(radec_list)))
         if name is None:
-            lines.append('point({0}, {1})\n'.format(center_coord[0], center_coord[1]))
+            lines.append(
+                "point({0}, {1})\n".format(center_coord[0], center_coord[1])
+            )
         else:
-            lines.append('point({0}, {1}) # text={{{2}}}\n'.format(center_coord[0], center_coord[1], name))
+            lines.append(
+                "point({0}, {1}) # text={{{2}}}\n".format(
+                    center_coord[0], center_coord[1], name
+                )
+            )
 
-    log.debug('Writing facet region file to {0}'.format(fileName))
-    with open(fileName, 'w') as f:
+    log.debug("Writing facet region file to {0}".format(fileName))
+    with open(fileName, "w") as f:
         f.writelines(lines)
 
 
@@ -1116,21 +1282,22 @@ def broadcastTable(fileName):
         Name of sky model file to broadcast
 
     """
-    from astropy.vo.samp import SAMPIntegratedClient
     import urllib.parse
+
+    from astropy.vo.samp import SAMPIntegratedClient
 
     client = SAMPIntegratedClient()
     client.connect()
 
     params = {}
-    params["url"] = urllib.parse.urljoin('file:', os.path.abspath(fileName))
+    params["url"] = urllib.parse.urljoin("file:", os.path.abspath(fileName))
     params["name"] = "LSMTool sky model"
     message = {}
     message["samp.mtype"] = "table.load.votable"
     message["samp.params"] = params
 
     # Send message
-    client.call_all('lsmtool', message)
+    client.call_all("lsmtool", message)
 
     # Disconnect from the SAMP hub
     client.disconnect()
@@ -1155,18 +1322,38 @@ def coneSearch(VOService, position, radius):
     """
     import pyvo as vo
 
-    log = logging.getLogger('LSMTool.Load')
+    log = logging.getLogger("LSMTool.Load")
 
     # Define the mapping to go from the VO catalog column names to the
     # makesourcedb column names
     columnMapping = {
-        'nvss': {'NVSS': 'name', 'RAJ2000': 'ra', 'DEJ2000': 'dec', 'S1.4': 'i',
-                 'MajAxis': 'majoraxis', 'MinAxis': 'minoraxis'},
-        'wenss': {'Name': 'name', 'RAJ2000': 'ra', 'DEJ2000': 'dec', 'Sint': 'i',
-                  'MajAxis': 'majoraxis', 'MinAxis': 'minoraxis', 'PA': 'orientation'},
-        'vlssr': {'Name': 'name', 'RAJ2000': 'ra', 'DEJ2000': 'dec', 'Sp': 'i',
-                  'MajAx': 'majoraxis', 'MinAx': 'minoraxis', 'PA': 'orientation'}
-        }
+        "nvss": {
+            "NVSS": "name",
+            "RAJ2000": "ra",
+            "DEJ2000": "dec",
+            "S1.4": "i",
+            "MajAxis": "majoraxis",
+            "MinAxis": "minoraxis",
+        },
+        "wenss": {
+            "Name": "name",
+            "RAJ2000": "ra",
+            "DEJ2000": "dec",
+            "Sint": "i",
+            "MajAxis": "majoraxis",
+            "MinAxis": "minoraxis",
+            "PA": "orientation",
+        },
+        "vlssr": {
+            "Name": "name",
+            "RAJ2000": "ra",
+            "DEJ2000": "dec",
+            "Sp": "i",
+            "MajAx": "majoraxis",
+            "MinAx": "minoraxis",
+            "PA": "orientation",
+        },
+    }
 
     # Define various properties of the VO catalog:
     #   fluxtype - type of flux density: "int" for total integrated flux,
@@ -1176,46 +1363,69 @@ def coneSearch(VOService, position, radius):
     #   psf - the point spread function in degrees
     #   referencefrequency - the reference frequency in Hz
     catalogProperties = {
-        'nvss': {'fluxtype': 'int', 'fluxunits': 'mJy', 'deconvolved': True, 'psf': 0.0125,
-                 'referencefrequency': 1.4e9},
-        'wenss': {'fluxtype': 'int', 'fluxunits': 'mJy', 'deconvolved': True, 'psf': 0.015,
-                  'referencefrequency': 325e6},
-        'vlssr': {'fluxtype': 'peak', 'fluxunits': 'Jy', 'deconvolved': False, 'psf': 0.0208,
-                  'referencefrequency': 74e6}
-        }
+        "nvss": {
+            "fluxtype": "int",
+            "fluxunits": "mJy",
+            "deconvolved": True,
+            "psf": 0.0125,
+            "referencefrequency": 1.4e9,
+        },
+        "wenss": {
+            "fluxtype": "int",
+            "fluxunits": "mJy",
+            "deconvolved": True,
+            "psf": 0.015,
+            "referencefrequency": 325e6,
+        },
+        "vlssr": {
+            "fluxtype": "peak",
+            "fluxunits": "Jy",
+            "deconvolved": False,
+            "psf": 0.0208,
+            "referencefrequency": 74e6,
+        },
+    }
 
     if VOService.lower() in allowedVOServices:
         url = allowedVOServices[VOService.lower()]
     else:
-        raise ValueError('VO query service not known. Allowed services are: '
-                         '{0}'.format(allowedVOServices.keys()))
+        raise ValueError(
+            "VO query service not known. Allowed services are: {0}".format(
+                allowedVOServices.keys()
+            )
+        )
 
     # Get raw VO catalog
-    log.debug('Querying VO service...')
+    log.debug("Querying VO service...")
     try:
         RANorm, DecNorm = RADec2Angle(position[0], position[1])
         position = [RANorm[0].value, DecNorm[0].value]
     except TypeError:
-        raise ValueError('VO query positon not understood.')
+        raise ValueError("VO query positon not understood.")
     try:
-        radius = Angle(radius, unit='degree').value
+        radius = Angle(radius, unit="degree").value
     except TypeError:
-        raise ValueError('VO query radius not understood.')
+        raise ValueError("VO query radius not understood.")
     try:
         VOcatalog = vo.conesearch(url, position, radius=radius)
     except (vo.dal.exceptions.DALQueryError, vo.dal.DALServiceError) as e:
-        raise ConnectionError('Problem communicating with the VO service: {0}'.format(e))
+        raise ConnectionError(
+            "Problem communicating with the VO service: {0}".format(e)
+        )
 
-    log.debug('Creating table...')
+    log.debug("Creating table...")
     try:
         table = Table.read(VOcatalog.votable)
     except IndexError:
         # Empty query result
-        log.error('No sources found. Sky model is empty.')
+        log.error("No sources found. Sky model is empty.")
         table = makeEmptyTable()
         return table
-    table = convertExternalTable(table, columnMapping[VOService.lower()],
-                                 catalogProperties[VOService.lower()])
+    table = convertExternalTable(
+        table,
+        columnMapping[VOService.lower()],
+        catalogProperties[VOService.lower()],
+    )
 
     return table
 
@@ -1236,7 +1446,7 @@ def convertExternalTable(table, columnMapping, catalogProperties):
         of 'fluxtype', 'deconvolved', 'psf', 'referencefrequency', and
         'fluxunits'
     """
-    log = logging.getLogger('LSMTool.Load')
+    log = logging.getLogger("LSMTool.Load")
 
     # Add required columns
     for colName in requiredColumnNames:
@@ -1245,15 +1455,20 @@ def convertExternalTable(table, columnMapping, catalogProperties):
                 tableColname = k
                 break
         if tableColname not in table.colnames:
-            if colName.lower() == 'name':
+            if colName.lower() == "name":
                 # If the "name" column is missing, generate simple source names
-                col = Column(name=tableColname, data=[f'source_{indx}' for indx in range(len(table))])
+                col = Column(
+                    name=tableColname,
+                    data=[f"source_{indx}" for indx in range(len(table))],
+                )
                 table.add_column(col)
-            elif colName.lower() != 'type':
+            elif colName.lower() != "type":
                 # If any other column is missing (except "type", which is set
                 # later), raise an error
-                raise ValueError(f'VO table lacks the expected column "{tableColname}". '
-                                 'Please check the VO service for problems.')
+                raise ValueError(
+                    f'VO table lacks the expected column "{tableColname}". '
+                    "Please check the VO service for problems."
+                )
 
     # Remove unneeded columns
     colsToRemove = []
@@ -1268,88 +1483,111 @@ def convertExternalTable(table, columnMapping, catalogProperties):
     # Rename columns to match makesourcedb conventions
     for colName in table.colnames:
         if colName != allowedColumnNames[columnMapping[colName]]:
-            table.rename_column(colName, allowedColumnNames[columnMapping[colName]])
+            table.rename_column(
+                colName, allowedColumnNames[columnMapping[colName]]
+            )
 
     # Convert RA and Dec to Angle objects
-    log.debug('Converting RA and Dec...')
-    RARaw = table['Ra'].data.tolist()
-    DecRaw = table['Dec'].data.tolist()
+    log.debug("Converting RA and Dec...")
+    RARaw = table["Ra"].data.tolist()
+    DecRaw = table["Dec"].data.tolist()
     RANorm, DecNorm = RADec2Angle(RARaw, DecRaw)
 
-    RACol = Column(name='Ra', data=RANorm)
+    RACol = Column(name="Ra", data=RANorm)
     RACol.format = raformat
-    RAIndx = table.keys().index('Ra')
-    table.remove_column('Ra')
+    RAIndx = table.keys().index("Ra")
+    table.remove_column("Ra")
     table.add_column(RACol, index=RAIndx)
 
-    DecCol = Column(name='Dec', data=DecNorm)
+    DecCol = Column(name="Dec", data=DecNorm)
     DecCol.format = decformat
-    DecIndx = table.keys().index('Dec')
-    table.remove_column('Dec')
+    DecIndx = table.keys().index("Dec")
+    table.remove_column("Dec")
     table.add_column(DecCol, index=DecIndx)
 
     # Make sure Name is a str column
-    NameRaw = table['Name'].data.tolist()
-    NameCol = Column(name='Name', data=NameRaw, dtype='U100')
-    table.remove_column('Name')
+    NameRaw = table["Name"].data.tolist()
+    NameCol = Column(name="Name", data=NameRaw, dtype="U100")
+    table.remove_column("Name")
     table.add_column(NameCol, index=0)
 
     # Convert flux and axis values to floats
-    for name in ['I', 'MajorAxis', 'MinorAxis', 'Orientation']:
+    for name in ["I", "MajorAxis", "MinorAxis", "Orientation"]:
         if name in table.colnames:
             indx = table.index_column(name)
             intRaw = table[name].data.tolist()
-            floatCol = Column(name=name, data=intRaw, dtype='float')
+            floatCol = Column(name=name, data=intRaw, dtype="float")
             table.remove_column(name)
             table.add_column(floatCol, index=indx)
 
     # Add source-type column and convert fluxes to integrated values if needed
-    types = ['POINT'] * len(table)
-    if 'minoraxis' in columnMapping.values() and 'majoraxis' in columnMapping.values():
-        for i, (minor, major) in enumerate(zip(table[allowedColumnNames['minoraxis']],
-                                               table[allowedColumnNames['majoraxis']])):
-            if (
-                (catalogProperties['deconvolved'] and minor > 0.0) or
-                (not catalogProperties['deconvolved'] and minor > catalogProperties['psf'])
+    types = ["POINT"] * len(table)
+    if (
+        "minoraxis" in columnMapping.values()
+        and "majoraxis" in columnMapping.values()
+    ):
+        for i, (minor, major) in enumerate(
+            zip(
+                table[allowedColumnNames["minoraxis"]],
+                table[allowedColumnNames["majoraxis"]],
+            )
+        ):
+            if (catalogProperties["deconvolved"] and minor > 0.0) or (
+                not catalogProperties["deconvolved"]
+                and minor > catalogProperties["psf"]
             ):
-                types[i] = 'GAUSSIAN'
-                if catalogProperties['fluxtype'] == 'peak':
+                types[i] = "GAUSSIAN"
+                if catalogProperties["fluxtype"] == "peak":
                     # For extended sources in catalogs with peak flux, we need
                     # to correct from peak to total flux using the source size
-                    table.columns[allowedColumnNames['i']][i] *= minor * major / catalogProperties['psf']**2
+                    table.columns[allowedColumnNames["i"]][i] *= (
+                        minor * major / catalogProperties["psf"] ** 2
+                    )
             else:
                 # Make sure semimajor and semiminor axes and orientation are 0 for POINT type
-                table[allowedColumnNames['minoraxis']][i] = 0.0
-                table[allowedColumnNames['majoraxis']][i] = 0.0
-                if 'orientation' in columnMapping.values():
-                    table[allowedColumnNames['orientation']][i] = 0.0
-    col = Column(name='Type', data=types, dtype='U100')
+                table[allowedColumnNames["minoraxis"]][i] = 0.0
+                table[allowedColumnNames["majoraxis"]][i] = 0.0
+                if "orientation" in columnMapping.values():
+                    table[allowedColumnNames["orientation"]][i] = 0.0
+    col = Column(name="Type", data=types, dtype="U100")
     table.add_column(col, index=1)
 
     # Add reference-frequency column if missing
-    if not 'referencefrequency' in columnMapping.values():
-        refFreq = catalogProperties['referencefrequency']
-        col = Column(name='ReferenceFrequency', data=np.array([refFreq]*len(table), dtype=float))
+    if not "referencefrequency" in columnMapping.values():
+        refFreq = catalogProperties["referencefrequency"]
+        col = Column(
+            name="ReferenceFrequency",
+            data=np.array([refFreq] * len(table), dtype=float),
+        )
         table.add_column(col)
 
     # Set column units and default values
     for i, colName in enumerate(table.colnames):
-        log.debug("Setting units for column '{0}' to {1}".format(
-            colName, allowedColumnUnits[colName.lower()]))
-        if colName == 'I':
-            table.columns[colName].unit = catalogProperties['fluxunits']
-            table.columns[colName].convert_unit_to('Jy')
+        log.debug(
+            "Setting units for column '{0}' to {1}".format(
+                colName, allowedColumnUnits[colName.lower()]
+            )
+        )
+        if colName == "I":
+            table.columns[colName].unit = catalogProperties["fluxunits"]
+            table.columns[colName].convert_unit_to("Jy")
             table.columns[colName].format = fluxformat
         else:
             table.columns[colName].unit = allowedColumnUnits[colName.lower()]
 
-        if hasattr(table.columns[colName], 'filled') and allowedColumnDefaults[colName.lower()] is not None:
+        if (
+            hasattr(table.columns[colName], "filled")
+            and allowedColumnDefaults[colName.lower()] is not None
+        ):
             # Note: we used deepcopy() here to ensure that the original
             # is not altered by later changes to fillVal
             fillVal = deepcopy(allowedColumnDefaults)[colName.lower()]
-            log.debug("Setting default value for column '{0}' to {1}".
-                      format(colName, fillVal))
-            if colName == 'SpectralIndex':
+            log.debug(
+                "Setting default value for column '{0}' to {1}".format(
+                    colName, fillVal
+                )
+            )
+            if colName == "SpectralIndex":
                 # We cannot set the fill value to a list/array, so just use a float
                 fillVal = 0.0
             table.columns[colName].set_fill_value(fillVal)
@@ -1388,14 +1626,14 @@ def getQueryInputs(position, radius):
     """
     RANorm, DecNorm = RADec2Angle(position[0], position[1])
     try:
-        radius = Angle(radius, unit='degree').value
+        radius = Angle(radius, unit="degree").value
     except TypeError:
         raise ValueError('Query radius "{}" not understood.'.format(radius))
 
     return (RANorm[0].value, DecNorm[0].value, radius)
 
 
-def queryNonVOService(url, format='makesourcedb'):
+def queryNonVOService(url, format="makesourcedb"):
     """
     Returns the table from a non-VO service.
 
@@ -1414,13 +1652,13 @@ def queryNonVOService(url, format='makesourcedb'):
         a problem with the connection to the service
 
     """
-    import tempfile
     import subprocess
+    import tempfile
 
     # Use a temp file in the current working directory, as typical temp
     # directories like /tmp may be too small
     with tempfile.NamedTemporaryFile(dir=os.getcwd()) as outFile:
-        cmd = ['wget', '-nv', '-O', outFile.name, url]
+        cmd = ["wget", "-nv", "-O", outFile.name, url]
         cp = subprocess.run(cmd, capture_output=True, text=True)
         if cp.returncode != 0:
             raise ConnectionError(cp.stderr)
@@ -1450,12 +1688,14 @@ def getTGSS(position, radius):
         '30 arcsec') for cone search region
 
     """
-    log = logging.getLogger('LSMTool.Load')
+    log = logging.getLogger("LSMTool.Load")
 
-    log.debug('Querying TGSS...')
+    log.debug("Querying TGSS...")
     RA, Dec, radius = getQueryInputs(position, radius)
-    url = TGSS_URL + '?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(RA, Dec, radius)
-    table = queryNonVOService(url, format='makesourcedb')
+    url = TGSS_URL + "?coord={0},{1}&radius={2}&unit=deg&deconv=y".format(
+        RA, Dec, radius
+    )
+    table = queryNonVOService(url, format="makesourcedb")
 
     return table
 
@@ -1475,28 +1715,34 @@ def getGSM(position, radius):
         '30 arcsec') for cone search region
 
     """
-    log = logging.getLogger('LSMTool.Load')
+    log = logging.getLogger("LSMTool.Load")
 
-    log.debug('Querying GSM...')
+    log.debug("Querying GSM...")
     RA, Dec, radius = getQueryInputs(position, radius)
-    url = GSM_URL + '?coord={0},{1}&radius={2}&unit=deg&deconv=y'.format(RA, Dec, radius)
-    table = queryNonVOService(url, format='makesourcedb')
+    url = GSM_URL + "?coord={0},{1}&radius={2}&unit=deg&deconv=y".format(
+        RA, Dec, radius
+    )
+    table = queryNonVOService(url, format="makesourcedb")
 
     return table
+
 
 def _readLSMFormatLine(lsm_path):
     with open(lsm_path, "r") as f_stream:
         for line in f_stream:
             if match := FORMAT_LINE_REGEX.match(line):
-                return match['columns']
+                return match["columns"]
 
         raise IOError(f"Format line not found in: {lsm_path}")
+
 
 def _parseLSMFormatLine(lsm_format):
     return lsm_format.split(",")
 
+
 def _columnNamesFromLSM(lsm_path):
     return _parseLSMFormatLine(_readLSMFormatLine(lsm_path))
+
 
 def validateLSMFormat(lsm_path):
     try:
@@ -1521,28 +1767,40 @@ def loadAstropyTableFromLSM(lsm_path):
     )
     return table
 
+
 def parseSpectralIndex(spectral_index_string):
-    returned = [literal_eval(x) for x in spectral_index_string.strip("[]").split(",") if x]
+    returned = [
+        literal_eval(x)
+        for x in spectral_index_string.strip("[]").split(",")
+        if x
+    ]
     if returned:
         return returned
     else:
         return []
 
+
 def loadTableFromLSM(lsm_path):
 
-    columnMapping = {'component_id': 'name',
-                     'source_id': 'patch',
-                     'ra_deg': 'ra',
-                     'dec_deg': 'dec',
-                     'i_pol_jy': 'i',
-                     'a_arcsec': 'majoraxis',
-                     'b_arcsec': 'minoraxis',
-                     'pa_deg': 'orientation',
-                     'ref_freq_hz': 'referencefrequency',
-                     'spec_idx': 'spectralindex',
-                     'log_spec_idx':'logarithmicsi',
-                     }
-    catalogProperties = {'fluxunits': 'Jy', 'deconvolved':False, 'psf':0, 'fluxtype': 'total'}
+    columnMapping = {
+        "component_id": "name",
+        "source_id": "patch",
+        "ra_deg": "ra",
+        "dec_deg": "dec",
+        "i_pol_jy": "i",
+        "a_arcsec": "majoraxis",
+        "b_arcsec": "minoraxis",
+        "pa_deg": "orientation",
+        "ref_freq_hz": "referencefrequency",
+        "spec_idx": "spectralindex",
+        "log_spec_idx": "logarithmicsi",
+    }
+    catalogProperties = {
+        "fluxunits": "Jy",
+        "deconvolved": False,
+        "psf": 0,
+        "fluxtype": "total",
+    }
     table = loadAstropyTableFromLSM(lsm_path)
     table["source_id"] = table["source_id"].astype("str")
     table["component_id"] = table["component_id"].astype("str")
@@ -1583,20 +1841,37 @@ def getLoTSS(position, radius):
         '30 arcsec') for cone search region
 
     """
-    log = logging.getLogger('LSMTool.Load')
+    log = logging.getLogger("LSMTool.Load")
 
-    columnMapping = {'Source_Name': 'name', 'RA': 'ra', 'DEC': 'dec', 'Total_flux': 'i',
-                     'DC_Maj': 'majoraxis', 'DC_Min': 'minoraxis', 'PA': 'orientation'}
-    catalogProperties = {'fluxtype': 'int', 'fluxunits': 'mJy', 'deconvolved': True,
-                         'psf': 0.00167, 'referencefrequency': 1.4e8}
+    columnMapping = {
+        "Source_Name": "name",
+        "RA": "ra",
+        "DEC": "dec",
+        "Total_flux": "i",
+        "DC_Maj": "majoraxis",
+        "DC_Min": "minoraxis",
+        "PA": "orientation",
+    }
+    catalogProperties = {
+        "fluxtype": "int",
+        "fluxunits": "mJy",
+        "deconvolved": True,
+        "psf": 0.00167,
+        "referencefrequency": 1.4e8,
+    }
 
-    log.debug('Querying LoTSS...')
+    log.debug("Querying LoTSS...")
     RA, Dec, radius = getQueryInputs(position, radius)
     radius *= 60  # LoTSS query requires arcmin, not degrees
-    url = (LOTSS_URL + '?__nevow_form__=genForm&'
-           'hscs_pos={0}%2C%20{1}&hscs_sr={2}&_DBOPTIONS_ORDER=&'
-           '_DBOPTIONS_DIR=ASC&MAXREC=100000&_FORMAT=CSV&submit=Go'.format(RA, Dec, radius))
-    table = queryNonVOService(url, format='ascii.csv')
+    url = (
+        LOTSS_URL
+        + "?__nevow_form__=genForm&"
+        "hscs_pos={0}%2C%20{1}&hscs_sr={2}&_DBOPTIONS_ORDER=&"
+        "_DBOPTIONS_DIR=ASC&MAXREC=100000&_FORMAT=CSV&submit=Go".format(
+            RA, Dec, radius
+        )
+    )
+    table = queryNonVOService(url, format="ascii.csv")
     table = convertExternalTable(table, columnMapping, catalogProperties)
 
     return table
@@ -1606,15 +1881,23 @@ def makeEmptyTable():
     """
     Returns an empty sky model table.
     """
-    outlines = ['Z, Z, 0.0, 0.0, 0.0\n']
-    colNames = ['Name', 'Type', 'Ra', 'Dec', 'I']
+    outlines = ["Z, Z, 0.0, 0.0, 0.0\n"]
+    colNames = ["Name", "Type", "Ra", "Dec", "I"]
     converters = {}
-    nameCol = 'col{0}'.format(colNames.index('Name')+1)
-    converters[nameCol] = [ascii.convert_numpy('U100')]
-    typeCol = 'col{0}'.format(colNames.index('Type')+1)
-    converters[typeCol] = [ascii.convert_numpy('U100')]
-    table = Table.read(outlines, guess=False, format='ascii.no_header', delimiter=',',
-                       names=colNames, comment='#', data_start=0, converters=converters)
+    nameCol = "col{0}".format(colNames.index("Name") + 1)
+    converters[nameCol] = [ascii.convert_numpy("U100")]
+    typeCol = "col{0}".format(colNames.index("Type") + 1)
+    converters[typeCol] = [ascii.convert_numpy("U100")]
+    table = Table.read(
+        outlines,
+        guess=False,
+        format="ascii.no_header",
+        delimiter=",",
+        names=colNames,
+        comment="#",
+        data_start=0,
+        converters=converters,
+    )
     table.remove_rows(0)
     return table
 
@@ -1631,89 +1914,83 @@ def lsmWriter(table, fileName):
         Output ASCII file to which the sky model is written
 
     """
-    log = logging.getLogger('LSMTool.Write')
+    log = logging.getLogger("LSMTool.Write")
 
-    with  open(fileName, 'w') as lsmFile:
-        log.debug('Writing LSM model to {0}'.format(fileName))
-
+    with open(fileName, "w") as lsmFile:
+        log.debug("Writing LSM model to {0}".format(fileName))
 
         lsmColumnNames = [
-            'component_id',
-            'source_id',
-            'ra_deg',
-            'dec_deg',
-            'i_pol_jy',
-            'ref_freq_hz',
-            'epoch',
-            'a_arcsec',
-            'b_arcsec',
-            'pa_deg',
-            'spec_idx',
-            'log_spec_idx'
+            "component_id",
+            "source_id",
+            "ra_deg",
+            "dec_deg",
+            "i_pol_jy",
+            "ref_freq_hz",
+            "epoch",
+            "a_arcsec",
+            "b_arcsec",
+            "pa_deg",
+            "spec_idx",
+            "log_spec_idx",
         ]
 
         # Write format line
-        format_line = '# ({0}) = format\n'.format(','.join(lsmColumnNames))
+        format_line = "# ({0}) = format\n".format(",".join(lsmColumnNames))
         lsmFile.write(format_line)
 
         # Write metadata comments if available
-        if 'History' in table.meta:
-            lsmFile.write('# LSMTool history:\n# ')
-            lsmFile.write('\n# '.join(table.meta['History']))
-            lsmFile.write('\n')
+        if "History" in table.meta:
+            lsmFile.write("# LSMTool history:\n# ")
+            lsmFile.write("\n# ".join(table.meta["History"]))
+            lsmFile.write("\n")
 
         # Write data rows
         for row in table:
             # spec_idx
-            if isinstance((spec_idx := row['SpectralIndex']), np.ndarray):
+            if isinstance((spec_idx := row["SpectralIndex"]), np.ndarray):
                 spec_str = spec_idx.tolist()
             else:
                 spec_str = spec_idx
             spec_str = ",".join(
-                [str(spec_str[idx]) if idx < len(spec_str) else "" for idx in range(5)]
+                [
+                    str(spec_str[idx]) if idx < len(spec_str) else ""
+                    for idx in range(5)
+                ]
             )
-
 
             # (component_id,source_id,ra_deg,dec_deg,i_pol_jy,ref_freq_hz,epoch,a_arcsec,b_arcsec,pa_deg,spec_idx,log_spec_idx) = format
 
             lsmFile.write(
                 # component_id (Name)
-                f'{row["Name"] if row["Name"] != "--" else ""},'
-
+                f"{row['Name'] if row['Name'] != '--' else ''},"
                 # source_id (Patch)
-                f'{row["Patch"] if row["Patch"] != "--" else ""},'
-
+                f"{row['Patch'] if row['Patch'] != '--' else ''},"
                 # ra_deg, dec_deg
                 f"{float(row['Ra'])},"
                 f"{float(row['Dec'])},"
-
                 # i_pol_jy, ref_freq_hz
                 f"{float(row['I'])},"
                 f"{float(row['ReferenceFrequency'])},"
-
                 # epoch (default to 0)
-                '0,'
+                "0,"
                 # a_arcsec, b_arcsec, pa_deg
                 f"{float(row['MajorAxis'])},"
                 f"{float(row['MinorAxis'])},"
                 f"{float(row['Orientation'])},"
-
                 # spec_idx (as quoted string)
                 f'"[{spec_str}]",'
-
                 # log_spec_idx
                 f"{row['LogarithmicSI']}\n"
             )
 
 
-
 # Register the file reader, identifier, and writer functions with astropy.io
-registry.register_reader('makesourcedb', Table, skyModelReader)
-registry.register_identifier('makesourcedb', Table, skyModelIdentify)
-registry.register_writer('makesourcedb', Table, skyModelWriter)
-registry.register_writer('lsm', Table, lsmWriter)
-registry.register_writer('ds9', Table, ds9RegionWriter)
-registry.register_writer('kvis', Table, kvisAnnWriter)
-registry.register_writer('casa', Table, casaRegionWriter)
-registry.register_writer('factor', Table, factorDirectionsWriter)
-registry.register_writer('facet', Table, facetRegionWriter)
+registry.register_reader("makesourcedb", Table, skyModelReader)
+registry.register_identifier("makesourcedb", Table, skyModelIdentify)
+registry.register_writer("makesourcedb", Table, skyModelWriter)
+registry.register_writer("lsm", Table, lsmWriter)
+registry.register_writer("ds9", Table, ds9RegionWriter)
+registry.register_writer("kvis", Table, kvisAnnWriter)
+registry.register_writer("casa", Table, casaRegionWriter)
+registry.register_writer("factor", Table, factorDirectionsWriter)
+registry.register_writer("facet", Table, facetRegionWriter)
