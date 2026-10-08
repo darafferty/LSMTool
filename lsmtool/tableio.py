@@ -18,21 +18,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-import astropy
-from astropy.table import Table, Column, MaskedColumn
-from astropy.coordinates import Angle, SkyCoord
-from astropy.io import registry
-import astropy.io.ascii as ascii
-import numbers
-from packaging.version import Version
-import numpy as np
-import numpy.ma as ma
-import re
+
+import io
 import logging
 import os
-from copy import deepcopy
-from .operations_lib import normalize_ra_dec
+import re
+import subprocess
+import tempfile
+import urllib.parse
 from ast import literal_eval
+from copy import deepcopy
+
+import astropy
+import astropy.io.ascii as ascii
+import astropy.units as u
+import numpy as np
+import numpy.ma as ma
+import pyvo as vo
+from astropy.coordinates import Angle, SkyCoord
+from astropy.io import registry
+from astropy.samp import SAMPIntegratedClient
+from astropy.table import Column, MaskedColumn, Table
+from packaging.version import Version
+
+from .operations_lib import normalize_ra_dec
 
 # Python 3 compatibility
 try:
@@ -44,6 +53,7 @@ else:
     # Python 2
     basestring = basestring
 import io
+
 try:
     # Python 2
     file_types = (file, io.IOBase)
@@ -653,7 +663,6 @@ def RADec2Angle(RA, Dec):
     DecAngle : astropy.coordinates.Angle
         The Dec, normalized to [-90, 90].
     """
-    import astropy.units as u
 
     if _is_scalar(RA):
         RA = [RA]
@@ -1097,6 +1106,7 @@ def facetRegionWriter(table, fileName):
     # TODO: Fix circular import and move to module scope
     from lsmtool.facet import tessellate
 
+
     log = logging.getLogger('LSMTool.Write')
 
     # Get the positions of the calibration patches
@@ -1158,8 +1168,6 @@ def broadcastTable(fileName):
         Name of sky model file to broadcast
 
     """
-    from astropy.vo.samp import SAMPIntegratedClient
-    import urllib.parse
 
     client = SAMPIntegratedClient()
     client.connect()
@@ -1195,7 +1203,6 @@ def coneSearch(VOService, position, radius):
         '30 arcsec') for cone search region
 
     """
-    import pyvo as vo
 
     log = logging.getLogger('LSMTool.Load')
 
@@ -1456,8 +1463,6 @@ def queryNonVOService(url, format='makesourcedb'):
         a problem with the connection to the service
 
     """
-    import tempfile
-    import subprocess
 
     # Use a temp file in the current working directory, as typical temp
     # directories like /tmp may be too small
@@ -1746,7 +1751,6 @@ def lsmWriter(table, fileName):
                 # log_spec_idx
                 f"{row['LogarithmicSI']}\n"
             )
-
 
 
 # Register the file reader, identifier, and writer functions with astropy.io

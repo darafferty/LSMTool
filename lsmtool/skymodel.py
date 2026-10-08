@@ -16,15 +16,31 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import copy
+import datetime
+import fnmatch
 import logging
 import os
-from astropy.coordinates import Angle, SkyCoord
-from astropy.table import Column
+import tempfile
+
 import astropy.units as u
 import numpy as np
-from . import tableio
-from . import operations
-from .operations_lib import make_wcs, normalize_ra_dec
+from astropy.coordinates import Angle, SkyCoord
+from astropy.io import fits as pyfits
+from astropy.io.ascii import InconsistentTableError
+from astropy.table import Column, Table
+
+# relative
+from . import operations, tableio
+from .operations_lib import (
+    apply_beam,
+    calculateSeparation,
+    gaussian_fcn,
+    make_template_image,
+    make_wcs,
+    normalize_ra_dec,
+)
+from .tableio import createTable, processFormatString, processLine
 
 
 class SkyModel(object):
@@ -74,9 +90,6 @@ class SkyModel(object):
                 VORadius=5.0)
 
         """
-        from astropy.table import Table
-        from astropy.io.ascii import InconsistentTableError
-        from .tableio import processFormatString, processLine, createTable
 
         self.log = logging.getLogger('LSMTool')
         self.history = []
@@ -218,7 +231,6 @@ class SkyModel(object):
             String to add to history
 
         """
-        import datetime
         current_time = str(datetime.datetime.now()).split('.')[0]
         self.history.append(current_time + ": " + str(entry))
 
@@ -269,7 +281,6 @@ class SkyModel(object):
         """
         Returns a copy of the sky model.
         """
-        import copy
 
         # The logger's stream handlers are not copyable with deepcopy, so copy
         # them by hand:
@@ -1153,7 +1164,6 @@ class SkyModel(object):
             List of indices
 
         """
-        import fnmatch
 
         if patch:
             if self.hasPatches:
@@ -1282,7 +1292,6 @@ class SkyModel(object):
             Column object with flux values attenuated by the beam
 
         """
-        from .operations_lib import apply_beam
 
         if not self._hasBeam:
             self.log.warning('No beam MS has been specified. No beam attenuation applied.')
@@ -1547,7 +1556,6 @@ class SkyModel(object):
             Angular separation in degrees
 
         """
-        from .operations_lib import calculateSeparation
 
         return calculateSeparation(ra1, dec1, ra2, dec2)
 
@@ -1668,7 +1676,6 @@ class SkyModel(object):
             >>> s.write('facets.reg', format='facet')
 
         """
-        from .operations_lib import apply_beam
 
         if fileName is None:
             if self._fileName is None:
@@ -1774,7 +1781,6 @@ class SkyModel(object):
         TOPCAT should then load the table.
 
         """
-        import tempfile
 
         tfile = tempfile.NamedTemporaryFile()
         self.table.write(tfile, format='votable')
@@ -2449,9 +2455,9 @@ class SkyModel(object):
         clobber : bool, optional
             If True, existing files are overwritten.
         """
-        from astropy.io import fits as pyfits
-        from astropy import wcs
-        from .operations_lib import make_template_image, gaussian_fcn, tessellate
+
+        # TODO: Fix circular import and move to module scope
+        from lsmtool.facet import tessellate
 
         # Check inputs
         if writeRegionFile and not self.hasPatches:
