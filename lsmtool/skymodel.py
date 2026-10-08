@@ -19,6 +19,7 @@ from astropy.wcs import WCS
 
 # relative
 from . import operations, tableio
+from .api import deprecated
 from .operations_lib import (
     apply_beam as apply_beam_operation,
 )
@@ -37,13 +38,58 @@ class SkyModel(object):
     Object that stores the sky model and provides methods for accessing it.
     """
 
+    # Deprecated attributes names
+    beamMS = deprecated("beam_ms")  # noqa
+    beamTime = deprecated("beam_time")  # noqa
+    hasPatches = deprecated("has_patches")  # noqa
+
+    # Deprecated function names
+    getDistance = deprecated("get_distance")  # noqa
+    getPatchNames = deprecated("get_patch_names")  # noqa
+    getPatchSizes = deprecated("get_patch_sizes")  # noqa
+    getPatchPositions = deprecated("get_patch_positions")  # noqa
+    setPatchPositions = deprecated("set_patch_positions")  # noqa
+
+    getColNames = deprecated("get_col_names")  # noqa
+    getColValues = deprecated("get_col_values")  # noqa
+    setColValues = deprecated("set_col_values")  # noqa
+    getRowValues = deprecated("get_row_values")  # noqa
+    setRowValues = deprecated("set_row_values")  # noqa
+    getRowIndex = deprecated("get_row_index")  # noqa
+
+    getDefaultValues = deprecated("get_default_values")  # noqa
+    setDefaultValues = deprecated("set_default_values")  # noqa
+
+    # deprecated private methods
+    _addHistory = deprecated("_add_history")  # noqa
+    _updateGroups = deprecated("_update_groups")  # noqa
+    _verifyColName = deprecated("_verify_col_name")  # noqa
+    _getNameIndx = deprecated("_get_name_indx")  # noqa
+    _getAggregatedColumn = deprecated("_get_aggregated_column")  # noqa
+    _applyBeamToCol = deprecated("_apply_beam_to_col")  # noqa
+    _getSummedColumn = deprecated("_get_summed_column")  # noqa
+    _getMinColumn = deprecated("_get_min_column")  # noqa
+    _getMaxColumn = deprecated("_get_max_column")  # noqa
+    _getAveragedColumn = deprecated("_get_averaged_column")  # noqa
+    _getSizeColumn = deprecated("_get_size_column")  # noqa
+    _calculateSeparation = deprecated("_calculate_separation")  # noqa
+
+    @deprecated(
+        renamed_parameters={
+            "fileName": "filename",
+            "beamMS": "beam_ms",
+            "checkDup": "check_dup",
+            "VOPosition": "vo_position",
+            "VORadius": "vo_radius",
+        }
+    )
     def __init__(
         self,
         filename,
-        beamMS=None,
-        checkDup=False,
-        VOPosition=None,
-        VORadius=None,
+        beam_ms=None,
+        check_dup=False,
+        vo_position=None,
+        vo_radius=None,
     ):
         """
         Initializes SkyModel object.
@@ -51,21 +97,22 @@ class SkyModel(object):
         Parameters
         ----------
         filename : str
+        filename : str
             Input ASCII file from which the sky model is read (must respect the
             makesourcedb format or the LSM/GSM format), name of VO service to
             query (must be one of 'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or
-            'WENSS'), or dict (single source only).
-        beamMS : str, optional
+            'WENSS'), or dict (single source only)
+        beam_ms : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table
-        checkDup: bool, optional
+        check_dup: bool, optional
             If True, the sky model is checked for duplicate sources (with the
-            same name).
-        VOPosition : list of floats
+            same name)
+        vo_position : list of floats
             A list specifying a new position as [RA, Dec] in either makesourcedb
             format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
-            [123.2312, 23.3422]) for a cone search.
-        VORadius : float or str, optional
+            [123.2312, 23.3422]) for a cone search
+        vo_radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g.,
             '30 arcsec') for cone search region in degrees.
 
@@ -74,24 +121,20 @@ class SkyModel(object):
         Create a SkyModel object::
 
         >>> s = SkyModel("sky.model")
+        >>> s = SkyModel("sky.model")
 
         Create a SkyModel object with a beam MS so that apparent fluxes will
         be available::
 
-        >>> s = SkyModel("sky.model", beamMS="SB100.MS")
+        >>> s = SkyModel("sky.model", beam_ms="SB100.MS")
 
         Load a WENSS catalog into a SkyModel object::
 
         >>> s = SkyModel(
-        ...     "WENSS", VOPosition=[212.8352792, 52.202644], VORadius=5.0
+        ...     "WENSS", vo_position=[212.8352792, 52.202644], vo_radius=5.0
         ... )
 
         """
-
-        beam_ms = beamMS
-        check_dup = checkDup
-        vo_position = VOPosition
-        vo_radius = VORadius
 
         self.log = logging.getLogger("LSMTool")
         self.history = []
@@ -104,7 +147,7 @@ class SkyModel(object):
                             "Attempting to load model from VO service %r...",
                             filename,
                         )
-                        self.table = tableio.coneSearch(
+                        self.table = tableio.cone_search(
                             filename, vo_position, vo_radius
                         )
                         self.log.debug(
@@ -222,13 +265,13 @@ class SkyModel(object):
             raise ValueError("Filename not understood. Exiting...")
 
         if beam_ms is not None:
-            self.beamMS = beam_ms
+            self.beam_ms = beam_ms
             self._has_beam = True
-            self.beamTime = 0.5
+            self.beam_time = 0.5
         else:
-            self.beamMS = None
+            self.beam_ms = None
             self._has_beam = False
-            self.beamTime = None
+            self.beam_time = None
 
         if check_dup:
             self.log.debug("Checking model for duplicate lines...")
@@ -236,7 +279,7 @@ class SkyModel(object):
 
         self.log.debug("Processing patches (if any)...")
         self._patch_method = None
-        self._updateGroups()
+        self._update_groups()
 
         self.log.debug("Successfully loaded sky model")
 
@@ -252,13 +295,13 @@ class SkyModel(object):
         """
         return self.table.__str__()
 
-    def _updateGroups(self):
+    def _update_groups(self):
         """
         Updates the grouping of the table by patch name.
         """
         if "Patch" in self.table.keys():
             self.table = self.table.group_by("Patch")
-            self.hasPatches = True
+            self.has_patches = True
 
             # Check if any patches have undefined positions
             patch_dict = {}
@@ -266,9 +309,9 @@ class SkyModel(object):
                 if patch_name not in self.table.meta:
                     patch_dict.update({patch_name: None})
             if patch_dict:
-                self.setPatchPositions(patch_dict, method="mid")
+                self.set_patch_positions(patch_dict, method="mid")
         else:
-            self.hasPatches = False
+            self.has_patches = False
 
     def _add_history(self, entry=""):
         """
@@ -288,12 +331,12 @@ class SkyModel(object):
         Prints information about the sky model.
         """
         if self.hasPatches:
-            n_patches = len(set(self.getPatchNames()))
+            n_patches = len(set(self.get_patch_names()))
         else:
             n_patches = 0
 
-        n_point = len(np.where(self.getColValues("Type") == "POINT")[0])
-        n_gaus = len(np.where(self.getColValues("Type") == "GAUSSIAN")[0])
+        n_point = len(np.where(self.get_col_values("Type") == "POINT")[0])
+        n_gaus = len(np.where(self.get_col_values("Type") == "GAUSSIAN")[0])
 
         if n_patches == 1:
             plur = ""
@@ -303,16 +346,17 @@ class SkyModel(object):
             log_call = self.log.info
         else:
             log_call = self.log.debug
+            log_call = self.log.debug
 
         ref_ra, ref_dec = self._get_midpoint()
-        tot_flux = np.sum(self.getColValues("I", units="Jy"))
+        tot_flux = np.sum(self.get_col_values("I", units="Jy"))
 
         info = (
             f"Model contains {len(self.table)} sources in {n_patches} "
             f"patch{plur} of which:\n"
             f"    {n_point} are type POINT\n"
             f"    {n_gaus} are type GAUSSIAN\n"
-            f"    Associated beam MS: {self.beamMS}\n"
+            f"    Associated beam MS: {self.beam_ms}\n"
             f"    Approximate RA, Dec of center: {ref_ra}, {ref_dec}\n"
             f"    Total flux: {tot_flux} Jy\n\n"
             f"    History:\n        " + "\n        ".join(self.history)
@@ -335,36 +379,45 @@ class SkyModel(object):
         # them by hand:
         self.log = None
         lsm_copy = copy.deepcopy(self)
-        lsm_copy._updateGroups()
+        lsm_copy._update_groups()
         lsm_copy.log = logging.getLogger("LSMTool")
         lsm_copy._add_history("COPY")
         self.log = logging.getLogger("LSMTool")
 
         return lsm_copy
 
+    @deprecated(
+        renamed_parameters={
+            "colName": "col_name",
+            "patchName": "patch_name",
+            "sourceName": "source_name",
+            "sortBy": "sort_by",
+            "lowToHigh": "low_to_high",
+        }
+    )
     def more(
         self,
-        colName=None,
-        patchName=None,
-        sourceName=None,
-        sortBy=None,
-        lowToHigh=False,
+        col_name=None,
+        patch_name=None,
+        source_name=None,
+        sort_by=None,
+        low_to_high=False,
     ):
         """
         Prints the sky model table to the screen with more-like commands.
 
         Parameters
         ----------
-        colName : str, list of str, optional
+        col_name : str, list of str, optional
             Name of column or columns to print. If None, all columns are printed
-        patchName : str, list of str, optional
+        patch_name : str, list of str, optional
             If given, returns column values for specified patch or patches only
-        sourceName : str, list of str, optional
+        source_name : str, list of str, optional
             If given, returns column value for specified source or sources only
-        sortBy : str or list of str, optional
+        sort_by : str or list of str, optional
             Name of columns to sort on. If None, no sorting is done. If
             a list is given, sorting is done on the columns in the order given
-        lowToHigh : bool, optional
+        low_to_high : bool, optional
             If True, sort values from low to high instead of high to low
 
         Examples
@@ -372,18 +425,14 @@ class SkyModel(object):
         Print the entire model::
 
         >>> s.more()
+        >>> s.more()
 
         Print only the 'Name' and 'I' columns for the 'bin0' patch::
 
         >>> s.more(["Name", "I"], "bin0", sort_by=["I"])
+        >>> s.more(["Name", "I"], "bin0", sort_by=["I"])
 
         """
-        col_name = colName
-        patch_name = patchName
-        source_name = sourceName
-        sort_by = sortBy
-        low_to_high = lowToHigh
-
         if patch_name is not None and source_name is not None:
             raise ValueError(
                 "patch_name and source_name cannot both be specified."
@@ -392,7 +441,7 @@ class SkyModel(object):
         table = self.table
 
         # Get columns
-        col_name = self._verify_column_name(col_name)
+        col_name = self._verify_col_name(col_name)
         if col_name is not None:
             if isinstance(col_name, str):
                 col_name = [
@@ -414,7 +463,7 @@ class SkyModel(object):
 
         # Sort if desired
         if sort_by is not None:
-            col_name = self._verify_column_name(sort_by)
+            col_name = self._verify_col_name(sort_by)
             indx = table.argsort(col_name)
             if not low_to_high:
                 indx = indx[::-1]
@@ -422,7 +471,7 @@ class SkyModel(object):
 
         table.more(show_unit=True)
 
-    def _verify_column_name(self, col_name, only_existing=True, quiet=False):
+    def _verify_col_name(self, col_name, only_existing=True, quiet=False):
         """
         Verifies that column(s) exist and returns correctly formatted string or
         list of strings suitable for accessing the data table.
@@ -430,7 +479,9 @@ class SkyModel(object):
         Parameters
         ----------
         col_name : str, list of str
+        col_name : str, list of str
             Name of column or columns
+        only_existing : bool, optional
         only_existing : bool, optional
             If True, only columns that exist in the table are allowed. If False,
             columns that are valid but do not exist in the table are returned
@@ -495,23 +546,33 @@ class SkyModel(object):
 
         return col_name_key
 
-    def getPatchPositions(
+    @deprecated(
+        renamed_parameters={
+            "patchName": "patch_name",
+            "asArray": "as_array",
+            "applyBeam": "apply_beam",
+            "perPatchProjection": "per_patch_projection",
+        }
+    )
+    def get_patch_positions(
         self,
-        patchName=None,
-        asArray=False,
+        patch_name=None,
+        as_array=False,
         method=None,
-        applyBeam=False,
-        perPatchProjection=True,
+        apply_beam=False,
+        per_patch_projection=True,
     ):
         """
+        Returns arrays or a dict of patch positions (as {'patchName':(RA,
+        Dec)}).
         Returns arrays or a dict of patch positions (as {'patchName':(RA,
         Dec)}).
 
         Parameters
         ----------
-        patchName : str or list, optional
+        patch_name : str or list, optional
             List of patch names for which the positions are desired
-        asArray : bool, optional
+        as_array : bool, optional
             If True, returns arrays of RA, Dec instead of a dict
         method : None or str, optional
             This parameter specifies the method used to calculate the patch
@@ -521,12 +582,14 @@ class SkyModel(object):
             - 'mean' => calculate the mean RA and Dec of the patch
             - 'wmean' => calculate the flux-weighted mean RA and Dec of the
                patch
+            - 'wmean' => calculate the flux-weighted mean RA and Dec of the
+               patch
             - None => current patch positions are returned
             Note that the mid, mean, and wmean positions are calculated from
             TAN- projected values.
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, fluxes used as weights will be attenuated by the beam.
-        perPatchProjection : bool, optional
+        per_patch_projection : bool, optional
             If True, a different projection center is used per patch. If False,
             a single projection center is used for all patches.
 
@@ -534,36 +597,32 @@ class SkyModel(object):
         -------
         positions : numpy.ndarray or dict
             (RA, Dec) arrays (if as_array is False) of patch positions or a
+            (RA, Dec) arrays (if as_array is False) of patch positions or a
             dictionary of {'patchName':(RA, Dec)}.
 
         Examples
         --------
         Get the current patch positions::
 
-        >>> s.getPatchPositions()
+        >>> s.get_patch_positions()
         {'bin0': [<Angle 91.77565208333331 deg>, <Angle 41.57834805555555 deg>],
         'bin1': [<Angle 91.59991874999997 deg>, <Angle 41.90387583333333 deg>],
         'bin2': [<Angle 90.83773333333332 deg>, <Angle 42.189861944444445 deg>],
 
         Get them as RA and Dec arrays in degrees::
 
-        >>> s.getPatchPositions(asArray=True)
+        >>> s.get_patch_positions(as_array=True)
         (array([ 91.77565208,  91.59991875,  90.83773333]),
         array([ 41.57834806,  41.90387583,  42.18986194]))
 
         Calculate the flux-weighted mean positions of each patch::
 
-        >>> s.getPatchPositions(method="wmean", asArray=True)
+        >>> s.get_patch_positions(method="wmean", as_array=True)
 
         """
-        patch_name = patchName
-        as_array = asArray
-        apply_beam = applyBeam
-        per_patch_projection = perPatchProjection
-
-        if self.hasPatches:
+        if self.has_patches:
             if patch_name is None:
-                patch_name = self.getPatchNames()
+                patch_name = self.get_patch_names()
             if type(patch_name) not in (list, np.ndarray):
                 patch_name = [patch_name]
             if method is None:
@@ -586,7 +645,7 @@ class SkyModel(object):
                     y_all = []
                     wcs_all = []
                     for name in patch_name:
-                        patch_indices = self.getRowIndex(name)
+                        patch_indices = self.get_row_index(name)
                         patch_ra = self.table["Ra"][patch_indices]
                         patch_dec = self.table["Dec"][patch_indices]
                         x, y, wcs = self._get_xy(patch_ra, patch_dec)
@@ -605,9 +664,9 @@ class SkyModel(object):
                 positions = []
                 if method == "mid":
                     min_x = self._get_min_column("X")
-                    max_x = self.get_max_column("X")
+                    max_x = self._get_max_column("X")
                     min_y = self._get_min_column("Y")
-                    max_y = self.get_max_column("Y")
+                    max_y = self._get_max_column("Y")
                     mid_x = min_x + (max_x - min_x) / 2.0
                     mid_y = min_y + (max_y - min_y) / 2.0
                     for i, _ in enumerate(patch_name):
@@ -620,6 +679,17 @@ class SkyModel(object):
                         weight = False
                     else:
                         weight = True
+                    mean_x = self._get_averaged_column(
+                        "X", apply_beam=apply_beam, weight=weight
+                    )
+                    mean_y = self._get_averaged_column(
+                        "Y", apply_beam=apply_beam, weight=weight
+                    )
+                    for i, _ in enumerate(patch_name):
+                        ra, dec = wcs_all[i].wcs_pix2world(
+                            mean_x[i], mean_y[i], 0
+                        )
+                        positions.append((ra.item(), dec.item()))
                     mean_x = self._get_averaged_column(
                         "X", apply_beam=apply_beam, weight=weight
                     )
@@ -657,19 +727,26 @@ class SkyModel(object):
 
         return None
 
-    def setPatchPositions(
+    @deprecated(
+        renamed_parameters={
+            "patchDict": "patch_dict",
+            "applyBeam": "apply_beam",
+            "perPatchProjection": "per_patch_projection",
+        }
+    )
+    def set_patch_positions(
         self,
-        patchDict=None,
+        patch_dict=None,
         method="mid",
-        applyBeam=False,
-        perPatchProjection=True,
+        apply_beam=False,
+        per_patch_projection=True,
     ):
         """
         Sets the patch positions.
 
         Parameters
         ----------
-        patchDict : dict, optional
+        patch_dict : dict, optional
             Dict specifying patch names and positions as {'patchName':[RA, Dec]}
             where both RA and Dec are degrees J2000 or in makesourcedb format.
             If None, positions are set for all patches using the method given
@@ -685,9 +762,9 @@ class SkyModel(object):
 
             Note that the mid, mean, and wmean positions are calculated from
             TAN- projected values.
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, fluxes used as weights will be attenuated by the beam.
-        perPatchProjection : bool, optional
+        per_patch_projection : bool, optional
             If True, a different projection center is used per patch. If False,
             a single projection center is used for all patches.
 
@@ -695,29 +772,25 @@ class SkyModel(object):
         --------
         Set all patch positions to their (projected) midpoints::
 
-        >>> s.setPatchPositions()
+        >>> s.set_patch_positions()
 
         Set all patch positions to their (projected) flux-weighted mean
         positions::
 
-        >>> s.setPatchPositions(method="wmean")
+        >>> s.set_patch_positions(method="wmean")
 
         Set new position for the 'bin0' patch only::
 
-        >>> s.setPatchPositions({"bin0": [123.231, 23.4321]})
+        >>> s.set_patch_positions({"bin0": [123.231, 23.4321]})
 
         """
-        patch_dict = patchDict
-        apply_beam = applyBeam
-        per_patch_projection = perPatchProjection
-
-        if self.hasPatches:
+        if self.has_patches:
             if method not in ["mid", "mean", "wmean", "zero"]:
                 raise ValueError("Invalid method parameter")
 
             if patch_dict is None:
                 # Delete any previous patch positions
-                patch_names = self.getPatchNames()
+                patch_names = self.get_patch_names()
                 for patch_name in patch_names:
                     if patch_name in self.table.meta:
                         self.table.meta.pop(patch_name)
@@ -729,24 +802,27 @@ class SkyModel(object):
                             Angle(0.0, unit=u.deg),
                         ]
                 else:
-                    patch_dict = self.getPatchPositions(
+                    patch_dict = self.get_patch_positions(
                         method=method,
-                        applyBeam=apply_beam,
-                        perPatchProjection=per_patch_projection,
+                        apply_beam=apply_beam,
+                        per_patch_projection=per_patch_projection,
                     )
             else:
                 # Get positions for those patches that need them
                 patch_names = [
                     patch for patch, pos in patch_dict.items() if pos is None
                 ]
-                patch_dict_no_pos = self.getPatchPositions(
+                patch_dict_no_pos = self.get_patch_positions(
                     method=method,
-                    applyBeam=apply_beam,
-                    patchName=patch_names,
-                    perPatchProjection=False,
+                    apply_beam=apply_beam,
+                    patch_name=patch_names,
+                    per_patch_projection=False,
                 )
                 patch_dict.update(patch_dict_no_pos)
 
+            for patch, pos in patch_dict.items():
+                if isinstance(pos[0], str) or isinstance(pos[0], float):
+                    ra, dec = tableio.RADec2Angle(*pos)
             for patch, pos in patch_dict.items():
                 if isinstance(pos[0], str) or isinstance(pos[0], float):
                     ra, dec = tableio.RADec2Angle(*pos)
@@ -835,7 +911,7 @@ class SkyModel(object):
 
         return x, y, wcs
 
-    def getDefaultValues(self):
+    def get_default_values(self):
         """
         Returns dict of {col_name:default} values for all columns with defaults.
 
@@ -845,20 +921,21 @@ class SkyModel(object):
             Dict of {col_name:default} values
 
         """
-        col_names = self.getColNames()
+        col_names = self.get_col_names()
         default_dict = {}
         for col_name in col_names:
             if col_name in self.table.meta:
                 default_dict[col_name] = self.table.meta[col_name]
         return default_dict
 
-    def setDefaultValues(self, colDict):
+    @deprecated(renamed_parameters={"colDict": "col_dict"})
+    def set_default_values(self, col_dict):
         """
         Sets default column values.
 
         Parameters
         ----------
-        colDict : dict
+        col_dict : dict
             Dict specifying column names and default values as
             {'col_name':value} where the value is in the units accepted by
             makesourcedb (e.g., Hz for 'Reference_frequency').
@@ -867,10 +944,10 @@ class SkyModel(object):
         --------
         Set new default value for ReferenceFrequency::
 
-        >>> s.setDefaultValues({"ReferenceFrequency": 140e6})
+        >>> s.set_default_values({"ReferenceFrequency": 140e6})
 
         """
-        for col_name, default in colDict.items():
+        for col_name, default in col_dict.items():
             self.table.meta[col_name] = default
 
     def ungroup(self):
@@ -884,16 +961,16 @@ class SkyModel(object):
         >>> s.ungroup()
 
         """
-        if self.hasPatches:
-            for patch_name in self.getPatchNames():
+        if self.has_patches:
+            for patch_name in self.get_patch_names():
                 if patch_name in self.table.meta:
                     self.table.meta.pop(patch_name)
             self.table.remove_column("Patch")
-            self._updateGroups()
+            self._update_groups()
             self._add_history("UNGROUP")
             self._info()
 
-    def getColNames(self):
+    def get_col_names(self):
         """
         Returns a list of all available column names.
 
@@ -906,20 +983,23 @@ class SkyModel(object):
         --------
         Get column names::
 
-        >>> s.getColNames()
+        >>> s.get_col_names()
 
         """
         return self.table.keys()
 
-    def getColValues(
-        self, colName, units=None, aggregate=None, applyBeam=False
+    @deprecated(
+        renamed_parameters={"colName": "col_name", "applyBeam": "apply_beam"}
+    )
+    def get_col_values(
+        self, col_name, units=None, aggregate=None, apply_beam=False
     ):
         """
         Returns a numpy array of column values.
 
         Parameters
         ----------
-        colName : str
+        col_name : str
             Name of column
         units : str, optional
             Output units (the values are converted as needed). By default, the
@@ -939,13 +1019,13 @@ class SkyModel(object):
             Note that, in some cases, certain aggregation functions will not
             produce meaningful results. For example, asking for the sum of the
             MajorAxis values per patch will not give a good indication of the
-            size of the patch (to get the sizes, use the getPatchSizes()
+            size of the patch (to get the sizes, use the get_patch_sizes()
             method). Additionally, applying the 'mean' or 'wmean' functions to
             the RA or Dec columns may give strange results near the poles or
             near RA = 0h. For aggregated RA and Dec values, use the
-            getPatchPositions() method instead which projects the sources onto
+            get_patch_positions() method instead which projects the sources onto
             the image plane before aggregation.
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, fluxes will be attenuated by the beam. This attenuation
             also applies to fluxes used in aggregation functions.
 
@@ -959,32 +1039,33 @@ class SkyModel(object):
         --------
         Get Stokes I fluxes in Jy::
 
-        >>> s.getColValues("I")
+        >>> s.get_col_values("I")
         array([ 60.4892,   1.2413,   1.216 , ...,   1.12  ,   1.25  ,   1.16  ])
 
         Get Stokes I fluxes in mJy::
 
-        >>> s.getColValues("I", units="mJy")
+        >>> s.get_col_values("I", units="mJy")
         array([ 60489.2,   1241.3,   1216. , ...,   1120. ,   1250. ,   1160. ])
 
         Get total Stokes I flux for the patches::
 
-        >>> s.getColValues("I", aggregate="sum")
+        >>> s.get_col_values("I", aggregate="sum")
         array([ 61.7305,   1.216 ,   3.9793, ...,   1.12  ,   1.25  ,   1.16  ])
 
         Get flux-weighted average RA and Dec for the patches. As noted above,
-        the getColValues() method is not appropriate for use with RA or Dec,
-        so we must use getPatchPositions() instead::
+        the get_col_values() method is not appropriate for use with RA or Dec,
+        so we must use get_patch_positions() instead::
 
-        >>> ra, dec = s.getPatchPositions(method="wmean", asArray=True)
+        >>> RA, Dec = s.get_patch_positions(method="wmean", as_array=True)
 
         """
-        col_name = colName
-        apply_beam = applyBeam
-
-        col_name = self._verify_column_name(col_name)
+        col_name = self._verify_col_name(col_name)
         if col_name is None:
             return None
+        if isinstance(col_name, list):
+            if len(col_name) > 1:
+                raise ValueError("Only one column can be specified.")
+            col_name = col_name[0]
         if isinstance(col_name, list):
             if len(col_name) > 1:
                 raise ValueError("Only one column can be specified.")
@@ -993,8 +1074,8 @@ class SkyModel(object):
         allowed_fcns = ["sum", "mean", "wmean", "min", "max"]
         if aggregate not in allowed_fcns and aggregate is not None:
             raise ValueError("Value of parameter 'aggregate' not understood.")
-        if aggregate in allowed_fcns and self.hasPatches:
-            col = self.get_aggregated_column(
+        if aggregate in allowed_fcns and self.has_patches:
+            col = self._get_aggregated_column(
                 col_name, aggregate, apply_beam=apply_beam
             )
         else:
@@ -1018,13 +1099,18 @@ class SkyModel(object):
 
         return outcol.data
 
-    def setColValues(self, colName, values, mask=None, index=None):
+    @deprecated(
+        renamed_parameters={
+            "colName": "col_name",
+        }
+    )
+    def set_col_values(self, col_name, values, mask=None, index=None):
         """
         Sets column values.
 
         Parameters
         ----------
-        colName : str
+        col_name : str
             Name of column. If not already present in the table, a new column
             will be created.
         values : list, numpy.ndarray, or dict
@@ -1043,16 +1129,14 @@ class SkyModel(object):
         --------
         Set Stokes I fluxes::
 
-        >>> s.setColValues(
+        >>> s.set_col_values(
         ...     "I",
         ...     [1.0, 1.1, 1.2, 0.0, 1.3],
         ...     mask=[False, False, False, True, False],
         ... )
 
         """
-        col_name = colName
-
-        col_name = self._verify_column_name(col_name, only_existing=False)
+        col_name = self._verify_col_name(col_name, only_existing=False)
         if col_name is None:
             return
         if isinstance(col_name, list):
@@ -1102,15 +1186,16 @@ class SkyModel(object):
                 new_col = Column(name=col_name, data=data)
             self.table.add_column(new_col, index=index)
         if col_name == "Patch":
-            self._updateGroups()
+            self._update_groups()
 
-    def getRowValues(self, rowName):
+    @deprecated(renamed_parameters={"rowName": "row_name"})
+    def get_row_values(self, row_name):
         """
         Returns an astropy table or table row for specified source or patch.
 
         Parameters
         ----------
-        rowName : str
+        row_name : str
             Name of the source or patch
 
         Returns
@@ -1123,24 +1208,22 @@ class SkyModel(object):
         --------
         Get row values for the source 'src1'::
 
-        >>> rows = s.getRowValues("src1")
+        >>> rows = s.get_row_values("src1")
 
         Sum over the fluxes of sources in the 'bin1' patch::
 
         >>> tot = 0.0
-        ... for row in s.getRowValues("bin1"):
+        ... for row in s.get_row_values("bin1"):
         ...     tot += row["I"]
 
         """
-        row_name = rowName
-
         # Check first for the row_name as a patch name. If no patch matches (or
         # the model is not grouped into patches), Try it as a source name. This
         # logic should work even if a row has the same name for the source and
         # its patch, as in this case the patch and source row index are
         # identical (since such a patch can have only one member source)
-        if self.hasPatches and row_name in self.getPatchNames():
-            pindx = self._get_name_index(row_name, patch=True)
+        if self.has_patches and row_name in self.get_patch_names():
+            pindx = self._get_name_indx(row_name, patch=True)
             table = self.table.groups[pindx]
             return table.group_by("Patch")  # ensure that grouping is preserved
 
@@ -1150,13 +1233,14 @@ class SkyModel(object):
 
         raise ValueError(f"Row name {row_name!r} not recognized.")
 
-    def getRowIndex(self, rowName):
+    @deprecated(renamed_parameters={"rowName": "row_name"})
+    def get_row_index(self, row_name):
         """
         Returns a row selector for the specified source or patch.
 
         Parameters
         ----------
-        rowName : str
+        row_name : str
             Exact name of the source or patch (wildcards are not interpreted).
             Patch names take precedence over source names.
 
@@ -1168,26 +1252,26 @@ class SkyModel(object):
             without copying data or allocating one index per member source.
             Selectors refer to the current row order and must be obtained again
             after regrouping or adding/removing rows.
-            ValueError is raised if neither a patch nor a source matches.
+            Value_error is raised if neither a patch nor a source matches.
 
         Examples
         --------
         Get row index for the source 'src1'::
 
-        >>> s.getRowIndex("src1")
+        >>> s.get_row_index("src1")
         array([0])
 
         Get row indices for the patch 'bin1' and verify the patch name::
 
-        >>> ind = s.getRowIndex("bin1")
-        ... print(s.getColValues("patch")[ind])
+        >>> ind = s.get_row_index("bin1")
+        ... print(s.get_col_values("patch")[ind])
         ['bin1', 'bin1', 'bin1']
 
         """
         row_name = rowName
 
         # Patch members occupy contiguous rows in the grouped table.
-        if self.hasPatches:
+        if self.has_patches:
             patch_names = self.table.groups.keys["Patch"]
             patch_ind = np.where(patch_names == row_name)[0]
 
@@ -1202,7 +1286,7 @@ class SkyModel(object):
             return indices
         raise ValueError(f"Row name {row_name!r} not recognized.")
 
-    def setRowValues(self, values):
+    def set_row_values(self, values):
         """
         Sets values for a single row.
 
@@ -1222,7 +1306,7 @@ class SkyModel(object):
         Set row values for the source 'src1' (which can be a new source or an
         existing source)::
 
-        >>> s.setRowValues(
+        >>> s.set_row_values(
         ...     {
         ...         "Name": "src1",
         ...         "Ra": 213.123,
@@ -1235,7 +1319,7 @@ class SkyModel(object):
         The RA and Dec values can be in degrees (as above) or in makesourcedb
         format. E.g.::
 
-        >>> s.setRowValues(
+        >>> s.set_row_values(
         ...     {
         ...         "Name": "src1",
         ...         "Ra": "12:22:21.1",
@@ -1251,10 +1335,11 @@ class SkyModel(object):
 
         # Concatenate tables
         self.concatenate(
-            temp_skymodel, matchBy="name", keep="from2", inheritPatches=False
+            temp_skymodel, match_by="name", keep="from2", inherit_patches=False
         )
 
-    def getPatchSizes(self, units=None, weight=False, applyBeam=False):
+    @deprecated(renamed_parameters={"applyBeam": "apply_beam"})
+    def get_patch_sizes(self, units=None, weight=False, apply_beam=False):
         """
         Returns array of patch sizes.
 
@@ -1264,7 +1349,7 @@ class SkyModel(object):
             Units for returned sizes (e.g., 'arcsec', 'degree')
         weight : bool, optional
             If True, weight the source positions inside the patch by flux
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True and weight is True, attenuate the fluxes used for weighting
             by the beam
 
@@ -1275,19 +1360,19 @@ class SkyModel(object):
             does not have patches
 
         """
-        if self.hasPatches:
-            col = self._get_size_column(weight=weight, apply_beam=applyBeam)
+        if self.has_patches:
+            col = self._get_size_column(weight=weight, apply_beam=apply_beam)
             if units is not None:
                 col.convert_unit_to(units)
             return col.data
         return None
 
-    def getPatchNames(self):
+    def get_patch_names(self):
         """
         Returns array of all patch names in the sky model, with duplicates
         removed.
 
-        Note: use getColValues('Patch') if you want the patch names for each
+        Note: use get_col_values('Patch') if you want the patch names for each
         source in the sky model.
 
         Returns
@@ -1297,13 +1382,14 @@ class SkyModel(object):
             have patches
 
         """
-        if self.hasPatches:
+        if self.has_patches:
             col = self.table.groups.keys["Patch"]
             if hasattr(col, "filled"):
                 outcol = col.filled().copy()
             else:
                 outcol = col.copy()
             return outcol.data
+        return None
         return None
 
     def _get_name_index(self, name, patch=False):
@@ -1327,12 +1413,12 @@ class SkyModel(object):
         """
 
         if patch:
-            if self.hasPatches:
-                names = self.getPatchNames().tolist()
+            if self.has_patches:
+                names = self.get_patch_names().tolist()
             else:
                 return None
         else:
-            names = self.getColValues("Name").tolist()
+            names = self.get_col_values("Name").tolist()
 
         if isinstance(name, str) or isinstance(name, np.bytes_):
             indx = [
@@ -1387,7 +1473,7 @@ class SkyModel(object):
             beam attenuation is applied; callers must copy before modifying it.
 
         """
-        col_name = self._verify_column_name(col_name)
+        col_name = self._verify_col_name(col_name)
         if col_name is None:
             return None
 
@@ -1398,7 +1484,7 @@ class SkyModel(object):
 
         return col
 
-    def get_aggregated_column(
+    def _get_aggregated_column(
         self, col_name, aggregate="sum", apply_beam=False
     ):
         """
@@ -1426,7 +1512,7 @@ class SkyModel(object):
             Column object with aggregated values
 
         """
-        col_name = self._verify_column_name(col_name)
+        col_name = self._verify_col_name(col_name)
         if col_name is None:
             return None
 
@@ -1443,7 +1529,7 @@ class SkyModel(object):
         elif aggregate == "min":
             col = self._get_min_column(col_name, apply_beam=apply_beam)
         elif aggregate == "max":
-            col = self.get_max_column(col_name, apply_beam=apply_beam)
+            col = self._get_max_column(col_name, apply_beam=apply_beam)
         else:
             raise ValueError("Aggregation function not understood.")
         return col
@@ -1475,22 +1561,22 @@ class SkyModel(object):
         if patch:
             if self._patch_method is not None:
                 # Try to get patch positions from the meta data
-                ra_deg, dec_deg = self.getPatchPositions(asArray=True)
+                ra_deg, dec_deg = self.get_patch_positions(as_array=True)
             else:
                 # If patch positions are not set, use weighted mean positions
-                ra_deg = self.getColValues(
-                    "Ra", applyBeam=True, aggregate="wmean"
+                ra_deg = self.get_col_values(
+                    "Ra", apply_beam=True, aggregate="wmean"
                 )
-                dec_deg = self.getColValues(
-                    "Dec", applyBeam=True, aggregate="wmean"
+                dec_deg = self.get_col_values(
+                    "Dec", apply_beam=True, aggregate="wmean"
                 )
         else:
-            ra_deg = self.getColValues("Ra")
-            dec_deg = self.getColValues("Dec")
+            ra_deg = self.get_col_values("Ra")
+            dec_deg = self.get_col_values("Dec")
 
         flux = col.data
         vals = apply_beam_operation(
-            self.beamMS, flux, ra_deg, dec_deg, timeIndx=self.beamTime
+            self.beam_ms, flux, ra_deg, dec_deg, timeIndx=self.beam_time
         )
         col[:] = vals
 
@@ -1560,7 +1646,7 @@ class SkyModel(object):
 
         return gcol
 
-    def get_max_column(self, col_name, apply_beam=False):
+    def _get_max_column(self, col_name, apply_beam=False):
         """
         Returns column maximum value by group.
 
@@ -1621,7 +1707,7 @@ class SkyModel(object):
             else:
                 vals = self.table[col_name].data
             if weight:
-                weights = self.getColValues("I", applyBeam=apply_beam)
+                weights = self.get_col_values("I", apply_beam=apply_beam)
                 if weights.shape != vals.shape:
                     weights = np.resize(weights, vals.shape)
                 weight_col = Column(name="Weight", data=weights)
@@ -1672,14 +1758,16 @@ class SkyModel(object):
         else:
             method = "mean"
 
-        if self.hasPatches:
+        if self.has_patches:
             # Get patch positions
-            ra_avg, dec_avg = self.getPatchPositions(
-                method=method, asArray=True, applyBeam=apply_beam
+            ra_avg, dec_avg = self.get_patch_positions(
+                method=method, as_array=True, apply_beam=apply_beam
             )
 
             # Fill out the columns by repeating the average value over the
             # entire group
+            ra_avg_full = np.zeros(len(self.table), dtype=float)
+            dec_avg_full = np.zeros(len(self.table), dtype=float)
             ra_avg_full = np.zeros(len(self.table), dtype=float)
             dec_avg_full = np.zeros(len(self.table), dtype=float)
             for i, ind in enumerate(self.table.groups.indices[1:]):
@@ -1757,7 +1845,14 @@ class SkyModel(object):
 
         return calculateSeparation(ra1, dec1, ra2, dec2)
 
-    def getDistance(self, ra, dec, byPatch=False, units=None):
+    @deprecated(
+        renamed_parameters={
+            "RA": "ra",
+            "Dec": "dec",
+            "byPatch": "by_patch",
+        }
+    )
+    def get_distance(self, ra, dec, by_patch=False, units=None):
         """
         Returns angular distance for each source or patch to specified position
 
@@ -1769,7 +1864,7 @@ class SkyModel(object):
         dec : float or str
             Dec of position to which the distance is desired (in degrees or
             makesourcedb format)
-        byPatch : bool, optional
+        by_patch : bool, optional
             Calculate distance by patches instead of by sources
         units : str, optional
             Units for resulting distance. If None, units are degrees
@@ -1783,24 +1878,24 @@ class SkyModel(object):
         --------
         Find distance in degrees to a position for all sources::
 
-        >>> s.getDistance(94.0, 42.0)
+        >>> s.get_distance(94.0, 42.0)
 
         Find distance in arcmin::
 
-        >>> s.getDistance(94.0, 42.0, units="arcmin")
+        >>> s.get_distance(94.0, 42.0, units="arcmin")
 
         Find distance to patch centers:
 
-        >>> s.setPatchPositions(method="mid")
-        ... s.getDistance(94.0, 42.0, by_patch=True)
+        >>> s.set_patch_positions(method="mid")
+        ... s.get_distance(94.0, 42.0, by_patch=True)
 
         """
-        if byPatch and self.hasPatches:
+        if by_patch and self.has_patches:
             # Get patch positions
-            s_ra, s_dec = self.getPatchPositions(asArray=True)
+            s_ra, s_dec = self.get_patch_positions(as_array=True)
         else:
-            s_ra = self.getColValues("RA")
-            s_dec = self.getColValues("Dec")
+            s_ra = self.get_col_values("RA")
+            s_dec = self.get_col_values("Dec")
 
         ra, dec = tableio.RADec2Angle(ra, dec)
 
@@ -1809,17 +1904,28 @@ class SkyModel(object):
             return dist.to(units).value
         return dist.value
 
+    @deprecated(
+        renamed_parameters={
+            "fileName": "filename",
+            "clobber": "overwrite",
+            "sortBy": "sort_by",
+            "lowToHigh": "low_to_high",
+            "addHistory": "add_history",
+            "applyBeam": "apply_beam",
+            "invertBeam": "invert_beam",
+        }
+    )
     def write(
         self,
-        fileName=None,
+        filename=None,
         format="makesourcedb",  # noqa
-        clobber=False,
+        overwrite=False,
         *,
-        sortBy=None,
-        lowToHigh=False,
-        addHistory=True,
-        applyBeam=False,
-        invertBeam=False,
+        sort_by=None,
+        low_to_high=False,
+        add_history=True,
+        apply_beam=False,
+        invert_beam=False,
         width=None,
     ):
         """
@@ -1842,19 +1948,19 @@ class SkyModel(object):
                 - 'facet' (ds9 region file of Voronoi facets; model must have
                   patches)
                 - plus all other formats supported by the astropy.table package
-        clobber : bool, optional
+        overwrite : bool, optional
             If True, an existing file is overwritten.
-        sortBy : str or list of str, optional
+        sort_by : str or list of str, optional
             Name of columns to sort on. If None, no sorting is done. If
             a list is given, sorting is done on the columns in the order given.
-        lowToHigh : bool, optional
+        low_to_high : bool, optional
             If True, sort values from low to high instead of high to low.
-        addHistory : bool, optional
+        add_history : bool, optional
             If True, the history of operations is written to the sky model
             header.
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, fluxes will be adjusted for the beam before being written.
-        invertBeam : bool, optional
+        invert_beam : bool, optional
             If True, the beam correction is inverted (i.e., from apparent sky to
             true sky).
         width : float, optional
@@ -1902,22 +2008,23 @@ class SkyModel(object):
                 os.remove(filename)
             else:
                 raise IOError(
-                    f"The output file {filename!r} exists and clobber = False."
+                    f"The output file {filename!r} exists and "
+                    "overwrite = False."
                 )
 
         table = self.table.copy()
 
         # Apply beam attenuation
         if apply_beam:
-            i_orig = self.getColValues("I")
-            ra_deg = self.getColValues("Ra")
-            dec_deg = self.getColValues("Dec")
+            i_orig = self.get_col_values("I")
+            ra_deg = self.get_col_values("Ra")
+            dec_deg = self.get_col_values("Dec")
             i_adj = apply_beam_operation(
-                self.beamMS,
+                self.beam_ms,
                 i_orig,
                 ra_deg,
                 dec_deg,
-                timeIndx=self.beamTime,
+                timeIndx=self.beam_time,
                 invert=invert_beam,
             )
             units = self.table.columns["I"].unit
@@ -1927,9 +2034,9 @@ class SkyModel(object):
         # Sort if desired. For 'factor' output, save the order of patches in the
         # table meta
         if sort_by is not None:
-            col_name = self._verify_column_name(sort_by)
-            if format.lower() == "factor" and self.hasPatches:
-                indx = np.argsort(self.getColValues("I", aggregate="sum"))
+            col_name = self._verify_col_name(sort_by)
+            if format.lower() == "factor" and self.has_patches:
+                indx = np.argsort(self.get_col_values("I", aggregate="sum"))
                 if not low_to_high:
                     indx = indx[::-1]
                 table.meta["patch_order"] = indx
@@ -1943,25 +2050,25 @@ class SkyModel(object):
             table.meta["History"] = self.history
 
         # Add patch sizes in degrees
-        if format.lower() == "factor" and self.hasPatches:
-            table.meta["patch_size"] = self.getPatchSizes(units="deg")
+        if format.lower() == "factor" and self.has_patches:
+            table.meta["patch_size"] = self.get_patch_sizes(units="deg")
 
         # Add patch fluxes in m_jy
-        if format.lower() == "factor" and self.hasPatches:
-            table.meta["patch_flux"] = self.getColValues(
+        if format.lower() == "factor" and self.has_patches:
+            table.meta["patch_flux"] = self.get_col_values(
                 "I", aggregate="sum", units="mJy"
             )
 
         # And reference coordinates and width in degrees
         if format.lower() == "facet":
-            if not self.hasPatches:
+            if not self.has_patches:
                 raise ValueError(
                     "Model must be grouped into patches when format = 'facet'."
                 )
 
             ref_ra, ref_dec = self._get_midpoint()
-            table.meta["refRA"] = ref_ra
-            table.meta["refDec"] = ref_dec
+            table.meta['refRA'] = ref_ra
+            table.meta['refDec'] = ref_dec
 
             if width is not None:
                 table.meta["width"] = width
@@ -2021,14 +2128,14 @@ class SkyModel(object):
         """
         Removes duplicate entries.
         """
-        names = self.getColValues("Name")
+        names = self.get_col_values("Name")
         name_set = set(names)
         if len(names) == len(name_set):
             return
 
         filt_names = []
         filt_indices = []
-        for i, name in enumerate(self.getColValues("Name")):
+        for i, name in enumerate(self.get_col_values("Name")):
             if name in filt_names:
                 filt_indices.append(i)
             else:
@@ -2040,14 +2147,21 @@ class SkyModel(object):
             self.log.info(
                 "Removed %s duplicate sources.", n_rows_orig - n_rows_new
             )
-        self._updateGroups()
+        self._update_groups()
 
+    @deprecated(
+        renamed_parameters={
+            "filterExpression": "filter_expression",
+            "applyBeam": "apply_beam",
+            "useRegEx": "use_regex",
+        }
+    )
     def select(
         self,
-        filterExpression,
+        filter_expression,
         aggregate=None,
-        applyBeam=False,
-        useRegEx=False,
+        apply_beam=False,
+        use_regex=False,
         force=True,
     ):
         """
@@ -2058,7 +2172,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        filterExpression : str, dict, list, or numpy.ndarray
+        filter_expression : str, dict, list, or numpy.ndarray
 
             - If string:
               A string specifying the filter expression in the form:
@@ -2108,9 +2222,9 @@ class SkyModel(object):
                   directly as a numpy array. If True, filtering is done on
                   patches instead of sources.
 
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, apparent fluxes will be used.
-        useRegEx : bool, optional
+        use_regex : bool, optional
             If True, string matching will use regular expression matching. If
             False, string matching uses Unix filename matching.
         force : bool, optional
@@ -2134,7 +2248,7 @@ class SkyModel(object):
 
         Or, to filter on patches smaller than 5 arcmin in size::
 
-        >>> sizes = s.getPatchSizes(units="arcmin")
+        >>> sizes = s.get_patch_sizes(units="arcmin")
         ... s.select(sizes < 5.0, aggregate=True)
 
         Filter on source names, keeping those that match "src*_1?"::
@@ -2149,19 +2263,26 @@ class SkyModel(object):
         """
         operations.select.select(
             self,
-            filterExpression,
+            filter_expression,
             aggregate=aggregate,
-            applyBeam=applyBeam,
-            useRegEx=useRegEx,
+            applyBeam=apply_beam,
+            useRegEx=use_regex,
             force=force,
         )
 
+    @deprecated(
+        renamed_parameters={
+            "filterExpression": "filter_expression",
+            "applyBeam": "apply_beam",
+            "useRegEx": "use_regex",
+        }
+    )
     def remove(
         self,
-        filterExpression,
+        filter_expression,
         aggregate=None,
-        applyBeam=None,
-        useRegEx=False,
+        apply_beam=None,
+        use_regex=False,
         force=True,
     ):
         """
@@ -2173,7 +2294,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        filterExpression : str, dict, list, or numpy.ndarray
+        filter_expression : str, dict, list, or numpy.ndarray
 
             - If string:
               A string specifying the filter expression in the form:
@@ -2223,9 +2344,9 @@ class SkyModel(object):
             - True: only valid when the filter indices are specified directly as
             a numpy array. If True, filtering is done on patches instead of
             sources.
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, apparent fluxes will be used.
-        useRegEx : bool, optional
+        use_regex : bool, optional
             If True, string matching will use regular expression matching. If
             False, string matching uses Unix filename matching.
         force : bool, optional
@@ -2248,7 +2369,7 @@ class SkyModel(object):
 
         Or, to filter on patches smaller than 5 arcmin in size::
 
-        >>> sizes = s.getPatchSizes(units="arcmin")
+        >>> sizes = s.get_patch_sizes(units="arcmin")
         >>> s.remove(sizes < 5.0, aggregate=True)
 
         Filter on source names, removing those that match "src*_1?" (e.g.,
@@ -2264,33 +2385,48 @@ class SkyModel(object):
         """
         operations.remove.remove(
             self,
-            filterExpression,
+            filter_expression,
             aggregate=aggregate,
-            applyBeam=applyBeam,
-            useRegEx=useRegEx,
+            applyBeam=apply_beam,
+            useRegEx=use_regex,
             force=force,
         )
 
+    @deprecated(
+        renamed_parameters={
+            "targetFlux": "target_flux",
+            "patchNames": "patch_names",
+            "weightBySize": "weight_by_size",
+            "numClusters": "num_clusters",
+            "FWHM": "fwhm",
+            "applyBeam": "apply_beam",
+            "byPatch": "by_patch",
+            "kernelSize": "kernel_size",
+            "nIterations": "n_iterations",
+            "lookDistance": "look_distance",
+            "groupingDistance": "grouping_distance",
+        }
+    )
     def group(
         self,
         algorithm,
-        targetFlux=None,
-        patchNames=None,
-        weightBySize=False,
-        numClusters=100,
+        target_flux=None,
+        patch_names=None,
+        weight_by_size=False,
+        num_clusters=100,
         *,
-        FWHM=None,
+        fwhm=None,
         threshold=0.1,
-        applyBeam=False,
+        apply_beam=False,
         root="Patch",
         pad_index=False,
         method="mid",
         facet="",
-        byPatch=False,
-        kernelSize=0.1,
-        nIterations=100,
-        lookDistance=0.2,
-        groupingDistance=0.01,
+        by_patch=False,
+        kernel_size=0.1,
+        n_iterations=100,
+        look_distance=0.2,
+        grouping_distance=0.01,
     ):
         """
         Groups sources into patches.
@@ -2323,24 +2459,24 @@ class SkyModel(object):
               mask = True). Sources outside of masked regions are given patches
               of their own
 
-        targetFlux : str or float, optional
+        target_flux : str or float, optional
             Target flux for 'tessellate' (the total flux of each tile will be
             close to this value) and 'voronoi' algorithms. The target flux can
             be specified as either a float in Jy or as a string with units
             (e.g., '25.0 m_jy')
-        patchNames : list, optional
+        patch_names : list, optional
             List of patch names to use for the 'voronoi' algorithm. If both
             patch_names and target_flux are given, the target_flux selection is
             applied first
-        weightBySize : bool, optional
+        weight_by_size : bool, optional
             If True, fluxes are weighted by patch size (as median_size / size)
             when the target_flux criterion is applied. Patches with sizes below
             the median (flux-weighted) size are upweighted and those above the
             mean are downweighted
-        numClusters : int, optional
+        num_clusters : int, optional
             Number of clusters for clustering. Sources are grouped around the
             num_clusters brightest sources.
-        FWHM : str or float, optional
+        fwhm : str or float, optional
             FWHM of convolving Gaussian used for thresholding. The FWHM can
             be specified as either a float in degrees or as a string with units
             (e.g., '25.0 arcsec')
@@ -2366,16 +2502,16 @@ class SkyModel(object):
             - 'zero' => set all positions to [0.0, 0.0]
         facet : str, optional
             Facet fits file used with the algorithm 'facet'
-        byPatch : bool, optional
+        by_patch : bool, optional
             For the 'tessellate' or 'meanshift' algorithms, use patches instead
             of sources
         kernel_size : float, optional
             Kernel size in degrees for 'meanshift' grouping
-        nIterations : int, optional
+        n_iterations : int, optional
             Number of iterations for 'meanshift' grouping
-        lookDistance : float, optional
+        look_distance : float, optional
             Look distance in degrees for 'meanshift' grouping
-        groupingDistance : float, optional
+        grouping_distance : float, optional
             Grouping distance in degrees for 'meanshift' grouping
 
         Examples
@@ -2389,25 +2525,31 @@ class SkyModel(object):
         operations.group.group(
             self,
             algorithm,
-            targetFlux=targetFlux,
-            patchNames=patchNames,
-            weightBySize=weightBySize,
-            numClusters=numClusters,
-            FWHM=FWHM,
+            targetFlux=target_flux,
+            patchNames=patch_names,
+            weightBySize=weight_by_size,
+            numClusters=num_clusters,
+            FWHM=fwhm,
             threshold=threshold,
-            applyBeam=applyBeam,
+            applyBeam=apply_beam,
             root=root,
             pad_index=pad_index,
             method=method,
             facet=facet,
-            byPatch=byPatch,
-            kernelSize=kernelSize,
-            nIterations=nIterations,
-            lookDistance=lookDistance,
-            groupingDistance=groupingDistance,
+            byPatch=by_patch,
+            kernelSize=kernel_size,
+            nIterations=n_iterations,
+            lookDistance=look_distance,
+            groupingDistance=grouping_distance,
         )
 
-    def transfer(self, patch_skymodel, matchBy="name", radius=0.1):
+    @deprecated(
+        renamed_parameters={
+            "patchSkyModel": "patch_skymodel",
+            "matchBy": "match_by",
+        }
+    )
+    def transfer(self, patch_skymodel, match_by="name", radius=0.1):
         """
         Transfer patches from the input sky model.
 
@@ -2421,7 +2563,7 @@ class SkyModel(object):
         ----------
         patch_sky_model : str or Sky_model
             Input sky model from which to transfer patches.
-        matchBy : str, optional
+        match_by : str, optional
             Determines how matching sources are determined:
 
             - 'name' => matches are identified by name
@@ -2430,7 +2572,7 @@ class SkyModel(object):
 
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30
-            arcsec') for matching when matchBy='position'
+            arcsec') for matching when match_by='position'
 
         Examples
         --------
@@ -2438,11 +2580,11 @@ class SkyModel(object):
         (matching sources are identified by name)::
 
         >>> s.transfer("master_sky.model")
-        >>> s.setPatchPositions(method="mid")
+        >>> s.set_patch_positions(method="mid")
 
         """
         operations.transfer.transfer(
-            self, patch_skymodel, matchBy=matchBy, radius=radius
+            self, patch_skymodel, matchBy=match_by, radius=radius
         )
 
     def move(self, name, position=None, shift=None):
@@ -2487,6 +2629,7 @@ class SkyModel(object):
         """
         operations.move.move(self, name, position=position, shift=shift)
 
+    @deprecated(renamed_parameters={"colNamesVals": "col_names_vals"})
     def add(self, col_names_vals):
         """
         Add a source to the sky model.
@@ -2534,13 +2677,20 @@ class SkyModel(object):
         """
         operations.merge.merge(self, patches, name=name)
 
+    @deprecated(
+        renamed_parameters={
+            "LSM2": "skymodel2",
+            "matchBy": "match_by",
+            "inheritPatches": "inherit_patches",
+        }
+    )
     def concatenate(
         self,
         skymodel2,
-        matchBy="name",
+        match_by="name",
         radius=0.1,
         keep="all",
-        inheritPatches=False,
+        inherit_patches=False,
     ):
         """
         Concatenate two sky models.
@@ -2549,7 +2699,7 @@ class SkyModel(object):
         ----------
         skymodel2 : str or SkyModel
             Secondary sky model to concatenate with the parent sky model
-        matchBy : str, optional
+        match_by : str, optional
             Determines how duplicate sources are determined:
 
             - 'name' => duplicates are identified by name
@@ -2559,7 +2709,7 @@ class SkyModel(object):
 
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30
-            arcsec') for matching when matchBy='position'
+            arcsec') for matching when match_by='position'
         keep : str, optional
             Determines how duplicates are treated:
 
@@ -2569,7 +2719,7 @@ class SkyModel(object):
             - 'from2' => duplicates kept are those from sky model 2 (the
               secondary)
 
-        inheritPatches : bool, optional
+        inherit_patches : bool, optional
             If True, duplicates inherit the patch name from the parent sky
             model. If False, duplicates keep their own patch names.
 
@@ -2581,7 +2731,7 @@ class SkyModel(object):
         be useful when merging two gsm.py sky models that have some overlap)::
 
         >>> skymodel2 = lsmtool.load("gsm_sky2.model")
-        ... s.concatenate(skymodel2, matchBy="name", keep="from1")
+        ... s.concatenate(skymodel2, match_by="name", keep="from1")
 
         Concatenate two sky models, identifying duplicates by matching to the
         source positions within a radius of 10 arcsec. When duplicates are
@@ -2592,7 +2742,7 @@ class SkyModel(object):
         >>> skymodel2 = lsmtool.load("high_res_sky.model")
         ... s.concatenate(
         ...     skymodel2,
-        ...     matchBy="position",
+        ...     match_by="position",
         ...     radius=10.0 / 3600.0,
         ...     keep="from2",
         ... )
@@ -2603,22 +2753,32 @@ class SkyModel(object):
         operations.concatenate.concatenate(
             self,
             skymodel2,
-            matchBy=matchBy,
+            matchBy=match_by,
             radius=radius,
             keep=keep,
-            inheritPatches=inheritPatches,
+            inheritPatches=inherit_patches,
         )
 
+    @deprecated(
+        renamed_parameters={
+            "LSM2": "skymodel2",
+            "outDir": "out_dir",
+            "labelBy": "label_by",
+            "ignoreSpec": "ignore_spec",
+            "excludeMultiple": "exclude_multiple",
+            "excludeByFlux": "exclude_by_flux",
+        }
+    )
     def compare(
         self,
         skymodel2,
         radius="10 arcsec",
         *,
-        outDir=".",
-        labelBy=None,
-        ignoreSpec=None,
-        excludeMultiple=True,
-        excludeByFlux=False,
+        out_dir=".",
+        label_by=None,
+        ignore_spec=None,
+        exclude_multiple=True,
+        exclude_by_flux=False,
         name1=None,
         name2=None,
         format="pdf",  # noqa
@@ -2651,17 +2811,17 @@ class SkyModel(object):
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30
             arcsec') for matching
-        outDir : str, optional
+        out_dir : str, optional
             Plots are saved to this directory
-        labelBy : str, optional
+        label_by : str, optional
             One of 'source' or 'patch': label points using source names
             ('source') or patch names ('patch')
-        ignoreSpec : float, optional
+        ignore_spec : float, optional
             Ignore sources with this spectral index
-        excludeMultiple : bool, optional
+        exclude_multiple : bool, optional
             If True, sources with multiple matches are excluded. If False, the
             nearest of the multiple matches will be used for comparison
-        excludeByFlux : bool, optional
+        exclude_by_flux : bool, optional
             If True, matches whose predicted fluxes differ from the parent model
             fluxes by 25% are excluded from the positional offset plot.
         name1 : str, optional
@@ -2698,7 +2858,7 @@ class SkyModel(object):
         Compare two sky models and save plots::
 
         >>> skymodel2 = lsmtool.load("sky2.model")
-        ... s.compare(skymodel2, outDir="comparison_results/")
+        ... s.compare(skymodel2, out_dir="comparison_results/")
 
         Compare a LOFAR sky model to a global sky model made from VLSS+TGSS+NVSS
         (where refRA and refDec are the approximate center of the LOFAR sky
@@ -2710,8 +2870,8 @@ class SkyModel(object):
         ... s.compare(
         ...     skymodel2,
         ...     radius="30 arcsec",
-        ...     excludeMultiple=True,
-        ...     outDir="comparison_results/",
+        ...     exclude_multiple=True,
+        ...     out_dir="comparison_results/",
         ...     name1="LOFAR",
         ...     name2="GSM",
         ...     format="png",
@@ -2724,18 +2884,21 @@ class SkyModel(object):
             self,
             skymodel2,
             radius=radius,
-            outDir=outDir,
-            labelBy=labelBy,
-            ignoreSpec=ignoreSpec,
-            excludeMultiple=excludeMultiple,
-            excludeByFlux=excludeByFlux,
+            outDir=out_dir,
+            labelBy=label_by,
+            ignoreSpec=ignore_spec,
+            excludeMultiple=exclude_multiple,
+            excludeByFlux=exclude_by_flux,
             name1=name1,
             name2=name2,
             format=format,
             make_plots=make_plots,
         )
 
-    def plot(self, filename=None, labelBy=None):
+    @deprecated(
+        renamed_parameters={"fileName": "filename", "labelBy": "label_by"}
+    )
+    def plot(self, filename=None, label_by=None):
         """
         Shows a simple plot of the sky model.
 
@@ -2747,7 +2910,7 @@ class SkyModel(object):
         ----------
         filename : str, optional
             If given, the plot is saved to a file instead of displayed.
-        labelBy : str, optional
+        label_by : str, optional
             One of 'source' or 'patch': label points using source names
             ('source') or patch names ('patch')
 
@@ -2762,10 +2925,17 @@ class SkyModel(object):
         >>> s.plot("sky_plot.pdf")
 
         """
-        operations.plot.plot(self, filename, labelBy=labelBy)
+        operations.plot.plot(self, fileName=filename, labelBy=label_by)
 
+    @deprecated(
+        renamed_parameters={
+            "fileRoot": "file_root",
+            "writeRegionFile": "write_region_file",
+            "clobber": "overwrite",
+        }
+    )
     def rasterize(
-        self, cellsize, fileRoot=None, writeRegionFile=False, clobber=False
+        self, cellsize, file_root=None, write_region_file=False, overwrite=False
     ):
         """
         Rasterize the sky model to FITS images (one image per spectral term).
@@ -2782,7 +2952,7 @@ class SkyModel(object):
         ----------
         cellsize : float
             The cellsize in degrees for the output image.
-        fileRoot : str, optional
+        file_root : str, optional
             Filename root for the output FITS images. The images will be named
             file_root + '_0.fits', file_root + '_1.fits', etc. (one for each
             spectral term in the sky model). If write_region_file is True, a ds9
@@ -2790,11 +2960,11 @@ class SkyModel(object):
             root is taken from the filename of the input sky model (with its
             extension, if any, removed), if available, and otherwise is set to
             'skymodel'
-        writeRegionFile : bool, optional
+        write_regionFile : bool, optional
             If True and the sky model is grouped into contiguous patches, a ds9
             region file defining the Voronoi patches will be written (this file
             is required for DDECal)
-        clobber : bool, optional
+        overwrite : bool, optional
             If True, existing files are overwritten.
         """
 
@@ -2806,7 +2976,7 @@ class SkyModel(object):
         from lsmtool.facet import tessellate  # noqa
 
         # Check inputs
-        if write_region_file and not self.hasPatches:
+        if write_region_file and not self.has_patches:
             raise ValueError(
                 "writeRegionFile = True but sky model is not grouped into "
                 "patches."
@@ -2818,20 +2988,20 @@ class SkyModel(object):
                 file_root = os.path.splitext(self._filename)[0]
 
         # Make a blank image for each spectral term
-        reference_frequency = self.getColValues("ReferenceFrequency")
+        reference_frequency = self.get_col_values("ReferenceFrequency")
         ref_freq = reference_frequency[0]  # TODO: allow per-source ref freq
-        fluxes = self.getColValues("I")
-        types = self.getColValues("Type")
+        fluxes = self.get_col_values("I")
+        types = self.get_col_values("Type")
         nsources = len(fluxes)
-        if "SpectralIndex" in self.getColNames():
-            spectral_indices = self.getColValues("SpectralIndex")
+        if "SpectralIndex" in self.get_col_names():
+            spectral_indices = self.get_col_values("SpectralIndex")
         else:
             spectral_indices = [[]] * nsources
         nterms = len(spectral_indices[0]) + 1
 
         # Check that LogarithmicSI = False for all entries
         if nterms > 1:
-            logsi = self.getColValues("LogarithmicSI")
+            logsi = self.get_col_values("LogarithmicSI")
             if np.any(logsi == "true"):
                 raise RuntimeError(
                     "Sky model has one or more sources with "
@@ -2847,13 +3017,13 @@ class SkyModel(object):
                 else:
                     raise IOError(
                         f"The output file {image_name!r} exists and "
-                        "clobber = False."
+                        "overwrite = False."
                     )
 
         x, y, wcs = self._get_xy(crdelt=cellsize)
         if "GAUSSIAN" in types:
             fwhm = np.max(
-                self.getColValues("MajorAxis", units="degree") * cellsize
+                self.get_col_values("MajorAxis", units="degree") * cellsize
             )
             max_source_size = int(np.ceil(fwhm * 1.5))
         else:
@@ -2873,8 +3043,8 @@ class SkyModel(object):
         xcen = np.min(x) + (np.max(x) - np.min(x)) / 2.0
         ycen = np.min(y) + (np.max(y) - np.min(y)) / 2.0
         ref_ra, ref_dec = wcs.wcs_pix2world(xcen, ycen, 0)
-        ra = self.getColValues("Ra")
-        dec = self.getColValues("Dec")
+        ra = self.get_col_values("Ra")
+        dec = self.get_col_values("Dec")
 
         for image_name in image_names:
             make_template_image(
@@ -2921,14 +3091,14 @@ class SkyModel(object):
                     imdata[0, 0, int(np.round(ys)), int(np.round(xs))] += v
                 elif type_ == "GAUSSIAN":
                     s1 = (
-                        self.getColValues("MajorAxis", units="degree")[i]
+                        self.get_col_values("MajorAxis", units="degree")[i]
                         / cellsize
                     )  # pixels
                     s2 = (
-                        self.getColValues("MinorAxis", units="degree")[i]
+                        self.get_col_values("MinorAxis", units="degree")[i]
                         / cellsize
                     )  # pixels
-                    th = self.getColValues("Orientation")[i]  # degrees
+                    th = self.get_col_values("Orientation")[i]  # degrees
                     c1, c2 = ys, xs
                     b = np.ceil(s1 * 2.5)
                     bbox = np.s_[
@@ -2943,9 +3113,9 @@ class SkyModel(object):
             hdu.writeto(image_name, overwrite=True)
 
         # Make region file if needed
-        if write_region_file and self.hasPatches:
-            ra, dec = self.getPatchPositions(asArray=True)
-            patch_names = self.getPatchNames()
+        if write_region_file and self.has_patches:
+            ra, dec = self.get_patch_positions(as_array=True)
+            patch_names = self.get_patch_names()
             x_pix_list = []
             y_pix_list = []
             for ra_src, dec_src in zip(ra, dec, strict=True):
@@ -2987,7 +3157,7 @@ class SkyModel(object):
                 else:
                     raise IOError(
                         f"The output file {outputfile!r} exists and "
-                        "clobber = False."
+                        "overwrite = False."
                     )
             with open(outputfile, "w") as f:
                 f.writelines(lines)
