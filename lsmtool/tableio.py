@@ -627,6 +627,12 @@ def _parse_sexagesimal(values, hourangle=False):
     return Angle(values, unit='hourangle' if hourangle else 'deg').to('deg')
 
 
+def _is_scalar(x):
+    if isinstance(x, np.ndarray):  # Includes Astropy Angle and Quantity
+        return x.ndim == 0
+    return isinstance(x, (str, numbers.Real))
+
+
 def RADec2Angle(RA, Dec):
     """
     Returns normalized Angle objects for input RA, Dec values.
@@ -649,14 +655,9 @@ def RADec2Angle(RA, Dec):
     """
     import astropy.units as u
 
-    def is_scalar(x):
-        if isinstance(x, np.ndarray):  # Includes Astropy Angle and Quantity
-            return x.ndim == 0
-        return isinstance(x, (str, numbers.Real))
-
-    if is_scalar(RA):
+    if _is_scalar(RA):
         RA = [RA]
-    if is_scalar(Dec):
+    if _is_scalar(Dec):
         Dec = [Dec]
 
     if len(RA) and isinstance(RA[0], str):
