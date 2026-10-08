@@ -43,24 +43,6 @@ from packaging.version import Version
 
 from .operations_lib import normalize_ra_dec
 
-# Python 3 compatibility
-try:
-    unicode = unicode
-except NameError:
-    # Python 3
-    basestring = (str, bytes)
-else:
-    # Python 2
-    basestring = basestring
-import io
-
-try:
-    # Python 2
-    file_types = (file, io.IOBase)
-except NameError:
-    # Python 3
-    file_types = (io.IOBase,)
-
 # Define the valid columns here as dictionaries. The entry key is the lower-case
 # name of the column, the entry value is the key used in the astropy table of the
 # SkyModel object. For details, see:
@@ -715,9 +697,9 @@ def skyModelIdentify(origin, *args, **kwargs):
     """
     # Search for a format line. If found, assume file is valid
     try:
-        if isinstance(args[0], basestring):
+        if isinstance(args[0], (str, bytes)):
             f = open(args[0])
-        elif isinstance(args[0], file_types):
+        elif isinstance(args[0], io.IOBase):
             f = args[0]
         else:
             return False
