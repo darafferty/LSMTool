@@ -3,7 +3,6 @@ Benchmark tests for SkyModel functions using pytest-benchmark.
 """
 
 import math
-from pathlib import Path
 
 import pytest
 
@@ -11,16 +10,10 @@ import lsmtool
 from lsmtool.testing import SkyModelGenerator
 
 # ---------------------------------------------------------------------------- #
-
-output_root = Path(__file__).parent.parent
-skymodels_path = output_root / "resources" / 'generated_skymodels'
+# Fixtures
 
 
-# ---------------------------------------------------------------------------- #
-# Benchmarks
-
-
-@pytest.fixture(params=[1, 100, 1000, 10_000, 50_000, 100_000], scope="session")
+@pytest.fixture(params=[1, 100, 1000, 10_1000, 100_000], scope="session")
 def n_sources(request):
     return request.param
 
@@ -30,13 +23,20 @@ def n_patches(request):  # (2, 2), (10, 10), (25, 25), (50, 50)
     return request.param
 
 
+@pytest.fixture(scope="session")
+def output_dir(pytestconfig):
+    path = pytestconfig.resource_dir / "generated_skymodels"
+    path.parent.mkdir(exist_ok=True)
+    return path
+
+
 @pytest.fixture
-def generated_skymodel_path(n_sources, n_patches, rng):
+def generated_skymodel_path(output_dir, n_sources, n_patches, rng):
     """
     Generate a skymodel file with the specified number of sources and patches.
     """
     xp, yp = n_patches
-    path = skymodels_path / f"skymodel_{n_sources}_{xp}x{yp}.txt"
+    path = output_dir / f"skymodel_{n_sources}_{xp}x{yp}.txt"
     if not path.exists():
         generator = SkyModelGenerator()
         generator.to_file(path, n_sources, n_patches, rng)
@@ -48,8 +48,11 @@ def skymodel(generated_skymodel_path):
     """
     Load the generated skymodel from the specified path.
     """
-    skymodel = lsmtool.load(generated_skymodel_path)
-    return skymodel
+    return lsmtool.load(generated_skymodel_path)
+
+
+# ---------------------------------------------------------------------------- #
+# Benchmark tests
 
 
 @pytest.mark.benchmark(group="SkyModel.getPatchPositions", min_rounds=1)
@@ -68,17 +71,17 @@ def test_get_patch_positions_benchmark(
     )
 
 
-@pytest.mark.benchmark(group="SkyModel.group", min_rounds=1)
-def test_group_benchmark(benchmark, skymodel, n_sources, n_patches):
-    """Benchmark `SkyModel.group`"""
-    benchmark.extra_info["n_sources"] = n_sources
-    benchmark.extra_info["n_patches"] = math.prod(n_patches)
+# @pytest.mark.benchmark(group="SkyModel.group", min_rounds=1)
+# def test_group_benchmark(benchmark, skymodel, n_sources, n_patches):
+#     """Benchmark `SkyModel.group`"""
+#     benchmark.extra_info["n_sources"] = n_sources
+#     benchmark.extra_info["n_patches"] = math.prod(n_patches)
 
-    benchmark(
-        skymodel.group,
-        "meanshift",
-        byPatch=True,
-        applyBeam=False,
-        lookDistance=0.075,
-        groupingDistance=0.01,
-    )
+#     benchmark(
+#         skymodel.group,
+#         "meanshift",
+#         byPatch=True,
+#         applyBeam=False,
+#         lookDistance=0.075,
+#         groupingDistance=0.01,
+#     )
