@@ -312,11 +312,11 @@ class TestSkyModelGenerator:
         Test that we can generate a random skymodel with patches and that we can
         load it.
         """
-        xp, yp = n_patches
+        x_patches, y_patches = n_patches
         path = (
             pytestconfig.resource_dir
             / "generated_skymodels"
-            / f"skymodel_{n_sources}_{xp}x{yp}.txt"
+            / f"skymodel_{n_sources}_{x_patches}x{y_patches}.txt"
         )
         path.parent.mkdir(exist_ok=True)
 
@@ -325,8 +325,20 @@ class TestSkyModelGenerator:
         generator = SkyModelGenerator()
         generator.to_file(path, n_sources, n_patches, rng)
 
-        # Check that we can load the skymodel and that it contains the expected
-        # patch column.
+        # Check that we can load the skymodel
         assert path.exists()
         skymodel = load(path)
+
+        # check the number of sources
+        assert len(skymodel) == n_sources
+
+        # check number of patches
         assert "Patch" in skymodel.getColNames()
+        assert len(skymodel.table.meta) == x_patches * y_patches
+
+        # check number of sources per patch
+        n_sources_per_patch = [
+            sum(skymodel.table["Patch"] == patch_name)
+            for patch_name in skymodel.table.meta
+        ]
+        assert sum(n_sources_per_patch) == n_sources
