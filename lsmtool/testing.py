@@ -341,9 +341,10 @@ class SkyModelGenerator:
         if n_patches:
             patch_defs, patch_col = self.get_patches(samples, n_patches)
             samples = {"patch": patch_col, **samples}
-            return samples, patch_defs
+        else:
+            patch_defs = None
 
-        return samples, None
+        return samples, patch_defs
 
     def get_coords(self, samples):
         """
