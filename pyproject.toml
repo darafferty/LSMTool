@@ -1,6 +1,6 @@
-#########################
+# ============================================================================ #
 # build-system settings #
-#########################
+# ============================================================================ #
 
 [build-system]
 requires = [
@@ -10,9 +10,9 @@ requires = [
 build-backend = "scikit_build_core.build"
 
 
-####################
+# ============================================================================ #
 # project settings #
-####################
+# ============================================================================ #
 
 [project]
 name = "lsmtool"
@@ -63,11 +63,14 @@ tests = [
     "pytest-mock",
     "pytest-xdist",
     "pytest-socket",
+]
+benchmarks = [
+    "lsmtool[tests]",
     "pytest-benchmark>=5.3.0",
 ]
 dev = [
     "ruff",
-    "lsmtool[docs,tests,sofia]"
+    "lsmtool[docs,tests,benchmarks]"
 ]
 
 [dependency-groups]
@@ -86,9 +89,9 @@ Documentation = "https://lsmtool.readthedocs.io/en/latest/"
 Repository = "https://git.astron.nl/RD/LSMTool"
 
 
-#########################
-# cibuildwheel settings #
-#########################
+# ============================================================================ #
+# cibuildwheel settings                                                        #
+# ============================================================================ #
 
 # NOTE: running cibuildwheel only makes sense when `BUILD_EXTENSIONS` in
 # section `[tool.scikit-build.cmake.define]` is set to "ON" or "TRUE".
@@ -101,9 +104,9 @@ test-requires = "pytest"
 skip = ["*-musllinux_*"]
 
 
-#########################
-# scikit-build settings #
-#########################
+# ============================================================================ #
+# scikit-build settings                                                        #
+# ============================================================================ #
 
 [tool.scikit-build]
 cmake.version = ">=3.15"
@@ -117,17 +120,17 @@ sdist.include = ["lsmtool/_version.py"]
 BUILD_EXTENSIONS = "OFF"
 
 
-###########################
-# setuptools_scm settings #
-###########################
+# ============================================================================ #
+# Setuptools_scm settings                                                      #
+# ============================================================================ #
 
 [tool.setuptools_scm]
 write_to = "lsmtool/_version.py"
 
 
-###########################
-# ruff settings           #
-###########################
+# ============================================================================ #
+# Ruff settings                                                                #
+# ============================================================================ #
 # Copied from https://git.astron.nl/templates/python-package/-/blob/9ccee1fed6796b6784e8814cc83ee4e5d34bba3d/%7B%7Bcookiecutter.project_slug%7D%7D/pyproject.toml
 [tool.ruff]
 line-length = 80
@@ -153,8 +156,9 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Expand basic rules with name and style checks roughly equivalent to flake8 + black + pylint
-# Some additional functional errors such as `await` on none async or wrong return types / args.
+# Expand basic rules with name and style checks roughly equivalent to flake8 +
+# black + pylint Some additional functional errors such as `await` on none async
+# or wrong return types / args.
 # More info https://docs.astral.sh/ruff/rules/
 select = ["N", "A", "E", "F", "B", "W", "Q", "PL", "ASYNC", "S", "G", "RET", "ARG", "I"]
 
@@ -172,9 +176,11 @@ ignore = ["PLR2004", "N803"]
     "PLR0913",   # Too many arguments in function definition
     "PLR0917"   # Too many positional arguments
 ]
-###########################
-# coverage settings       #
-###########################
+
+
+# ============================================================================ #
+# Coverage settings                                                            #
+# ============================================================================ #
 
 [tool.coverage.run]
 omit = ["lsmtool/_changelog.py", "lsmtool/_version.py"]
@@ -182,15 +188,18 @@ omit = ["lsmtool/_changelog.py", "lsmtool/_version.py"]
 [tool.coverage.report]
 sort = "cover"
 
-###########################
-# tox settings            #
-###########################
+# ============================================================================ #
+# Tox settings                                                                 #
+# ============================================================================ #
 # Adapted from: https://git.astron.nl/templates/python-package/-/blob/9ccee1fed6796b6784e8814cc83ee4e5d34bba3d/%7B%7Bcookiecutter.project_slug%7D%7D/pyproject.toml
 [tool.tox]
-# Generative environment list to test all supported Python versions
 requires = ["tox>=4.21"]
+# Generative environment list to test all supported Python versions
 env_list = ["fix", "coverage", "lint", "format", "py{10,11,12,13}"]
 
+
+# Base test environment
+# ---------------------------------------------------------------------------- #
 [tool.tox.env_run_base]
 description = "run unit tests"
 deps = [{ replace = "ref", of = ["dependency-groups", "tests"], extend = true }]
@@ -199,15 +208,12 @@ package = "editable"
 set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning", PYTEST_XDIST_AUTO_NUM_WORKERS = "4" }
 commands = [
     ["python", "--version"],
-    ["python", "-m", "pytest", "-vv", "-n", "auto", { replace = "posargs", default = [], extend = true }]
+    ["python", "-m", "pytest", "-vv", "-n", "auto",
+     { replace = "posargs", default = [], extend = true }]
 ]
 
-# [tool.tox.env.fix]
-# description = "format the code base to adhere to our styles, and complain about what we cannot do automatically"
-# skip_install = true
-# deps = ["pre-commit-uv>=4.1.1"]
-# commands = [["pre-commit", "run", "--all-files", "--show-diff-on-failure"]]
-
+# Test coverage environment
+# ---------------------------------------------------------------------------- #
 [tool.tox.env.coverage]
 extras = ["tests"]
 commands = [
@@ -215,6 +221,7 @@ commands = [
     [
         "python", "-m", "pytest",
         { replace = "posargs", default = [], extend = true },
+        "--ignore=tests/benchmarks",
         "--cov=lsmtool",
         "--cov-report", "term",
         "--cov-report", "xml",
@@ -222,8 +229,20 @@ commands = [
     ]
 ]
 
+# Test benchmark environment
+# ---------------------------------------------------------------------------- #
+[tool.tox.env.benchmark]
+extras = ["benchmarks"]
+commands = [
+    ["python", "--version"],
+    [
+        "python", "-m", "pytest", "--benchmark-only",
+        { replace = "posargs", default = [], extend = true },
+    ]
+]
 
-# Command prefixes to reuse the same virtualenv for all linting jobs.
+# Linting environment
+# ---------------------------------------------------------------------------- #
 [tool.tox.env.lint]
 deps = ["ruff"]
 commands = [
@@ -233,6 +252,8 @@ commands = [
      { replace = "posargs", default = [], extend = true }]
 ]
 
+# Formatting environment
+# ---------------------------------------------------------------------------- #
 [tool.tox.env.format]
 deps = ["ruff"]
 commands = [
@@ -241,6 +262,8 @@ commands = [
     ["python", "-m", "ruff", "check", "--select", "I", "--fix"]
 ]
 
+# Documentation build environment
+# ---------------------------------------------------------------------------- #
 [tool.tox.env.docs]
 deps = [{ replace = "ref", of = ["dependency-groups", "docs"], extend = true }]
 extras = ["docs"]
@@ -253,6 +276,8 @@ commands = [
     ["python", "-m", "sphinx.cmd.build", "docs/source", "docs/build/html"]
 ]
 
+# Project build environment
+# ---------------------------------------------------------------------------- #
 [tool.tox.env.build]
 package = "skip"
 deps = ["build>=0.8.0"]
