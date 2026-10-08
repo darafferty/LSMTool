@@ -92,6 +92,16 @@ run_unit_tests_coverage:
       - htmlcov/*
 
 
+# Run benchmark unit tests
+run_benchmark_tests:
+  stage: test
+  extends: [ ".run_unit_test_version_base", ".default-image" ]
+  script:
+    - tox -e benchmark -- --benchmark-save $CI_COMMIT_BRANCH
+  artifacts:
+    paths:
+      - .benchmarks
+
 # Build and package the project
 package_files:
   extends: .default-image
