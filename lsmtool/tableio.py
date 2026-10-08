@@ -665,8 +665,6 @@ def RADec2Angle(RA, Dec):
             RAAngle = _parse_sexagesimal(RA, hourangle=True)
             if RAAngle is None:
                 RAAngle = Angle(Angle(RA, unit=u.hourangle), unit=u.deg)
-        except KeyboardInterrupt:
-            raise
         except Exception as e:
             raise ValueError('RA not understood (must be string in '
                              'makesourcedb format or float in degrees): {0}'.format(e))
@@ -678,8 +676,6 @@ def RADec2Angle(RA, Dec):
             DecAngle = _parse_sexagesimal(Dec)
             if DecAngle is None:
                 DecAngle = Angle(Dec, unit=u.deg)
-        except KeyboardInterrupt:
-            raise
         except ValueError:
             try:
                 DecSex = [decstr.replace('.', ':', 2) for decstr in Dec]
