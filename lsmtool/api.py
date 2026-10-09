@@ -110,9 +110,9 @@ class deprecated:
         else:
             name = self.attribute_name
             descriptor = "attribute"
-
+    
         if origin:
-            origin += f" of {origin!r}"
+            origin = f" of {origin!r}"
         else:
             origin = ""
 
