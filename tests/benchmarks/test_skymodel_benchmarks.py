@@ -14,12 +14,14 @@ try:
 except ImportError:
     pytest.skip("pytest-benchmark is not installed", allow_module_level=True)
 
+
 # ---------------------------------------------------------------------------- #
 # Fixtures
 
 
-@pytest.fixture(params=[1, 100, 1000, 10_1000, 100_000], scope="session")
+@pytest.fixture(params=[1, 100, 1000, 10_000, 100_000], scope="session")
 def n_sources(request):
+    print(f"n_sources={request.param}")
     return request.param
 
 
@@ -57,7 +59,7 @@ def skymodel(generated_skymodel_path):
 
 
 # ---------------------------------------------------------------------------- #
-# Benchmark tests
+# Benchmark Tests
 
 
 @pytest.mark.benchmark(group="SkyModel.getPatchPositions", min_rounds=1)
