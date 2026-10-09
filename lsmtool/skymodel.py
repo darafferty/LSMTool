@@ -1969,7 +1969,8 @@ class SkyModel(object):
                 os.remove(filename)
             else:
                 raise IOError(
-                    f"The output file {filename!r} exists and overwrite = False."
+                    f"The output file {filename!r} exists and "
+                    "overwrite = False."
                 )
 
         table = self.table.copy()
