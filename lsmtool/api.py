@@ -95,7 +95,7 @@ class Deprecated:
         self.attribute_name = name
 
     def __get__(self, instance, owner=None):
-        self.emit(owner.__name__)
+        self.emit((owner or instance.__class__).__name__)
         return getattr(instance or owner, self.replacement)
 
     def __set__(self, instance, value):
