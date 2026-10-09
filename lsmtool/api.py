@@ -73,6 +73,11 @@ class Deprecated:
         if rename_needed := set(self.renamed_parameters).intersection(kws):
             for old in rename_needed:
                 new = self.renamed_parameters[old]
+                if new in kws:
+                    raise ValueError(
+                        f"Cannot use both {old!r} and {new!r} as keyword "
+                        "arguments."
+                    )
                 kws[new] = kws.pop(old)
                 replaced.append(old)
 
