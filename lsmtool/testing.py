@@ -514,8 +514,7 @@ class SkyModelGenerator:
         ----------
         filename : str or pathlib.Path
             The path to the file where the generated skymodel should be saved.
-            File will be saved as .txt file in CSV format, file compression is
-            not supported.
+            File will be saved as text file in CSV format.
         n_sources : int
             The number of sources to generate in the skymodel.
         random_state : int, RandomState instance or None, optional
