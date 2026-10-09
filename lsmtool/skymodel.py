@@ -20,7 +20,7 @@ from astropy.table import Column, Table
 from . import operations, tableio
 from .api import deprecated
 from .operations_lib import (
-    apply_beam,
+    apply_beam as apply_beam_operation,
     calculateSeparation,
     gaussian_fcn,
     make_template_image,
@@ -34,20 +34,43 @@ class SkyModel(object):
     """
     Object that stores the sky model and provides methods for accessing it.
     """
-
-    # Deprecated function names
-    getPatchNames = deprecated("get_patch_names")  # noqa
-    getPatchPositions = deprecated("get_patch_positions")  # noqa
-    getColValues = deprecated("get_col_values")  # noqa
-    getRowIndex = deprecated("get_row_index")  # noqa
-    setPatchPositions = deprecated("set_patch_positions")  # noqa
-    getColNames = deprecated("get_col_names")  # noqa
-    getPatchSizes = deprecated("get_patch_sizes")  # noqa
-
+    
     # Deprecated attributes names
     beamMS = deprecated("beam_ms")  # noqa
     beamTime = deprecated("beam_time")  # noqa
     hasPatches = deprecated("has_patches")  # noqa
+
+    # Deprecated function names
+    getDistance = deprecated("get_distance")  # noqa
+    getPatchNames = deprecated("get_patch_names")  # noqa
+    getPatchSizes = deprecated("get_patch_sizes")  # noqa
+    getPatchPositions = deprecated("get_patch_positions")  # noqa
+    setPatchPositions = deprecated("set_patch_positions")  # noqa
+
+    getColNames = deprecated("get_col_names")  # noqa
+    getColValues = deprecated("get_col_values")  # noqa
+    setColValues = deprecated("set_col_values")  # noqa
+    getRowValues = deprecated("get_row_values")  # noqa
+    setRowValues = deprecated("set_row_values")  # noqa
+    getRowIndex = deprecated("get_row_index")  # noqa
+
+    getDefaultValues = deprecated("get_default_values")  # noqa
+    setDefaultValues = deprecated("set_default_values")  # noqa
+
+    
+    # deprecated private methods
+    _addHistory = deprecated("_add_history")  # noqa
+    _updateGroups = deprecated("_update_groups")  # noqa
+    _verifyColName = deprecated("_verify_col_name")  # noqa
+    _getNameIndx = deprecated("_get_name_indx")  # noqa
+    _getAggregatedColumn = deprecated("_get_aggregated_column")  # noqa
+    _applyBeamToCol = deprecated("_apply_beam_to_col")  # noqa
+    _getSummedColumn = deprecated("_get_summed_column")  # noqa
+    _getMinColumn = deprecated("_get_min_column")  # noqa
+    _getMaxColumn = deprecated("_get_max_column")  # noqa
+    _getAveragedColumn = deprecated("_get_averaged_column")  # noqa
+    _getSizeColumn = deprecated("_get_size_column")  # noqa
+    _calculateSeparation = deprecated("_calculate_separation")  # noqa
 
     @deprecated(
         renamed_parameters={
@@ -129,7 +152,7 @@ class SkyModel(object):
                             )
                         )
                         self._filename = file_name.lower() + "_vo"
-                        self._addHistory(
+                        self._add_history(
                             "LOAD (from {0} at position {1})".format(
                                 file_name, vo_position
                             )
@@ -139,7 +162,7 @@ class SkyModel(object):
                         self.table = tableio.getTGSS(vo_position, vo_radius)
                         self.log.debug("Successfully loaded model from TGSS")
                         self._filename = "tgss_vo"
-                        self._addHistory(
+                        self._add_history(
                             "LOAD (from TGSS at position {0})".format(
                                 vo_position
                             )
@@ -149,7 +172,7 @@ class SkyModel(object):
                         self.table = tableio.getGSM(vo_position, vo_radius)
                         self.log.debug("Successfully loaded model from GSM")
                         self._filename = "gsm_vo"
-                        self._addHistory(
+                        self._add_history(
                             "LOAD (from GSM at position {0})".format(
                                 vo_position
                             )
@@ -159,7 +182,7 @@ class SkyModel(object):
                         self.table = tableio.getLoTSS(vo_position, vo_radius)
                         self.log.debug("Successfully loaded model from LoTSS")
                         self._filename = "lotss_vo"
-                        self._addHistory(
+                        self._add_history(
                             "LOAD (from LoTSS at position {0})".format(
                                 vo_position
                             )
@@ -194,7 +217,7 @@ class SkyModel(object):
                         file_name
                     )
                 )
-                self._addHistory("LOAD (from file '{0}')".format(file_name))
+                self._add_history("LOAD (from file '{0}')".format(file_name))
             else:
                 # If file_name does not point to a VO query, assume it points to a local file
                 self.log.debug(
@@ -222,7 +245,7 @@ class SkyModel(object):
                     )
                 )
                 self._filename = file_name
-                self._addHistory("LOAD (from file '{0}')".format(file_name))
+                self._add_history("LOAD (from file '{0}')".format(file_name))
         elif type(file_name) is dict:
             self.log.debug("Attempting to create model from input dict...")
             # Create header
@@ -246,7 +269,7 @@ class SkyModel(object):
             )
             self.log.debug("Successfully created model from input dict")
             self._filename = None
-            self._addHistory("LOAD (from input dict)")
+            self._add_history("LOAD (from input dict)")
         else:
             raise ValueError("Filename not understood. Exiting...")
 
@@ -494,7 +517,7 @@ class SkyModel(object):
         """
         if type(col_name) is str:
             col_name_lower = col_name.lower()
-            if col_name_lower not in tableio.allowed_column_names:
+            if col_name_lower not in tableio.allowedColumnNames:
                 if not quiet:
                     raise ValueError(
                         'Column name "{0}" is not a valid makesourcedb '
@@ -1714,8 +1737,8 @@ class SkyModel(object):
             ra_avg_full = np.zeros(len(self.table), dtype=float)
             dec_avg_full = np.zeros(len(self.table), dtype=float)
             for i, ind in enumerate(self.table.groups.indices[1:]):
-                ra_avg_full[self.table.groups.indices[i] : ind] = ra_avg[i]
-                dec_avg_full[self.table.groups.indices[i] : ind] = dec_avg[i]
+                ra_avg_full[self.table.groups.indices[i]: ind] = ra_avg[i]
+                dec_avg_full[self.table.groups.indices[i]: ind] = dec_avg[i]
 
             dist = self._calculate_separation(
                 self.table["Ra"], self.table["Dec"], ra_avg_full, dec_avg_full
@@ -1956,7 +1979,7 @@ class SkyModel(object):
             i_orig = self.get_col_values("I")
             ra_deg = self.get_col_values("Ra")
             dec_deg = self.get_col_values("Dec")
-            i_adj = apply_beam(
+            i_adj = apply_beam_operation(
                 self.beam_ms,
                 i_orig,
                 ra_deg,
@@ -2202,8 +2225,8 @@ class SkyModel(object):
             self,
             filter_expression,
             aggregate=aggregate,
-            apply_beam=apply_beam,
-            use_regex=use_regex,
+            applyBeam=apply_beam,
+            useRegEx=use_regex,
             force=force,
         )
 
@@ -2322,8 +2345,8 @@ class SkyModel(object):
             self,
             filter_expression,
             aggregate=aggregate,
-            apply_beam=apply_beam,
-            use_regex=use_regex,
+            applyBeam=apply_beam,
+            useRegEx=use_regex,
             force=force,
         )
 
@@ -3016,8 +3039,8 @@ class SkyModel(object):
                     c1, c2 = ys, xs
                     b = np.ceil(s1 * 2.5)
                     bbox = np.s_[
-                        max(0, int(c1 - b)) : min(xsize, int(c1 + b + 1)),
-                        max(0, int(c2 - b)) : min(ysize, int(c2 + b + 1)),
+                        max(0, int(c1 - b)): min(xsize, int(c1 + b + 1)),
+                        max(0, int(c2 - b)): min(ysize, int(c2 + b + 1)),
                     ]
                     x_ax, y_ax = np.mgrid[bbox]
                     g = [v, c1, c2, s1, s2, th]
