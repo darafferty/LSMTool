@@ -502,8 +502,7 @@ class SkyModel(object):
                         "column."
                     )
                 return None
-            else:
-                col_name_key = tableio.allowedColumnNames[col_name_lower]
+            col_name_key = tableio.allowedColumnNames[col_name_lower]
             if col_name_key not in self.table.keys() and only_existing:
                 if not quiet:
                     raise ValueError(
@@ -537,10 +536,9 @@ class SkyModel(object):
                     )
             if len(col_name_lower) == 0:
                 return None
-            else:
-                col_name_key = [
-                    tableio.allowedColumnNames[n] for n in col_name_lower
-                ]
+            col_name_key = [
+                tableio.allowedColumnNames[n] for n in col_name_lower
+            ]
         else:
             col_name_key = None
 
@@ -703,11 +701,9 @@ class SkyModel(object):
                     ra.append(patch_dict[patch][0].value)
                     dec.append(patch_dict[patch][1].value)
                 return np.array(ra), np.array(dec)
-            else:
-                return patch_dict
+            return patch_dict
 
-        else:
-            return None
+        return None
 
     @deprecated(
         renamed_parameters={
@@ -1023,8 +1019,7 @@ class SkyModel(object):
         if type(col_name) is list:
             if len(col_name) > 1:
                 raise ValueError("Only one column can be specified.")
-            else:
-                col_name = col_name[0]
+            col_name = col_name[0]
 
         allowed_fcns = ["sum", "mean", "wmean", "min", "max"]
         if aggregate not in allowed_fcns and aggregate is not None:
@@ -1093,12 +1088,11 @@ class SkyModel(object):
         """
         col_name = self._verify_col_name(col_name, only_existing=False)
         if col_name is None:
-            return None
+            return
         if type(col_name) is list:
             if len(col_name) > 1:
                 raise ValueError("Only one column can be specified.")
-            else:
-                col_name = col_name[0]
+            col_name = col_name[0]
 
         if isinstance(values, dict):
             if col_name in self.table.keys():
@@ -1115,9 +1109,16 @@ class SkyModel(object):
                     val = value
                 data[indx] = val
                 mask[indx] = False
+        elif len(values) != len(self.table):
             raise ValueError(
                 "Length of input values must match length of table."
             )
+        else:
+            if col_name == "Ra" or col_name == "Dec":
+                vals = Angle(values, unit=u.deg)
+            else:
+                vals = values
+            data = vals
 
         if mask is not None:
             data = np.ma.masked_array(data, mask)
@@ -1176,10 +1177,10 @@ class SkyModel(object):
             table = self.table.groups[pindx]
             table = table.group_by("Patch")  # ensure that grouping is preserved
             return table
-        elif row_name in self.get_col_values("Name"):
+        if row_name in self.get_col_values("Name"):
             indx = self._get_name_indx(row_name)
             return self.table.filled()[indx]
-            raise ValueError(f"Row name {row_name!r} not recognized.")
+        raise ValueError(f"Row name {row_name!r} not recognized.")
 
     @deprecated(renamed_parameters={"rowName": "row_name"})
     def get_row_index(self, row_name):
@@ -1311,8 +1312,7 @@ class SkyModel(object):
             if units is not None:
                 col.convert_unit_to(units)
             return col.data
-        else:
-            return None
+        return None
 
     def get_patch_names(self):
         """
@@ -1336,8 +1336,7 @@ class SkyModel(object):
             else:
                 outcol = col.copy()
             return outcol.data
-        else:
-            return None
+        return None
 
     def _get_name_indx(self, name, patch=False):
         """
@@ -1374,7 +1373,7 @@ class SkyModel(object):
             if len(indx) == 0:
                 return None
             return indx
-        elif type(name) is list:
+        if type(name) is list:
             indx = []
             for n in name:
                 bad_names = []
@@ -1400,8 +1399,7 @@ class SkyModel(object):
             if len(indx) == 0:
                 raise ValueError("None of the specified names were found.")
             return indx
-        else:
-            return None
+        return None
 
     def _get_column(self, col_name, apply_beam=False):
         """
@@ -1677,12 +1675,11 @@ class SkyModel(object):
                 data=np.array(numer / denom),
                 unit=self.table[col_name].unit,
             )
-        else:
 
-            def npavg(c):
-                return np.average(c, axis=0)
+        def npavg(c):
+            return np.average(c, axis=0)
 
-            return self.table[col_name].groups.aggregate(npavg)
+        return self.table[col_name].groups.aggregate(npavg)
 
     def _get_size_column(self, weight=True, apply_beam=False):
         """
@@ -1753,13 +1750,12 @@ class SkyModel(object):
                 size = self.table["Val"].groups.aggregate(np.max).data * 2.0
                 self.table.remove_column("Val")
                 col = Column(name="Size", data=size, unit="degree")
+        elif "majoraxis" in self.table.colnames:
+            col = self.table["Major_axis"]
         else:
-            if "majoraxis" in self.table.colnames:
-                col = self.table["Major_axis"]
-            else:
-                col = Column(
-                    name="Size", data=np.zeros(len(self.table)), unit="degree"
-                )
+            col = Column(
+                name="Size", data=np.zeros(len(self.table)), unit="degree"
+            )
 
         if hasattr(col, "filled"):
             outcol = col.filled(fill_value=0.0)
@@ -1850,8 +1846,7 @@ class SkyModel(object):
         dist = self._calculate_separation(s_ra, s_dec, ra, dec)
         if units is not None:
             return dist.to(units).value
-        else:
-            return dist.value
+        return dist.value
 
     @deprecated(
         renamed_parameters={
@@ -1941,8 +1936,7 @@ class SkyModel(object):
         if filename is None:
             if self._filename is None:
                 raise IOError("No file name specified.")
-            else:
-                filename = self._filename
+            filename = self._filename
 
         if os.path.exists(filename):
             if clobber:
