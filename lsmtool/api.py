@@ -83,7 +83,7 @@ class Deprecated:
         Emit a deprecation warning for the given function and keyword arguments.
         """
         message = self._get_message(origin, *args)
-        warnings.warn(message, DeprecationWarning, stacklevel=2)
+        warnings.warn(message, DeprecationWarning, stacklevel=3)
 
         if self.warn_once:
             self.emit = self.emit_noop
