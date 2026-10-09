@@ -135,7 +135,7 @@ class SkyModel(object):
 
         self.log = logging.getLogger("LSMTool")
         self.history = []
-        if type(filename) is str:
+        if isinstance(filename, str):
             # First check if filename points to a VO query
             if vo_position is not None and vo_radius is not None:
                 try:
@@ -235,7 +235,7 @@ class SkyModel(object):
                 )
                 self._filename = filename
                 self._add_history(f"LOAD (from file {filename!r})")
-        elif type(filename) is dict:
+        elif isinstance(filename, dict):
             self.log.debug("Attempting to create model from input dict...")
             # Create header
             format_string = "#FORMAT = " + ", ".join(filename.keys())
@@ -437,7 +437,7 @@ class SkyModel(object):
         # Get columns
         col_name = self._verify_col_name(col_name)
         if col_name is not None:
-            if type(col_name) is str:
+            if isinstance(col_name, str):
                 col_name = [
                     col_name
                 ]  # needed in order to get a table instead of a column
@@ -490,7 +490,7 @@ class SkyModel(object):
             Properly formatted name of column or None if col_name not found
 
         """
-        if type(col_name) is str:
+        if isinstance(col_name, str):
             col_name_lower = col_name.lower()
             if col_name_lower not in tableio.allowedColumnNames:
                 if not quiet:
@@ -507,7 +507,7 @@ class SkyModel(object):
                     )
                 return None
 
-        elif type(col_name) is list:
+        elif isinstance(col_name, list):
             col_name_lower = [c.lower() for c in col_name]
             for name in col_name_lower[:]:
                 bad_names = []
@@ -797,8 +797,8 @@ class SkyModel(object):
                 patch_dict.update(patch_dict_no_pos)
 
             for patch, pos in patch_dict.items():
-                if type(pos[0]) is str or type(pos[0]) is float:
-                    ra, dec = tableio.RADec2Angle(pos[0], pos[1])
+                if isinstance(pos[0], str) or isinstance(pos[0], float):
+                    ra, dec = tableio.RADec2Angle(*pos)
                     # Each patch stores scalar Angles, not length-one arrays.
                     pos = [ra[0], dec[0]]
                 self.table.meta[patch] = list(pos)
@@ -1012,7 +1012,7 @@ class SkyModel(object):
         col_name = self._verify_col_name(col_name)
         if col_name is None:
             return None
-        if type(col_name) is list:
+        if isinstance(col_name, list):
             if len(col_name) > 1:
                 raise ValueError("Only one column can be specified.")
             col_name = col_name[0]
@@ -1085,7 +1085,7 @@ class SkyModel(object):
         col_name = self._verify_col_name(col_name, only_existing=False)
         if col_name is None:
             return
-        if type(col_name) is list:
+        if isinstance(col_name, list):
             if len(col_name) > 1:
                 raise ValueError("Only one column can be specified.")
             col_name = col_name[0]
@@ -1363,14 +1363,14 @@ class SkyModel(object):
         else:
             names = self.get_col_values("Name").tolist()
 
-        if type(name) is str or type(name) is np.bytes_:
+        if isinstance(name, str) or isinstance(name, np).bytes_:
             indx = [
                 i for i, item in enumerate(names) if fnmatch.fnmatch(item, name)
             ]
             if len(indx) == 0:
                 return None
             return indx
-        if type(name) is list:
+        if isinstance(name, list):
             indx = []
             for n in name:
                 bad_names = []
@@ -2684,7 +2684,7 @@ class SkyModel(object):
         ... )
 
         """
-        if type(lsm2) is str:
+        if isinstance(lsm2, str):
             lsm2 = SkyModel(lsm2)
         operations.concatenate.concatenate(
             self,
@@ -2813,7 +2813,7 @@ class SkyModel(object):
         ... )
         """
 
-        if type(lsm2) is str:
+        if isinstance(lsm2, str):
             lsm2 = SkyModel(lsm2)
         return operations.compare.compare(
             self,
