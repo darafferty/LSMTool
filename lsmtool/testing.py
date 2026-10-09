@@ -299,9 +299,8 @@ class SkyModelGenerator:
         ra, dec = self.get_coords(samples)
         samples.update(ra=ra, dec=dec)
 
-        # NOTE: Since the order of the columns is determined by the dictionary,
-        # we explicitly set the order here in the order the lsmtool expects the
-        # columns
+        # NOTE: LSMTool expects a specific order of the items in the dictionary:
+        # The "name" and "type" keys should go first.
         samples = {
             "name": self.get_names(samples),
             "type": self.get_types(samples),
@@ -343,9 +342,8 @@ class SkyModelGenerator:
         if n_patches:
             # Get patch definitions
             patch_defs, patch_col = self.get_patches(samples, n_patches)
-            # NOTE: Since the order of the columns is determined by the
-            # dictionary, we explicitly set the order here in the order the
-            # lsmtool expects the columns
+            # NOTE: LSMTool expects a specific order of the items in the
+            # dictionary: The "patch" key should go first.
             samples = {"patch": patch_col, **samples}
         else:
             patch_defs = None
