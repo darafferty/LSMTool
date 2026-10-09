@@ -2692,7 +2692,10 @@ class SkyModel(object):
 
         >>> skymodel2 = lsmtool.load("high_res_sky.model")
         ... s.concatenate(
-        ...     skymodel2, match_by="position", radius=10.0 / 3600.0, keep="from2"
+        ...     skymodel2,
+        ...     match_by="position",
+        ...     radius=10.0 / 3600.0,
+        ...     keep="from2",
         ... )
 
         """
