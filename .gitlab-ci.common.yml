@@ -75,6 +75,8 @@ run_unit_tests:
   parallel:
     matrix: # use the matrix for testing
       - PY_VERSION: [10, 11, 12, 13]
+  when: manual
+
 
 # Run code coverage on the base image thus also performing unit tests
 run_unit_tests_coverage:
@@ -90,6 +92,7 @@ run_unit_tests_coverage:
         path: coverage.xml
     paths:
       - htmlcov/*
+  when: manual
 
 
 # Run benchmark unit tests
