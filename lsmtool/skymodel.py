@@ -200,18 +200,21 @@ class SkyModel(object):
                     self._filename = None
             elif tableio.validateLSMFormat(filename):
                 self.log.debug(
-                    "Attempting to load LSM model from file %r..."
-                        filename
+                    "Attempting to load LSM model from file %r...", filename
                 )
                 self.table = tableio.loadTableFromLSM(filename)
                 self.log.debug(
-                    "Successfully loaded model from file %r", filename)
-                self._add_history("LOAD (from file %r)", filename)
+                    "Successfully loaded model from file %r", filename
+                )
+                self._add_history(
+                    f"LOAD (from file {filename!r})",
+                )
             else:
                 # If filename does not point to a VO query, assume it points to
                 # a local file
                 self.log.debug(
-                    "Attempting to load model from file %r...", filename)
+                    "Attempting to load model from file %r...", filename
+                )
                 if filename.lower() in (
                     "wenss",
                     "nvss",
@@ -227,7 +230,8 @@ class SkyModel(object):
                     )
                 self.table = Table.read(filename, format="makesourcedb")
                 self.log.debug(
-                    "Successfully loaded model from file %r", filename)
+                    "Successfully loaded model from file %r", filename
+                )
                 self._filename = filename
                 self._add_history(f"LOAD (from file {filename!r})")
         elif type(filename) is dict:

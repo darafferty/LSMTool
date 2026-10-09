@@ -170,6 +170,10 @@ ignore = ["PLR2004", "N803"]
     "PLR0913",   # Too many arguments in function definition
     "PLR0917"   # Too many positional arguments
 ]
+
+[tool.ruff.format]
+docstring-code-format = true
+
 ###########################
 # coverage settings       #
 ###########################

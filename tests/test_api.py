@@ -176,7 +176,7 @@ class TestAttributeDeprecation:
     def example_deprecate_attribute(self):
 
         class ExampleDeprecateAttribute:
-            deprecatedAttribute = deprecated("new_attribute")
+            deprecatedAttribute = deprecated("new_attribute")  # noqa
             new_attribute = "new value"
 
         return ExampleDeprecateAttribute()
