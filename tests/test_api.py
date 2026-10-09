@@ -137,12 +137,16 @@ def test_deprecated_renamed_parameters(params):
         match=(
             "The following parameters of 'example_deprecate_renamed_parameters'"
             " have been renamed:"
-            +("\n    fileName -> filename" if "fileName" in params else "")
-            +("\n    beamMS -> beam_ms" if "beamMS" in params else "")
-            +("\n    checkDup -> check_dup" if "checkDup" in params else "")
-            +("\n    VOPosition -> vo_position" if "VOPosition" in params else "")
-            +("\n    VORadius -> vo_radius" if "VORadius" in params else "")
-            +"\nThis message will become an error in lsmtool version 1.9.0."
+            + ("\n    fileName -> filename" if "fileName" in params else "")
+            + ("\n    beamMS -> beam_ms" if "beamMS" in params else "")
+            + ("\n    checkDup -> check_dup" if "checkDup" in params else "")
+            + (
+                "\n    VOPosition -> vo_position"
+                if "VOPosition" in params
+                else ""
+            )
+            + ("\n    VORadius -> vo_radius" if "VORadius" in params else "")
+            + "\nThis message will become an error in lsmtool version 1.9.0."
         )
     ):
         result = example_deprecate_renamed_parameters(**params)
@@ -164,9 +168,8 @@ class TestAttributeDeprecation:
     """
 
     EXPECTED_MESSAGE = (
-        "The attribute 'deprecatedAttribute'ExampleDeprecateAttribute of "
-        "'ExampleDeprecateAttribute' is deprecated. Please use the new "
-        "attribute name 'new_attribute' instead."
+        "The attribute 'deprecatedAttribute' of 'ExampleDeprecateAttribute' is "
+        "deprecated. Please use the new attribute name 'new_attribute' instead."
     )
 
     @pytest.fixture
