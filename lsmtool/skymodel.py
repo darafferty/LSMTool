@@ -21,6 +21,8 @@ from . import operations, tableio
 from .api import deprecated
 from .operations_lib import (
     apply_beam as apply_beam_operation,
+)
+from .operations_lib import (
     calculateSeparation,
     gaussian_fcn,
     make_template_image,
@@ -34,7 +36,7 @@ class SkyModel(object):
     """
     Object that stores the sky model and provides methods for accessing it.
     """
-    
+
     # Deprecated attributes names
     beamMS = deprecated("beam_ms")  # noqa
     beamTime = deprecated("beam_time")  # noqa
@@ -57,7 +59,6 @@ class SkyModel(object):
     getDefaultValues = deprecated("get_default_values")  # noqa
     setDefaultValues = deprecated("set_default_values")  # noqa
 
-    
     # deprecated private methods
     _addHistory = deprecated("_add_history")  # noqa
     _updateGroups = deprecated("_update_groups")  # noqa
@@ -241,7 +242,7 @@ class SkyModel(object):
 
             # Process the model
             outlines = []
-            string_values = ["{0}".format(v) for v in file_name.values()]
+            string_values = ["{0}".format(v) for v in filename.values()]
             line = ", ".join(string_values)
             outline, meta_dict = processLine(line, meta_dict, col_names)
             if outline is not None:
@@ -584,10 +585,11 @@ class SkyModel(object):
             model, if any, will be returned.
             - 'mid' => calculate the midpoint of the patch
             - 'mean' => calculate the mean RA and Dec of the patch
-            - 'wmean' => calculate the flux-weighted mean RA and Dec of the patch
+            - 'wmean' => calculate the flux-weighted mean RA and Dec of the
+               patch
             - None => current patch positions are returned
-            Note that the mid, mean, and wmean positions are calculated from TAN-
-            projected values.
+            Note that the mid, mean, and wmean positions are calculated from
+            TAN- projected values.
         apply_beam : bool, optional
             If True, fluxes used as weights will be attenuated by the beam.
         per_patch_projection : bool, optional
@@ -604,20 +606,20 @@ class SkyModel(object):
         --------
         Get the current patch positions::
 
-            >>> s.get_patch_positions()
-            {'bin0': [<Angle 91.77565208333331 deg>, <Angle 41.57834805555555 deg>],
-             'bin1': [<Angle 91.59991874999997 deg>, <Angle 41.90387583333333 deg>],
-             'bin2': [<Angle 90.83773333333332 deg>, <Angle 42.189861944444445 deg>],
+        >>> s.get_pale 90.tch_positions()
+        {'bin0': [<Angle 91.77565208333331 deg>, <Angle 41.57834805555555 deg>],
+        'bin1': [<Angle 91.59991874999997 deg>, <Angle 41.90387583333333 deg>],
+        'bin2': [<Ang83773333333332 deg>, <Angle 42.189861944444445 deg>],
 
         Get them as RA and Dec arrays in degrees::
 
-            >>> s.get_patch_positions(as_array=True)
-            (array([ 91.77565208,  91.59991875,  90.83773333]),
-             array([ 41.57834806,  41.90387583,  42.18986194]))
+        >>> s.get_patch_positions(as_array=True)
+        (array([ 91.77565208,  91.59991875,  90.83773333]),
+        array([ 41.57834806,  41.90387583,  42.18986194]))
 
         Calculate the flux-weighted mean positions of each patch::
 
-            >>> s.get_patch_positions(method='wmean', as_array=True)
+        >>> s.get_patch_positions(method="wmean", as_array=True)
 
         """
         if self.has_patches:
@@ -748,8 +750,8 @@ class SkyModel(object):
             Dec of the patch
             - 'zero' => set all positions to [0.0, 0.0]
 
-            Note that the mid, mean, and wmean positions are calculated from TAN-
-            projected values.
+            Note that the mid, mean, and wmean positions are calculated from
+            TAN- projected values.
         apply_beam : bool, optional
             If True, fluxes used as weights will be attenuated by the beam.
         per_patch_projection : bool, optional
@@ -760,16 +762,16 @@ class SkyModel(object):
         --------
         Set all patch positions to their (projected) midpoints::
 
-            >>> s.set_patch_positions()
+        >>> s.set_patch_positions()
 
         Set all patch positions to their (projected) flux-weighted mean
         positions::
 
-             >>> s.set_patch_positions(method='wmean')
+        >>> s.set_patch_positions(method="wmean")
 
         Set new position for the 'bin0' patch only::
 
-            >>> s.set_patch_positions({'bin0': [123.231, 23.4321]})
+        >>> s.set_patch_positions({"bin0": [123.231, 23.4321]})
 
         """
         if self.has_patches:
@@ -981,9 +983,9 @@ class SkyModel(object):
                 - 'max': maximum of patch values
 
             Note that, in some cases, certain aggregation functions will not
-            produce meaningful results. For example, asking for the sum of
-            the MajorAxis values per patch will not give a good indication of
-            the size of the patch (to get the sizes, use the get_patch_sizes()
+            produce meaningful results. For example, asking for the sum of the
+            MajorAxis values per patch will not give a good indication of the
+            size of the patch (to get the sizes, use the get_patch_sizes()
             method). Additionally, applying the 'mean' or 'wmean' functions to
             the RA or Dec columns may give strange results near the poles or
             near RA = 0h. For aggregated RA and Dec values, use the
@@ -1003,22 +1005,22 @@ class SkyModel(object):
         --------
         Get Stokes I fluxes in Jy::
 
-            >>> s.get_col_values('I')
-            array([ 60.4892,   1.2413,   1.216 , ...,   1.12  ,   1.25  ,   1.16  ])
+        >>> s.get_col_values("I")
+        array([ 60.4892,   1.2413,   1.216 , ...,   1.12  ,   1.25  ,   1.16  ])
 
         Get Stokes I fluxes in mJy::
 
-            >>> s.get_col_values('I', units='mJy')
-            array([ 60489.2,   1241.3,   1216. , ...,   1120. ,   1250. ,   1160. ])
+        >>> s.get_col_values("I", units="mJy")
+        array([ 60489.2,   1241.3,   1216. , ...,   1120. ,   1250. ,   1160. ])
 
         Get total Stokes I flux for the patches::
 
-            >>> s.get_col_values('I', aggregate='sum')
-            array([ 61.7305,   1.216 ,   3.9793, ...,   1.12  ,   1.25  ,   1.16  ])
+        >>> s.get_col_values("I", aggregate="sum")
+        array([ 61.7305,   1.216 ,   3.9793, ...,   1.12  ,   1.25  ,   1.16  ])
 
-        Get flux-weighted average RA and Dec for the patches. As noted above, the
-        get_col_values() method is not appropriate for use with RA or Dec, so
-        we must use get_patch_positions() instead::
+        Get flux-weighted average RA and Dec for the patches. As noted above,
+        the get_col_values() method is not appropriate for use with RA or Dec,
+        so we must use get_patch_positions() instead::
 
             >>> RA, Dec = s.get_patch_positions(method='wmean', as_array=True)
 
@@ -1319,16 +1321,17 @@ class SkyModel(object):
 
     def get_patch_names(self):
         """
-        Returns array of all patch names in the sky model, with duplicates removed.
+        Returns array of all patch names in the sky model, with duplicates
+        removed.
 
-        Note: use get_col_values('Patch') if you want the patch names for each source
-        in the sky model.
+        Note: use get_col_values('Patch') if you want the patch names for each
+        source in the sky model.
 
         Returns
         -------
         names : numpy.ndarray
-            Array of patch names. None is returned if the sky model
-            does not have patches
+            Array of patch names. None is returned if the sky model does not
+            have patches
 
         """
         if self.has_patches:
@@ -1720,8 +1723,8 @@ class SkyModel(object):
             ra_avg_full = np.zeros(len(self.table), dtype=float)
             dec_avg_full = np.zeros(len(self.table), dtype=float)
             for i, ind in enumerate(self.table.groups.indices[1:]):
-                ra_avg_full[self.table.groups.indices[i]: ind] = ra_avg[i]
-                dec_avg_full[self.table.groups.indices[i]: ind] = dec_avg[i]
+                ra_avg_full[self.table.groups.indices[i] : ind] = ra_avg[i]
+                dec_avg_full[self.table.groups.indices[i] : ind] = dec_avg[i]
 
             dist = self._calculate_separation(
                 self.table["Ra"], self.table["Dec"], ra_avg_full, dec_avg_full
@@ -1836,7 +1839,7 @@ class SkyModel(object):
 
         Find distance to patch centers:
 
-            >>> s.set_patch_positions(method='mid')
+            >>> s.set_patch_positions(method="mid")
             >>> s.get_distance(94.0, 42.0, by_patch=True)
 
         """
@@ -1857,7 +1860,7 @@ class SkyModel(object):
 
     @deprecated(
         renamed_parameters={
-            "fileName": "file_name",
+            "fileName": "filename",
             "sortBy": "sort_by",
             "lowToHigh": "low_to_high",
             "addHistory": "add_history",
@@ -1867,7 +1870,7 @@ class SkyModel(object):
     )
     def write(
         self,
-        file_name=None,
+        filename=None,
         format="makesourcedb",
         clobber=False,
         sort_by=None,
@@ -1894,7 +1897,8 @@ class SkyModel(object):
                 - 'kvis'
                 - 'casa'
                 - 'factor'
-                - 'facet' (ds9 region file of Voronoi facets; model must have patches)
+                - 'facet' (ds9 region file of Voronoi facets; model must have
+                  patches)
                 - plus all other formats supported by the astropy.table package
         clobber : bool, optional
             If True, an existing file is overwritten.
@@ -1927,31 +1931,31 @@ class SkyModel(object):
 
             >>> s.write('sky.fits', format='fits')
 
-        Write to a ds9 region file (point sources are indicated by points and Gaussians
-        by ellipses)::
+        Write to a ds9 region file (point sources are indicated by points and
+        Gaussians by ellipses)::
 
             >>> s.write('sky.reg', format='ds9')
 
-        Write to a WSClean/ds9 facet region file (regions define Voronoi facets around patch
-        positions)::
+        Write to a WSClean/ds9 facet region file (regions define Voronoi facets
+        around patch positions)::
 
             >>> s.write('facets.reg', format='facet')
 
         """
 
-        if file_name is None:
+        if filename is None:
             if self._filename is None:
                 raise IOError("No file name specified.")
             else:
-                file_name = self._filename
+                filename = self._filename
 
-        if os.path.exists(file_name):
+        if os.path.exists(filename):
             if clobber:
-                os.remove(file_name)
+                os.remove(filename)
             else:
                 raise IOError(
                     "The output file '{0}' exists and clobber = False.".format(
-                        file_name
+                        filename
                     )
                 )
 
@@ -2016,8 +2020,8 @@ class SkyModel(object):
             if width is not None:
                 table.meta["width"] = width
             else:
-                # Find the approximate width in RA and Dec that the model covers and
-                # add 20% padding
+                # Find the approximate width in RA and Dec that the model covers
+                # and add 20% padding
                 source_coord = SkyCoord(
                     ra=table["Ra"].value * u.degree,
                     dec=table["Dec"].value * u.degree,
@@ -2042,7 +2046,7 @@ class SkyModel(object):
             table.columns["Dec"].format = None
             table.columns["I"].format = None
 
-        table.write(file_name, format=format.lower())
+        table.write(filename, format=format.lower())
 
     def broadcast(self):
         """
@@ -2110,10 +2114,10 @@ class SkyModel(object):
         force=True,
     ):
         """
-        Filters the sky model, keeping all sources that meet the given expression.
+        Filters the sky model, keeping all sources that meet the given
+        expression.
 
-        After filtering, the sky model contains only those sources for which the
-        given filter expression is true.
+        After filtering, thqion is true.
 
         Parameters
         ----------
@@ -2132,12 +2136,12 @@ class SkyModel(object):
               [property, operator, value] or
               [property, operator, value, units]
             - If `numpy.ndarray`:
-              The indices to filter on can be specified directly as a numpy array
-              of row or patch indices such as:
+              The indices to filter on can be specified directly as a numpy
+              array of row or patch indices such as:
               ``np.array([ 0,  2, 19, 20, 31, 37])``
-              or as a numpy array of bools with the same length as the sky model.
-              If a numpy array is given and the indices correspond to patches, then
-              set aggregate=True.
+              or as a numpy array of bools with the same length as the sky
+              model. If a numpy array is given and the indices correspond to
+              patches, then set aggregate=True.
               The property to filter on must be one of the following:
 
                 - a valid column name
@@ -2151,7 +2155,8 @@ class SkyModel(object):
                   - <
                   - = (or '==')
 
-              Units are optional and must be specified as required by astropy.units.
+              Units are optional and must be specified as required by
+              astropy.units.
         aggregate : str, optional
             If set, the selection will be done on values aggregated
             over the patch members. The following aggregation functions are
@@ -2162,9 +2167,9 @@ class SkyModel(object):
                 - 'wmean': Stokes I weighted mean of patch values
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
-                - True: only valid when the filter indices are specified directly
-                  as a numpy array. If True, filtering is done on patches instead
-                  of sources.
+                - True: only valid when the filter indices are specified
+                  directly as a numpy array. If True, filtering is done on
+                  patches instead of sources.
 
         apply_beam : bool, optional
             If True, apparent fluxes will be used.
@@ -2173,12 +2178,13 @@ class SkyModel(object):
             False, string matching uses Unix filename matching.
         force : bool, optional
             If True, selections that result in empty sky models are allowed. If
-            False, such selections are not applied and the sky model is unaffected.
+            False, such selections are not applied and the sky model is
+            unaffected.
 
         Examples
         --------
-        Filter on column 'I' (Stokes I flux). This filter will select all sources
-        with Stokes I flux greater than 1.5 Jy::
+        Filter on column 'I' (Stokes I flux). This filter will select all
+        sources with Stokes I flux greater than 1.5 Jy::
 
             >>> s.select('I > 1.5 Jy')
             INFO: Kept 1102 sources.
@@ -2229,7 +2235,8 @@ class SkyModel(object):
         force=True,
     ):
         """
-        Filters the sky model, removing all sources that meet the given expression.
+        Filters the sky model, removing all sources that meet the given
+        expression.
 
         After filtering, the sky model contains only those sources for which the
         given filter expression is false.
@@ -2251,12 +2258,12 @@ class SkyModel(object):
               [property, operator, value] or
               [property, operator, value, units]
             - If `numpy.ndarray`:
-              The indices to filter on can be specified directly as a numpy array
-              of row or patch indices such as:
+              The indices to filter on can be specified directly as a numpy
+              array of row or patch indices such as:
               ``array([ 0,  2, 19, 20, 31, 37])``
-              or as a numpy array of bools with the same length as the sky model.
-              If a numpy array is given and the indices correspond to patches, then
-              set ``aggregate=True``.
+              or as a numpy array of bools with the same length as the sky
+              model. If a numpy array is given and the indices correspond to
+              patches, then set ``aggregate=True``.
               The property to filter on must be one of the following:
 
                 - a valid column name
@@ -2271,7 +2278,8 @@ class SkyModel(object):
                 - <
                 - = (or '==')
 
-            Units are optional and must be specified as required by astropy.units.
+            Units are optional and must be specified as required by
+            astropy.units.
 
         aggregate : str, optional
             If set, the selection will be done on values aggregated
@@ -2296,8 +2304,8 @@ class SkyModel(object):
 
         Examples
         --------
-        Filter on column 'I' (Stokes I flux). This filter will remove all sources
-        with Stokes I flux greater than 1.5 Jy::
+        Filter on column 'I' (Stokes I flux). This filter will remove all
+        sources with Stokes I flux greater than 1.5 Jy::
 
             >>> s.remove('I > 1.5 Jy')
             INFO: Removed 1102 sources.
@@ -2381,36 +2389,40 @@ class SkyModel(object):
             - 'single' => all sources are grouped into a single patch
             - 'every' => every source gets a separate patch named 'source_patch'
             - 'cluster' => SAGECAL clustering algorithm that groups sources into
-              specified number of clusters (specified by the num_clusters parameter)
-            - 'tessellate' => group into tiles whose total flux approximates
-              the target flux (specified by the target_flux parameter)
-            - 'threshold' => group by convolving the sky model with a Gaussian beam
-              and then thresholding to find islands of emission (NOTE: all sources
-              are currently considered to be point sources of flux unity)
-            - 'facet' => group by facets using as an input a fits file. It requires
-              the use of the additional parameter 'facet' to enter the name of the
-              fits file.
-            - 'voronoi' => given a previously grouped sky model, Voronoi tessellate
-              using the patch positions for patches above the target flux
-              (specified by the target_flux parameter) or whose names match the
-              input names (specified by the patch_names parameter)
+              specified number of clusters (specified by the num_clusters
+              parameter)
+            - 'tessellate' => group into tiles whose total flux approximates the
+              target flux (specified by the target_flux parameter)
+            - 'threshold' => group by convolving the sky model with a Gaussian
+              beam and then thresholding to find islands of emission (NOTE: all
+              sources are currently considered to be point sources of flux
+              unity)
+            - 'facet' => group by facets using as an input a fits file. It
+              requires the use of the additional parameter 'facet' to enter the
+              name of the fits file.
+            - 'voronoi' => given a previously grouped sky model, Voronoi
+              tessellate using the patch positions for patches above the target
+              flux (specified by the target_flux parameter) or whose names match
+              the input names (specified by the patch_names parameter)
             - 'meanshift' => use the meanshift clustering algorithm
-            - the filename of a mask image => group by masked regions (where mask =
-              True). Sources outside of masked regions are given patches of their
-              own
+            - the filename of a mask image => group by masked regions (where
+              mask = True). Sources outside of masked regions are given patches
+              of their own
 
         target_flux : str or float, optional
-            Target flux for 'tessellate' (the total flux of each tile will be close
-            to this value) and 'voronoi' algorithms. The target flux can be specified
-            as either a float in Jy or as a string with units (e.g., '25.0 m_jy')
+            Target flux for 'tessellate' (the total flux of each tile will be
+            close to this value) and 'voronoi' algorithms. The target flux can
+            be specified as either a float in Jy or as a string with units
+            (e.g., '25.0 m_jy')
         patch_names : list, optional
-            List of patch names to use for the 'voronoi' algorithm. If both patch_names
-            and target_flux are given, the target_flux selection is applied first
+            List of patch names to use for the 'voronoi' algorithm. If both
+            patch_names and target_flux are given, the target_flux selection is
+            applied first
         weight_by_size : bool, optional
-            If True, fluxes are weighted by patch size (as median_size / size) when
-            the target_flux criterion is applied. Patches with sizes below the median
-            (flux-weighted) size are upweighted and those above the mean are
-            downweighted
+            If True, fluxes are weighted by patch size (as median_size / size)
+            when the target_flux criterion is applied. Patches with sizes below
+            the median (flux-weighted) size are upweighted and those above the
+            mean are downweighted
         num_clusters : int, optional
             Number of clusters for clustering. Sources are grouped around the
             num_clusters brightest sources.
@@ -2419,29 +2431,30 @@ class SkyModel(object):
             be specified as either a float in degrees or as a string with units
             (e.g., '25.0 arcsec')
         threshold : float, optional
-            Value between 0 and 1 above which emission is considered for thresholding
+            Value between 0 and 1 above which emission is considered for
+            thresholding
         apply_beam : bool, optional
             If True, fluxes will be attenuated by the beam.
         root : str, optional
-            Root string from which patch names are constructed. For 'single', the
-            patch name will be set to root; for the other grouping algorithms, the
-            patch names will be 'root_INDX', where INDX is an integer ranging from
-            (0:n_patches).
+            Root string from which patch names are constructed. For 'single',
+            the patch name will be set to root; for the other grouping
+            algorithms, the patch names will be 'root_INDX', where INDX is an
+            integer ranging from (0:n_patches).
         pad_index : bool, optional
-            If True, pad the INDX is used in the patch names. E.g., facet_patch_001
-            instead of facet_patch_1
+            If True, pad the INDX is used in the patch names. E.g.,
+            facet_patch_001 instead of facet_patch_1
         method : None or str, optional
             This parameter specifies the method used to set the patch positions:
             - 'mid' => the position is set to the midpoint of the patch
             - 'mean' => the positions is set to the mean RA and Dec of the patch
             - 'wmean' => the position is set to the flux-weighted mean RA and
-            Dec of the patch
+               Dec of the patch
             - 'zero' => set all positions to [0.0, 0.0]
         facet : str, optional
             Facet fits file used with the algorithm 'facet'
         by_patch : bool, optional
-            For the 'tessellate' or 'meanshift' algorithms, use patches instead of
-            sources
+            For the 'tessellate' or 'meanshift' algorithms, use patches instead
+            of sources
         kernel_size : float, optional
             Kernel size in degrees for 'meanshift' grouping
         n_iterations : int, optional
@@ -2456,7 +2469,7 @@ class SkyModel(object):
         Tesselate the sky model into patches with approximately 30 Jy total
         flux:
 
-            >>> s.group('tessellate', target_flux=30.0)
+            >>> s.group("tessellate", target_flux=30.0)
 
         """
         operations.group.group(
@@ -2490,11 +2503,11 @@ class SkyModel(object):
         """
         Transfer patches from the input sky model.
 
-        Sources matching those in patch_sky_model will be grouped into
-        the patches defined in patch_sky_model. Sources that do not appear in
+        Sources matching those in patch_sky_model will be grouped into the
+        patches defined in patch_sky_model. Sources that do not appear in
         patch_sky_model will be placed into separate patches (one per source).
-        Patch positions are not transferred (as they may no longer be appropriate
-        after transfer).
+        Patch positions are not transferred (as they may no longer be
+        appropriate after transfer).
 
         Parameters
         ----------
@@ -2508,8 +2521,8 @@ class SkyModel(object):
               radius specified by the radius parameter are considered matches
 
         radius : float or str, optional
-            Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
-            for matching when match_by='position'
+            Radius in degrees (if float) or 'value unit' (if str; e.g., '30
+            arcsec') for matching when match_by='position'
 
         Examples
         --------
@@ -2533,9 +2546,9 @@ class SkyModel(object):
         moved to a new position. However, multiple sources can be shifted.
 
         If an xyshift is specified, a FITS file must also be specified to define
-        the WCS system. If a position, a shift, and an xyshift are all specified,
-        a source is moved to the new position, shifted in RA and Dec, and then
-        shifted in x and y.
+        the WCS system. If a position, a shift, and an xyshift are all
+        specified, a source is moved to the new position, shifted in RA and Dec,
+        and then shifted in x and y.
 
         Parameters
         ----------
@@ -2549,12 +2562,12 @@ class SkyModel(object):
             A list specifying the shift as [RAShift, DecShift] in degrees (e.g.,
             [0.02312, 0.00342])
         xyshift : list, optional
-            A list specifying the shift as [xShift, yShift] in pixels. A FITS file
-            must be specified with the fitsFILE argument
+            A list specifying the shift as [xShift, yShift] in pixels. A FITS
+            file must be specified with the fitsFILE argument
         fits_file : str, optional
-            A FITS file from which to take WCS information to transform the pixel
-            coordinates to RA and Dec values. The xyshift argument must be specfied
-            for this to be useful
+            A FITS file from which to take WCS information to transform the
+            pixel coordinates to RA and Dec values. The xyshift argument must be
+            specfied for this to be useful
 
         Examples
         --------
@@ -2642,39 +2655,41 @@ class SkyModel(object):
             Determines how duplicate sources are determined:
 
             - 'name' => duplicates are identified by name
-            - 'position' => duplicates are identified by radius. Sources within the
-              radius specified by the radius parameter are considered duplicates
+            - 'position' => duplicates are identified by radius. Sources within
+              the radius specified by the radius parameter are considered
+              duplicates
 
         radius : float or str, optional
-            Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
-            for matching when match_by='position'
+            Radius in degrees (if float) or 'value unit' (if str; e.g., '30
+            arcsec') for matching when match_by='position'
         keep : str, optional
             Determines how duplicates are treated:
 
-            - 'all' => all duplicates are kept; those with identical names are re-
-              named
+            - 'all' => all duplicates are kept; those with identical names are
+              re- named
             - 'from1' => duplicates kept are those from sky model 1 (the parent)
-            - 'from2' => duplicates kept are those from sky model 2 (the secondary)
+            - 'from2' => duplicates kept are those from sky model 2 (the
+              secondary)
 
         inherit_patches : bool, optional
-            If True, duplicates inherit the patch name from the parent sky model. If
-            False, duplicates keep their own patch names.
+            If True, duplicates inherit the patch name from the parent sky
+            model. If False, duplicates keep their own patch names.
 
         Examples
         --------
-        Concatenate two sky models, identifying duplicates by matching to the source
-        names. When duplicates are found, keep the source from the parent sky model
-        and discard the duplicate from secondary sky model (this might be useful when
-        merging two gsm.py sky models that have some overlap)::
+        Concatenate two sky models, identifying duplicates by matching to the
+        source names. When duplicates are found, keep the source from the parent
+        sky model and discard the duplicate from secondary sky model (this might
+        be useful when merging two gsm.py sky models that have some overlap)::
 
             >>> lsm2 = lsmtool.load('gsm_sky2.model')
             >>> s.concatenate(lsm2, match_by='name', keep='from1')
 
-        Concatenate two sky models, identifying duplicates by matching to the source
-        positions within a radius of 10 arcsec. When duplicates are found, keep the
-        source from the secondary sky model and discard the duplicate from the parent
-        sky model (this might be useful when replacing parts of a low-resolution
-        sky model with a high-resolution one)::
+        Concatenate two sky models, identifying duplicates by matching to the
+        source positions within a radius of 10 arcsec. When duplicates are
+        found, keep the source from the secondary sky model and discard the
+        duplicate from the parent sky model (this might be useful when replacing
+        parts of a low-resolution sky model with a high-resolution one)::
 
             >>> lsm2 = lsmtool.load('high_res_sky.model')
             >>> s.concatenate(lsm2, match_by='position', radius=10.0/3600.0,
@@ -2727,7 +2742,8 @@ class SkyModel(object):
           - flux ratio vs flux
           - position offsets
 
-        The following statistics are saved to 'stats.txt' in the output directory:
+        The following statistics are saved to 'stats.txt' in the output
+        directory:
 
             - mean and standard deviation of flux ratio
             - mean and standard deviation of RA offsets
@@ -2740,13 +2756,13 @@ class SkyModel(object):
         lsm2 : SkyModel
             Secondary sky model to compare to the parent sky model
         radius : float or str, optional
-            Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
-            for matching
+            Radius in degrees (if float) or 'value unit' (if str; e.g., '30
+            arcsec') for matching
         out_dir : str, optional
             Plots are saved to this directory
         label_by : str, optional
-            One of 'source' or 'patch': label points using source names ('source') or
-            patch names ('patch')
+            One of 'source' or 'patch': label points using source names
+            ('source') or patch names ('patch')
         ignore_spec : float, optional
             Ignore sources with this spectral index
         exclude_multiple : bool, optional
@@ -2756,7 +2772,8 @@ class SkyModel(object):
             If True, matches whose predicted fluxes differ from the parent model
             fluxes by 25% are excluded from the positional offset plot.
         name1 : str, optional
-            Name to use in the plots for the primary sky model. If None, 'Model 1' is used.
+            Name to use in the plots for the primary sky model. If None, 'Model
+            1' is used.
         name2 : str, optional
             Name to use in the plots for lsm2. If None, 'Model 2' is used.
         format : str, optional
@@ -2787,17 +2804,27 @@ class SkyModel(object):
         --------
         Compare two sky models and save plots::
 
-            >>> lsm2 = lsmtool.load('sky2.model')
-            >>> s.compare(lsm2, out_dir='comparison_results/')
+        >>> lsm2 = lsmtool.load("sky2.model")
+        >>> s.compare(lsm2, out_dir="comparison_results/")
 
-        Compare a LOFAR sky model to a global sky model made from VLSS+TGSS+NVSS (where
-        refRA and refDec are the approximate center of the LOFAR sky model coverage)::
+        Compare a LOFAR sky model to a global sky model made from VLSS+TGSS+NVSS
+        (where refRA and refDec are the approximate center of the LOFAR sky
+        model coverage)::
 
-            >>> lsm2 = lsmtool.load('GSM', VOPosition=[refRA, refDec], VORadius='5 deg')
-            >>> s.compare(lsm2, radius='30 arcsec', exclude_multiple=True,
-                out_dir='comparison_results/', name1='LOFAR', name2='GSM', format='png')
-
+        >>> lsm2 = lsmtool.load(
+        ...     "GSM", VOPosition=[refRA, refDec], VORadius="5 deg"
+        ... )
+        >>> s.compare(
+        ...     lsm2,
+        ...     radius="30 arcsec",
+        ...     exclude_multiple=True,
+        ...     out_dir="comparison_results/",
+        ...     name1="LOFAR",
+        ...     name2="GSM",
+        ...     format="png",
+        ... )
         """
+
         if type(lsm2) is str:
             lsm2 = SkyModel(lsm2)
         stats = operations.compare.compare(
@@ -2817,19 +2844,19 @@ class SkyModel(object):
         return stats
 
     @deprecated(
-        renamed_parameters={"fileName": "file_name", "labelBy": "label_by"}
+        renamed_parameters={"fileName": "filename", "labelBy": "label_by"}
     )
-    def plot(self, file_name=None, label_by=None):
+    def plot(self, filename=None, label_by=None):
         """
         Shows a simple plot of the sky model.
 
-        The circles in the plot are scaled with flux. If the sky model is grouped
-        into patches, sources are colored by patch and the patch positions are
-        indicated with stars.
+        The circles in the plot are scaled with flux. If the sky model is
+        grouped into patches, sources are colored by patch and the patch
+        positions are indicated with stars.
 
         Parameters
         ----------
-        file_name : str, optional
+        filename : str, optional
             If given, the plot is saved to a file instead of displayed.
         label_by : str, optional
             One of 'source' or 'patch': label points using source names ('source')
@@ -2846,7 +2873,7 @@ class SkyModel(object):
             >>> s.plot('sky_plot.pdf')
 
         """
-        operations.plot.plot(self, fileName=file_name, labelBy=label_by)
+        operations.plot.plot(self, fileName=filename, labelBy=label_by)
 
     @deprecated(
         renamed_parameters={
@@ -2862,10 +2889,10 @@ class SkyModel(object):
         """
         Rasterize the sky model to FITS images (one image per spectral term).
 
-        The resulting images can be used with DDECal in DP3 for prediction using IDG.
-        If the sky model is grouped into contiguous patches, a ds9 region file defining
-        the Voronoi patches can also written (this file is required for use with IDG
-        predict).
+        The resulting images can be used with DDECal in DP3 for prediction using
+        IDG. If the sky model is grouped into contiguous patches, a ds9 region
+        file defining the Voronoi patches can also written (this file is
+        required for use with IDG predict).
 
         Note: currently, when writing the FITS images, only sky models with
         LogarithmicSI = False are supported.
@@ -2875,16 +2902,17 @@ class SkyModel(object):
         cellsize : float
             The cellsize in degrees for the output image.
         file_root : str, optional
-            Filename root for the output FITS images. The images will be named file_root +
-            '_0.fits', file_root + '_1.fits', etc. (one for each spectral term in the sky
-            model). If write_region_file is True, a ds9 region file is also written as
-            file_root + '.reg'. If not given, the root is taken from the filename of the
-            input sky model (with its extension, if any, removed), if available, and
-            otherwise is set to 'skymodel'
+            Filename root for the output FITS images. The images will be named
+            file_root + '_0.fits', file_root + '_1.fits', etc. (one for each
+            spectral term in the sky model). If write_region_file is True, a ds9
+            region file is also written as file_root + '.reg'. If not given, the
+            root is taken from the filename of the input sky model (with its
+            extension, if any, removed), if available, and otherwise is set to
+            'skymodel'
         write_regionFile : bool, optional
-            If True and the sky model is grouped into contiguous patches, a ds9 region
-            file defining the Voronoi patches will be written (this file is required
-            for DDECal)
+            If True and the sky model is grouped into contiguous patches, a ds9
+            region file defining the Voronoi patches will be written (this file
+            is required for DDECal)
         clobber : bool, optional
             If True, existing files are overwritten.
         """
@@ -3022,8 +3050,8 @@ class SkyModel(object):
                     c1, c2 = ys, xs
                     b = np.ceil(s1 * 2.5)
                     bbox = np.s_[
-                        max(0, int(c1 - b)): min(xsize, int(c1 + b + 1)),
-                        max(0, int(c2 - b)): min(ysize, int(c2 + b + 1)),
+                        max(0, int(c1 - b)) : min(xsize, int(c1 + b + 1)),
+                        max(0, int(c2 - b)) : min(ysize, int(c2 + b + 1)),
                     ]
                     x_ax, y_ax = np.mgrid[bbox]
                     g = [v, c1, c2, s1, s2, th]
