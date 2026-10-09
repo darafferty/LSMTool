@@ -69,7 +69,7 @@ def generate_oskar_skymodel_data(n_sources, rng):
         measure, FWHM major, FWHM minor, Position angle.
     """
 
-    samples = SkyModelGenerator().sample(n_sources, rng)
+    samples, _ = SkyModelGenerator().sample(n_sources, random_state=rng)
     return np.column_stack(list(samples.values())).view(OSKAR_NUMPY_DTYPE)
 
 
