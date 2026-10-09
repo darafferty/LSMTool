@@ -594,10 +594,10 @@ class SkyModel(object):
         --------
         Get the current patch positions::
 
-        >>> s.get_pale 90.tch_positions()
+        >>> s.get_patch_positions()
         {'bin0': [<Angle 91.77565208333331 deg>, <Angle 41.57834805555555 deg>],
         'bin1': [<Angle 91.59991874999997 deg>, <Angle 41.90387583333333 deg>],
-        'bin2': [<Ang83773333333332 deg>, <Angle 42.189861944444445 deg>],
+        'bin2': [<Angle 90.83773333333332 deg>, <Angle 42.189861944444445 deg>],
 
         Get them as RA and Dec arrays in degrees::
 
@@ -1372,7 +1372,7 @@ class SkyModel(object):
         else:
             names = self.get_col_values("Name").tolist()
 
-        if isinstance(name, str) or isinstance(name, np).bytes_:
+        if isinstance(name, str) or isinstance(name, np.bytes_):
             indx = [
                 i for i, item in enumerate(names) if fnmatch.fnmatch(item, name)
             ]
@@ -1857,6 +1857,7 @@ class SkyModel(object):
     @deprecated(
         renamed_parameters={
             "fileName": "filename",
+            "clobber": "overwrite",
             "sortBy": "sort_by",
             "lowToHigh": "low_to_high",
             "addHistory": "add_history",
@@ -1868,7 +1869,7 @@ class SkyModel(object):
         self,
         filename=None,
         format="makesourcedb",  # noqa
-        clobber=False,
+        overwrite=False,
         *,
         sort_by=None,
         low_to_high=False,
@@ -1897,7 +1898,7 @@ class SkyModel(object):
                 - 'facet' (ds9 region file of Voronoi facets; model must have
                   patches)
                 - plus all other formats supported by the astropy.table package
-        clobber : bool, optional
+        overwrite : bool, optional
             If True, an existing file is overwritten.
         sort_by : str or list of str, optional
             Name of columns to sort on. If None, no sorting is done. If
@@ -1946,11 +1947,11 @@ class SkyModel(object):
             filename = self._filename
 
         if os.path.exists(filename):
-            if clobber:
+            if overwrite:
                 os.remove(filename)
             else:
                 raise IOError(
-                    f"The output file {filename!r} exists and clobber = False."
+                    f"The output file {filename!r} exists and overwrite = False."
                 )
 
         table = self.table.copy()
@@ -2876,14 +2877,13 @@ class SkyModel(object):
 
     @deprecated(
         renamed_parameters={
-            "cellsize": "cell_size",
             "fileRoot": "file_root",
             "writeRegionFile": "write_region_file",
-            "clobber": "clobber",
+            "clobber": "overwrite",
         }
     )
     def rasterize(
-        self, cellsize, file_root=None, write_region_file=False, clobber=False
+        self, cellsize, file_root=None, write_region_file=False, overwrite=False
     ):
         """
         Rasterize the sky model to FITS images (one image per spectral term).
@@ -2912,7 +2912,7 @@ class SkyModel(object):
             If True and the sky model is grouped into contiguous patches, a ds9
             region file defining the Voronoi patches will be written (this file
             is required for DDECal)
-        clobber : bool, optional
+        overwrite : bool, optional
             If True, existing files are overwritten.
         """
 
@@ -2956,12 +2956,12 @@ class SkyModel(object):
         image_names = [f"{file_root}_{i}.fits" for i in range(nterms)]
         for image_name in image_names:
             if os.path.exists(image_name):
-                if clobber:
+                if overwrite:
                     os.remove(image_name)
                 else:
                     raise IOError(
                         f"The output file {image_name!r} exists and "
-                        "clobber = False."
+                        "overwrite = False."
                     )
 
         x, y, ref_ra, ref_dec = self._get_xy(crdelt=cellsize)
@@ -3043,7 +3043,7 @@ class SkyModel(object):
                         self.get_col_values("MinorAxis", units="degree")[i]
                         / cellsize
                     )  # pixels
-                    th = self.get_colValues("Orientation")[i]  # degrees
+                    th = self.get_col_values("Orientation")[i]  # degrees
                     c1, c2 = ys, xs
                     b = np.ceil(s1 * 2.5)
                     bbox = np.s_[
@@ -3097,12 +3097,12 @@ class SkyModel(object):
 
             outputfile = f"{file_root}.reg"
             if os.path.exists(outputfile):
-                if clobber:
+                if overwrite:
                     os.remove(outputfile)
                 else:
                     raise IOError(
                         f"The output file {outputfile!r} exists and "
-                        "clobber = False."
+                        "overwrite = False."
                     )
             with open(outputfile, "w") as f:
                 f.writelines(lines)
