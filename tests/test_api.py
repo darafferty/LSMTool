@@ -23,10 +23,15 @@ def example_deprecate_renamed_function():
         """Example deprecated function."""
         return "test string from example_deprecate_renamed_function"
 
+    # Return the decorated function as the fixture value
     return example_deprecate_renamed_function
 
 
 class Example:
+    """
+    Example class with a deprecated method and a replacement method.
+    """
+
     @deprecated(replacement="new_method_name")
     def example_deprecate_renamed_method(self):
         """Example deprecated method."""
@@ -106,11 +111,17 @@ class TestAttributeDeprecation:
 
     @pytest.fixture
     def example_deprecate_attribute(self):
+        """
+        Fixture providing an example class with a deprecated attribute.
+        """
 
         class ExampleDeprecateAttribute:
+            """Example class with a deprecated attribute."""
+
             deprecatedAttribute = deprecated("new_attribute")  # noqa
             new_attribute = "new value"
 
+        # Return an instance of the example class with the deprecated attribute.
         return ExampleDeprecateAttribute()
 
     def test_get_deprecated_attribute(self, example_deprecate_attribute):
@@ -189,6 +200,25 @@ class TestDeprecatedParameters:
         # return the example function from the fixture
         return _example_deprecate_renamed_parameters
 
+    def test_nominal_call(self, example_deprecate_renamed_parameters):
+        """
+        Test the nominal call of the function with the new parameter names.
+        """
+        result = example_deprecate_renamed_parameters(
+            filename="filename",
+            beam_ms="beam",
+            check_dup=False,
+            vo_position=None,
+            vo_radius=1,
+        )
+        assert result == {
+            "filename": "filename",
+            "beam_ms": "beam",
+            "check_dup": False,
+            "vo_position": None,
+            "vo_radius": 1,
+        }
+
     @pytest.mark.parametrize(
         "params",
         [
@@ -219,8 +249,10 @@ class TestDeprecatedParameters:
     ):
         """
         Test that a function with deprecated parameter names emits a deprecation
-        warning. Check that the values of the deprecated parameters are
-        correctly mapped to the new names.
+        warning.
+
+        Check that the values of the deprecated parameters are correctly mapped
+        to the new names.
         """
 
         with pytest.deprecated_call(
@@ -244,25 +276,6 @@ class TestDeprecatedParameters:
                 "vo_radius": 1,
             }
 
-    def test_nominal_call(self, example_deprecate_renamed_parameters):
-        """
-        Test the nominal call of the function with the new parameter names.
-        """
-        result = example_deprecate_renamed_parameters(
-            filename="filename",
-            beam_ms="beam",
-            check_dup=False,
-            vo_position=None,
-            vo_radius=1,
-        )
-        assert result == {
-            "filename": "filename",
-            "beam_ms": "beam",
-            "check_dup": False,
-            "vo_position": None,
-            "vo_radius": 1,
-        }
-
     def test_overspecified_raises(self, example_deprecate_renamed_parameters):
         """
         Test that providing both old and new parameter names raises a
@@ -280,11 +293,17 @@ class TestDeprecatedParameters:
 
 
 def test_skymodel_deprecations(pytestconfig):
-
+    """
+    Test that deprecated SkyModel methods emit deprecation warnings.
+    """
     skymodel = load(pytestconfig.resource_dir / "to_patched.sky")
+
     with pytest.deprecated_call():
         result = skymodel.getPatchPositions("Patch1")
 
+    # Call the new method should produce the same result without a deprecation
+    # warning.
     new = skymodel.get_patch_positions("Patch1")
 
+    # Check that the results are identical
     assert result == new
