@@ -1291,7 +1291,7 @@ class SkyModel(object):
             temp_skymodel, match_by="name", keep="from2", inherit_patches=False
         )
 
-    @deprecated(renamed_parameters={"apply_beam": "apply_beam"})
+    @deprecated(renamed_parameters={"applyBeam": "apply_beam"})
     def get_patch_sizes(self, units=None, weight=False, apply_beam=False):
         """
         Returns array of patch sizes.
@@ -2094,7 +2094,7 @@ class SkyModel(object):
         renamed_parameters={
             "filterExpression": "filter_expression",
             "applyBeam": "apply_beam",
-            "use_regex": "use_reg_ex",
+            "useRegEx": "use_regex",
         }
     )
     def select(
@@ -2215,7 +2215,7 @@ class SkyModel(object):
         renamed_parameters={
             "filterExpression": "filter_expression",
             "applyBeam": "apply_beam",
-            "use_regex": "use_reg_ex",
+            "useRegEx": "use_regex",
         }
     )
     def remove(
@@ -2356,7 +2356,7 @@ class SkyModel(object):
         weight_by_size=False,
         num_clusters=100,
         *,
-        FWHM=None,
+        fwhm=None,
         threshold=0.1,
         apply_beam=False,
         root="Patch",
@@ -2419,7 +2419,7 @@ class SkyModel(object):
         num_clusters : int, optional
             Number of clusters for clustering. Sources are grouped around the
             num_clusters brightest sources.
-        FWHM : str or float, optional
+        fwhm : str or float, optional
             FWHM of convolving Gaussian used for thresholding. The FWHM can
             be specified as either a float in degrees or as a string with units
             (e.g., '25.0 arcsec')
@@ -2472,7 +2472,7 @@ class SkyModel(object):
             patchNames=patch_names,
             weightBySize=weight_by_size,
             numClusters=num_clusters,
-            FWHM=FWHM,
+            FWHM=fwhm,
             threshold=threshold,
             applyBeam=apply_beam,
             root=root,
@@ -2629,14 +2629,14 @@ class SkyModel(object):
 
     @deprecated(
         renamed_parameters={
-            "lsm2": "lsm2",
+            "LSM2": "skymodel2",
             "matchBy": "match_by",
             "inheritPatches": "inherit_patches",
         }
     )
     def concatenate(
         self,
-        lsm2,
+        skymodel2,
         match_by="name",
         radius=0.1,
         keep="all",
@@ -2647,7 +2647,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        lsm2 : str or SkyModel
+        skymodel2 : str or SkyModel
             Secondary sky model to concatenate with the parent sky model
         match_by : str, optional
             Determines how duplicate sources are determined:
@@ -2680,8 +2680,8 @@ class SkyModel(object):
         sky model and discard the duplicate from secondary sky model (this might
         be useful when merging two gsm.py sky models that have some overlap)::
 
-        >>> lsm2 = lsmtool.load("gsm_sky2.model")
-        ... s.concatenate(lsm2, match_by="name", keep="from1")
+        >>> skymodel2 = lsmtool.load("gsm_sky2.model")
+        ... s.concatenate(skymodel2, match_by="name", keep="from1")
 
         Concatenate two sky models, identifying duplicates by matching to the
         source positions within a radius of 10 arcsec. When duplicates are
@@ -2689,17 +2689,17 @@ class SkyModel(object):
         duplicate from the parent sky model (this might be useful when replacing
         parts of a low-resolution sky model with a high-resolution one)::
 
-        >>> lsm2 = lsmtool.load("high_res_sky.model")
+        >>> skymodel2 = lsmtool.load("high_res_sky.model")
         ... s.concatenate(
-        ...     lsm2, match_by="position", radius=10.0 / 3600.0, keep="from2"
+        ...     skymodel2, match_by="position", radius=10.0 / 3600.0, keep="from2"
         ... )
 
         """
-        if isinstance(lsm2, str):
-            lsm2 = SkyModel(lsm2)
+        if isinstance(skymodel2, str):
+            skymodel2 = SkyModel(skymodel2)
         operations.concatenate.concatenate(
             self,
-            lsm2,
+            skymodel2,
             matchBy=match_by,
             radius=radius,
             keep=keep,
@@ -2708,7 +2708,7 @@ class SkyModel(object):
 
     @deprecated(
         renamed_parameters={
-            "lsm2": "lsm2",
+            "LSM2": "skymodel2",
             "outDir": "out_dir",
             "labelBy": "label_by",
             "ignoreSpec": "ignore_spec",
@@ -2718,7 +2718,7 @@ class SkyModel(object):
     )
     def compare(
         self,
-        lsm2,
+        skymodel2,
         radius="10 arcsec",
         *,
         out_dir=".",
@@ -2753,7 +2753,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        lsm2 : SkyModel
+        skymodel2 : SkyModel
             Secondary sky model to compare to the parent sky model
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30
@@ -2775,7 +2775,7 @@ class SkyModel(object):
             Name to use in the plots for the primary sky model. If None, 'Model
             1' is used.
         name2 : str, optional
-            Name to use in the plots for lsm2. If None, 'Model 2' is used.
+            Name to use in the plots for skymodel2. If None, 'Model 2' is used.
         format : str, optional
             Format of plot files.
         make_plots : bool, optional
@@ -2804,18 +2804,18 @@ class SkyModel(object):
         --------
         Compare two sky models and save plots::
 
-        >>> lsm2 = lsmtool.load("sky2.model")
-        ... s.compare(lsm2, out_dir="comparison_results/")
+        >>> skymodel2 = lsmtool.load("sky2.model")
+        ... s.compare(skymodel2, out_dir="comparison_results/")
 
         Compare a LOFAR sky model to a global sky model made from VLSS+TGSS+NVSS
         (where refRA and refDec are the approximate center of the LOFAR sky
         model coverage)::
 
-        >>> lsm2 = lsmtool.load(
+        >>> skymodel2 = lsmtool.load(
         ...     "GSM", VOPosition=[refRA, refDec], VORadius="5 deg"
         ... )
         ... s.compare(
-        ...     lsm2,
+        ...     skymodel2,
         ...     radius="30 arcsec",
         ...     exclude_multiple=True,
         ...     out_dir="comparison_results/",
@@ -2825,11 +2825,11 @@ class SkyModel(object):
         ... )
         """
 
-        if isinstance(lsm2, str):
-            lsm2 = SkyModel(lsm2)
+        if isinstance(skymodel2, str):
+            skymodel2 = SkyModel(skymodel2)
         return operations.compare.compare(
             self,
-            lsm2,
+            skymodel2,
             radius=radius,
             outDir=out_dir,
             labelBy=label_by,
