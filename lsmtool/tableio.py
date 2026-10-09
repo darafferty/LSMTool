@@ -7,6 +7,7 @@ Defines astropy.table reader and writer functions for the following formats
 
 import io
 import logging
+import numbers
 import os
 import re
 import subprocess
@@ -1072,7 +1073,6 @@ def facetRegionWriter(table, fileName):
     """
     # TODO: Fix circular import and move to module scope
     from lsmtool.facet import tessellate
-
 
     log = logging.getLogger('LSMTool.Write')
 
