@@ -10,10 +10,10 @@ import lsmtool
 from lsmtool.testing import SkyModelGenerator
 
 try:
-    import pytest_benchmark
+    import pytest_benchmark  # noqa
 except ImportError:
-    pytest.skip('pytest-benchmark is not installed', allow_module_level=True)
-    
+    pytest.skip("pytest-benchmark is not installed", allow_module_level=True)
+
 # ---------------------------------------------------------------------------- #
 # Fixtures
 
