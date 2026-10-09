@@ -118,17 +118,18 @@ class SkyModel(object):
         --------
         Create a SkyModel object::
 
-            >>> s = SkyModel('sky.model')
+        >>> s = SkyModel("sky.model")
 
         Create a SkyModel object with a beam MS so that apparent fluxes will
         be available::
 
-            >>> s = SkyModel('sky.model', beam_ms='SB100.MS')
+        >>> s = SkyModel("sky.model", beam_ms="SB100.MS")
 
         Load a WENSS catalog into a SkyModel object::
 
-            >>> s = SkyModel('WENSS', vo_position=[212.8352792, 52.202644],
-                vo_radius=5.0)
+        >>> s = SkyModel(
+        ...     "WENSS", vo_position=[212.8352792, 52.202644], vo_radius=5.0
+        ... )
 
         """
 
@@ -420,11 +421,11 @@ class SkyModel(object):
         --------
         Print the entire model::
 
-            >>> s.more()
+        >>> s.more()
 
         Print only the 'Name' and 'I' columns for the 'bin0' patch::
 
-            >>> s.more(['Name', 'I'], 'bin0', sort_by=['I'])
+        >>> s.more(["Name", "I"], "bin0", sort_by=["I"])
 
         """
         if patch_name is not None and source_name is not None:
@@ -901,7 +902,7 @@ class SkyModel(object):
         --------
         Set new default value for ReferenceFrequency::
 
-            >>> s.set_default_values({'ReferenceFrequency': 140e6})
+        >>> s.set_default_values({"ReferenceFrequency": 140e6})
 
         """
         for col_name, default in col_dict.items():
@@ -915,7 +916,7 @@ class SkyModel(object):
         --------
         Remove all patches::
 
-            >>> s.ungroup()
+        >>> s.ungroup()
 
         """
         if self.has_patches:
@@ -940,7 +941,7 @@ class SkyModel(object):
         --------
         Get column names::
 
-            >>> s.get_col_names()
+        >>> s.get_col_names()
 
         """
         return self.table.keys()
@@ -1013,7 +1014,7 @@ class SkyModel(object):
         the get_col_values() method is not appropriate for use with RA or Dec,
         so we must use get_patch_positions() instead::
 
-            >>> RA, Dec = s.get_patch_positions(method='wmean', as_array=True)
+        >>> RA, Dec = s.get_patch_positions(method="wmean", as_array=True)
 
         """
         col_name = self._verify_col_name(col_name)
@@ -1083,8 +1084,11 @@ class SkyModel(object):
         --------
         Set Stokes I fluxes::
 
-            >>> s.set_col_values('I', [1.0, 1.1, 1.2, 0.0, 1.3], mask=[False,
-                    False, False, True, False])
+        >>> s.set_col_values(
+        ...     "I",
+        ...     [1.0, 1.1, 1.2, 0.0, 1.3],
+        ...     mask=[False, False, False, True, False],
+        ... )
 
         """
         col_name = self._verify_col_name(col_name, only_existing=False)
@@ -1153,12 +1157,13 @@ class SkyModel(object):
         --------
         Get row values for the source 'src1'::
 
-            >>> rows = s.get_row_values('src1')
+        >>> rows = s.get_row_values("src1")
 
         Sum over the fluxes of sources in the 'bin1' patch::
 
-            >>> tot = 0.0
-            >>> for row in s.get_row_values('bin1'): tot += row['I']
+        >>> tot = 0.0
+        ... for row in s.get_row_values("bin1"):
+        ...     tot += row["I"]
 
         """
         # Check first for the row_name as a patch name. If no patch matches (or
@@ -1201,14 +1206,14 @@ class SkyModel(object):
         --------
         Get row index for the source 'src1'::
 
-            >>> s.get_row_index('src1')
-            array([0])
+        >>> s.get_row_index("src1")
+        array([0])
 
         Get row indices for the patch 'bin1' and verify the patch name::
 
-            >>> ind = s.get_row_index('bin1')
-            >>> print(s.get_col_values('patch')[ind])
-            ['bin1', 'bin1', 'bin1']
+        >>> ind = s.get_row_index("bin1")
+        ... print(s.get_col_values("patch")[ind])
+        ['bin1', 'bin1', 'bin1']
 
         """
         # Patch members occupy contiguous rows in the grouped table.
@@ -1241,26 +1246,34 @@ class SkyModel(object):
             array, the length must match the number and order of the columns in
             the table. If dict, missing values will be masked unless already
             present.
-        mask : list or numpy.ndarray of bool, optional
-            If values is a list or array, a mask can be specified (True means
-            the value is masked).
-        return_verified : bool, optional
-            If True, the values are verified and returned, allowing them to be
-            passed to table.add_row().
 
         Examples
         --------
         Set row values for the source 'src1' (which can be a new source or an
         existing source)::
 
-            >>> s.set_row_values({'Name':'src1', 'Ra':213.123, 'Dec':23.1232,
-                'I':23.2, 'Type':'POINT'})
+        >>> s.set_row_values(
+        ...     {
+        ...         "Name": "src1",
+        ...         "Ra": 213.123,
+        ...         "Dec": 23.1232,
+        ...         "I": 23.2,
+        ...         "Type": "POINT",
+        ...     }
+        ... )
 
         The RA and Dec values can be in degrees (as above) or in makesourcedb
         format. E.g.::
 
-            >>> s.set_row_values({'Name':'src1', 'Ra':'12:22:21.1',
-                'Dec':'+14.46.31.5', 'I':23.2, 'Type':'POINT'})
+        >>> s.set_row_values(
+        ...     {
+        ...         "Name": "src1",
+        ...         "Ra": "12:22:21.1",
+        ...         "Dec": "+14.46.31.5",
+        ...         "I": 23.2,
+        ...         "Type": "POINT",
+        ...     }
+        ... )
 
         """
         # Read model into astropy table object
@@ -1685,8 +1698,8 @@ class SkyModel(object):
         Returns
         -------
         col : astropy Column
-            Column object with sizes from Major_axis or from aggregated values if
-            the model has patches
+            Column object with sizes from Major_axis or from aggregated values
+            if the model has patches
 
         """
         if weight:
@@ -1813,16 +1826,16 @@ class SkyModel(object):
         --------
         Find distance in degrees to a position for all sources::
 
-            >>> s.get_distance(94.0, 42.0)
+        >>> s.get_distance(94.0, 42.0)
 
         Find distance in arcmin::
 
-            >>> s.get_distance(94.0, 42.0, units='arcmin')
+        >>> s.get_distance(94.0, 42.0, units="arcmin")
 
         Find distance to patch centers:
 
-            >>> s.set_patch_positions(method="mid")
-            >>> s.get_distance(94.0, 42.0, by_patch=True)
+        >>> s.set_patch_positions(method="mid")
+        ... s.get_distance(94.0, 42.0, by_patch=True)
 
         """
         if by_patch and self.has_patches:
@@ -1898,30 +1911,30 @@ class SkyModel(object):
             If True, the beam correction is inverted (i.e., from apparent sky to
             true sky).
         width : float, optional
-            The width in degrees of the total extent of the output facet regions.
-            Only used when format = 'facet'. If not given, the width will be set
-            to fully cover the extent of the model
+            The width in degrees of the total extent of the output facet
+            regions. Only used when format = 'facet'. If not given, the width
+            will be set to fully cover the extent of the model
 
         Examples
         --------
         Write the model to a makesourcedb sky model file suitable for use with
         BBS::
 
-            >>> s.write('modsky.model')
+        >>> s.write("modsky.model")
 
         Write to a fits catalog::
 
-            >>> s.write('sky.fits', format='fits')
+        >>> s.write("sky.fits", format="fits")
 
         Write to a ds9 region file (point sources are indicated by points and
         Gaussians by ellipses)::
 
-            >>> s.write('sky.reg', format='ds9')
+        >>> s.write("sky.reg", format="ds9")
 
         Write to a WSClean/ds9 facet region file (regions define Voronoi facets
         around patch positions)::
 
-            >>> s.write('facets.reg', format='facet')
+        >>> s.write("facets.reg", format="facet")
 
         """
 
@@ -2040,7 +2053,7 @@ class SkyModel(object):
         --------
         Send the model to TOPCAT. First, start TOPCAT, then run the command::
 
-            >>> s.broadcast()
+        >>> s.broadcast()
 
         TOPCAT should then load the table.
 
@@ -2164,28 +2177,28 @@ class SkyModel(object):
         Filter on column 'I' (Stokes I flux). This filter will select all
         sources with Stokes I flux greater than 1.5 Jy::
 
-            >>> s.select('I > 1.5 Jy')
-            INFO: Kept 1102 sources.
+        >>> s.select("I > 1.5 Jy")
+        INFO: Kept 1102 sources.
 
         If the sky model has patches and the filter is desired per patch, use
         ``aggregate = function``. For example, to select on the sum of the patch
         fluxes::
 
-            >>> s.select('I > 1.5 Jy', aggregate='sum')
+        >>> s.select("I > 1.5 Jy", aggregate="sum")
 
         Or, to filter on patches smaller than 5 arcmin in size::
 
-            >>> sizes = s.get_patch_sizes(units='arcmin')
-            >>> s.select(sizes < 5.0, aggregate=True)
+        >>> sizes = s.get_patch_sizes(units="arcmin")
+        ... s.select(sizes < 5.0, aggregate=True)
 
         Filter on source names, keeping those that match "src*_1?"::
 
-            >>> s.select('Name == src*_1?')
+        >>> s.select("Name == src*_1?")
 
         Use a CASA clean mask image named 'clean_mask.mask' to select sources
         that lie in masked regions::
 
-            >>> s.select('clean_mask.mask == True')
+        >>> s.select("clean_mask.mask == True")
 
         """
         operations.select.select(
@@ -2285,29 +2298,29 @@ class SkyModel(object):
         Filter on column 'I' (Stokes I flux). This filter will remove all
         sources with Stokes I flux greater than 1.5 Jy::
 
-            >>> s.remove('I > 1.5 Jy')
-            INFO: Removed 1102 sources.
+        >>> s.remove("I > 1.5 Jy")
+        INFO: Removed 1102 sources.
 
         If the sky model has patches and the filter is desired per patch, use
         ``aggregate = function``. For example, to filter on the sum of the patch
         fluxes::
 
-            >>> s.remove('I > 1.5 Jy', aggregate='sum')
+        >>> s.remove("I > 1.5 Jy", aggregate="sum")
 
         Or, to filter on patches smaller than 5 arcmin in size::
 
-            >>> sizes = s.get_patch_sizes(units='arcmin')
-            >>> s.remove(sizes < 5.0, aggregate=True)
+        >>> sizes = s.get_patch_sizes(units="arcmin")
+        >>> s.remove(sizes < 5.0, aggregate=True)
 
         Filter on source names, removing those that match "src*_1?" (e.g.,
         'src2345_15', 'src_b2_1a', etc.)::
 
-            >>> s.remove('Name == src*_1?')
+        >>> s.remove("Name == src*_1?")
 
         Use a CASA clean mask image named 'clean_mask.mask' to remove sources
         that lie in masked regions::
 
-            >>> s.remove('clean_mask.mask == True')
+        >>> s.remove("clean_mask.mask == True")
 
         """
         operations.remove.remove(
@@ -2447,7 +2460,7 @@ class SkyModel(object):
         Tesselate the sky model into patches with approximately 30 Jy total
         flux:
 
-            >>> s.group("tessellate", target_flux=30.0)
+        >>> s.group("tessellate", target_flux=30.0)
 
         """
         operations.group.group(
@@ -2507,8 +2520,8 @@ class SkyModel(object):
         Transfer patches from one sky model to another and set their positions
         (matching sources are identified by name)::
 
-            >>> s.transfer('master_sky.model')
-            >>> s.set_patch_positions(method='mid')
+        >>> s.transfer("master_sky.model")
+        >>> s.set_patch_positions(method="mid")
 
         """
         operations.transfer.transfer(
@@ -2551,15 +2564,15 @@ class SkyModel(object):
         --------
         Move source '1609.6+6556' to a new position::
 
-            >>> s.move('1609.6+6556', position=['16:10:00', '+65.57.00'])
+        >>> s.move("1609.6+6556", position=["16:10:00", "+65.57.00"])
 
         Shift the source by 10 arcsec in Dec::
 
-            >>> s.move('1609.6+6556', shift=[0.0, 10.0/3600.0])
+        >>> s.move("1609.6+6556", shift=[0.0, 10.0 / 3600.0])
 
         Shift all sources by 10 pixels in x::
 
-            >>> s.move('*', xyshift=[10, 0], fitsFile='image.fits')
+        >>> s.move("*", xyshift=[10, 0], fitsFile="image.fits")
 
         """
         operations.move.move(self, name, position=position, shift=shift)
@@ -2579,9 +2592,14 @@ class SkyModel(object):
         --------
         Add a point source::
 
-            >>> source = {'Name':'src1', 'Type':'POINT', 'Ra':'12:32:10.1',
-                'Dec':'23.43.21.21', 'I':2.134}
-            >>> s.add(source)
+        >>> source = {
+        ...     "Name": "src1",
+        ...     "Type": "POINT",
+        ...     "Ra": "12:32:10.1",
+        ...     "Dec": "23.43.21.21",
+        ...     "I": 2.134,
+        ... }
+        ... s.add(source)
 
         """
         operations.add.add(self, col_names_vals)
@@ -2602,7 +2620,7 @@ class SkyModel(object):
         --------
         Merge three patches into one named 'binmerged'::
 
-            >>> s.merge(['bin0', 'bin1', 'bin2'], 'binmerged')
+        >>> s.merge(["bin0", "bin1", "bin2"], "binmerged")
 
         """
         operations.merge.merge(self, patches, name=name)
@@ -2660,8 +2678,8 @@ class SkyModel(object):
         sky model and discard the duplicate from secondary sky model (this might
         be useful when merging two gsm.py sky models that have some overlap)::
 
-            >>> lsm2 = lsmtool.load('gsm_sky2.model')
-            >>> s.concatenate(lsm2, match_by='name', keep='from1')
+        >>> lsm2 = lsmtool.load("gsm_sky2.model")
+        ... s.concatenate(lsm2, match_by="name", keep="from1")
 
         Concatenate two sky models, identifying duplicates by matching to the
         source positions within a radius of 10 arcsec. When duplicates are
@@ -2669,9 +2687,10 @@ class SkyModel(object):
         duplicate from the parent sky model (this might be useful when replacing
         parts of a low-resolution sky model with a high-resolution one)::
 
-            >>> lsm2 = lsmtool.load('high_res_sky.model')
-            >>> s.concatenate(lsm2, match_by='position', radius=10.0/3600.0,
-                keep='from2')
+        >>> lsm2 = lsmtool.load("high_res_sky.model")
+        ... s.concatenate(
+        ...     lsm2, match_by="position", radius=10.0 / 3600.0, keep="from2"
+        ... )
 
         """
         if type(lsm2) is str:
@@ -2783,7 +2802,7 @@ class SkyModel(object):
         Compare two sky models and save plots::
 
         >>> lsm2 = lsmtool.load("sky2.model")
-        >>> s.compare(lsm2, out_dir="comparison_results/")
+        ... s.compare(lsm2, out_dir="comparison_results/")
 
         Compare a LOFAR sky model to a global sky model made from VLSS+TGSS+NVSS
         (where refRA and refDec are the approximate center of the LOFAR sky
@@ -2792,7 +2811,7 @@ class SkyModel(object):
         >>> lsm2 = lsmtool.load(
         ...     "GSM", VOPosition=[refRA, refDec], VORadius="5 deg"
         ... )
-        >>> s.compare(
+        ... s.compare(
         ...     lsm2,
         ...     radius="30 arcsec",
         ...     exclude_multiple=True,
@@ -2837,18 +2856,18 @@ class SkyModel(object):
         filename : str, optional
             If given, the plot is saved to a file instead of displayed.
         label_by : str, optional
-            One of 'source' or 'patch': label points using source names ('source')
-            or patch names ('patch')
+            One of 'source' or 'patch': label points using source names
+            ('source') or patch names ('patch')
 
         Examples
         --------
         Plot and display to the screen::
 
-            >>> s.plot()
+        >>> s.plot()
 
         Plot and save to a PDF file::
 
-            >>> s.plot('sky_plot.pdf')
+        >>> s.plot("sky_plot.pdf")
 
         """
         operations.plot.plot(self, fileName=filename, labelBy=label_by)
@@ -2988,8 +3007,9 @@ class SkyModel(object):
             imdata = hdu[0].data
             w = wcs.WCS(hdu[0].header)
 
-            # Loop over sources, adding them to the images (note that the spectral terms
-            # sum together when summing polynomials, just as the flux densities do)
+            # Loop over sources, adding them to the images (note that the
+            # spectral terms sum together when summing polynomials, just as the
+            # flux densities do)
             if t == 0:
                 # Flux densities
                 itervalues = fluxes
