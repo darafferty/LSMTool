@@ -306,7 +306,7 @@ class SkyModel(object):
                 if patch_name not in self.table.meta:
                     patch_dict.update({patch_name: None})
             if patch_dict:
-                self.setPatchPositions(patch_dict=patch_dict, method="mid")
+                self.set_patch_positions(patch_dict=patch_dict, method="mid")
         else:
             self.has_patches = False
 
