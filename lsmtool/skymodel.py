@@ -1963,7 +1963,7 @@ class SkyModel(object):
                 i_orig,
                 ra_deg,
                 dec_deg,
-                time_indx=self.beam_time,
+                timeIndx=self.beam_time,
                 invert=invert_beam,
             )
             units = self.table.columns["I"].unit
