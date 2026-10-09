@@ -1,55 +1,33 @@
-# -*- coding: utf-8 -*-
-#
-# Defines astropy.table reader and writer functions for the following formats
-#   - makesourcedb/BBS (reader and writer)
-#   - ds9 (writer only)
-#   - kvis (writer only)
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-import astropy
-from astropy.table import Table, Column, MaskedColumn
-from astropy.coordinates import Angle, SkyCoord
-from astropy.io import registry
-import astropy.io.ascii as ascii
+"""
+Defines astropy.table reader and writer functions for the following formats
+  - makesourcedb/BBS (reader and writer)
+  - ds9 (writer only)
+  - kvis (writer only)
+"""
+
+import io
+import logging
 import numbers
-from packaging.version import Version
+import os
+import re
+import subprocess
+import tempfile
+import urllib.parse
+from ast import literal_eval
+from copy import deepcopy
+
+import astropy
+import astropy.io.ascii as ascii
+import astropy.units as u
 import numpy as np
 import numpy.ma as ma
-import re
-import logging
-import os
-from copy import deepcopy
-from .operations_lib import normalize_ra_dec
-from ast import literal_eval
+import pyvo as vo
+from astropy.coordinates import Angle, SkyCoord
+from astropy.io import registry
+from astropy.table import Column, MaskedColumn, Table
+from packaging.version import Version
 
-# Python 3 compatibility
-try:
-    unicode = unicode
-except NameError:
-    # Python 3
-    basestring = (str, bytes)
-else:
-    # Python 2
-    basestring = basestring
-import io
-try:
-    # Python 2
-    file_types = (file, io.IOBase)
-except NameError:
-    # Python 3
-    file_types = (io.IOBase,)
+from .operations_lib import normalize_ra_dec
 
 # Define the valid columns here as dictionaries. The entry key is the lower-case
 # name of the column, the entry value is the key used in the astropy table of the
@@ -653,7 +631,6 @@ def RADec2Angle(RA, Dec):
     DecAngle : astropy.coordinates.Angle
         The Dec, normalized to [-90, 90].
     """
-    import astropy.units as u
 
     if _is_scalar(RA):
         RA = [RA]
@@ -706,9 +683,9 @@ def skyModelIdentify(origin, *args, **kwargs):
     """
     # Search for a format line. If found, assume file is valid
     try:
-        if isinstance(args[0], basestring):
+        if isinstance(args[0], (str, bytes)):
             f = open(args[0])
-        elif isinstance(args[0], file_types):
+        elif isinstance(args[0], io.IOBase):
             f = args[0]
         else:
             return False
@@ -1158,10 +1135,8 @@ def broadcastTable(fileName):
         Name of sky model file to broadcast
 
     """
-    from astropy.vo.samp import SAMPIntegratedClient
-    import urllib.parse
 
-    client = SAMPIntegratedClient()
+    client = vo.samp.SAMPIntegratedClient()
     client.connect()
 
     params = {}
@@ -1195,7 +1170,6 @@ def coneSearch(VOService, position, radius):
         '30 arcsec') for cone search region
 
     """
-    import pyvo as vo
 
     log = logging.getLogger('LSMTool.Load')
 
@@ -1456,8 +1430,6 @@ def queryNonVOService(url, format='makesourcedb'):
         a problem with the connection to the service
 
     """
-    import tempfile
-    import subprocess
 
     # Use a temp file in the current working directory, as typical temp
     # directories like /tmp may be too small
@@ -1746,7 +1718,6 @@ def lsmWriter(table, fileName):
                 # log_spec_idx
                 f"{row['LogarithmicSI']}\n"
             )
-
 
 
 # Register the file reader, identifier, and writer functions with astropy.io
