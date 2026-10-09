@@ -465,9 +465,7 @@ class SkyModel(object):
 
         table.more(show_unit=True)
 
-    def _verify_col_name(
-        self, col_name, only_existing=True, apply_beam=False, quiet=False
-    ):
+    def _verify_col_name(self, col_name, only_existing=True, quiet=False):
         """
         Verifies that column(s) exist and returns correctly formatted string or
         list of strings suitable for accessing the data table.
