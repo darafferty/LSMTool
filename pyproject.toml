@@ -182,6 +182,9 @@ select = [
 # N803: pep8-naming (lsmtool mostly uses pascalCase and CamelCase naming scheme)
 ignore = [ "N803", "PLR2004" ]
 
+[tool.ruff.format]
+docstring-code-format = true
+
 # ============================================================================ #
 # pyproject-fmt settings                                                       #
 # ============================================================================ #
