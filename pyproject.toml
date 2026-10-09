@@ -162,7 +162,14 @@ select = ["N", "A", "E", "F", "B", "W", "Q", "PL", "ASYNC", "S", "G", "RET", "AR
 ignore = ["PLR2004", "N803"]
 
 [tool.ruff.lint.per-file-ignores]
-"lsmtool/filter_skymodel/*.py" = ["PLR0913"]  # Too many arguments in function definition
+"lsmtool/filter_skymodel/*.py" = [
+    "PLR0913"   # Too many arguments in function definition
+]
+"lsmtool/skymodel.py" = [
+    "PLR0912",  # Too many branches
+    "PLR0913",  # Too many arguments in function definition
+    "PLR0915"   # Too many statements in function/class/module
+]
 "lsmtool/testing.py" = ["PLR0911"] # Too many return statements
 "tests/*.py" = [
     "S101",     # Use of `assert` detected
