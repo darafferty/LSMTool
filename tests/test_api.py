@@ -7,6 +7,7 @@ import warnings
 import pytest
 
 from lsmtool.api import deprecated
+from lsmtool.io import load
 
 # ---------------------------------------------------------------------------- #
 # Fixtures
@@ -198,3 +199,18 @@ class TestAttributeDeprecation:
             example_deprecate_attribute.deprecatedAttribute = "test value"
 
         assert example_deprecate_attribute.new_attribute == "test value"
+
+
+# ---------------------------------------------------------------------------- #
+# Test SkyModel deprecations
+
+
+def test_skymodel_deprecations(pytestconfig):
+
+    skymodel = load(pytestconfig.resource_dir / "to_patched.sky")
+    with pytest.deprecated_call():
+        result = skymodel.getPatchPositions("Patch1")
+
+    new = skymodel.get_patch_positions("Patch1")
+
+    assert result == new
