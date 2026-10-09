@@ -1526,7 +1526,7 @@ class SkyModel(object):
 
         flux = col.data
         vals = apply_beam_operation(
-            self.beam_ms, flux, ra_deg, dec_deg, time_indx=self.beam_time
+            self.beam_ms, flux, ra_deg, dec_deg, timeIndx=self.beam_time
         )
         col[:] = vals
 
