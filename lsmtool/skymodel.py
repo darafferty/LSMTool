@@ -663,7 +663,7 @@ class SkyModel(object):
                     max_y = self._get_max_column("Y")
                     mid_x = min_x + (max_x - min_x) / 2.0
                     mid_y = min_y + (max_y - min_y) / 2.0
-                    for i, name in enumerate(patch_name):
+                    for i, _ in enumerate(patch_name):
                         ra, dec = wcs_all[i].wcs_pix2world(
                             mid_x[i], mid_y[i], 0
                         )
@@ -679,16 +679,23 @@ class SkyModel(object):
                     mean_y = self._get_averaged_column(
                         "Y", apply_beam=apply_beam, weight=weight
                     )
-                    for i, name in enumerate(patch_name):
+                    for i, _ in enumerate(patch_name):
                         ra, dec = wcs_all[i].wcs_pix2world(
                             mean_x[i], mean_y[i], 0
                         )
                         positions.append((ra.item(), dec.item()))
                 if positions:
                     ra_norm, dec_norm = tableio.RADec2Angle(
-                        *map(list, zip(*positions))
+                        *map(list, zip(*positions, strict=True))
                     )
-                    patch_dict = dict(zip(patch_name, zip(ra_norm, dec_norm)))
+                    patch_dict = dict(
+                        zip(
+                            patch_name,
+                            zip(ra_norm, dec_norm, strict=True),
+                            strict=True,
+                        )
+                    )
+
                 self.table.remove_column("X")
                 self.table.remove_column("Y")
 
@@ -1858,8 +1865,9 @@ class SkyModel(object):
     def write(
         self,
         filename=None,
-        format="makesourcedb",
+        format="makesourcedb",  # noqa
         clobber=False,
+        *,
         sort_by=None,
         low_to_high=False,
         add_history=True,
@@ -2345,6 +2353,7 @@ class SkyModel(object):
         patch_names=None,
         weight_by_size=False,
         num_clusters=100,
+        *,
         FWHM=None,
         threshold=0.1,
         apply_beam=False,
@@ -2709,6 +2718,7 @@ class SkyModel(object):
         self,
         lsm2,
         radius="10 arcsec",
+        *,
         out_dir=".",
         label_by=None,
         ignore_spec=None,
@@ -2716,7 +2726,7 @@ class SkyModel(object):
         exclude_by_flux=False,
         name1=None,
         name2=None,
-        format="pdf",
+        format="pdf",  # noqa
         make_plots=True,
     ):
         """
@@ -2905,7 +2915,7 @@ class SkyModel(object):
         """
 
         # TODO: Fix circular import and move to module scope
-        from lsmtool.facet import tessellate
+        from lsmtool.facet import tessellate  # noqa
 
         # Check inputs
         if write_region_file and not self.has_patches:
