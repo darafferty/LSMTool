@@ -247,8 +247,7 @@ class SkyModel(object):
 
             # Process the model
             outlines = []
-            string_values = ["{0}".format(v) for v in filename.values()]
-            line = ", ".join(string_values)
+            line = ", ".join((f"{v}" for v in filename.values()))
             outline, meta_dict = processLine(line, meta_dict, col_names)
             if outline is not None:
                 outlines.append(outline)
@@ -561,7 +560,8 @@ class SkyModel(object):
         per_patch_projection=True,
     ):
         """
-        Returns arrays or a dict of patch positions (as {'patchName':(RA, Dec)}).
+        Returns arrays or a dict of patch positions (as {'patchName':(RA,
+        Dec)}).
 
         Parameters
         ----------
@@ -649,7 +649,7 @@ class SkyModel(object):
                 else:
                     x_all, y_all, mid_ra, mid_dec = self._get_xy()
                     wcs_all = []  # has length = num of patches
-                    for name in patch_name:
+                    for _ in patch_name:
                         wcs_all.append(make_wcs(mid_ra, mid_dec))
 
                 x_col = Column(name="X", data=x_all)
@@ -670,7 +670,7 @@ class SkyModel(object):
                             mid_x[i], mid_y[i], 0
                         )
                         positions.append((ra.item(), dec.item()))
-                elif method == "mean" or method == "wmean":
+                elif method in {"mean", "wmean"}:
                     if method == "mean":
                         weight = False
                     else:
@@ -804,9 +804,7 @@ class SkyModel(object):
                     # Each patch stores scalar Angles, not length-one arrays.
                     pos = [ra[0], dec[0]]
                 self.table.meta[patch] = list(pos)
-            self._add_history(
-                "SETPATCHPOSITIONS (method = '{0}')".format(method)
-            )
+            self._add_history(f"SETPATCHPOSITIONS (method = {method!r})")
         else:
             raise RuntimeError("Sky model does not have patches.")
 
@@ -1103,7 +1101,7 @@ class SkyModel(object):
                 mask = [True] * len(self.table)
             for source_name, value in values.items():
                 indx = self._get_name_indx(source_name)
-                if col_name == "Ra" or col_name == "Dec":
+                if col_name in {"Ra", "Dec"}:
                     val = Angle(value, unit=u.deg)
                 else:
                     val = value
@@ -1114,7 +1112,7 @@ class SkyModel(object):
                 "Length of input values must match length of table."
             )
         else:
-            if col_name == "Ra" or col_name == "Dec":
+            if col_name in {"Ra", "Dec"}:
                 vals = Angle(values, unit=u.deg)
             else:
                 vals = values
@@ -1175,11 +1173,12 @@ class SkyModel(object):
         if self.has_patches and row_name in self.get_patch_names():
             pindx = self._get_name_indx(row_name, patch=True)
             table = self.table.groups[pindx]
-            table = table.group_by("Patch")  # ensure that grouping is preserved
-            return table
+            return table.group_by("Patch")  # ensure that grouping is preserved
+
         if row_name in self.get_col_values("Name"):
             indx = self._get_name_indx(row_name)
             return self.table.filled()[indx]
+
         raise ValueError(f"Row name {row_name!r} not recognized.")
 
     @deprecated(renamed_parameters={"rowName": "row_name"})
@@ -1233,7 +1232,7 @@ class SkyModel(object):
             return indices
         raise ValueError(f"Row name {row_name!r} not recognized.")
 
-    def set_row_values(self, values, mask=None, return_verified=False):
+    def set_row_values(self, values):
         """
         Sets values for a single row.
 
@@ -1521,7 +1520,7 @@ class SkyModel(object):
             dec_deg = self.get_col_values("Dec")
 
         flux = col.data
-        vals = apply_beam(
+        vals = apply_beam_operation(
             self.beam_ms, flux, ra_deg, dec_deg, time_indx=self.beam_time
         )
         col[:] = vals
@@ -2818,7 +2817,7 @@ class SkyModel(object):
 
         if type(lsm2) is str:
             lsm2 = SkyModel(lsm2)
-        stats = operations.compare.compare(
+        return operations.compare.compare(
             self,
             lsm2,
             radius=radius,
@@ -2832,7 +2831,6 @@ class SkyModel(object):
             format=format,
             make_plots=make_plots,
         )
-        return stats
 
     @deprecated(
         renamed_parameters={"fileName": "filename", "labelBy": "label_by"}
@@ -3010,8 +3008,8 @@ class SkyModel(object):
             else:
                 # Spectral terms
                 itervalues = spectral_indices
-            for i, (ra_src, dec_src, val, type) in enumerate(
-                zip(ra, dec, itervalues, types)
+            for i, (ra_src, dec_src, val, type_) in enumerate(
+                zip(ra, dec, itervalues, types, strict=True)
             ):
                 if t > 0:
                     v = val[t - 1]
@@ -3024,9 +3022,9 @@ class SkyModel(object):
                     w.wcs_world2pix(ra_dec, 0)[0][0],
                     w.wcs_world2pix(ra_dec, 0)[0][1],
                 )
-                if type == "POINT":
+                if type_ == "POINT":
                     imdata[0, 0, int(np.round(ys)), int(np.round(xs))] += v
-                elif type == "GAUSSIAN":
+                elif type_ == "GAUSSIAN":
                     s1 = (
                         self.get_col_values("MajorAxis", units="degree")[i]
                         / cellsize
@@ -3055,7 +3053,7 @@ class SkyModel(object):
             patch_names = self.get_patch_names()
             x_pix_list = []
             y_pix_list = []
-            for ra_src, dec_src in zip(ra, dec):
+            for ra_src, dec_src in zip(ra, dec, strict=True):
                 ra_dec = np.array([[ra_src, dec_src, 0.0, 0.0]])
                 y_pix, x_pix = (
                     w.wcs_world2pix(ra_dec, 0)[0][0],
@@ -3076,12 +3074,12 @@ class SkyModel(object):
                 'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
                 "move=1 delete=1 include=1 fixed=0 source=1\nfk5\n"
             )
-            for verts, pname in zip(vertices, patch_names):
+            for verts, pname in zip(vertices, patch_names, strict=True):
                 xylist = []
                 varray = np.array(verts).T
                 ras = varray[0]
                 decs = varray[1]
-                for x, y in zip(ras, decs):
+                for x, y in zip(ras, decs, strict=True):
                     xylist.append(f"{x}, {y}")
                 lines.append(
                     f"polygon({', '.join(xylist)}) # text={{{pname}}}\n"

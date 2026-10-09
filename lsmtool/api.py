@@ -6,7 +6,7 @@ import functools as ftl
 import warnings
 
 
-class deprecated:
+class Deprecated:
     """
     A descriptor class for marking attributes as deprecated.
     """
@@ -83,7 +83,7 @@ class deprecated:
         Emit a deprecation warning for the given function and keyword arguments.
         """
         message = self._get_message(origin, *args)
-        warnings.warn(message, DeprecationWarning)
+        warnings.warn(message, DeprecationWarning, stacklevel=2)
 
         if self.warn_once:
             self.emit = self.emit_noop
@@ -144,3 +144,7 @@ class deprecated:
             )
 
         return message
+
+
+# alias
+deprecated = Deprecated
