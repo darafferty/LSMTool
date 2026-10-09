@@ -83,7 +83,7 @@ class SkyModel(object):
     )
     def __init__(
         self,
-        file_name,
+        filename,
         beam_ms=None,
         check_dup=False,
         vo_position=None,
@@ -94,11 +94,11 @@ class SkyModel(object):
 
         Parameters
         ----------
-        file_name : str
+        filename : str
             Input ASCII file from which the sky model is read (must respect the
-            makesourcedb format or the LSM/GSM format), name of VO service to query
-            (must be one of 'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'),
-            or dict (single source only)
+            makesourcedb format or the LSM/GSM format), name of VO service to
+            query (must be one of 'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or
+            'WENSS'), or dict (single source only)
         beam_ms : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table
@@ -133,99 +133,85 @@ class SkyModel(object):
 
         self.log = logging.getLogger("LSMTool")
         self.history = []
-        if type(file_name) is str:
-            # First check if file_name points to a VO query
+        if type(filename) is str:
+            # First check if filename points to a VO query
             if vo_position is not None and vo_radius is not None:
                 try:
-                    if file_name.lower() in tableio.allowedVOServices:
+                    if filename.lower() in tableio.allowedVOServices:
                         self.log.debug(
-                            "Attempting to load model from VO service '{0}'...".format(
-                                file_name
-                            )
+                            "Attempting to load model from VO service %r...",
+                            filename,
                         )
                         self.table = tableio.cone_search(
-                            file_name, vo_position, vo_radius
+                            filename, vo_position, vo_radius
                         )
                         self.log.debug(
-                            "Successfully loaded model from VO service '{0}'".format(
-                                file_name
-                            )
+                            "Successfully loaded model from VO service %r",
+                            filename,
                         )
-                        self._filename = file_name.lower() + "_vo"
+                        self._filename = filename.lower() + "_vo"
                         self._add_history(
-                            "LOAD (from {0} at position {1})".format(
-                                file_name, vo_position
-                            )
+                            f"LOAD (from {filename} at position {vo_position})"
                         )
-                    elif file_name.lower() == "tgss":
+                    elif filename.lower() == "tgss":
                         self.log.debug("Attempting to load model from TGSS...")
                         self.table = tableio.getTGSS(vo_position, vo_radius)
                         self.log.debug("Successfully loaded model from TGSS")
                         self._filename = "tgss_vo"
                         self._add_history(
-                            "LOAD (from TGSS at position {0})".format(
-                                vo_position
-                            )
+                            f"LOAD (from TGSS at position {vo_position})"
                         )
-                    elif file_name.lower() == "gsm":
+                    elif filename.lower() == "gsm":
                         self.log.debug("Attempting to load model from GSM...")
                         self.table = tableio.getGSM(vo_position, vo_radius)
                         self.log.debug("Successfully loaded model from GSM")
                         self._filename = "gsm_vo"
                         self._add_history(
-                            "LOAD (from GSM at position {0})".format(
-                                vo_position
-                            )
+                            f"LOAD (from GSM at position {vo_position})"
                         )
-                    elif file_name.lower() == "lotss":
+                    elif filename.lower() == "lotss":
                         self.log.debug("Attempting to load model from LoTSS...")
                         self.table = tableio.getLoTSS(vo_position, vo_radius)
                         self.log.debug("Successfully loaded model from LoTSS")
                         self._filename = "lotss_vo"
                         self._add_history(
-                            "LOAD (from LoTSS at position {0})".format(
-                                vo_position
-                            )
+                            f"LOAD (from LoTSS at position {vo_position})"
                         )
                     else:
                         raise ValueError(
-                            "VO service '{}' not understood. Must be one of "
-                            "'WENSS', 'NVSS', 'TGSS', 'GSM', or 'LOTSS'. If you want "
-                            "instead to load a model from a local file, do not "
-                            "set vo_position or vo_radius.".format(file_name)
+                            f"VO service {filename!r} not understood. Must be "
+                            "one of 'WENSS', 'NVSS', 'TGSS', 'GSM', or "
+                            "'LOTSS'. If you want instead to load a model from "
+                            "a local file, do not set vo_position or vo_radius."
                         )
                 except (IndexError, InconsistentTableError):
-                    # Empty result due to no coverage in the catalog at the queried position
+                    # Empty result due to no coverage in the catalog at the
+                    # queried position
                     self.log.warning(
-                        "No sources found for the given VO query parameters "
-                        '(VO service "{0}" with vo_position = {1} and vo_radius = {2}). '
-                        "Sky model is empty.".format(
-                            file_name, vo_position, vo_radius
-                        )
+                        "No sources found for the given VO query parameters (VO"
+                        " service %r with vo_position = %s and vo_radius = %s)."
+                        " Sky model is empty.",
+                        filename,
+                        vo_position,
+                        vo_radius,
                     )
                     self.table = tableio.makeEmptyTable()
                     self._filename = None
-            elif tableio.validateLSMFormat(file_name):
+            elif tableio.validateLSMFormat(filename):
                 self.log.debug(
-                    "Attempting to load LSM model from file '{0}'...".format(
-                        file_name
-                    )
+                    "Attempting to load LSM model from file %r..."
+                        filename
                 )
-                self.table = tableio.loadTableFromLSM(file_name)
+                self.table = tableio.loadTableFromLSM(filename)
                 self.log.debug(
-                    "Successfully loaded model from file '{0}'".format(
-                        file_name
-                    )
-                )
-                self._add_history("LOAD (from file '{0}')".format(file_name))
+                    "Successfully loaded model from file %r", filename)
+                self._add_history("LOAD (from file %r)", filename)
             else:
-                # If file_name does not point to a VO query, assume it points to a local file
+                # If filename does not point to a VO query, assume it points to
+                # a local file
                 self.log.debug(
-                    "Attempting to load model from file '{0}'...".format(
-                        file_name
-                    )
-                )
-                if file_name.lower() in (
+                    "Attempting to load model from file %r...", filename)
+                if filename.lower() in (
                     "wenss",
                     "nvss",
                     "tgss",
@@ -234,22 +220,19 @@ class SkyModel(object):
                     "vlssr",
                 ):
                     self.log.warning(
-                        "It appears from the filename that you may be trying to "
-                        "query a VO service. If so, you must provide values for "
-                        "both vo_position and vo_radius."
+                        "It appears from the filename that you may be trying to"
+                        " query a VO service. If so, you must provide values "
+                        "for both vo_position and vo_radius."
                     )
-                self.table = Table.read(file_name, format="makesourcedb")
+                self.table = Table.read(filename, format="makesourcedb")
                 self.log.debug(
-                    "Successfully loaded model from file '{0}'".format(
-                        file_name
-                    )
-                )
-                self._filename = file_name
-                self._add_history("LOAD (from file '{0}')".format(file_name))
-        elif type(file_name) is dict:
+                    "Successfully loaded model from file %r", filename)
+                self._filename = filename
+                self._add_history(f"LOAD (from file {filename!r})")
+        elif type(filename) is dict:
             self.log.debug("Attempting to create model from input dict...")
             # Create header
-            format_string = "#FORMAT = " + ", ".join(file_name.keys())
+            format_string = "#FORMAT = " + ", ".join(filename.keys())
 
             # Process the header
             col_names, has_patches, col_defaults, meta_dict = (
