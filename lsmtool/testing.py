@@ -291,6 +291,8 @@ class SkyModelGenerator:
         samples : dict[str, numpy.ndarray]
             A dictionary with arrays of `n_sources` sampled values for each
             parameter.
+        patches : np.ndarray
+            The patch definitions as a (n, 5) array of strings.
         """
         samples, patches = self.sample(
             n_sources, n_patches, random_state=random_state, **kws
@@ -327,6 +329,8 @@ class SkyModelGenerator:
         samples : dict[str, numpy.ndarray]
             A dictionary with arrays of `n_sources` sampled values for each
             parameter.
+        patches : np.ndarray
+            The patch definitions as a (n, 5) array of strings.
         """
         samples = {}
         for name, dist in asdict(self).items():
@@ -427,8 +431,8 @@ class SkyModelGenerator:
 
         Returns
         -------
-        patch_defs : list of str
-            The patch definitions as a list of strings.
+        patch_defs : np.ndarray
+            The patch definitions as a (n, 5) array of strings.
         patch_col : ndarray
             The patch column corresponding to each source.
         """
@@ -510,12 +514,15 @@ class SkyModelGenerator:
         ----------
         filename : str or pathlib.Path
             The path to the file where the generated skymodel should be saved.
+            File will be saved as .txt file in CSV format, file compression is
+            not supported.
         n_sources : int
             The number of sources to generate in the skymodel.
         random_state : int, RandomState instance or None, optional
             The random state to use for reproducibility. If None (or
             np.random), the numpy.random.RandomState singleton is used.
         """
+
         samples, patches = self(
             n_sources, n_patches, random_state=random_state, **kws
         )
