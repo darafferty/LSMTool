@@ -219,8 +219,8 @@ class TestDeprecatedParameters:
     ):
         """
         Test that a function with deprecated parameter names emits a deprecation
-        warning. Check that the values of the deprecated parameters are correctly
-        mapped to the new names.
+        warning. Check that the values of the deprecated parameters are
+        correctly mapped to the new names.
         """
 
         with pytest.deprecated_call(

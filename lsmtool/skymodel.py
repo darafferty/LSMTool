@@ -807,8 +807,10 @@ class SkyModel(object):
                 if isinstance(pos[0], str) or isinstance(pos[0], float):
                     ra, dec = tableio.RADec2Angle(*pos)
                     # Each patch stores scalar Angles, not length-one arrays.
-                    pos = [ra[0], dec[0]]
-                self.table.meta[patch] = list(pos)
+                    self.table.meta[patch] = [ra[0], dec[0]]
+                else:
+                    self.table.meta[patch] = list(pos)
+
             self._add_history(f"SETPATCHPOSITIONS (method = {method!r})")
         else:
             raise RuntimeError("Sky model does not have patches.")
