@@ -46,7 +46,6 @@ with ctx.suppress(ImportError):
     ],
 )
 def test_resolve_source_finder(name, expected):
-
     context = (
         pytest.raises(ValueError) if expected is None else ctx.nullcontext()
     )

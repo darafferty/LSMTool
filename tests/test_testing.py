@@ -202,7 +202,6 @@ class TestSkyModelGenerator:
     """
 
     def test_minimal(self, tmp_path, rng):
-
         # create skymodel generator and sample 100 sources
         generator = SkyModelGenerator(
             q=None,
@@ -234,7 +233,6 @@ class TestSkyModelGenerator:
         ],
     )
     def test_skymodel_generator(self, config, rng):
-
         # create skymodel generator and draw a random sample of sources
         generator = SkyModelGenerator(**config)
         samples = generator.sample(n_sources=1_000, random_state=rng)

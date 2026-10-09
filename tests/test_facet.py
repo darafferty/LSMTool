@@ -489,7 +489,6 @@ class TestReadFromSkymodel:
 
     @pytest.fixture(autouse=True)
     def mock_skymodel(self, mocker, request):
-
         patch_positions = (
             {"getPatchPositions.return_value": request.param}
             if (has_patches := request.param is not None)
@@ -1291,7 +1290,6 @@ class TestFilterSkymodel:
     def _test_filter_skymodel_function(
         self, polygon, skymodel_path, wcs, invert
     ):
-
         # Arrange
         skymodel = load(skymodel_path)
 

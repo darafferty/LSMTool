@@ -510,6 +510,7 @@ class SkyModel(object):
                 self.table.add_column(xCol)
                 self.table.add_column(yCol)
 
+                positions = []
                 if method == 'mid':
                     minX = self._getMinColumn('X')
                     maxX = self._getMaxColumn('X')
@@ -519,8 +520,7 @@ class SkyModel(object):
                     midY = minY + (maxY - minY) / 2.0
                     for i, name in enumerate(patchName):
                         RA, Dec = wcsAll[i].wcs_pix2world(midX[i], midY[i], 0)
-                        RANorm, DecNorm = tableio.RADec2Angle(RA.item(), Dec.item())
-                        patchDict[name] = [RANorm[0], DecNorm[0]]
+                        positions.append((RA.item(), Dec.item()))
                 elif method == 'mean' or method == 'wmean':
                     if method == 'mean':
                         weight = False
@@ -532,8 +532,10 @@ class SkyModel(object):
                                                     weight=weight)
                     for i, name in enumerate(patchName):
                         RA, Dec = wcsAll[i].wcs_pix2world(meanX[i], meanY[i], 0)
-                        RANorm, DecNorm = tableio.RADec2Angle(RA.item(), Dec.item())
-                        patchDict[name] = [RANorm[0], DecNorm[0]]
+                        positions.append((RA.item(), Dec.item()))
+                if positions:
+                    RANorm, DecNorm = tableio.RADec2Angle(*map(list, zip(*positions)))
+                    patchDict = dict(zip(patchName, zip(RANorm, DecNorm)))
                 self.table.remove_column('X')
                 self.table.remove_column('Y')
 
@@ -622,7 +624,9 @@ class SkyModel(object):
 
             for patch, pos in patchDict.items():
                 if type(pos[0]) is str or type(pos[0]) is float:
-                    pos = tableio.RADec2Angle(pos[0], pos[1])
+                    ra, dec = tableio.RADec2Angle(pos[0], pos[1])
+                    # Each patch stores scalar Angles, not length-one arrays.
+                    pos = [ra[0], dec[0]]
                 self.table.meta[patch] = list(pos)
             self._addHistory("SETPATCHPOSITIONS (method = '{0}')".format(method))
         else:

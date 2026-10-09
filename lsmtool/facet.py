@@ -450,7 +450,6 @@ class SquareFacet(Facet):
     """
 
     def __init__(self, name, ra, dec, width, *, wcs=None):
-
         self.coords = resolve_coordinates(ra, dec)
 
         if wcs is None:

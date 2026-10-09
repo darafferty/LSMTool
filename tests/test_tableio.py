@@ -1,11 +1,16 @@
+import warnings
 from pathlib import Path
 
 import numpy as np
 import pytest
+from astropy.coordinates import Angle
 from astropy.table import Table
 
+from lsmtool import tableio
+from lsmtool.operations_lib import normalize_ra_dec
 from lsmtool.skymodel import SkyModel
 from lsmtool.tableio import (
+    RADec2Angle,
     loadAstropyTableFromLSM,
     loadTableFromLSM,
     skyModelReader,
@@ -220,3 +225,118 @@ def test_lsm_skymodel_read_incomplete_spectral_index(
         generated_lsm.read_text()
         == expected_lsm_skymodel_partial_spectral_index.read_text()
     )
+
+
+@pytest.mark.parametrize("as_angles", [False, True])
+def test_radec_normalization_matches_scalar(as_angles):
+    """Vector normalization agrees at poles, wraps, and random coordinates."""
+    rng = np.random.default_rng(42)
+    ra = np.concatenate(
+        ([0, 360, -360, 720, -1, 180, 90], rng.uniform(-2000, 2000, 1000))
+    )
+    dec = np.concatenate(
+        ([90, -90, 180, -180, 270, -270, 0], rng.uniform(-2000, 2000, 1000))
+    )
+    expected = np.array(
+        [normalize_ra_dec(r, d) for r, d in zip(ra, dec, strict=True)]
+    )
+    if as_angles:
+        ra = Angle(ra, unit="deg").to("rad")
+        dec = Angle(dec, unit="deg").to("rad")
+    actual_ra, actual_dec = RADec2Angle(ra, dec)
+    np.testing.assert_allclose(actual_ra.degree, expected[:, 0], atol=1e-12)
+    np.testing.assert_allclose(actual_dec.degree, expected[:, 1], atol=1e-12)
+
+
+@pytest.mark.parametrize(
+    ("ra", "dec", "expected_ra", "expected_dec"),
+    [
+        (370.0, 100.0, [190], [80]),
+        ([370.0, -10.0], [100.0, -100.0], [190, 170], [80, -80]),
+        ("12:00:00", "-30.00.00", [180], [-30]),
+        (
+            ["12:00:00", "06:00:00"],
+            ["-30:00:00", "45:00:00"],
+            [180, 90],
+            [-30, 45],
+        ),
+        ([], [], [], []),
+        ([10, 20], [30], [10], [30]),
+    ],
+)
+def test_radec_input_formats(ra, dec, expected_ra, expected_dec):
+    actual_ra, actual_dec = RADec2Angle(ra, dec)
+    np.testing.assert_allclose(actual_ra.degree, expected_ra)
+    np.testing.assert_allclose(actual_dec.degree, expected_dec)
+
+
+@pytest.mark.parametrize(
+    ("ra", "dec"),
+    [
+        (
+            ["00:00:00", "+23:59:59.9999", "-00:30:01.2"],
+            ["-00.30.00", "+90.00.00", "-180.10.59.123"],
+        ),
+        (
+            ["12h30m00s", " 06:00:00 ", "180d"],
+            ["-0.5d", "45:00:00", "1 rad"],
+        ),
+        (
+            ["24:00:00", "12:60:00", "12:30:60"],
+            ["90:00:00", "10:60:00", "-10:30:60"],
+        ),
+        (["12:30:00", "12h30m00s"], ["-30.00.00", "45:00:00"]),
+        (["12:30:59.999999999999999999"], ["30:00:59.999999999999999999"]),
+    ],
+)
+def test_sexagesimal_fast_path_matches_astropy(ra, dec, monkeypatch):
+    with warnings.catch_warnings(record=True) as actual_warnings:
+        warnings.simplefilter("always")
+        actual = tableio.RADec2Angle(ra, dec)
+    monkeypatch.setattr(
+        tableio, "_parse_sexagesimal", lambda *_args, **_kwargs: None
+    )
+    with warnings.catch_warnings(record=True) as expected_warnings:
+        warnings.simplefilter("always")
+        expected = tableio.RADec2Angle(ra, dec)
+    for result, reference in zip(actual, expected, strict=True):
+        np.testing.assert_array_equal(result.degree, reference.degree)
+    assert [(w.category, str(w.message)) for w in actual_warnings] == [
+        (w.category, str(w.message)) for w in expected_warnings
+    ]
+
+
+def test_sexagesimal_random_coordinates_match_astropy(monkeypatch):
+    rng = np.random.default_rng(314)
+    ra = [
+        f"{rng.integers(24):02d}:{rng.integers(60):02d}:"
+        f"{rng.uniform(0, 59):010.7f}"
+        for _ in range(1000)
+    ]
+    dec = [
+        f"{rng.integers(-90, 90):03d}.{rng.integers(60):02d}."
+        f"{rng.uniform(0, 59):010.7f}"
+        for _ in range(1000)
+    ]
+    actual = tableio.RADec2Angle(ra, dec)
+    monkeypatch.setattr(
+        tableio, "_parse_sexagesimal", lambda *_args, **_kwargs: None
+    )
+    expected = tableio.RADec2Angle(ra, dec)
+    for result, reference in zip(actual, expected, strict=True):
+        np.testing.assert_array_equal(result.degree, reference.degree)
+
+
+@pytest.mark.parametrize(
+    ("ra", "dec"),
+    [
+        ("25:00:00", "0"),
+        ("12:61:00", "0"),
+        ("12:00:61", "0"),
+        ("12:00:00", "30.00.61"),
+        ("not an angle", "0"),
+    ],
+)
+def test_sexagesimal_invalid_input_still_raises(ra, dec):
+    with pytest.raises(ValueError, match="not understood"):
+        RADec2Angle(ra, dec)

@@ -23,6 +23,7 @@ from astropy.table import Table, Column, MaskedColumn
 from astropy.coordinates import Angle, SkyCoord
 from astropy.io import registry
 import astropy.io.ascii as ascii
+import numbers
 from packaging.version import Version
 import numpy as np
 import numpy.ma as ma
@@ -592,49 +593,89 @@ def processLine(line, metaDict, colNames):
     return ','.join(colLines), metaDict
 
 
+# Restrict the fast path to ordinary sexagesimal coordinates. Astropy handles
+# other formats and boundary values (including its warnings for 60 seconds).
+_SEXAGESIMAL = re.compile(
+    r"([+-]?[0-9]{1,3})([:.])([0-5][0-9])\2([0-5][0-9](?:\.[0-9]+)?)"
+)
+
+
+def _parse_sexagesimal(values, hourangle=False):
+    """Return an Angle array for common sky-model strings, or None to defer."""
+    components = np.empty((3, len(values)))
+    for i, value in enumerate(values):
+        if not isinstance(value, str):
+            return None
+        match = _SEXAGESIMAL.fullmatch(value)
+        if match is None or (hourangle and match[2] != ':'):
+            return None
+        first = float(match[1])
+        if hourangle and abs(first) >= 24:
+            return None
+        seconds = float(match[4])
+        if seconds >= 60:
+            # Decimal values just below 60 can round to 60 in float64.
+            return None
+        components[:, i] = first, float(match[3]), seconds
+
+    first, minutes, seconds = components
+    # Use the same operation order and unit conversion as Astropy, including
+    # the sign of negative zero in coordinates such as -00:30:00.
+    magnitude = np.abs(first) + minutes / 60.0
+    magnitude += seconds / 3600.0
+    values = np.copysign(magnitude, first)
+    return Angle(values, unit='hourangle' if hourangle else 'deg').to('deg')
+
+
+def _is_scalar(x):
+    if isinstance(x, np.ndarray):  # Includes Astropy Angle and Quantity
+        return x.ndim == 0
+    return isinstance(x, (str, numbers.Real))
+
+
 def RADec2Angle(RA, Dec):
     """
     Returns normalized Angle objects for input RA, Dec values.
 
     Parameters
     ----------
-    RA : str, float or list of str, float
+    RA : str, float or array-like
         Values of RA to convert. Can be strings in makesourcedb format or
         floats in degrees (`astropy.coordinates.Angle` are also supported)
-    Dec : str, float or list of str, float
+    Dec : str, float or array-like
         Values of Dec to convert. Can be strings in makesourcedb format or
         floats in degrees (`astropy.coordinates.Angle` are also supported)
 
     Returns
     -------
-    RAAngle : list of astropy.coordinates.Angle
+    RAAngle : astropy.coordinates.Angle
         The RA, normalized to [0, 360)
-    DecAngle : list of astropy.coordinates.Angle
+    DecAngle : astropy.coordinates.Angle
         The Dec, normalized to [-90, 90].
     """
     import astropy.units as u
 
-    if type(RA) is not list:
+    if _is_scalar(RA):
         RA = [RA]
-    if type(Dec) is not list:
+    if _is_scalar(Dec):
         Dec = [Dec]
 
-    if type(RA[0]) is str:
+    if len(RA) and isinstance(RA[0], str):
         try:
-            RAAngle = Angle(Angle(RA, unit=u.hourangle), unit=u.deg)
-        except KeyboardInterrupt:
-            raise
+            RAAngle = _parse_sexagesimal(RA, hourangle=True)
+            if RAAngle is None:
+                RAAngle = Angle(Angle(RA, unit=u.hourangle), unit=u.deg)
         except Exception as e:
             raise ValueError('RA not understood (must be string in '
                              'makesourcedb format or float in degrees): {0}'.format(e))
     else:
         RAAngle = Angle(RA, unit=u.deg)
 
-    if type(Dec[0]) is str:
+    if len(Dec) and isinstance(Dec[0], str):
         try:
-            DecAngle = Angle(Dec, unit=u.deg)
-        except KeyboardInterrupt:
-            raise
+            DecAngle = _parse_sexagesimal(Dec)
+            if DecAngle is None:
+                DecAngle = Angle(Dec, unit=u.deg)
         except ValueError:
             try:
                 DecSex = [decstr.replace('.', ':', 2) for decstr in Dec]
@@ -648,12 +689,13 @@ def RADec2Angle(RA, Dec):
     else:
         DecAngle = Angle(Dec, unit=u.deg)
 
-    RANorm = []
-    DecNorm = []
-    for RA, Dec in zip(RAAngle, DecAngle):
-        RADec = normalize_ra_dec(RA, Dec)
-        RANorm.append(RADec.ra)
-        DecNorm.append(RADec.dec)
+    # Match the paired-coordinate behavior of zip, without constructing an
+    # Angle object for every individual coordinate. Work in degrees so input
+    # Angle arrays in other units are handled consistently.
+    size = min(len(RAAngle), len(DecAngle))
+    RANorm, DecNorm = normalize_ra_dec(
+        RAAngle.degree[:size], DecAngle.degree[:size]
+    )
 
     return Angle(RANorm, unit=u.deg), Angle(DecNorm, unit=u.deg)
 
