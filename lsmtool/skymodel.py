@@ -348,25 +348,14 @@ class SkyModel(object):
         tot_flux = np.sum(self.get_col_values("I", units="Jy"))
 
         info = (
-            "Model contains {0} sources in {1} patch{2} of which:\n"
-            "      {3} are type POINT\n"
-            "      {4} are type GAUSSIAN\n"
-            "      Associated beam MS: {5}\n"
-            "      Approximate RA, Dec of center: {6}, {7}\n"
-            "      Total flux: {8} Jy\n\n"
-            "      History:\n"
-            "      {9}".format(
-                len(self.table),
-                n_patches,
-                plur,
-                n_point,
-                n_gaus,
-                self.beam_ms,
-                ref_ra,
-                ref_dec,
-                tot_flux,
-                "\n      ".join(self.history),
-            )
+            f"Model contains {len(self.table)} sources in {n_patches} "
+            f"patch{plur} of which:\n"
+            f"    {n_point} are type POINT\n"
+            f"    {n_gaus} are type GAUSSIAN\n"
+            f"    Associated beam MS: {self.beam_ms}\n"
+            f"    Approximate RA, Dec of center: {ref_ra}, {ref_dec}\n"
+            f"    Total flux: {tot_flux} Jy\n\n"
+            f"    History:\n        " + "\n        ".join(self.history)
         )
         log_call(info)
         return info
@@ -508,8 +497,8 @@ class SkyModel(object):
             if col_name_lower not in tableio.allowedColumnNames:
                 if not quiet:
                     raise ValueError(
-                        'Column name "{0}" is not a valid makesourcedb '
-                        "column.".format(col_name)
+                        f"Column name {col_name!r} is not a valid makesourcedb "
+                        "column."
                     )
                 return None
             else:
@@ -517,9 +506,7 @@ class SkyModel(object):
             if col_name_key not in self.table.keys() and only_existing:
                 if not quiet:
                     raise ValueError(
-                        'Column name "{0}" not found in sky model.'.format(
-                            col_name
-                        )
+                        f"Column name {col_name!r} not found in sky model."
                     )
                 return None
 
@@ -543,9 +530,9 @@ class SkyModel(object):
                     plur = "s"
                 if not quiet:
                     self.log.warning(
-                        "Column name{0} '{1}' not recognized. Ignoring.".format(
-                            plur, ",".join(bad_names)
-                        )
+                        "Column name%s %r not recognized. Ignoring.",
+                        plur,
+                        ",".join(bad_names),
                     )
             if len(col_name_lower) == 0:
                 return None
@@ -1124,17 +1111,9 @@ class SkyModel(object):
                     val = value
                 data[indx] = val
                 mask[indx] = False
-        else:
-            if len(values) != len(self.table):
-                raise ValueError(
-                    "Length of input values must match length of table."
-                )
-            else:
-                if col_name == "Ra" or col_name == "Dec":
-                    vals = Angle(values, unit=u.deg)
-                else:
-                    vals = values
-                data = vals
+            raise ValueError(
+                "Length of input values must match length of table."
+            )
 
         if mask is not None:
             data = np.ma.masked_array(data, mask)
@@ -1195,8 +1174,7 @@ class SkyModel(object):
         elif row_name in self.get_col_values("Name"):
             indx = self._get_name_indx(row_name)
             return self.table.filled()[indx]
-        else:
-            raise ValueError("Row name '{0}' not recognized.".format(row_name))
+            raise ValueError(f"Row name {row_name!r} not recognized.")
 
     @deprecated(renamed_parameters={"rowName": "row_name"})
     def get_row_index(self, row_name):
@@ -1247,7 +1225,7 @@ class SkyModel(object):
         indices = np.flatnonzero(self.table["Name"] == row_name)
         if indices.size:
             return indices
-        raise ValueError("Row name '{0}' not recognized.".format(row_name))
+        raise ValueError(f"Row name {row_name!r} not recognized.")
 
     def set_row_values(self, values, mask=None, return_verified=False):
         """
@@ -1402,9 +1380,9 @@ class SkyModel(object):
                 else:
                     plur = "s"
                 self.log.warning(
-                    "Name{0} '{1}' not recognized. Ignoring.".format(
-                        plur, ",".join(bad_names)
-                    )
+                    "Name%s %r not recognized. Ignoring.",
+                    plur,
+                    ",".join(bad_names),
                 )
             if len(indx) == 0:
                 raise ValueError("None of the specified names were found.")
@@ -1958,9 +1936,7 @@ class SkyModel(object):
                 os.remove(filename)
             else:
                 raise IOError(
-                    "The output file '{0}' exists and clobber = False.".format(
-                        filename
-                    )
+                    f"The output file {filename!r} exists and clobber = False."
                 )
 
         table = self.table.copy()
@@ -2096,9 +2072,7 @@ class SkyModel(object):
         n_rows_new = len(self.table)
         if n_rows_orig - n_rows_new > 0:
             self.log.info(
-                "Removed {0} duplicate sources.".format(
-                    n_rows_orig - n_rows_new
-                )
+                "Removed %s duplicate sources.", n_rows_orig - n_rows_new
             )
         self._update_groups()
 
@@ -2958,18 +2932,15 @@ class SkyModel(object):
                     "LogarithmicSI = False are supported at this time."
                 )
 
-        image_names = [
-            "{0}_{1}.fits".format(file_root, i) for i in range(nterms)
-        ]
+        image_names = [f"{file_root}_{i}.fits" for i in range(nterms)]
         for image_name in image_names:
             if os.path.exists(image_name):
                 if clobber:
                     os.remove(image_name)
                 else:
                     raise IOError(
-                        "The output file '{0}' exists and clobber = False.".format(
-                            image_name
-                        )
+                        f"The output file {image_name!r} exists and "
+                        "clobber = False."
                     )
 
         x, y, ref_ra, ref_dec = self._get_xy(crdelt=cellsize)
@@ -3097,22 +3068,19 @@ class SkyModel(object):
                 ras = varray[0]
                 decs = varray[1]
                 for x, y in zip(ras, decs):
-                    xylist.append("{0}, {1}".format(x, y))
+                    xylist.append(f"{x}, {y}")
                 lines.append(
-                    "polygon({0}) # text={{{1}}}\n".format(
-                        ", ".join(xylist), pname
-                    )
+                    f"polygon({', '.join(xylist)}) # text={{{pname}}}\n"
                 )
 
-            outputfile = "{0}.reg".format(file_root)
+            outputfile = f"{file_root}.reg"
             if os.path.exists(outputfile):
                 if clobber:
                     os.remove(outputfile)
                 else:
                     raise IOError(
-                        "The output file '{0}' exists and clobber = False.".format(
-                            outputfile
-                        )
+                        f"The output file {outputfile!r} exists and "
+                        "clobber = False."
                     )
             with open(outputfile, "w") as f:
                 f.writelines(lines)
