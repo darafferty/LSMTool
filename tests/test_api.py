@@ -200,6 +200,15 @@ class TestAttributeDeprecation:
 
         assert example_deprecate_attribute.new_attribute == "test value"
 
+    def test_deprecated_attribute_class_lookup(
+        self, example_deprecate_attribute
+    ):
+        """
+        Test that accessing a deprecated attribute emits a deprecation warning.
+        """
+        with pytest.deprecated_call(match=self.EXPECTED_MESSAGE):
+            example_deprecate_attribute.__class__.deprecatedAttribute == "new value"
+
 
 # ---------------------------------------------------------------------------- #
 # Test SkyModel deprecations

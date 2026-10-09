@@ -96,7 +96,7 @@ class Deprecated:
 
     def __get__(self, instance, owner=None):
         self.emit((owner or instance.__class__).__name__)
-        return getattr(instance, self.replacement)
+        return getattr(owner if instance is None else instance, self.replacement)
 
     def __set__(self, instance, value):
         self.emit(instance.__class__.__name__)
