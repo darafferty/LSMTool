@@ -31,7 +31,7 @@ def n_patches(request):  # (2, 2), (10, 10), (25, 25), (50, 50)
 @pytest.fixture(scope="session")
 def output_dir(pytestconfig):
     path = pytestconfig.resource_dir / "generated_skymodels"
-    path.parent.mkdir(exist_ok=True)
+    path.mkdir(exist_ok=True)
     return path
 
 
