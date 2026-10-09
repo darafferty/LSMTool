@@ -23,7 +23,6 @@ import numpy.ma as ma
 import pyvo as vo
 from astropy.coordinates import Angle, SkyCoord
 from astropy.io import registry
-from astropy.samp import SAMPIntegratedClient
 from astropy.table import Column, MaskedColumn, Table
 from packaging.version import Version
 
@@ -1137,7 +1136,7 @@ def broadcastTable(fileName):
 
     """
 
-    client = SAMPIntegratedClient()
+    client = vo.samp.SAMPIntegratedClient()
     client.connect()
 
     params = {}
