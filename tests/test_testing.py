@@ -202,6 +202,11 @@ class TestSkyModelGenerator:
     """
 
     def test_minimal(self, tmp_path, rng):
+        """
+        Test that we can generate a minimal random skymodel and that we can
+        load it.
+        """
+
         # create skymodel generator and sample 100 sources
         generator = SkyModelGenerator(
             q=None,
@@ -215,16 +220,15 @@ class TestSkyModelGenerator:
             orientation=None,
         )
         # check that we can write and read the skymodel without errors
-        path = tmp_path / "test_skymodel_generator.sky"
-        generator.to_file(path, 10, rng)
+        path = tmp_path / "test_skymodel_generator.txt"
+        generator.to_file(path, 10, random_state=rng)
 
         skymodel = load(path)
         assert skymodel.getColNames() == ["Name", "Type", "Ra", "Dec", "I"]
         assert len(skymodel) == 10
 
-    @pytest.mark.parametrize(
-        "config",
-        [
+    @pytest.fixture(
+        params=[
             pytest.param({}, id="default"),
             pytest.param(
                 {"ra": uniform_range(0, 45), "dec": uniform_range(-45, 45)},
@@ -232,10 +236,14 @@ class TestSkyModelGenerator:
             ),
         ],
     )
-    def test_skymodel_generator(self, config, rng):
+    def config(self, request):
+        return request.param
+
+    def test_skymodel_generator_samples(self, config, rng):
+
         # create skymodel generator and draw a random sample of sources
         generator = SkyModelGenerator(**config)
-        samples = generator.sample(n_sources=1_000, random_state=rng)
+        samples, _ = generator.sample(n_sources=1_000, random_state=rng)
 
         # Check that the samples are within the expected ranges and have the
         # expected distribution.
@@ -257,3 +265,80 @@ class TestSkyModelGenerator:
         assert (
             kstest(samples["dec"], uniform(dec0, dec1 - dec0).cdf).pvalue > 0.05
         )
+
+    @pytest.mark.parametrize("n_sources", [1, 1000])
+    def test_read_write(self, tmp_path, config, n_sources, rng):
+
+        # create skymodel generator and draw a random sample of sources
+        generator = SkyModelGenerator(**config)
+        generator.to_file(
+            path := tmp_path / "test_skymodel_generator.txt",
+            n_sources=n_sources,
+            random_state=rng,
+        )
+        assert path.exists()
+
+        skymodel = load(path)
+        assert skymodel.getColNames() == [
+            "Name",
+            "Type",
+            "Ra",
+            "Dec",
+            "I",
+            "Q",
+            "U",
+            "V",
+            "ReferenceFrequency",
+            "SpectralIndex",
+            "RotationMeasure",
+            "MajorAxis",
+            "MinorAxis",
+            "Orientation",
+        ]
+        assert len(skymodel) == n_sources
+
+    @pytest.mark.parametrize(
+        "n_sources, n_patches",
+        [
+            [1, (2, 2)],
+            [10, (2, 2)],
+            [100, (2, 3)],
+            [1000, (11, 9)],
+            [10_000, (20, 20)],
+        ],
+    )
+    def test_patches(self, pytestconfig, rng, n_sources, n_patches):
+        """
+        Test that we can generate a random skymodel with patches and that we can
+        load it.
+        """
+        x_patches, y_patches = n_patches
+        path = (
+            pytestconfig.resource_dir
+            / "generated_skymodels"
+            / f"skymodel_{n_sources}_{x_patches}x{y_patches}.txt"
+        )
+        path.parent.mkdir(exist_ok=True)
+
+        # Generate the skymodel file with the specified number of sources and
+        # patches
+        generator = SkyModelGenerator()
+        generator.to_file(path, n_sources, n_patches, rng)
+
+        # Check that we can load the skymodel
+        assert path.exists()
+        skymodel = load(path)
+
+        # check the number of sources
+        assert len(skymodel) == n_sources
+
+        # check number of patches
+        assert "Patch" in skymodel.getColNames()
+        assert len(skymodel.table.meta) == x_patches * y_patches
+
+        # check number of sources per patch
+        n_sources_per_patch = [
+            sum(skymodel.table["Patch"] == patch_name)
+            for patch_name in skymodel.table.meta
+        ]
+        assert sum(n_sources_per_patch) == n_sources

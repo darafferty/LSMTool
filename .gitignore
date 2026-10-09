@@ -75,3 +75,6 @@ wheelhouse/
 
 # Downloaded test data
 LOFAR_HBA_MOCK.ms
+
+# Generated skymodels
+tests/resources/generated_skymodels

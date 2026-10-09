@@ -1041,7 +1041,7 @@ class TestFilterSkymodel:
         n_sources = config.pop("n_sources", 10)
         additional_sources = config.pop("extra_sources", None)
         skymodel_generator = SkyModelGenerator(**config)
-        samples = skymodel_generator(n_sources, rng)
+        samples, _ = skymodel_generator(n_sources, random_state=rng)
         data = np.column_stack(list(samples.values()))
 
         if additional_sources is not None:
