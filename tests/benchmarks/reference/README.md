@@ -11,7 +11,7 @@ tests. The reference benchmark measurement was done on CI on:
 To produce a new reference measurement run the following commands:
 
 ```bash
-rm tests/benchmarks/reference
+rm -r tests/benchmarks/reference
 git checkout master
 python -m pytest --benchmark-only --benchmark-storage tests/benchmarks/reference --benchmark-save reference
 ```
