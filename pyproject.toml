@@ -71,7 +71,7 @@ benchmarks = [
 ]
 dev = [
     "ruff",
-    "lsmtool[docs,tests,benchmarks]"
+    "lsmtool[docs,tests,sofia,benchmarks]"
 ]
 
 [dependency-groups]
