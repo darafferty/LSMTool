@@ -78,3 +78,8 @@ LOFAR_HBA_MOCK.ms
 
 # Generated skymodels
 tests/resources/generated_skymodels
+
+# Benchmark results
+tests/benchmarks/results
+# default pytest benchmark results folder
+.benchmarks
