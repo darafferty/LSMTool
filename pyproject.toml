@@ -238,7 +238,7 @@ commands = [
     ["python", "--version"],
     [
         # Run benchmark tests
-        "python", "-m", "pytest", "--benchmark-only", 
+        "python", "-m", "pytest", "--benchmark-only",
         "--benchmark-storage", "tests/benchmarks/results",
         { replace = "posargs", default = [], extend = true },
     ],
