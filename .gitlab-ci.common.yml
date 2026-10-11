@@ -91,7 +91,6 @@ run_unit_tests_coverage:
     paths:
       - htmlcov/*
 
-
 # Run benchmark unit tests
 run_benchmark_tests:
   stage: test
@@ -100,8 +99,8 @@ run_benchmark_tests:
     - tox -e benchmark -- --benchmark-save $CI_COMMIT_BRANCH
   artifacts:
     paths:
-      - .benchmarks
       - tests/benchmarks/results
+  when: manual
 
 # Build and package the project
 package_files:
