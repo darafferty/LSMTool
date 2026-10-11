@@ -65,6 +65,7 @@ tests = [
     "pytest-socket",
 ]
 benchmarks = [
+    "gitpython>=3.2.0",
     "lsmtool[tests]",
     "pytest-benchmark>=5.3.0",
 ]
@@ -236,8 +237,14 @@ extras = ["benchmarks"]
 commands = [
     ["python", "--version"],
     [
+        # Run benchmark tests
         "python", "-m", "pytest", "--benchmark-only",
         { replace = "posargs", default = [], extend = true },
+    ],
+    [
+        # Create benchmark plots
+        "python", "tests/benchmarks/plot_benchmarks.py",
+        "tests/benchmarks/results/benchmark_compare.pdf"
     ]
 ]
 
