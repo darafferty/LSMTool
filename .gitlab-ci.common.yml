@@ -101,6 +101,7 @@ run_benchmark_tests:
   artifacts:
     paths:
       - .benchmarks
+      - tests/benchmarks/results
 
 # Build and package the project
 package_files:
