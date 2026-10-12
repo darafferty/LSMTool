@@ -48,6 +48,32 @@ class Deprecated:
         self.target_version = target_version
         self.warn_once = warn_once
         self.attribute_name = None
+        self.emit = self._emit
+
+    @property
+    def warn_once(self):
+        return self._warn_once
+
+    @warn_once.setter
+    def warn_once(self, warn_once):
+        self._warn_once = bool(warn_once)
+        if self._warn_once is False:
+            self.emit = self._emit
+
+    def __repr__(self):
+        return (
+            f"<{self.__class__.__name__}("
+            + ", ".join(
+                f"{attr}={getattr(self, attr)!r}"
+                for attr in (
+                    "replacement",
+                    "renamed_parameters",
+                    "target_version",
+                    "warn_once",
+                )
+            )
+            + ")>"
+        )
 
     def __call__(self, func):
 
@@ -83,7 +109,7 @@ class Deprecated:
 
         return kws, replaced
 
-    def emit(self, origin, *args):
+    def _emit(self, origin, *args):
         """
         Emit a deprecation warning for the given function and keyword arguments.
         """
@@ -91,17 +117,25 @@ class Deprecated:
         warnings.warn(message, DeprecationWarning, stacklevel=3)
 
         if self.warn_once:
-            self.emit = self.emit_noop
+            self.emit = self._emit_noop
 
-    def emit_noop(self, *_, **__):
+    def _emit_noop(self, *_, **__):
         return
 
     def __set_name__(self, owner, name):
+        # if name == 'getPatchPositions':
         self.attribute_name = name
 
     def __get__(self, instance, owner=None):
+
+        if instance is None:
+            # lookup from class, return the descriptor object
+            return self
+
+        # lookup from instance, emit deprecation warning and return the
+        # replacement attribute
         self.emit((owner or instance.__class__).__name__)
-        return getattr(instance or owner, self.replacement)
+        return getattr(instance, self.replacement)
 
     def __set__(self, instance, value):
         self.emit(instance.__class__.__name__)
