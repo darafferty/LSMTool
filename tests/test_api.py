@@ -8,6 +8,7 @@ import pytest
 
 from lsmtool.api import deprecated
 from lsmtool.io import load
+from lsmtool.skymodel import SkyModel
 
 
 # ---------------------------------------------------------------------------- #
@@ -146,13 +147,13 @@ class TestAttributeDeprecation:
         self, example_deprecate_attribute
     ):
         """
-        Test that accessing a deprecated attribute emits a deprecation warning.
+        Test that accessing a deprecated attribute from the class returns an
+        instance of the deprecated descriptor.
         """
-        with pytest.deprecated_call(match=self.EXPECTED_MESSAGE):
-            assert (
-                example_deprecate_attribute.__class__.deprecatedAttribute
-                == "new value"
-            )
+        assert isinstance(
+            example_deprecate_attribute.__class__.deprecatedAttribute,
+            deprecated,
+        )
 
 
 # ---------------------------------------------------------------------------- #
@@ -292,11 +293,19 @@ class TestDeprecatedParameters:
 # Test SkyModel deprecations
 
 
-def test_skymodel_deprecations(pytestconfig):
+def test_skymodel_deprecations(pytestconfig, monkeypatch):
     """
     Test that deprecated SkyModel methods emit deprecation warnings.
     """
-    skymodel = load(pytestconfig.resource_dir / "to_patched.sky")
+
+    # Deprecation warnings are triggered internally when the SkyModel is
+    # initialised, we filter these here
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        skymodel = load(pytestconfig.resource_dir / "to_patched.sky")
+        # patch the warn_once attribute to False so that the deprecation warning
+        # is emitted again the next time the method is looked up.
+        monkeypatch.setattr(SkyModel.getPatchPositions, "warn_once", False)
 
     with pytest.deprecated_call():
         result = skymodel.getPatchPositions("Patch1")
