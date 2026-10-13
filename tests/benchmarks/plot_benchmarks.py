@@ -136,7 +136,7 @@ def main(filename=None):
     filename : Path or str, optional
         Path to save the figure to. If not provided, the plot will not be saved.
     """
-    fig, ax = plt.subplots(1, 1, figsize=[9.5, 6.8], tight_layout=True)
+    fig, ax = plt.subplots(1, 1, figsize=[10.5, 6.8], tight_layout=True)
     benchmarks = collect_benchmarks()
     plot_benchmarks(ax, benchmarks, title="SkyModel.getPatchPositions")
 

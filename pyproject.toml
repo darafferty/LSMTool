@@ -259,7 +259,7 @@ commands = [
     [
         # Create benchmark plots
         "python", "tests/benchmarks/plot_benchmarks.py",
-        "tests/benchmarks/results/benchmark_compare.svg"
+        "tests/benchmarks/results/benchmark_compare.png"
     ]
 ]
 
