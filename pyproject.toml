@@ -234,9 +234,13 @@ commands = [
 # ---------------------------------------------------------------------------- #
 [tool.tox.env.benchmark]
 extras = ["benchmarks"]
-allowlist_externals = ["cp"]
+allowlist_externals = ["mkdir","cp"]
 commands = [
     ["python", "--version"],
+    [
+        # Create results folder if needed
+        "mkdir", "-p", "tests/benchmarks/results"
+    ],
     [
         # Copy reference run into results folder for pytest-benchmark comparison
         "cp", "-r", 
