@@ -8,10 +8,17 @@ tests. The reference benchmark measurement was done on CI on:
 
 ## Rotation
 
-To produce a new reference measurement run the following commands:
+To replace the reference measurement with a more recent benchmark, do the following:
 
-```bash
-rm -r tests/benchmarks/reference/Linux*
-git checkout master
-python -m pytest --benchmark-only --benchmark-storage tests/benchmarks/reference --benchmark-save reference
-```
+- Navigate to the [Pipelines section on LSMTool's gitlab](https://git.astron.nl/RD/LSMTool/-/pipelines)
+  and click on the `run_benchmark_test` stage
+- Download the job artifacts and extract them.
+- The benchmark results will be named, e.g.: 
+  `tests/benchmarks/results/Linux-CPython-3.13-64bit/0002_master.json`.
+  Copy this file to the reference folder and rename it:
+
+  ```bash
+  cp tests/benchmarks/results/*/0002_master.json tests/benchmarks/reference/0001_reference.json
+  ```
+
+- Commit your updates and open an MR.
