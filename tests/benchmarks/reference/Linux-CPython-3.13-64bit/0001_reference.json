@@ -1,6 +1,6 @@
 {
     "machine_info": {
-        "node": "runner-fdwqlynxg-project-363-concurrent-2",
+        "node": "runner-fdwqlynxg-project-363-concurrent-6",
         "processor": "",
         "machine": "x86_64",
         "python_compiler": "GCC 14.2.0",
@@ -27,14 +27,14 @@
             "arch_string_raw": "x86_64",
             "vendor_id_raw": "AuthenticAMD",
             "brand_raw": "AMD EPYC 7352 24-Core Processor",
-            "hz_advertised_friendly": "3.1928 GHz",
-            "hz_actual_friendly": "3.1928 GHz",
+            "hz_advertised_friendly": "3.1941 GHz",
+            "hz_actual_friendly": "3.1941 GHz",
             "hz_advertised": [
-                3192796000,
+                3194149000,
                 0
             ],
             "hz_actual": [
-                3192796000,
+                3194149000,
                 0
             ],
             "model": 49,
@@ -191,9 +191,9 @@
         }
     },
     "commit_info": {
-        "id": "0adf6a48640a4342371ce345aca3635d730fe310",
-        "time": "2026-10-09T23:15:33+02:00",
-        "author_time": "2026-10-09T23:14:47+02:00",
+        "id": "33df4fa6c366b9e162f7c4e7cd1cde72f0a002da",
+        "time": "2026-10-13T16:29:19+02:00",
+        "author_time": "2026-10-13T16:29:19+02:00",
         "dirty": false,
         "project": "LSMTool",
         "branch": "(detached head)"
@@ -201,16 +201,16 @@
     "benchmarks": [
         {
             "group": "SkyModel.getPatchPositions",
-            "name": "test_get_patch_positions_benchmark[1-n_patches0]",
-            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[1-n_patches0]",
+            "name": "test_get_patch_positions_benchmark[1-10x10]",
+            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[1-10x10]",
             "params": {
                 "n_sources": 1,
-                "n_patches": [
+                "n_patches_xy": [
                     10,
                     10
                 ]
             },
-            "param": "1-n_patches0",
+            "param": "1-10x10",
             "extra_info": {
                 "n_sources": 1,
                 "n_patches": 100
@@ -226,40 +226,40 @@
                 "warmup": false
             },
             "stats": {
-                "min": 0.0017163490410894156,
-                "max": 0.002329294802621007,
-                "mean": 0.0017850320151421807,
-                "stddev": 6.243033652636012e-05,
-                "rounds": 479,
-                "median": 0.001775603974238038,
-                "iqr": 3.2360549084842205e-05,
-                "q1": 0.0017592019285075366,
-                "q3": 0.0017915624775923789,
-                "iqr_outliers": 19,
-                "stddev_outliers": 25,
-                "outliers": "25;19",
-                "ld15iqr": 0.0017163490410894156,
-                "hd15iqr": 0.001849316991865635,
-                "ops": 560.2140418306998,
-                "total": 0.8550303352531046,
+                "min": 0.0017419392243027687,
+                "max": 0.004055954981595278,
+                "mean": 0.0017820342265751036,
+                "stddev": 0.0001141362982301598,
+                "rounds": 481,
+                "median": 0.0017653042450547218,
+                "iqr": 1.713307574391365e-05,
+                "q1": 0.0017581580905243754,
+                "q3": 0.001775291166268289,
+                "iqr_outliers": 59,
+                "stddev_outliers": 14,
+                "outliers": "14;59",
+                "ld15iqr": 0.0017419392243027687,
+                "hd15iqr": 0.0018014637753367424,
+                "ops": 561.1564497960866,
+                "total": 0.8571584629826248,
                 "iterations": 1
             }
         },
         {
             "group": "SkyModel.getPatchPositions",
-            "name": "test_get_patch_positions_benchmark[100-n_patches0]",
-            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[100-n_patches0]",
+            "name": "test_get_patch_positions_benchmark[1-100x100]",
+            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[1-100x100]",
             "params": {
-                "n_sources": 100,
-                "n_patches": [
-                    10,
-                    10
+                "n_sources": 1,
+                "n_patches_xy": [
+                    100,
+                    100
                 ]
             },
-            "param": "100-n_patches0",
+            "param": "1-100x100",
             "extra_info": {
-                "n_sources": 100,
-                "n_patches": 100
+                "n_sources": 1,
+                "n_patches": 10000
             },
             "options": {
                 "disable_gc": false,
@@ -272,37 +272,175 @@
                 "warmup": false
             },
             "stats": {
-                "min": 0.027026152005419135,
-                "max": 0.02752999705262482,
-                "mean": 0.027301394218941115,
-                "stddev": 0.00012921724855201214,
-                "rounds": 36,
-                "median": 0.027314064442180097,
-                "iqr": 0.00012977642472833395,
-                "q1": 0.02725278097204864,
-                "q3": 0.027382557396776974,
-                "iqr_outliers": 4,
-                "stddev_outliers": 12,
-                "outliers": "12;4",
-                "ld15iqr": 0.027130043832585216,
-                "hd15iqr": 0.02752999705262482,
-                "ops": 36.62816601894352,
-                "total": 0.9828501918818802,
+                "min": 0.001743151806294918,
+                "max": 0.0026741628535091877,
+                "mean": 0.0017956437334906033,
+                "stddev": 9.055729129392054e-05,
+                "rounds": 443,
+                "median": 0.0017745327204465866,
+                "iqr": 2.0483974367380142e-05,
+                "q1": 0.0017648664070293307,
+                "q3": 0.0017853503813967109,
+                "iqr_outliers": 40,
+                "stddev_outliers": 31,
+                "outliers": "31;40",
+                "ld15iqr": 0.001743151806294918,
+                "hd15iqr": 0.001817896030843258,
+                "ops": 556.9033441038281,
+                "total": 0.7954701739363372,
                 "iterations": 1
             }
         },
         {
             "group": "SkyModel.getPatchPositions",
-            "name": "test_get_patch_positions_benchmark[1000-n_patches0]",
-            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[1000-n_patches0]",
+            "name": "test_get_patch_positions_benchmark[100-100x100]",
+            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[100-100x100]",
             "params": {
-                "n_sources": 1000,
-                "n_patches": [
+                "n_sources": 100,
+                "n_patches_xy": [
+                    100,
+                    100
+                ]
+            },
+            "param": "100-100x100",
+            "extra_info": {
+                "n_sources": 100,
+                "n_patches": 10000
+            },
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 1,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "precision": null,
+                "confidence": null,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.03693110169842839,
+                "max": 0.0434670140966773,
+                "mean": 0.03745486557966581,
+                "stddev": 0.0013056454467335295,
+                "rounds": 27,
+                "median": 0.03707166388630867,
+                "iqr": 0.0003579262411221862,
+                "q1": 0.03698704787530005,
+                "q3": 0.037344974116422236,
+                "iqr_outliers": 2,
+                "stddev_outliers": 2,
+                "outliers": "2;2",
+                "ld15iqr": 0.03693110169842839,
+                "hd15iqr": 0.03961569396778941,
+                "ops": 26.69880093076341,
+                "total": 1.011281370650977,
+                "iterations": 1
+            }
+        },
+        {
+            "group": "SkyModel.getPatchPositions",
+            "name": "test_get_patch_positions_benchmark[100-10x10]",
+            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[100-10x10]",
+            "params": {
+                "n_sources": 100,
+                "n_patches_xy": [
                     10,
                     10
                 ]
             },
-            "param": "1000-n_patches0",
+            "param": "100-10x10",
+            "extra_info": {
+                "n_sources": 100,
+                "n_patches": 100
+            },
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 1,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "precision": null,
+                "confidence": null,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.026898095849901438,
+                "max": 0.034862179774791,
+                "mean": 0.02777367684285383,
+                "stddev": 0.0012515120811826784,
+                "rounds": 37,
+                "median": 0.0276908902451396,
+                "iqr": 0.0006172970170155168,
+                "q1": 0.02724523190408945,
+                "q3": 0.027862528921104968,
+                "iqr_outliers": 1,
+                "stddev_outliers": 1,
+                "outliers": "1;1",
+                "ld15iqr": 0.026898095849901438,
+                "hd15iqr": 0.034862179774791,
+                "ops": 36.00531559642238,
+                "total": 1.0276260431855917,
+                "iterations": 1
+            }
+        },
+        {
+            "group": "SkyModel.getPatchPositions",
+            "name": "test_get_patch_positions_benchmark[1000-100x100]",
+            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[1000-100x100]",
+            "params": {
+                "n_sources": 1000,
+                "n_patches_xy": [
+                    100,
+                    100
+                ]
+            },
+            "param": "1000-100x100",
+            "extra_info": {
+                "n_sources": 1000,
+                "n_patches": 10000
+            },
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 1,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "precision": null,
+                "confidence": null,
+                "warmup": false
+            },
+            "stats": {
+                "min": 0.3597074062563479,
+                "max": 0.3658861657604575,
+                "mean": 0.3633970486310621,
+                "stddev": 0.003259633859943795,
+                "rounds": 3,
+                "median": 0.3645975738763809,
+                "iqr": 0.004634069628082216,
+                "q1": 0.36092994816135615,
+                "q3": 0.36556401778943837,
+                "iqr_outliers": 0,
+                "stddev_outliers": 1,
+                "outliers": "1;0",
+                "ld15iqr": 0.3597074062563479,
+                "hd15iqr": 0.3658861657604575,
+                "ops": 2.7518110115837713,
+                "total": 1.0901911458931863,
+                "iterations": 1
+            }
+        },
+        {
+            "group": "SkyModel.getPatchPositions",
+            "name": "test_get_patch_positions_benchmark[1000-10x10]",
+            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[1000-10x10]",
+            "params": {
+                "n_sources": 1000,
+                "n_patches_xy": [
+                    10,
+                    10
+                ]
+            },
+            "param": "1000-10x10",
             "extra_info": {
                 "n_sources": 1000,
                 "n_patches": 100
@@ -318,37 +456,83 @@
                 "warmup": false
             },
             "stats": {
-                "min": 0.0491107280831784,
-                "max": 0.05034865299239755,
-                "mean": 0.04974609518068887,
-                "stddev": 0.00028335652921851056,
+                "min": 0.048326784279197454,
+                "max": 0.050330488942563534,
+                "mean": 0.04896276282323968,
+                "stddev": 0.0004657711676978152,
                 "rounds": 21,
-                "median": 0.04969219211488962,
-                "iqr": 0.0003484669141471386,
-                "q1": 0.04959208593936637,
-                "q3": 0.04994055285351351,
-                "iqr_outliers": 0,
+                "median": 0.048958336003124714,
+                "iqr": 0.000529612647369504,
+                "q1": 0.048638896783813834,
+                "q3": 0.04916850943118334,
+                "iqr_outliers": 1,
                 "stddev_outliers": 7,
-                "outliers": "7;0",
-                "ld15iqr": 0.0491107280831784,
-                "hd15iqr": 0.05034865299239755,
-                "ops": 20.10208030133376,
-                "total": 1.0446679987944663,
+                "outliers": "7;1",
+                "ld15iqr": 0.048326784279197454,
+                "hd15iqr": 0.050330488942563534,
+                "ops": 20.42368408845916,
+                "total": 1.0282180192880332,
                 "iterations": 1
             }
         },
         {
             "group": "SkyModel.getPatchPositions",
-            "name": "test_get_patch_positions_benchmark[10000-n_patches0]",
-            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[10000-n_patches0]",
+            "name": "test_get_patch_positions_benchmark[10000-100x100]",
+            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[10000-100x100]",
             "params": {
                 "n_sources": 10000,
-                "n_patches": [
+                "n_patches_xy": [
+                    100,
+                    100
+                ]
+            },
+            "param": "10000-100x100",
+            "extra_info": {
+                "n_sources": 10000,
+                "n_patches": 10000
+            },
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 1,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "precision": null,
+                "confidence": null,
+                "warmup": false
+            },
+            "stats": {
+                "min": 3.021405013743788,
+                "max": 3.021405013743788,
+                "mean": 3.021405013743788,
+                "stddev": 0,
+                "rounds": 1,
+                "median": 3.021405013743788,
+                "iqr": 0.0,
+                "q1": 3.021405013743788,
+                "q3": 3.021405013743788,
+                "iqr_outliers": 0,
+                "stddev_outliers": 0,
+                "outliers": "0;0",
+                "ld15iqr": 3.021405013743788,
+                "hd15iqr": 3.021405013743788,
+                "ops": 0.33097184768384014,
+                "total": 3.021405013743788,
+                "iterations": 1
+            }
+        },
+        {
+            "group": "SkyModel.getPatchPositions",
+            "name": "test_get_patch_positions_benchmark[10000-10x10]",
+            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[10000-10x10]",
+            "params": {
+                "n_sources": 10000,
+                "n_patches_xy": [
                     10,
                     10
                 ]
             },
-            "param": "10000-n_patches0",
+            "param": "10000-10x10",
             "extra_info": {
                 "n_sources": 10000,
                 "n_patches": 100
@@ -364,37 +548,83 @@
                 "warmup": false
             },
             "stats": {
-                "min": 0.05505160801112652,
-                "max": 0.05621514888480306,
-                "mean": 0.05583526998654836,
-                "stddev": 0.0003110347377472675,
+                "min": 0.05532596120610833,
+                "max": 0.06654526200145483,
+                "mean": 0.057356529506958194,
+                "stddev": 0.002700359481652053,
                 "rounds": 18,
-                "median": 0.05585561296902597,
-                "iqr": 0.00045935786329209805,
-                "q1": 0.055659845005720854,
-                "q3": 0.05611920286901295,
-                "iqr_outliers": 0,
-                "stddev_outliers": 5,
-                "outliers": "5;0",
-                "ld15iqr": 0.05505160801112652,
-                "hd15iqr": 0.05621514888480306,
-                "ops": 17.909826535107946,
-                "total": 1.0050348597578704,
+                "median": 0.056280773133039474,
+                "iqr": 0.001264575868844986,
+                "q1": 0.056112552992999554,
+                "q3": 0.05737712886184454,
+                "iqr_outliers": 2,
+                "stddev_outliers": 2,
+                "outliers": "2;2",
+                "ld15iqr": 0.05532596120610833,
+                "hd15iqr": 0.06147473305463791,
+                "ops": 17.434806613930245,
+                "total": 1.0324175311252475,
                 "iterations": 1
             }
         },
         {
             "group": "SkyModel.getPatchPositions",
-            "name": "test_get_patch_positions_benchmark[100000-n_patches0]",
-            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[100000-n_patches0]",
+            "name": "test_get_patch_positions_benchmark[100000-100x100]",
+            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[100000-100x100]",
             "params": {
                 "n_sources": 100000,
-                "n_patches": [
+                "n_patches_xy": [
+                    100,
+                    100
+                ]
+            },
+            "param": "100000-100x100",
+            "extra_info": {
+                "n_sources": 100000,
+                "n_patches": 10000
+            },
+            "options": {
+                "disable_gc": false,
+                "timer": "perf_counter",
+                "min_rounds": 1,
+                "max_time": 1.0,
+                "min_time": 5e-06,
+                "precision": null,
+                "confidence": null,
+                "warmup": false
+            },
+            "stats": {
+                "min": 5.923507604748011,
+                "max": 5.923507604748011,
+                "mean": 5.923507604748011,
+                "stddev": 0,
+                "rounds": 1,
+                "median": 5.923507604748011,
+                "iqr": 0.0,
+                "q1": 5.923507604748011,
+                "q3": 5.923507604748011,
+                "iqr_outliers": 0,
+                "stddev_outliers": 0,
+                "outliers": "0;0",
+                "ld15iqr": 5.923507604748011,
+                "hd15iqr": 5.923507604748011,
+                "ops": 0.16881889358906976,
+                "total": 5.923507604748011,
+                "iterations": 1
+            }
+        },
+        {
+            "group": "SkyModel.getPatchPositions",
+            "name": "test_get_patch_positions_benchmark[100000-10x10]",
+            "fullname": "tests/benchmarks/test_skymodel_benchmarks.py::test_get_patch_positions_benchmark[100000-10x10]",
+            "params": {
+                "n_sources": 100000,
+                "n_patches_xy": [
                     10,
                     10
                 ]
             },
-            "param": "100000-n_patches0",
+            "param": "100000-10x10",
             "extra_info": {
                 "n_sources": 100000,
                 "n_patches": 100
@@ -410,26 +640,26 @@
                 "warmup": false
             },
             "stats": {
-                "min": 0.10919269500300288,
-                "max": 0.11084784590639174,
-                "mean": 0.11005445399787277,
-                "stddev": 0.00048493739466224614,
-                "rounds": 10,
-                "median": 0.11010727903340012,
-                "iqr": 0.0005950399208813906,
-                "q1": 0.10972845205105841,
-                "q3": 0.1103234919719398,
-                "iqr_outliers": 0,
-                "stddev_outliers": 4,
-                "outliers": "4;0",
-                "ld15iqr": 0.10919269500300288,
-                "hd15iqr": 0.11084784590639174,
-                "ops": 9.086410987231183,
-                "total": 1.1005445399787277,
+                "min": 0.10936989402398467,
+                "max": 0.11142075015231967,
+                "mean": 0.11011198742522134,
+                "stddev": 0.0006080132158969788,
+                "rounds": 9,
+                "median": 0.10999092413112521,
+                "iqr": 0.0006071662064641714,
+                "q1": 0.10976882744580507,
+                "q3": 0.11037599365226924,
+                "iqr_outliers": 1,
+                "stddev_outliers": 2,
+                "outliers": "2;1",
+                "ld15iqr": 0.10936989402398467,
+                "hd15iqr": 0.11142075015231967,
+                "ops": 9.081663344593744,
+                "total": 0.991007886826992,
                 "iterations": 1
             }
         }
     ],
-    "datetime": "2026-10-09T21:19:06.446960+00:00",
+    "datetime": "2026-10-13T14:33:54.877059+00:00",
     "version": "5.3.0"
 }
