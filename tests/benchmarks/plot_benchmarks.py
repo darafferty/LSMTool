@@ -4,6 +4,7 @@ Plot benchmark results, comparing to a reference run.
 
 import json
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -92,8 +93,13 @@ def collect_benchmarks():
         "reference": read_benchmark(next(REFERENCE_DIR.rglob("*.json")))
     }
 
+    counters = defaultdict(int)
     for result_path in RESULTS_DIR.rglob("*.json"):
         label = result_path.stem[5:]
+        if label in benchmarks:
+            counters[label] += 1
+            label = f"{label}-{counters[label]}"
+
         benchmarks[label] = read_benchmark(result_path)
 
     return benchmarks
