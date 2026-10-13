@@ -100,7 +100,6 @@ run_benchmark_tests:
   artifacts:
     paths:
       - tests/benchmarks/results
-  when: manual
 
 # Build and package the project
 package_files:
