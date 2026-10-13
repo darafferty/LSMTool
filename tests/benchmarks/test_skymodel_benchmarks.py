@@ -63,7 +63,6 @@ def skymodel(generated_skymodel_path):
 
 
 @pytest.mark.benchmark(group="SkyModel.getPatchPositions", min_rounds=1)
-# @pytest.mark.parametrize("per_patch_projection", [True])
 def test_get_patch_positions_benchmark(
     benchmark, skymodel, n_sources, n_patches, per_patch_projection=True
 ):
@@ -76,19 +75,3 @@ def test_get_patch_positions_benchmark(
         perPatchProjection=per_patch_projection,
         method="wmean",
     )
-
-
-# @pytest.mark.benchmark(group="SkyModel.group", min_rounds=1)
-# def test_group_benchmark(benchmark, skymodel, n_sources, n_patches):
-#     """Benchmark `SkyModel.group`"""
-#     benchmark.extra_info["n_sources"] = n_sources
-#     benchmark.extra_info["n_patches"] = math.prod(n_patches)
-
-#     benchmark(
-#         skymodel.group,
-#         "meanshift",
-#         byPatch=True,
-#         applyBeam=False,
-#         lookDistance=0.075,
-#         groupingDistance=0.01,
-#     )
