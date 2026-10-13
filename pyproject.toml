@@ -249,7 +249,7 @@ commands = [
     ],
     [
         # Run benchmark tests
-        "python", "-m", "pytest", "--benchmark-only",
+        "python", "-m", "pytest", "--benchmark-only", "--benchmark-autosave",
         "--benchmark-storage", "tests/benchmarks/results",
         "--benchmark-compare", "0001",
         "--benchmark-compare-fail=mean:5%",
