@@ -245,11 +245,12 @@ commands = [
         # Copy reference run into results folder for pytest-benchmark comparison
         "cp", "-r", 
         "tests/benchmarks/reference/Linux-CPython-3.13-64bit/0001_reference.json",
-        "tests/benchmarks/results"
+        "tests/benchmarks/results/"
     ],
     [
         # Run benchmark tests
-        "python", "-m", "pytest", "--benchmark-only", "--benchmark-autosave",
+        "-", "python", "-m", "pytest", "tests/benchmarks",
+        "--benchmark-only", "--benchmark-autosave",
         "--benchmark-storage", "tests/benchmarks/results",
         "--benchmark-compare", "0001",
         "--benchmark-compare-fail=mean:5%",
