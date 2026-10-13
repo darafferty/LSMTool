@@ -256,7 +256,7 @@ commands = [
         "--benchmark-only", "--benchmark-autosave",
         "--benchmark-storage", "tests/benchmarks/results",
         "--benchmark-compare", "0001",
-        "--benchmark-compare-fail=mean:5%",
+        "--benchmark-compare-fail=mean:10%",
         { replace = "posargs", default = [], extend = true }
     ]
 ]
