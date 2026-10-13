@@ -26,7 +26,7 @@ def n_sources(request):
 
 
 @pytest.fixture(params=[(10, 10)], scope="session")
-def n_patches(request):  # (2, 2), (10, 10), (25, 25), (50, 50)
+def n_patches_xy(request):
     return request.param
 
 
@@ -38,15 +38,15 @@ def output_dir(pytestconfig):
 
 
 @pytest.fixture
-def generated_skymodel_path(output_dir, n_sources, n_patches, rng):
+def generated_skymodel_path(output_dir, n_sources, n_patches_xy, rng):
     """
     Generate a skymodel file with the specified number of sources and patches.
     """
-    xp, yp = n_patches
+    xp, yp = n_patches_xy
     path = output_dir / f"skymodel_{n_sources}_{xp}x{yp}.txt"
     if not path.exists():
         generator = SkyModelGenerator()
-        generator.to_file(path, n_sources, n_patches, rng)
+        generator.to_file(path, n_sources, n_patches_xy, rng)
     return path
 
 
@@ -64,11 +64,11 @@ def skymodel(generated_skymodel_path):
 
 @pytest.mark.benchmark(group="SkyModel.getPatchPositions", min_rounds=1)
 def test_get_patch_positions_benchmark(
-    benchmark, skymodel, n_sources, n_patches, per_patch_projection=True
+    benchmark, skymodel, n_sources, n_patches_xy, per_patch_projection=True
 ):
     """Benchmark `SkyModel.getPatchPositions`"""
     benchmark.extra_info["n_sources"] = n_sources
-    benchmark.extra_info["n_patches"] = math.prod(n_patches)
+    benchmark.extra_info["n_patches"] = math.prod(n_patches_xy)
 
     benchmark(
         skymodel.getPatchPositions,
