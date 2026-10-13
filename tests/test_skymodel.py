@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 from astropy.table import Column, MaskedColumn
 
+from lsmtool.operations_lib import normalize_ra_dec
 from lsmtool.skymodel import SkyModel
 
 
@@ -22,7 +23,15 @@ def test_get_xy_empty():
 
 
 @pytest.mark.parametrize(
-    "ra, dec", [(10.0, 20.0), (350.0, -42.0), (-42.0, 90.0), (4242.0, -90.0)]
+    "ra, dec",
+    [
+        (10.0, 20.0),
+        (350.0, -42.0),
+        (-42.0, 90.0),
+        (4242.0, -90.0),
+        (0.0, -91.0),
+        (0.0, 91.0),
+    ],
 )
 @pytest.mark.parametrize("ra_dec_args", [False, True])
 def test_get_xy_single_source(ra, dec, ra_dec_args):
@@ -42,19 +51,10 @@ def test_get_xy_single_source(ra, dec, ra_dec_args):
     # Since numpy uses 0-based indexing, the x and y coordinates are 999.
     np.testing.assert_allclose(x, [999])
     np.testing.assert_allclose(y, [999])
-    # The returned ra, dec coordinates should equal the input values.
-    assert mid_ra == ra % 360.0  # The returned RA value should be normalized.
-    assert mid_dec == dec
-
-
-@pytest.mark.parametrize("ra, dec", [(0.0, -91.0), (0.0, 91.0)])
-def test_get_xy_unnormalised_dec(ra, dec):
-    """Test _get_xy with non-normalised RA and Dec values."""
-    sky = SkyModel(
-        {"Name": "source1", "Type": "point", "Ra": 42, "Dec": 42, "I": 1.0}
-    )
-    with pytest.raises(astropy.wcs._wcs.InvalidTransformError):
-        sky._get_xy([ra], [dec])
+    # The returned ra, dec coordinates should be the normalized input values.
+    normalized_ra, normalized_dec = normalize_ra_dec(ra, dec)
+    assert mid_ra == normalized_ra
+    assert mid_dec == normalized_dec
 
 
 def test_get_xy_identical_sources():

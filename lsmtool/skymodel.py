@@ -655,19 +655,21 @@ class SkyModel(object):
         if len(ra) == 0:
             return 0, 0
         elif len(ra) == 1:
-            return ra[0], dec[0]
+            ra_midpoint, dec_midpoint = ra[0], dec[0]
+        else:
+            wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
+            x, y = wcs.wcs_world2pix(ra, dec, 0)
+            xind = np.argsort(x)
+            yind = np.argsort(y)
+            xsorted = x[xind]
+            ysorted = y[yind]
+            xmid = 0.5 * (xsorted[0] + xsorted[-1])
+            ymid = 0.5 * (ysorted[0] + ysorted[-1])
+            midxind = np.searchsorted(xsorted, xmid)
+            midyind = np.searchsorted(ysorted, ymid)
+            ra_midpoint, dec_midpoint = ra[xind[midxind]], dec[yind[midyind]]
 
-        wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
-        x, y = wcs.wcs_world2pix(ra, dec, 0)
-        xind = np.argsort(x)
-        yind = np.argsort(y)
-        xsorted = x[xind]
-        ysorted = y[yind]
-        xmid = 0.5 * (xsorted[0] + xsorted[-1])
-        ymid = 0.5 * (ysorted[0] + ysorted[-1])
-        midxind = np.searchsorted(xsorted, xmid)
-        midyind = np.searchsorted(ysorted, ymid)
-        return ra[xind[midxind]], dec[yind[midyind]]
+        return normalize_ra_dec(ra_midpoint, dec_midpoint)
 
 
     def _get_xy(self, ra=None, dec=None, *, crdelt=None):
@@ -701,7 +703,6 @@ class SkyModel(object):
         ra_midpoint, dec_midpoint = self._get_midpoint(ra, dec, crdelt=crdelt)
         wcs = make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
         x, y = wcs.wcs_world2pix(ra, dec, 0)
-        ra_midpoint, dec_midpoint = normalize_ra_dec(ra_midpoint, dec_midpoint)
 
         return x, y, ra_midpoint, dec_midpoint
 
