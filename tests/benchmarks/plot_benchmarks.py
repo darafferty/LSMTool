@@ -99,7 +99,8 @@ def plot_benchmarks(ax, stats, title, **kws):
         *sorted(
             legend.items(),
             key=lambda x: (x[0][0], not x[0][1].startswith("ref")),
-        )
+        ),
+        strict=True,
     )
     ax.legend(handles=artists, ncols=2, loc="upper left")
 
