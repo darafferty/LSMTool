@@ -25,7 +25,9 @@ def n_sources(request):
     return request.param
 
 
-@pytest.fixture(params=[(10, 10)], scope="session")
+@pytest.fixture(
+    params=[(10, 10), (100, 100)], scope="session", ids="{0[0]}x{0[1]}".format
+)
 def n_patches_xy(request):
     return request.param
 
