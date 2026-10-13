@@ -8,12 +8,10 @@ from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 
 # ---------------------------------------------------------------------------- #
 
 BENCHMARK_DIR = Path(__file__).parent
-REFERENCE_DIR = BENCHMARK_DIR / "reference"
 RESULTS_DIR = BENCHMARK_DIR / "results"
 
 
@@ -31,25 +29,26 @@ def read_benchmark(filename):
 
     Returns
     -------
-    n_sources : np.ndarray
-        Number of sources in the skymodel
-    t_mean : np.ndarray
-        Mean runtimes.
-    t_std : np.ndarray
-        Standard deviation of the runtimes.
-
+    data : dict
+        A dictionary mapping the number of patches to a 3xN array containing
+        the number of sources, mean runtimes, and standard deviation of the
+        runtimes for each benchmark result.
     """
     data = json.loads(Path(filename).read_text())
     results = data["benchmarks"]
-    n = len(results)
-    n_sources, t_mean, t_std = np.empty((3, n))
-    for i, result in enumerate(results):
+    data = defaultdict(list)
+    for result in results:
         stats = result["stats"]
-        n_sources[i] = result["extra_info"]["n_sources"]
-        t_mean[i] = stats["mean"]
-        t_std[i] = stats["stddev"]
+        n_patches = result["extra_info"]["n_patches"]
+        data[n_patches].append(
+            (
+                result["extra_info"]["n_sources"],
+                stats["mean"],
+                stats["stddev"],
+            )
+        )
 
-    return n_sources, t_mean, t_std
+    return data
 
 
 def plot_benchmarks(ax, stats, title, **kws):
@@ -65,9 +64,26 @@ def plot_benchmarks(ax, stats, title, **kws):
         A dictionary mapping benchmark labels to their corresponding data.
     title : str
         Title for the axes.
+    **kws
+        Additional keyword arguments passed to `matplotlib.axes.Axes.errorbar`.
     """
-    for label, (x, y, y_err) in stats.items():
-        ax.errorbar(x, y, yerr=y_err, fmt="o", label=label, **kws)
+    markers_sequence = iter(("o^vsdx"))
+    markers = defaultdict(lambda: next(markers_sequence, None))
+    colours = {"reference": "k"}
+    legend = {}
+    for label, stats_per_label in stats.items():
+        for n_patches, data in stats_per_label.items():
+            (n_sources, t, t_err) = zip(*data, strict=True)
+            legend[n_patches, label] = art = ax.errorbar(
+                n_sources,
+                t,
+                yerr=t_err,
+                fmt=markers[n_patches],
+                color=colours.get(label, None),
+                label=f"{label}: {n_patches} patches",
+                **kws,
+            )
+            colours[label] = art[0].get_color()
 
     ax.set(
         title=title,
@@ -77,7 +93,15 @@ def plot_benchmarks(ax, stats, title, **kws):
         yscale="log",
     )
     ax.grid()
-    ax.legend()
+    # Sort the legend entries by number of patches and whether the label starts
+    # with "ref"
+    _, artists = zip(
+        *sorted(
+            legend.items(),
+            key=lambda x: (x[0][0], not x[0][1].startswith("ref")),
+        )
+    )
+    ax.legend(handles=artists, ncols=2, loc="upper left")
 
 
 def collect_benchmarks():
@@ -89,10 +113,7 @@ def collect_benchmarks():
     dict
         A dictionary mapping benchmark labels to their corresponding data.
     """
-    benchmarks = {
-        "reference": read_benchmark(next(REFERENCE_DIR.rglob("*.json")))
-    }
-
+    benchmarks = {}
     counters = defaultdict(int)
     for result_path in RESULTS_DIR.rglob("*.json"):
         label = result_path.stem[5:]
@@ -114,7 +135,7 @@ def main(filename=None):
     filename : Path or str, optional
         Path to save the figure to. If not provided, the plot will not be saved.
     """
-    fig, ax = plt.subplots(1, 1)
+    fig, ax = plt.subplots(1, 1, figsize=[9.5, 6.8], tight_layout=True)
     benchmarks = collect_benchmarks()
     plot_benchmarks(ax, benchmarks, title="SkyModel.getPatchPositions")
 
