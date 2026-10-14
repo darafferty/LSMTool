@@ -701,7 +701,7 @@ class SkyModel(object):
             return [], [], None
 
         ra_midpoint, dec_midpoint = self._get_midpoint(ra, dec, crdelt=crdelt)
-        wcs = make_wcs(ra_midpoint % 360.0, dec_midpoint, crdelt=crdelt)
+        wcs = make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
         x, y = wcs.wcs_world2pix(ra, dec, 0)
 
         return x, y, wcs
