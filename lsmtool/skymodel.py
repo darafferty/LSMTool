@@ -10,6 +10,7 @@ import os
 import tempfile
 
 import astropy.units as u
+from astropy.wcs import WCS
 import numpy as np
 from astropy.coordinates import Angle, SkyCoord
 from astropy.io import fits as pyfits
@@ -241,7 +242,7 @@ class SkyModel(object):
         else:
             logCall = self.log.debug
 
-        _, _, refRA, refDec = self._get_xy()
+        refRA, refDec = self._get_midpoint()
         totFlux = np.sum(self.getColValues('I', units='Jy'))
 
         info = 'Model contains {0} sources in {1} patch{2} of which:\n'\
@@ -492,15 +493,14 @@ class SkyModel(object):
                         patch_indices = self.getRowIndex(name)
                         patch_ra = self.table['Ra'][patch_indices]
                         patch_dec = self.table['Dec'][patch_indices]
-                        x, y, midRA, midDec = self._get_xy(patch_ra, patch_dec)
+
+                        x, y, wcs = self._get_xy(patch_ra, patch_dec)
                         xAll.extend(x)
                         yAll.extend(y)
-                        wcsAll.append(make_wcs(midRA, midDec))
+                        wcsAll.append(wcs)
                 else:
-                    xAll, yAll, midRA, midDec = self._get_xy()
-                    wcsAll = []  # has length = num of patches
-                    for name in patchName:
-                        wcsAll.append(make_wcs(midRA, midDec))
+                    xAll, yAll, wcs = self._get_xy()
+                    wcsAll = [wcs] * len(patchName)
 
                 xCol = Column(name='X', data=xAll)
                 yCol = Column(name='Y', data=yAll)
@@ -629,6 +629,49 @@ class SkyModel(object):
         else:
             raise RuntimeError('Sky model does not have patches.')
 
+    def _get_midpoint(self, ra=None, dec=None, *, crdelt=None):
+        """
+        Compute the midpoint of the given RA and Dec coordinate lists.
+
+        Parameters
+        ----------
+        ra : list or numpy.ndarray of float, optional
+            Right ascension values in degrees. Normalisation is not required.
+            If None, use the values from the sources in the sky model.
+        dec : list or numpy.ndarray of float, optional
+            Declination values in degrees, normalised to the range [-90, 90].
+            If None, use the values from the sources in the sky model.
+        crdelt: float, optional
+            Delta in degrees for sky grid.
+
+        Returns
+        -------
+        midRA, midDec : float
+            Midpoint RA and Dec values.
+        """
+        ra = self.table['Ra'] if ra is None else ra
+        dec = self.table['Dec'] if dec is None else dec
+
+        if len(ra) == 0:
+            return 0, 0
+        elif len(ra) == 1:
+            ra_midpoint, dec_midpoint = ra[0], dec[0]
+        else:
+            wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
+            x, y = wcs.wcs_world2pix(ra, dec, 0)
+            xind = np.argsort(x)
+            yind = np.argsort(y)
+            xsorted = x[xind]
+            ysorted = y[yind]
+            xmid = 0.5 * (xsorted[0] + xsorted[-1])
+            ymid = 0.5 * (ysorted[0] + ysorted[-1])
+            midxind = np.searchsorted(xsorted, xmid)
+            midyind = np.searchsorted(ysorted, ymid)
+            ra_midpoint, dec_midpoint = ra[xind[midxind]], dec[yind[midyind]]
+
+        return normalize_ra_dec(ra_midpoint, dec_midpoint)
+
+
     def _get_xy(self, ra=None, dec=None, *, crdelt=None):
         """
         Returns lists of projected x and y values.
@@ -642,47 +685,26 @@ class SkyModel(object):
             Declination values in degrees, normalised to the range [-90, 90].
             If None, use the values from the sources in the sky model.
         crdelt: float, optional
-            Delta in degrees for sky grid
+            Delta in degrees for sky grid.
 
         Returns
         -------
         x, y : numpy.ndarray
-            Arrays of x and y values
-        midRA, midDec : float
-            Midpoint RA and Dec values, which were used for the projection.
+            Arrays of x and y values.
+        wcs : astropy.wcs.WCS
+            WCS object used for the projection.
         """
         ra = self.table['Ra'] if ra is None else ra
         dec = self.table['Dec'] if dec is None else dec
 
         if len(ra) == 0:
-            return [0], [0], 0, 0
+            return [], [], None
 
-        wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
+        ra_midpoint, dec_midpoint = self._get_midpoint(ra, dec, crdelt=crdelt)
+        wcs = make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
         x, y = wcs.wcs_world2pix(ra, dec, 0)
 
-        # Refine x and y using midpoint
-        if len(x) > 1:
-            xmid = x.min() + np.ptp(x) / 2.0
-            ymid = y.min() + np.ptp(y) / 2.0
-            xind = np.argsort(x)
-            yind = np.argsort(y)
-            try:
-                midxind = np.where(x[xind] > xmid)[0][0]
-                midyind = np.where(y[yind] > ymid)[0][0]
-                ra_midpoint = ra[xind[midxind]]
-                dec_midpoint = dec[yind[midyind]]
-                wcs = make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
-                x, y = wcs.wcs_world2pix(ra, dec, 0)
-            except IndexError:
-                ra_midpoint = ra[0]
-                dec_midpoint = dec[0]
-        else:
-            ra_midpoint = ra[0]
-            dec_midpoint = dec[0]
-
-        ra_midpoint, dec_midpoint = normalize_ra_dec(ra_midpoint, dec_midpoint)
-
-        return x, y, ra_midpoint, dec_midpoint
+        return x, y, wcs
 
     def getDefaultValues(self):
         """
@@ -1721,7 +1743,7 @@ class SkyModel(object):
             if not self.hasPatches:
                 raise ValueError("Model must be grouped into patches when format = 'facet'.")
 
-            _, _, refRA, refDec = self._get_xy()
+            refRA, refDec = self._get_midpoint()
             table.meta['refRA'] = refRA
             table.meta['refDec'] = refDec
 
@@ -2484,7 +2506,7 @@ class SkyModel(object):
                     raise IOError("The output file '{0}' exists and clobber = False.".
                                   format(image_name))
 
-        x, y, refRA, refDec = self._get_xy(crdelt=cellsize)
+        x, y, wcs = self._get_xy(crdelt=cellsize)
         if 'GAUSSIAN' in types:
             fwhm = np.max(self.getColValues('MajorAxis', units='degree') * cellsize)
             max_source_size = int(np.ceil(fwhm * 1.5))
@@ -2504,7 +2526,6 @@ class SkyModel(object):
         # Now we have the size, refine the RA, Dec of the image center
         xcen = np.min(x) + (np.max(x) - np.min(x)) / 2.0
         ycen = np.min(y) + (np.max(y) - np.min(y)) / 2.0
-        wcs = make_wcs(refRA, refDec, crdelt=cellsize)
         refRA, refDec = wcs.wcs_pix2world(xcen, ycen, 0)
         RA = self.getColValues('Ra')
         Dec = self.getColValues('Dec')
@@ -2518,7 +2539,7 @@ class SkyModel(object):
             # Read in image data
             hdu = pyfits.open(image_name, memmap=False)
             imdata = hdu[0].data
-            w = wcs.WCS(hdu[0].header)
+            w = WCS(hdu[0].header)
 
             # Loop over sources, adding them to the images (note that the spectral terms
             # sum together when summing polynomials, just as the flux densities do)

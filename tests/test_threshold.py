@@ -23,7 +23,7 @@ class MockSkyModel:
 
     def _get_xy(self, crdelt):
         assert crdelt == 1.0 / 4.0 / 3600.0
-        return self.x, self.y, 42, 42
+        return self.x, self.y, 42
 
 
 @pytest.mark.parametrize("threshold", [0.1, 0.01])
