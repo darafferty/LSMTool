@@ -252,6 +252,9 @@ commands = [
         "--benchmark-storage", "tests/benchmarks/results",
         "--benchmark-compare", "0001",
         "--benchmark-compare-fail", "mean:10%",
+        "--benchmark-sort", "name",
+        "--benchmark-columns", "mean, stddev, rounds",
+        "--benchmark-group-by", "param:n_patches_xy",
         { replace = "posargs", default = [], extend = true }
     ]
 ]
