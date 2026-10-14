@@ -71,7 +71,8 @@ benchmarks = [
 ]
 dev = [
     "ruff",
-    "lsmtool[docs,tests,sofia,benchmarks]"
+    "lsmtool[docs,tests,sofia,benchmarks]",
+    "pyproject-fmt"
 ]
 
 [dependency-groups]
