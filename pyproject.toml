@@ -189,6 +189,7 @@ ignore = [ "N803", "PLR2004" ]
 [tool.pyproject-fmt]
 column_width = 81
 indent = 4
+max_supported_python = "3.14"
 table_format = "long"
 sub_table_spacing = "\n"
 collapse_tables = [
@@ -340,15 +341,7 @@ commands = [
     # Sort python import
     [ "python", "-m", "ruff", "check", "--select", "I", "--fix" ],
     # Format pyproject.toml
-    [
-        "-",
-        "python",
-        "-m",
-        "pyproject_fmt",
-        "pyproject.toml",
-        "--max-supported-python",
-        "3.14",
-    ]
+    [ "-", "python", "-m", "pyproject_fmt", "pyproject.toml" ]
 ]
 
 # Linting environment
