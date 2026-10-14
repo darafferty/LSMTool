@@ -82,7 +82,7 @@ correct_gaussian_orientation = "lsmtool.correct_gaussian_orientation:main"
 convert_oskar_skymodel = "lsmtool.convert_oskar_skymodel:main"
 
 [dependency-groups]
-dev = [ "lsmtool[dev]" ]
+dev = [ "pyproject-fmt", "ruff" ]
 docs = [ "lsmtool[docs]" ]
 sofia = [ "lsmtool[sofia]" ]
 tests = [ "lsmtool[tests]" ]
@@ -212,7 +212,7 @@ sort = "cover"
 # ============================================================================ #
 # Adapted from: https://git.astron.nl/templates/python-package/-/blob/9ccee1fed6796b6784e8814cc83ee4e5d34bba3d/%7B%7Bcookiecutter.project_slug%7D%7D/pyproject.toml
 [tool.tox]
-requires = [ "tox>=4.21" ]
+requires = [ "tox>=4.22" ]
 # Generative environment list to test all supported Python versions
 env_list = [
     "coverage",
@@ -326,7 +326,7 @@ allowlist_externals = [ "rm" ]
 # Formatting environment
 # ---------------------------------------------------------------------------- #
 [tool.tox.env.format]
-extras = [ "dev" ]
+dependency_groups = [ "dev" ]
 commands = [
     # print ruff version
     [ "python", "-m", "ruff", "--version" ],
@@ -347,7 +347,7 @@ commands = [
 # Linting environment
 # ---------------------------------------------------------------------------- #
 [tool.tox.env.lint]
-extras = [ "dev" ]
+dependency_groups = [ "dev" ]
 commands = [
     # print ruff version
     [ "python", "-m", "ruff", "--version" ],
