@@ -3,132 +3,122 @@
 # ============================================================================ #
 
 [build-system]
+build-backend = "scikit_build_core.build"
 requires = [
     "pybind11",
     "scikit-build-core>=0.10",
 ]
-build-backend = "scikit_build_core.build"
-
 
 # ============================================================================ #
 # project settings #
 # ============================================================================ #
-
 [project]
 name = "lsmtool"
-dynamic = ["version"]
 description = "The LOFAR Local Sky Model Tool"
 readme = "README.md"
-requires-python = ">=3.10.12"
-authors = [
-    { name = "David Rafferty", email = "drafferty@hs.uni-hamburg.de" },
-]
+license = { file = "LICENSE" }
 maintainers = [
     { name = "Marcel Loose", email = "loose@astron.nl" },
     { name = "Hannes Breytenbach", email = "hannes.breytenbach@skao.int" },
 ]
-license = { file = "LICENSE" }
+authors = [
+    { name = "David Rafferty", email = "drafferty@hs.uni-hamburg.de" },
+]
+requires-python = ">=3.10.12"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "Programming Language :: Python",
-    "Natural Language :: English",
     "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Scientific/Engineering :: Astronomy",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+dynamic = [ "version" ]
 dependencies = [
-    "astropy >= 3.2",
-    "everybeam >= 0.6.1",
-    "lofar-parameterset >= 1.1",
+    "astropy>=3.2",
+    "bdsf",
+    "everybeam>=0.6.1",
+    "lofar-parameterset>=1.1",
     "matplotlib",
     "mocpy",
-    "numpy < 2.5",
+    "numpy<2.5",
+    "pillow>11.1",
     "python-casacore",
     "pyvo",
-    "scipy >= 0.11",
+    "scipy>=0.11",
     "shapely",
-    "Pillow > 11.1",
-    "bdsf",
 ]
+
 [project.optional-dependencies]
-sofia = ["sofia2 @ git+https://gitlab.com/SoFiA-Admin/SoFiA-2.git@b10ab4ef"]
-docs = [
-    "setuptools_scm",
-    "sphinx>=7.1",
-    "sphinx-rtd-theme>=0.4.3"
-]
+sofia = [ "sofia2 @ git+https://gitlab.com/SoFiA-Admin/SoFiA-2.git@b10ab4ef" ]
+docs = [ "setuptools-scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3" ]
 tests = [
     "pytest",
     "pytest-cov",
     "pytest-mock",
-    "pytest-xdist",
     "pytest-socket",
+    "pytest-xdist",
 ]
 benchmarks = [
-    "gitpython>=3.2.0",
+    "gitpython>=3.2",
     "lsmtool[tests]",
-    "pytest-benchmark>=5.3.0",
+    "pytest-benchmark>=5.3",
 ]
-dev = [
-    "ruff",
-    "lsmtool[docs,tests,sofia,benchmarks]",
-    "pyproject-fmt"
-]
+dev = [ "lsmtool[benchmarks,docs,tests]", "pyproject-fmt", "ruff" ]
 
-[dependency-groups]
-sofia = ["lsmtool[sofia]"]
-docs = ["lsmtool[docs]"]
-tests = ["lsmtool[tests]"]
-dev = ["lsmtool[dev]"]
+[project.urls]
+Documentation = "https://lsmtool.readthedocs.io/en/latest/"
+Repository = "https://git.astron.nl/RD/LSMTool"
 
 [project.scripts]
 lsmtool = "lsmtool.lsmtool:main"
 correct_gaussian_orientation = "lsmtool.correct_gaussian_orientation:main"
 convert_oskar_skymodel = "lsmtool.convert_oskar_skymodel:main"
 
-[project.urls]
-Documentation = "https://lsmtool.readthedocs.io/en/latest/"
-Repository = "https://git.astron.nl/RD/LSMTool"
-
-
-# ============================================================================ #
-# cibuildwheel settings                                                        #
-# ============================================================================ #
-
-# NOTE: running cibuildwheel only makes sense when `BUILD_EXTENSIONS` in
-# section `[tool.scikit-build.cmake.define]` is set to "ON" or "TRUE".
-
-[tool.cibuildwheel]
-build = "cp3{10,11,12,13}-*_x86_64"
-build-verbosity = 1
-test-command = "cd {package} && pytest"
-test-requires = "pytest"
-skip = ["*-musllinux_*"]
-
-
-# ============================================================================ #
-# scikit-build settings                                                        #
-# ============================================================================ #
-
-[tool.scikit-build]
-cmake.version = ">=3.15"
-ninja.version = ">=1.5"
-build.verbose = true
-logging.level = "INFO"
-metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
-sdist.include = ["lsmtool/_version.py"]
-
-[tool.scikit-build.cmake.define]
-BUILD_EXTENSIONS = "OFF"
-
+[dependency-groups]
+dev = [ "lsmtool[dev]" ]
+docs = [ "lsmtool[docs]" ]
+sofia = [ "lsmtool[sofia]" ]
+tests = [ "lsmtool[tests]" ]
 
 # ============================================================================ #
 # Setuptools_scm settings                                                      #
 # ============================================================================ #
-
 [tool.setuptools_scm]
 write_to = "lsmtool/_version.py"
 
+# ============================================================================ #
+# scikit-build settings                                                        #
+# ============================================================================ #
+[tool.scikit-build]
+build.verbose = true
+cmake.version = ">=3.15"
+ninja.version = ">=1.5"
+sdist.include = [ "lsmtool/_version.py" ]
+logging.level = "INFO"
+metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
+
+[tool.scikit-build.cmake.define]
+BUILD_EXTENSIONS = "OFF"
+
+# ============================================================================ #
+# cibuildwheel settings                                                        #
+# ============================================================================ #
+# NOTE: running cibuildwheel only makes sense when `BUILD_EXTENSIONS` in
+# section `[tool.scikit-build.cmake.define]` is set to "ON" or "TRUE".
+[tool.cibuildwheel]
+build = "cp3{10,11,12,13}-*_x86_64"
+skip = [ "*-musllinux_*" ]
+build-verbosity = 1
+test-command = "cd {package} && pytest"
+test-requires = "pytest"
 
 # ============================================================================ #
 # Ruff settings                                                                #
@@ -137,24 +127,36 @@ write_to = "lsmtool/_version.py"
 [tool.ruff]
 line-length = 80
 exclude = [
-    ".venv",
+    "*egg",
+    "*lib/python*",
     ".git",
     ".tox",
+    ".venv",
+    "__pycache__",
+    "_version.py",
     "dist",
     "docs",
-    "*lib/python*",
-    "*egg",
-    "_version.py",
-    "__pycache__",
+    "lsmtool/_changelog.py",
     "lsmtool/_logging.py",
+    "lsmtool/_version.py",
     "lsmtool/lsmtool.py",
     "lsmtool/operations",
     "lsmtool/operations_lib.py",
     "lsmtool/skymodel.py",
     "lsmtool/tableio.py",
-    "lsmtool/_version.py",
-    "lsmtool/_changelog.py",
     "tests/test_lsmtool.py",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"lsmtool/filter_skymodel/*.py" = [
+    "PLR0913"
+]  # Too many arguments in function definition
+"lsmtool/testing.py" = [ "PLR0911" ]  # Too many return statements
+"tests/*.py" = [
+    "PLR0913", # Too many arguments in function definition
+    "PLR0917", # Too many positional arguments
+    "S101",    # Use of `assert` detected
+    "S108"    # Probable insecure usage of temporary file or directory
 ]
 
 [tool.ruff.lint]
@@ -162,22 +164,26 @@ exclude = [
 # black + pylint Some additional functional errors such as `await` on none async
 # or wrong return types / args.
 # More info https://docs.astral.sh/ruff/rules/
-select = ["N", "A", "E", "F", "B", "W", "Q", "PL", "ASYNC", "S", "G", "RET", "ARG", "I"]
-
+select = [
+    "A",
+    "ARG",
+    "ASYNC",
+    "B",
+    "E",
+    "F",
+    "G",
+    "I",
+    "N",
+    "PL",
+    "Q",
+    "RET",
+    "S",
+    "W"
+]
 # ignore:
 # PLR2004: magic-value-comparison
 # N803: pep8-naming (lsmtool mostly uses pascalCase and CamelCase naming scheme)
-ignore = ["PLR2004", "N803"]
-
-[tool.ruff.lint.per-file-ignores]
-"lsmtool/filter_skymodel/*.py" = ["PLR0913"]  # Too many arguments in function definition
-"lsmtool/testing.py" = ["PLR0911"] # Too many return statements
-"tests/*.py" = [
-    "S101",     # Use of `assert` detected
-    "S108",     # Probable insecure usage of temporary file or directory
-    "PLR0913",   # Too many arguments in function definition
-    "PLR0917"   # Too many positional arguments
-]
+ignore = [ "N803", "PLR2004" ]
 
 # ============================================================================ #
 # pyproject-fmt settings                                                       #
@@ -193,13 +199,11 @@ collapse_tables = [
     "tool.scikit-build"
 ]
 
-
 # ============================================================================ #
 # Coverage settings                                                            #
 # ============================================================================ #
-
 [tool.coverage.run]
-omit = ["lsmtool/_changelog.py", "lsmtool/_version.py"]
+omit = [ "lsmtool/_changelog.py", "lsmtool/_version.py" ]
 
 [tool.coverage.report]
 sort = "cover"
@@ -209,136 +213,173 @@ sort = "cover"
 # ============================================================================ #
 # Adapted from: https://git.astron.nl/templates/python-package/-/blob/9ccee1fed6796b6784e8814cc83ee4e5d34bba3d/%7B%7Bcookiecutter.project_slug%7D%7D/pyproject.toml
 [tool.tox]
-requires = ["tox>=4.21"]
+requires = [ "tox>=4.21" ]
 # Generative environment list to test all supported Python versions
-env_list = ["benchmark", "coverage", "lint", "format", "py{10,11,12,13}"]
-
-
-# Base test environment
-# ---------------------------------------------------------------------------- #
-[tool.tox.env_run_base]
-description = "run unit tests"
-deps = [{ replace = "ref", of = ["dependency-groups", "tests"], extend = true }]
-extras = ["tests"]
-package = "editable"
-set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning", PYTEST_XDIST_AUTO_NUM_WORKERS = "4" }
-commands = [
-    ["python", "--version"],
-    ["python", "-m", "pytest", "-vv", "-n", "auto",
-     { replace = "posargs", default = [], extend = true }]
-]
-
-# Test coverage environment
-# ---------------------------------------------------------------------------- #
-[tool.tox.env.coverage]
-extras = ["tests"]
-commands = [
-    ["python", "--version"],
-    [
-        "python", "-m", "pytest",
-        { replace = "posargs", default = [], extend = true },
-        "--ignore=tests/benchmarks",
-        "--cov=lsmtool",
-        "--cov-report", "term",
-        "--cov-report", "xml",
-        "--cov-report", "html"
-    ]
-]
+env_list = [ "benchmark", "coverage", "format", "lint", "py{10,11,12,13}" ]
 
 # Test benchmark environment
 # ---------------------------------------------------------------------------- #
 [tool.tox.env.benchmark]
-extras = ["benchmarks"]
-allowlist_externals = ["mkdir","cp"]
+extras = [ "benchmarks" ]
 commands_pre = [
     [
         # Copy reference run into results folder for pytest-benchmark comparison
-        "cp", "-r", 
+        "cp",
+        "-r",
         "tests/benchmarks/reference/Linux-CPython-3.13-64bit/0001_reference.json",
         "tests/benchmarks/results/"
     ]
 ]
 commands = [
-    ["python", "--version"],
+    [ "python", "--version" ],
     [
         # Run benchmark tests
-        "python", "-m", "pytest", "tests/benchmarks",
-        "--benchmark-only", "--benchmark-autosave",
-        "--benchmark-storage", "tests/benchmarks/results",
-        "--benchmark-compare", "0001",
-        "--benchmark-compare-fail", "mean:10%",
-        "--benchmark-sort", "name",
-        "--benchmark-columns", "mean, stddev, rounds",
-        "--benchmark-group-by", "param:n_patches_xy",
+        "python",
+        "-m",
+        "pytest",
+        "tests/benchmarks",
+        "--benchmark-only",
+        "--benchmark-autosave",
+        "--benchmark-storage",
+        "tests/benchmarks/results",
+        "--benchmark-compare",
+        "0001",
+        "--benchmark-compare-fail",
+        "mean:10%",
+        "--benchmark-sort",
+        "name",
+        "--benchmark-columns",
+        "mean, stddev, rounds",
+        "--benchmark-group-by",
+        "param:n_patches_xy",
         { replace = "posargs", default = [], extend = true }
     ]
 ]
 commands_post = [
     [
         # Create benchmark plots
-        "python", "tests/benchmarks/plot_benchmarks.py",
+        "python",
+        "tests/benchmarks/plot_benchmarks.py",
         "tests/benchmarks/results/benchmark_compare.png"
     ]
 ]
-
-# Linting environment
-# ---------------------------------------------------------------------------- #
-[tool.tox.env.lint]
-extras = ["dev"]
-commands = [
-    # print ruff version
-    ["python", "-m", "ruff", "--version"],
-    # Check code formatting
-    ["python", "-m", "ruff", "format", "--check"],
-    # Check code for linting issues
-    ["python", "-m", "ruff", "check",
-     { replace = "posargs", default = [], extend = true }],
-    # Check pyproject.toml formatting
-    ["python", "-m", "pyproject_fmt", "--check"]
-]
-
-# Formatting environment
-# ---------------------------------------------------------------------------- #
-[tool.tox.env.format]
-extras = ["dev"]
-commands = [
-    # print ruff version
-    ["python", "-m", "ruff", "--version"],
-    # Format python code
-    ["python", "-m", "ruff", "format",
-     { replace = "posargs", default = [], extend = true }],
-     # Sort python import
-    ["python", "-m", "ruff", "check", "--select", "I", "--fix"],
-    # Format pyproject.toml
-    ["python", "-m", "pyproject_fmt", "pyproject.toml"]
-]
-
-# Documentation build environment
-# ---------------------------------------------------------------------------- #
-[tool.tox.env.docs]
-deps = [{ replace = "ref", of = ["dependency-groups", "docs"], extend = true }]
-extras = ["docs"]
-# unset LC_ALL / LANGUAGE from testenv, would fail sphinx otherwise
-set_env = { LC_ALL = "", LANGUAGE = "" }
-changedir = "{tox_root}"
-allowlist_externals = ["rm"]
-commands = [
-    ["rm", "-rf", "docs/build/html"],
-    ["python", "-m", "sphinx.cmd.build", "docs/source", "docs/build/html"]
-]
+allowlist_externals = [ "cp", "mkdir" ]
 
 # Project build environment
 # ---------------------------------------------------------------------------- #
 [tool.tox.env.build]
 package = "skip"
-deps = ["build>=0.8.0"]
-commands = [["python", "-m", "build", "--sdist"]]
+deps = [ "build>=0.8" ]
+commands = [ [ "python", "-m", "build", "--sdist" ] ]
+
+# Test coverage environment
+# ---------------------------------------------------------------------------- #
+[tool.tox.env.coverage]
+extras = [ "tests" ]
+commands = [
+    [ "python", "--version" ],
+    [
+        "python",
+        "-m",
+        "pytest",
+        { replace = "posargs", default = [], extend = true },
+        "--ignore=tests/benchmarks",
+        "--cov=lsmtool",
+        "--cov-report",
+        "term",
+        "--cov-report",
+        "xml",
+        "--cov-report",
+        "html"
+    ]
+]
 
 [tool.tox.env.deploy]
 package = "skip"
-deps = ["build>=0.8.0", "twine"]
-pass_env = ["TWINE_*"]
+deps = [ "build>=0.8", "twine" ]
+pass_env = [ "TWINE_*" ]
 commands = [
-    ["python", "-m", "build", "--sdist"],
-    ["python", "-m", "twine", "upload", "--verbose", "dist/*"]
+    [ "python", "-m", "build", "--sdist" ],
+    [ "python", "-m", "twine", "upload", "--verbose", "dist/*" ]
+]
+
+# Documentation build environment
+# ---------------------------------------------------------------------------- #
+[tool.tox.env.docs]
+deps = [
+    { replace = "ref", of = [ "dependency-groups", "docs" ], extend = true }
+]
+extras = [ "docs" ]
+# unset LC_ALL / LANGUAGE from testenv, would fail sphinx otherwise
+set_env = { LC_ALL = "", LANGUAGE = "" }
+change_dir = "{tox_root}"
+commands = [
+    [ "rm", "-rf", "docs/build/html" ],
+    [ "python", "-m", "sphinx.cmd.build", "docs/source", "docs/build/html" ]
+]
+allowlist_externals = [ "rm" ]
+
+# Formatting environment
+# ---------------------------------------------------------------------------- #
+[tool.tox.env.format]
+extras = [ "dev" ]
+commands = [
+    # print ruff version
+    [ "python", "-m", "ruff", "--version" ],
+    # Format python code
+    [
+        "python",
+        "-m",
+        "ruff",
+        "format",
+        { replace = "posargs", default = [], extend = true }
+    ],
+    # Sort python import
+    [ "python", "-m", "ruff", "check", "--select", "I", "--fix" ],
+    # Format pyproject.toml
+    [ "-", "python", "-m", "pyproject_fmt", "pyproject.toml" ]
+]
+
+# Linting environment
+# ---------------------------------------------------------------------------- #
+[tool.tox.env.lint]
+extras = [ "dev" ]
+commands = [
+    # print ruff version
+    [ "python", "-m", "ruff", "--version" ],
+    # Check code formatting
+    [ "python", "-m", "ruff", "format", "--check" ],
+    # Check code for linting issues
+    [
+        "python",
+        "-m",
+        "ruff",
+        "check",
+        { replace = "posargs", default = [], extend = true }
+    ],
+    # Check pyproject.toml formatting
+    [ "python", "-m", "pyproject_fmt", "pyproject.toml", "--check" ]
+]
+
+# Base test environment
+# ---------------------------------------------------------------------------- #
+[tool.tox.env_run_base]
+description = "run unit tests"
+package = "editable"
+deps = [
+    { replace = "ref", of = [ "dependency-groups", "tests" ], extend = true }
+]
+extras = [ "tests" ]
+set_env = { LANGUAGE = "en_US", LC_ALL = "en_US.UTF-8", PYTHONWARNINGS = "default::DeprecationWarning", PYTEST_XDIST_AUTO_NUM_WORKERS = "4" }
+commands = [
+    [ "python", "--version" ],
+    [
+        "python",
+        "-m",
+        "pytest",
+        "-vv",
+        "-n",
+        "auto",
+        { replace = "posargs", default = [], extend = true }
+    ]
 ]
