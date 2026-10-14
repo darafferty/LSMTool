@@ -10,6 +10,7 @@ import os
 import tempfile
 
 import astropy.units as u
+from astropy.wcs import WCS
 import numpy as np
 from astropy.coordinates import Angle, SkyCoord
 from astropy.io import fits as pyfits
@@ -2538,7 +2539,7 @@ class SkyModel(object):
             # Read in image data
             hdu = pyfits.open(image_name, memmap=False)
             imdata = hdu[0].data
-            w = wcs.WCS(hdu[0].header)
+            w = WCS(hdu[0].header)
 
             # Loop over sources, adding them to the images (note that the spectral terms
             # sum together when summing polynomials, just as the flux densities do)
