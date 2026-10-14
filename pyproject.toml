@@ -283,22 +283,33 @@ commands_post = [
 # Linting environment
 # ---------------------------------------------------------------------------- #
 [tool.tox.env.lint]
-deps = ["ruff"]
+extras = ["dev"]
 commands = [
+    # print ruff version
     ["python", "-m", "ruff", "--version"],
+    # Check code formatting
     ["python", "-m", "ruff", "format", "--check"],
+    # Check code for linting issues
     ["python", "-m", "ruff", "check",
-     { replace = "posargs", default = [], extend = true }]
+     { replace = "posargs", default = [], extend = true }],
+    # Check pyproject.toml formatting
+    ["python", "-m", "pyproject_fmt", "--check"]
 ]
 
 # Formatting environment
 # ---------------------------------------------------------------------------- #
 [tool.tox.env.format]
-deps = ["ruff"]
+extras = ["dev"]
 commands = [
+    # print ruff version
+    ["python", "-m", "ruff", "--version"],
+    # Format python code
     ["python", "-m", "ruff", "format",
      { replace = "posargs", default = [], extend = true }],
-    ["python", "-m", "ruff", "check", "--select", "I", "--fix"]
+     # Sort python import
+    ["python", "-m", "ruff", "check", "--select", "I", "--fix"],
+    # Format pyproject.toml
+    ["python", "-m", "pyproject_fmt", "pyproject.toml"]
 ]
 
 # Documentation build environment
