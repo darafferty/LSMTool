@@ -67,7 +67,6 @@ tests = [
     "pytest-xdist",
 ]
 benchmarks = [
-    "gitpython>=3.2",
     "lsmtool[tests]",
     "pytest-benchmark>=5.3",
 ]
