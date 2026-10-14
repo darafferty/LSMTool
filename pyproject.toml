@@ -178,6 +178,20 @@ ignore = ["PLR2004", "N803"]
     "PLR0917"   # Too many positional arguments
 ]
 
+# ============================================================================ #
+# pyproject-fmt settings                                                       #
+# ============================================================================ #
+[tool.pyproject-fmt]
+column_width = 81
+indent = 4
+table_format = "long"
+sub_table_spacing = "\n"
+collapse_tables = [
+    "project.authors",
+    "project.maintainers",
+    "tool.scikit-build"
+]
+
 
 # ============================================================================ #
 # Coverage settings                                                            #
