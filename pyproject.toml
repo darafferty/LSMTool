@@ -71,7 +71,7 @@ benchmarks = [
     "lsmtool[tests]",
     "pytest-benchmark>=5.3",
 ]
-dev = [ "lsmtool[benchmarks,docs,tests]", "pyproject-fmt", "ruff" ]
+dev = [ "lsmtool[benchmarks,docs,sofia,tests]", "pyproject-fmt", "ruff" ]
 
 [project.urls]
 Documentation = "https://lsmtool.readthedocs.io/en/latest/"
