@@ -1,4 +1,3 @@
-import astropy
 import numpy as np
 import pytest
 from astropy.table import Column, MaskedColumn
