@@ -1500,6 +1500,18 @@ class SkyModel(object):
 
         return col
 
+    def _get_aggretion_kernel(self, col_name, np_function):
+        # For scalar-valued columns, using np_function directly is much faster
+        # than using the aggregation function with 'axis=0'.
+        if self.table[col_name].ndim == 1:
+            return np_function
+
+        # Support array-valued columns using 'axis=0'.
+        def func(array):
+            return np_function(array, axis=0)
+        return func
+
+
     def _get_filled_column(self, col_name):
         """
         For a given column, returns the filled column data, grouped by patch.
@@ -1618,19 +1630,28 @@ class SkyModel(object):
         col : astropy Column
             Column object with averaged values
         """
+        ndim = self.table[col_name].ndim
 
-        # Using 'axis=0' makes the aggregation support array-valued columns.
-        # For scalar-valued columns, a plain np.sum would suffice.
-        # Note that this is an undocumented feature of astropy tables:
-        # https://docs.astropy.org/en/stable/table/operations.html#aggregation
-        # says the aggregation function should return a scalar value.
-        def npsum(array):
-            return np.sum(array, axis=0)
+        if ndim == 1: # For scalar-valued columns, np.sum is very fast.
+            npsum = np.sum
+        else:
+            # Support array-valued columns using 'axis=0'.
+            # Note that this is an undocumented feature of astropy tables:
+            # https://docs.astropy.org/en/stable/table/operations.html#aggregation
+            # says the aggregation function should return a scalar value.
+            def npsum(array):
+                return np.sum(array, axis=0)
 
         if hasattr(self.table[col_name], "filled"):
             vals = self.table[col_name].filled().data
         else:
             vals = self.table[col_name].data
+
+        if ndim == 1: # For scalar-valued columns, np.average is very fast.
+            npavg = np.average
+        else: # Support array-valued columns using 'axis=0'.
+            def npavg(c):
+                return np.average(c, axis=0)
 
         weight_col = self.table["I"]
         weight_col_is_grouped = True
