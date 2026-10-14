@@ -245,6 +245,49 @@ def test_column_values_aggregate_independent(sky_patches, aggregate):
 
 
 @pytest.mark.parametrize(
+    "aggregate", [None, "sum", "mean", "wmean", "min", "max"]
+)
+def test_column_values_array_no_patches(sky_no_patches, aggregate):
+    """
+    Test getColValues with a column with array values.
+    Use a skymodel without patches. The aggregate argument should then be
+    ignored: getColValues should return the value for each source.
+    """
+    result = sky_no_patches.getColValues("SpectralIndex", aggregate=aggregate)
+    assert result.shape == (len(sky_no_patches), 2)
+    # Check that the first and last values match the skymodel values.
+    expected_first = [-0.2648, -0.251]
+    expected_last = [-0.7, 0]
+    assert (result[0] == expected_first).all()
+    assert (result[-1] == expected_last).all()
+
+
+@pytest.mark.parametrize(
+    "aggregate, expected_first, expected_last",
+    [
+        ("sum", [-2.1247, -0.2024], [-6.3179, -0.2652]),
+        ("mean", [-0.708233, -0.067467], [-0.63179, -0.02652]),
+        ("wmean", [-0.643019, -0.168112], [-0.679728, -0.013426]),
+        ("min", [-0.9809, -0.2064], [-0.7, -0.2652]),
+        ("max", [-0.5145, 0.004], [-0.2657, 0]),
+    ],
+)
+def test_column_values_array_with_patches(
+    sky_patches, aggregate, expected_first, expected_last
+):
+    """
+    Test getColValues with a column with array values.
+    Use a skymodel with patches. The aggregation occurs over each axis of
+    the array values within each patch.
+    """
+    result = sky_patches.getColValues("SpectralIndex", aggregate=aggregate)
+    assert result.shape == (len(sky_patches.getPatchNames()), 2)
+    # Check the values for the first and last patches ('bin0' and 'bin99').
+    np.testing.assert_allclose(result[0], expected_first, atol=1e-6)
+    np.testing.assert_allclose(result[-1], expected_last, atol=1e-6)
+
+
+@pytest.mark.parametrize(
     ("position", "expected"),
     [
         ([123.231, 23.4321], [123.231, 23.4321]),
