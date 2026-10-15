@@ -605,9 +605,9 @@ class SkyModel(object):
                 positions = []
                 if method == "mid":
                     min_x = self._get_min_column("X")
-                    max_x = self.get_max_column("X")
+                    max_x = self._get_max_column("X")
                     min_y = self._get_min_column("Y")
-                    max_y = self.get_max_column("Y")
+                    max_y = self._get_max_column("Y")
                     mid_x = min_x + (max_x - min_x) / 2.0
                     mid_y = min_y + (max_y - min_y) / 2.0
                     for i, _ in enumerate(patch_name):
@@ -1438,18 +1438,24 @@ class SkyModel(object):
             col = self._get_averaged_column(
                 col_name, weight=False, apply_beam=apply_beam
             )
+            apply_beam = False
         elif aggregate == "wmean":
             col = self._get_averaged_column(
                 col_name, weight=True, apply_beam=apply_beam
             )
+            apply_beam = False
         elif aggregate == "sum":
-            col = self._get_summed_column(col_name, apply_beam=apply_beam)
+            col = self._get_summed_column(col_name)
         elif aggregate == "min":
-            col = self._get_min_column(col_name, apply_beam=apply_beam)
+            col = self._get_min_column(col_name)
         elif aggregate == "max":
-            col = self.get_max_column(col_name, apply_beam=apply_beam)
+            col = self._get_max_column(col_name)
         else:
             raise ValueError("Aggregation function not understood.")
+
+        if apply_beam and col_name in ['I', 'Q', 'U', 'V']:
+            col = self._apply_beam_to_col(col, patch=True)
+
         return col
 
     def _apply_beam_to_col(self, col, patch=False):
@@ -1520,7 +1526,7 @@ class SkyModel(object):
             col = col.group_by(self.table["Patch"])
         return col
 
-    def _get_summed_column(self, col_name, apply_beam=False):
+    def _get_summed_column(self, col_name):
         """
         Returns column summed by group.
 
@@ -1528,8 +1534,6 @@ class SkyModel(object):
         ----------
         col_name : str
             Column name
-        apply_beam : bool, optional
-            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
@@ -1540,15 +1544,9 @@ class SkyModel(object):
         def npsum(array):
             return np.sum(array, axis=0)
 
-        col = self._get_filled_column(col_name)
-        col = col.groups.aggregate(npsum)
+        return self._get_filled_column(col_name).groups.aggregate(npsum)
 
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            col = self._apply_beam_to_col(col, patch=True)
-
-        return col
-
-    def _get_min_column(self, col_name, apply_beam=False):
+    def _get_min_column(self, col_name):
         """
         Returns column minimum value by group.
 
@@ -1556,8 +1554,6 @@ class SkyModel(object):
         ----------
         col_name : str
             Column name
-        apply_beam : bool, optional
-            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
@@ -1568,15 +1564,9 @@ class SkyModel(object):
         def npmin(array):
             return np.min(array, axis=0)
 
-        col = self._get_filled_column(col_name)
-        col = col.groups.aggregate(npmin)
+        return self._get_filled_column(col_name).groups.aggregate(npmin)
 
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            col = self._apply_beam_to_col(col, patch=True)
-
-        return col
-
-    def get_max_column(self, col_name, apply_beam=False):
+    def _get_max_column(self, col_name):
         """
         Returns column maximum value by group.
 
@@ -1584,8 +1574,6 @@ class SkyModel(object):
         ----------
         col_name : str
             Column name
-        apply_beam : bool, optional
-            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
@@ -1597,13 +1585,7 @@ class SkyModel(object):
         def npmax(array):
             return np.max(array, axis=0)
 
-        col = self._get_filled_column(col_name)
-        col = col.groups.aggregate(npmax)
-
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            col = self._apply_beam_to_col(col, patch=True)
-
-        return col
+        return self._get_filled_column(col_name).groups.aggregate(npmax)
 
     def _get_averaged_column(self, col_name, weight=True, apply_beam=False):
         """
@@ -1665,8 +1647,7 @@ class SkyModel(object):
         def npavg(c):
             return np.average(c, axis=0)
 
-        col = self._get_filled_column(col_name)
-        return col.groups.aggregate(npavg)
+        return self._get_filled_column(col_name).groups.aggregate(npavg)
 
     def _get_size_column(self, weight=True, apply_beam=False):
         """
