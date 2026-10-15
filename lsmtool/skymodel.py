@@ -705,7 +705,7 @@ class SkyModel(object):
                         zip(
                             patch_name,
                             zip(ra_norm, dec_norm, strict=True),
-                            strict=True,
+                            strict=False,
                         )
                     )
 
