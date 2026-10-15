@@ -936,6 +936,10 @@ class SkyModel(object):
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
 
+            When the column has an array value, the aggregation function is
+            applied independently to each element of the array. For example,
+            when the values are [1, -1] and [5, -5], the sum is [6, -6].
+
             Note that, in some cases, certain aggregation functions will not
             produce meaningful results. For example, asking for the sum of the
             MajorAxis values per patch will not give a good indication of the
@@ -1608,11 +1612,15 @@ class SkyModel(object):
         Returns
         -------
         col : astropy Column
-            Column object with aggregated mean values
-
+            Column object with averaged values
         """
         if weight:
 
+            # Using 'axis=0' makes the aggregation support array-valued columns.
+            # For scalar-valued columns, a plain np.sum would suffice.
+            # Note that this is an undocumented feature of astropy tables:
+            # https://docs.astropy.org/en/stable/table/operations.html#aggregation
+            # says the aggregation function should return a scalar value.
             def npsum(array):
                 return np.sum(array, axis=0)
 
@@ -1644,6 +1652,8 @@ class SkyModel(object):
                 unit=self.table[col_name].unit,
             )
 
+        # Using 'axis=0' makes the aggregation support array-valued columns.
+        # For scalar-valued columns, a plain np.average would suffice.
         def npavg(c):
             return np.average(c, axis=0)
 
