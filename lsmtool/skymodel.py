@@ -63,8 +63,8 @@ class SkyModel(object):
     # deprecated private methods
     _addHistory = deprecated("_add_history")  # noqa
     _updateGroups = deprecated("_update_groups")  # noqa
-    _verifyColName = deprecated("_verify_col_name")  # noqa
-    _getNameIndx = deprecated("_get_name_indx")  # noqa
+    _verifyColName = deprecated("_verify_column_name")  # noqa
+    _getNameIndx = deprecated("_get_name_index")  # noqa
     _getAggregatedColumn = deprecated("_get_aggregated_column")  # noqa
     _applyBeamToCol = deprecated("_apply_beam_to_col")  # noqa
     _getSummedColumn = deprecated("_get_summed_column")  # noqa
@@ -95,8 +95,7 @@ class SkyModel(object):
         Initializes SkyModel object.
 
         Parameters
-        ----------
-        filename : str
+        ----------_get_name_index
         filename : str
             Input ASCII file from which the sky model is read (must respect the
             makesourcedb format or the LSM/GSM format), name of VO service to
@@ -147,7 +146,7 @@ class SkyModel(object):
                             "Attempting to load model from VO service %r...",
                             filename,
                         )
-                        self.table = tableio.cone_search(
+                        self.table = tableio.coneSearch(
                             filename, vo_position, vo_radius
                         )
                         self.log.debug(
@@ -441,7 +440,7 @@ class SkyModel(object):
         table = self.table
 
         # Get columns
-        col_name = self._verify_col_name(col_name)
+        col_name = self._verify_column_name(col_name)
         if col_name is not None:
             if isinstance(col_name, str):
                 col_name = [
@@ -463,7 +462,7 @@ class SkyModel(object):
 
         # Sort if desired
         if sort_by is not None:
-            col_name = self._verify_col_name(sort_by)
+            col_name = self._verify_column_name(sort_by)
             indx = table.argsort(col_name)
             if not low_to_high:
                 indx = indx[::-1]
@@ -471,7 +470,7 @@ class SkyModel(object):
 
         table.more(show_unit=True)
 
-    def _verify_col_name(self, col_name, only_existing=True, quiet=False):
+    def _verify_column_name(self, col_name, only_existing=True, quiet=False):
         """
         Verifies that column(s) exist and returns correctly formatted string or
         list of strings suitable for accessing the data table.
@@ -623,7 +622,7 @@ class SkyModel(object):
         if self.has_patches:
             if patch_name is None:
                 patch_name = self.get_patch_names()
-            if type(patch_name) not in (list, np.ndarray):
+            if not isinstance(patch_name, (list, np.ndarray)):
                 patch_name = [patch_name]
             if method is None:
                 patch_dict = {}
@@ -675,10 +674,7 @@ class SkyModel(object):
                         )
                         positions.append((ra.item(), dec.item()))
                 elif method in {"mean", "wmean"}:
-                    if method == "mean":
-                        weight = False
-                    else:
-                        weight = True
+                    weight = method == "wmean"
                     mean_x = self._get_averaged_column(
                         "X", apply_beam=apply_beam, weight=weight
                     )
@@ -820,9 +816,6 @@ class SkyModel(object):
                 )
                 patch_dict.update(patch_dict_no_pos)
 
-            for patch, pos in patch_dict.items():
-                if isinstance(pos[0], str) or isinstance(pos[0], float):
-                    ra, dec = tableio.RADec2Angle(*pos)
             for patch, pos in patch_dict.items():
                 if isinstance(pos[0], str) or isinstance(pos[0], float):
                     ra, dec = tableio.RADec2Angle(*pos)
@@ -1059,7 +1052,7 @@ class SkyModel(object):
         >>> RA, Dec = s.get_patch_positions(method="wmean", as_array=True)
 
         """
-        col_name = self._verify_col_name(col_name)
+        col_name = self._verify_column_name(col_name)
         if col_name is None:
             return None
         if isinstance(col_name, list):
@@ -1136,7 +1129,7 @@ class SkyModel(object):
         ... )
 
         """
-        col_name = self._verify_col_name(col_name, only_existing=False)
+        col_name = self._verify_column_name(col_name, only_existing=False)
         if col_name is None:
             return
         if isinstance(col_name, list):
@@ -1268,7 +1261,6 @@ class SkyModel(object):
         ['bin1', 'bin1', 'bin1']
 
         """
-        row_name = rowName
 
         # Patch members occupy contiguous rows in the grouped table.
         if self.has_patches:
@@ -1473,7 +1465,7 @@ class SkyModel(object):
             beam attenuation is applied; callers must copy before modifying it.
 
         """
-        col_name = self._verify_col_name(col_name)
+        col_name = self._verify_column_name(col_name)
         if col_name is None:
             return None
 
@@ -1512,7 +1504,7 @@ class SkyModel(object):
             Column object with aggregated values
 
         """
-        col_name = self._verify_col_name(col_name)
+        col_name = self._verify_column_name(col_name)
         if col_name is None:
             return None
 
@@ -1990,13 +1982,6 @@ class SkyModel(object):
         >>> s.write("facets.reg", format="facet")
 
         """
-        filename = fileName
-        overwrite = clobber
-        sort_by = sortBy
-        low_to_high = lowToHigh
-        add_history = addHistory
-        apply_beam = applyBeam
-        invert_beam = invertBeam
 
         if filename is None:
             if self._filename is None:
@@ -2034,7 +2019,7 @@ class SkyModel(object):
         # Sort if desired. For 'factor' output, save the order of patches in the
         # table meta
         if sort_by is not None:
-            col_name = self._verify_col_name(sort_by)
+            col_name = self._verify_column_name(sort_by)
             if format.lower() == "factor" and self.has_patches:
                 indx = np.argsort(self.get_col_values("I", aggregate="sum"))
                 if not low_to_high:
@@ -2967,10 +2952,6 @@ class SkyModel(object):
         overwrite : bool, optional
             If True, existing files are overwritten.
         """
-
-        file_root = fileRoot
-        write_region_file = writeRegionFile
-        overwrite = clobber
 
         # TODO: Fix circular import and move to module scope
         from lsmtool.facet import tessellate  # noqa
