@@ -119,7 +119,7 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
 
     sourceNames = LSM.getColValues('Name')
     table = LSM.table.copy()
-    indx = LSM._getNameIndx(name)
+    indx = LSM._get_name_index(name)
     if indx is not None:
         if position is not None:
             if len(indx) > 1:
@@ -149,7 +149,7 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
                 table['Dec'][ind] = DecNorm[0]
         LSM.table = table
     elif LSM.hasPatches:
-        indx = LSM._getNameIndx(name, patch=True)
+        indx = LSM._get_name_index(name, patch=True)
         patchNames = LSM.getPatchNames()
         if indx is not None:
             if position is not None:
@@ -191,4 +191,4 @@ def move(LSM, name, position=None, shift=None, xyshift=None, fitsFile=None):
         history += ', shifted by {1} degrees'.format(shift)
     if xyshift is not None:
         history += ', shifted by {1} pixels'.format(shift)
-    LSM._addHistory("Move ({0})".format(history))
+    LSM._add_history("Move ({0})".format(history))

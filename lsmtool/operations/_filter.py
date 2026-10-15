@@ -194,8 +194,8 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
 
     if filt is None:
         # Get the column values to filter on
-        if LSM._verifyColName(filterProp, quiet=True) in LSM.table.colnames:
-            filterProp = LSM._verifyColName(filterProp)
+        if LSM._verify_column_name(filterProp, quiet=True) in LSM.table.colnames:
+            filterProp = LSM._verify_column_name(filterProp)
             colVals = LSM.getColValues(filterProp, units=filterUnits,
                 aggregate=aggregate, applyBeam=applyBeam)
         else:
@@ -277,7 +277,7 @@ def filter(LSM, filterExpression, exclusive=False, aggregate=None,
     else:
         _, filterOperStr = convertOperStr(filterOper)
         history = '{0} {1} {2} {3}'.format(filterProp, filterOperStr, filterVal, filterUnits)
-    LSM._addHistory('FILTER ({0})'.format(history))
+    LSM._add_history('FILTER ({0})'.format(history))
     LSM._info()
 
 
