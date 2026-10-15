@@ -468,11 +468,11 @@ class SkyModel(object):
             col_name_lower = [c.lower() for c in col_name]
             for name in col_name_lower[:]:
                 bad_names = []
-                if name not in tableio.allowed_column_names:
+                if name not in tableio.allowedColumnNames:
                     bad_names.append(name)
                     col_name_lower.remove(name)
                 else:
-                    col_name_key = tableio.allowed_column_names[name]
+                    col_name_key = tableio.allowedColumnNames[name]
                     if col_name_key not in self.table.keys():
                         bad_names.append(name)
                         col_name_lower.remove(name)
