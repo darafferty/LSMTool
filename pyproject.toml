@@ -159,11 +159,6 @@ docstring-code-format = true
     "S101",    # Use of `assert` detected
     "S108"    # Probable insecure usage of temporary file or directory
 ]
-"lsmtool/skymodel.py" = [
-    "PLR0912", # Too many branches
-    "PLR0913", # Too many arguments in function definition
-    "PLR0915" # Too many statements in function/class/module
-]
 
 [tool.ruff.lint]
 # Expand basic rules with name and style checks roughly equivalent to flake8 +
