@@ -1500,6 +1500,26 @@ class SkyModel(object):
 
         return col
 
+    def _get_filled_column(self, col_name):
+        """
+        For a given column, returns the filled column data, grouped by patch.
+
+        Parameters
+        ----------
+        col_name : str
+            Column name
+
+        Returns
+        -------
+        col : astropy Column
+            Column object with filled values
+        """
+        col = self.table[col_name]
+        if hasattr(self.table[col_name], 'filled'):
+            col = self.table[col_name].filled()
+            col = col.group_by(self.table['Patch'])
+        return col
+
     def _get_summed_column(self, col_name, apply_beam=False):
         """
         Returns column summed by group.
@@ -1515,22 +1535,18 @@ class SkyModel(object):
         -------
         col : astropy Column
             Column object with aggregated sum of values
-
         """
 
         def npsum(array):
             return np.sum(array, axis=0)
 
-        if hasattr(self.table[col_name], "filled"):
-            col = self.table[col_name].filled()
-            gcol = col.group_by(self.table["Patch"])
-            gcol = gcol.groups.aggregate(npsum)
-        else:
-            gcol = self.table[col_name].groups.aggregate(npsum)
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            gcol = self._apply_beam_to_col(gcol, patch=True)
+        col = self._get_filled_column(col_name)
+        col = col.groups.aggregate(npsum)
 
-        return gcol
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
+            col = self._apply_beam_to_col(col, patch=True)
+
+        return col
 
     def _get_min_column(self, col_name, apply_beam=False):
         """
@@ -1547,22 +1563,18 @@ class SkyModel(object):
         -------
         col : astropy Column
             Column object with aggregated min values
-
         """
 
         def npmin(array):
             return np.min(array, axis=0)
 
-        if hasattr(self.table[col_name], "filled"):
-            col = self.table[col_name].filled()
-            gcol = col.group_by(self.table["Patch"])
-            gcol = gcol.groups.aggregate(npmin)
-        else:
-            gcol = self.table[col_name].groups.aggregate(npmin)
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            gcol = self._apply_beam_to_col(gcol, patch=True)
+        col = self._get_filled_column(col_name)
+        col = col.groups.aggregate(npmin)
 
-        return gcol
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
+            col = self._apply_beam_to_col(col, patch=True)
+
+        return col
 
     def get_max_column(self, col_name, apply_beam=False):
         """
@@ -1585,16 +1597,13 @@ class SkyModel(object):
         def npmax(array):
             return np.max(array, axis=0)
 
-        if hasattr(self.table[col_name], "filled"):
-            col = self.table[col_name].filled()
-            gcol = col.group_by(self.table["Patch"])
-            gcol = gcol.groups.aggregate(npmax)
-        else:
-            gcol = self.table[col_name].groups.aggregate(npmax)
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            gcol = self._apply_beam_to_col(gcol, patch=True)
+        col = self._get_filled_column(col_name)
+        col = col.groups.aggregate(npmax)
 
-        return gcol
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
+            col = self._apply_beam_to_col(col, patch=True)
+
+        return col
 
     def _get_averaged_column(self, col_name, weight=True, apply_beam=False):
         """
@@ -1657,7 +1666,8 @@ class SkyModel(object):
         def npavg(c):
             return np.average(c, axis=0)
 
-        return self.table[col_name].groups.aggregate(npavg)
+        col = self._get_filled_column(col_name)
+        return col.groups.aggregate(npavg)
 
     def _get_size_column(self, weight=True, apply_beam=False):
         """
