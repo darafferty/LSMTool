@@ -39,7 +39,7 @@ class SkyModel(object):
 
     def __init__(
         self,
-        fileName,
+        filename,
         beamMS=None,
         checkDup=False,
         VOPosition=None,
@@ -54,20 +54,20 @@ class SkyModel(object):
             Input ASCII file from which the sky model is read (must respect the
             makesourcedb format or the LSM/GSM format), name of VO service to
             query (must be one of 'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or
-            'WENSS'), or dict (single source only)
-        beam_ms : str, optional
+            'WENSS'), or dict (single source only).
+        beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table
-        check_dup: bool, optional
+        checkDup: bool, optional
             If True, the sky model is checked for duplicate sources (with the
-            same name)
-        vo_position : list of floats
+            same name).
+        VOPosition : list of floats
             A list specifying a new position as [RA, Dec] in either makesourcedb
             format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
-            [123.2312, 23.3422]) for a cone search
-        vo_radius : float or str, optional
+            [123.2312, 23.3422]) for a cone search.
+        VORadius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g.,
-            '30 arcsec') for cone search region in degrees
+            '30 arcsec') for cone search region in degrees.
 
         Examples
         --------
@@ -78,17 +78,16 @@ class SkyModel(object):
         Create a SkyModel object with a beam MS so that apparent fluxes will
         be available::
 
-        >>> s = SkyModel("sky.model", beam_ms="SB100.MS")
+        >>> s = SkyModel("sky.model", beamMS="SB100.MS")
 
         Load a WENSS catalog into a SkyModel object::
 
         >>> s = SkyModel(
-        ...     "WENSS", vo_position=[212.8352792, 52.202644], vo_radius=5.0
+        ...     "WENSS", VOPosition=[212.8352792, 52.202644], VORadius=5.0
         ... )
 
         """
 
-        filename = fileName
         beam_ms = beamMS
         check_dup = checkDup
         vo_position = VOPosition
@@ -551,13 +550,13 @@ class SkyModel(object):
 
         Get them as RA and Dec arrays in degrees::
 
-        >>> s.getPatchPositions(as_array=True)
+        >>> s.getPatchPositions(asArray=True)
         (array([ 91.77565208,  91.59991875,  90.83773333]),
         array([ 41.57834806,  41.90387583,  42.18986194]))
 
         Calculate the flux-weighted mean positions of each patch::
 
-        >>> s.getPatchPositions(method="wmean", as_array=True)
+        >>> s.getPatchPositions(method="wmean", asArray=True)
 
         """
         patch_name = patchName
@@ -980,7 +979,7 @@ class SkyModel(object):
         the getColValues() method is not appropriate for use with RA or Dec,
         so we must use getPatchPositions() instead::
 
-        >>> RA, Dec = s.getPatchPositions(method="wmean", as_array=True)
+        >>> ra, dec = s.getPatchPositions(method="wmean", asArray=True)
 
         """
         col_name = colName
@@ -1160,7 +1159,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        row_name : str
+        rowName : str
             Exact name of the source or patch (wildcards are not interpreted).
             Patch names take precedence over source names.
 
@@ -1172,7 +1171,7 @@ class SkyModel(object):
             without copying data or allocating one index per member source.
             Selectors refer to the current row order and must be obtained again
             after regrouping or adding/removing rows.
-            Value_error is raised if neither a patch nor a source matches.
+            ValueError is raised if neither a patch nor a source matches.
 
         Examples
         --------
@@ -1255,7 +1254,7 @@ class SkyModel(object):
 
         # Concatenate tables
         self.concatenate(
-            temp_skymodel, match_by="name", keep="from2", inherit_patches=False
+            temp_skymodel, matchBy="name", keep="from2", inheritPatches=False
         )
 
     def getPatchSizes(self, units=None, weight=False, applyBeam=False):
@@ -1268,7 +1267,7 @@ class SkyModel(object):
             Units for returned sizes (e.g., 'arcsec', 'degree')
         weight : bool, optional
             If True, weight the source positions inside the patch by flux
-        apply_beam : bool, optional
+        applyBeam : bool, optional
             If True and weight is True, attenuate the fluxes used for weighting
             by the beam
 
@@ -1280,7 +1279,7 @@ class SkyModel(object):
 
         """
         if self.hasPatches:
-            col = self._get_size_column(weight=weight, apply_beam=apply_beam)
+            col = self._get_size_column(weight=weight, apply_beam=applyBeam)
             if units is not None:
                 col.convert_unit_to(units)
             return col.data
@@ -1479,14 +1478,14 @@ class SkyModel(object):
         if patch:
             if self._patch_method is not None:
                 # Try to get patch positions from the meta data
-                ra_deg, dec_deg = self.getPatchPositions(as_array=True)
+                ra_deg, dec_deg = self.getPatchPositions(asArray=True)
             else:
                 # If patch positions are not set, use weighted mean positions
                 ra_deg = self.getColValues(
-                    "Ra", apply_beam=True, aggregate="wmean"
+                    "Ra", applyBeam=True, aggregate="wmean"
                 )
                 dec_deg = self.getColValues(
-                    "Dec", apply_beam=True, aggregate="wmean"
+                    "Dec", applyBeam=True, aggregate="wmean"
                 )
         else:
             ra_deg = self.getColValues("Ra")
@@ -1629,12 +1628,12 @@ class SkyModel(object):
                 if weights.shape != vals.shape:
                     weights = np.resize(weights, vals.shape)
                 weight_col = Column(name="Weight", data=weights)
-                val_weight_col = Column(name="Val_weight", data=vals * weights)
+                val_weight_col = Column(name="ValWeight", data=vals * weights)
                 self.table.add_column(val_weight_col)
                 self.table.add_column(weight_col)
-                numer = self.table["Val_weight"].groups.aggregate(npsum).data
+                numer = self.table["ValWeight"].groups.aggregate(npsum).data
                 denom = self.table["Weight"].groups.aggregate(npsum).data
-                self.table.remove_column("Val_weight")
+                self.table.remove_column("ValWeight")
                 self.table.remove_column("Weight")
             else:
                 val_col = Column(name="Val", data=vals)
@@ -1679,7 +1678,7 @@ class SkyModel(object):
         if self.hasPatches:
             # Get patch positions
             ra_avg, dec_avg = self.getPatchPositions(
-                method=method, as_array=True, applyBeam=apply_beam
+                method=method, asArray=True, applyBeam=apply_beam
             )
 
             # Fill out the columns by repeating the average value over the
@@ -1695,25 +1694,25 @@ class SkyModel(object):
             )
             if weight:
                 if apply_beam and self._has_beam:
-                    app_fluxes = self.getColValues("I", apply_beam=True)
+                    app_fluxes = self.getColValues("I", applyBeam=True)
                     weight_col = Column(name="Weight", data=app_fluxes)
                     val_weight_col = Column(
-                        name="Val_weight", data=dist * app_fluxes
+                        name="ValWeight", data=dist * app_fluxes
                     )
                 else:
                     weight_col = Column(
                         name="Weight", data=self.table["I"].data
                     )
                     val_weight_col = Column(
-                        name="Val_weight", data=dist * self.table["I"].data
+                        name="ValWeight", data=dist * self.table["I"].data
                     )
                 self.table.add_column(val_weight_col)
                 self.table.add_column(weight_col)
                 numer = (
-                    self.table["Val_weight"].groups.aggregate(np.sum).data * 2.0
+                    self.table["ValWeight"].groups.aggregate(np.sum).data * 2.0
                 )
                 denom = self.table["Weight"].groups.aggregate(np.sum).data
-                self.table.remove_column("Val_weight")
+                self.table.remove_column("ValWeight")
                 self.table.remove_column("Weight")
                 col = Column(name="Size", data=numer / denom, unit="degree")
             else:
@@ -1773,7 +1772,7 @@ class SkyModel(object):
         dec : float or str
             Dec of position to which the distance is desired (in degrees or
             makesourcedb format)
-        by_patch : bool, optional
+        byPatch : bool, optional
             Calculate distance by patches instead of by sources
         units : str, optional
             Units for resulting distance. If None, units are degrees
@@ -1801,7 +1800,7 @@ class SkyModel(object):
         """
         if byPatch and self.hasPatches:
             # Get patch positions
-            s_ra, s_dec = self.getPatchPositions(as_array=True)
+            s_ra, s_dec = self.getPatchPositions(asArray=True)
         else:
             s_ra = self.getColValues("RA")
             s_dec = self.getColValues("Dec")
@@ -1815,7 +1814,7 @@ class SkyModel(object):
 
     def write(
         self,
-        filename=None,
+        fileName=None,
         format="makesourcedb",  # noqa
         clobber=False,
         *,
@@ -1831,7 +1830,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        filename : str
+        fileName : str
             Name of output file.
         format: str, optional
             Format of the output file. Allowed formats are:
@@ -1888,6 +1887,7 @@ class SkyModel(object):
         >>> s.write("facets.reg", format="facet")
 
         """
+        filename = fileName
         overwrite = clobber
         sort_by = sortBy
         low_to_high = lowToHigh
@@ -1905,8 +1905,7 @@ class SkyModel(object):
                 os.remove(filename)
             else:
                 raise IOError(
-                    f"The output file {filename!r} exists and "
-                    "overwrite = False."
+                    f"The output file {filename!r} exists and clobber = False."
                 )
 
         table = self.table.copy()
@@ -2062,7 +2061,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        filter_expression : str, dict, list, or numpy.ndarray
+        filterExpression : str, dict, list, or numpy.ndarray
 
             - If string:
               A string specifying the filter expression in the form:
@@ -2229,7 +2228,7 @@ class SkyModel(object):
             sources.
         applyBeam : bool, optional
             If True, apparent fluxes will be used.
-        use_regex : bool, optional
+        useRegEx : bool, optional
             If True, string matching will use regular expression matching. If
             False, string matching uses Unix filename matching.
         force : bool, optional
@@ -2434,7 +2433,7 @@ class SkyModel(object):
 
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30
-            arcsec') for matching when match_by='position'
+            arcsec') for matching when matchBy='position'
 
         Examples
         --------
@@ -2473,13 +2472,6 @@ class SkyModel(object):
         shift : list, optional
             A list specifying the shift as [RAShift, DecShift] in degrees (e.g.,
             [0.02312, 0.00342])
-        xyshift : list, optional
-            A list specifying the shift as [xShift, yShift] in pixels. A FITS
-            file must be specified with the fitsFILE argument
-        fits_file : str, optional
-            A FITS file from which to take WCS information to transform the
-            pixel coordinates to RA and Dec values. The xyshift argument must be
-            specfied for this to be useful
 
         Examples
         --------
@@ -2570,7 +2562,7 @@ class SkyModel(object):
 
         radius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g., '30
-            arcsec') for matching when match_by='position'
+            arcsec') for matching when matchBy='position'
         keep : str, optional
             Determines how duplicates are treated:
 
@@ -2592,7 +2584,7 @@ class SkyModel(object):
         be useful when merging two gsm.py sky models that have some overlap)::
 
         >>> skymodel2 = lsmtool.load("gsm_sky2.model")
-        ... s.concatenate(skymodel2, match_by="name", keep="from1")
+        ... s.concatenate(skymodel2, matchBy="name", keep="from1")
 
         Concatenate two sky models, identifying duplicates by matching to the
         source positions within a radius of 10 arcsec. When duplicates are
@@ -2603,7 +2595,7 @@ class SkyModel(object):
         >>> skymodel2 = lsmtool.load("high_res_sky.model")
         ... s.concatenate(
         ...     skymodel2,
-        ...     match_by="position",
+        ...     matchBy="position",
         ...     radius=10.0 / 3600.0,
         ...     keep="from2",
         ... )
@@ -2858,7 +2850,7 @@ class SkyModel(object):
                 else:
                     raise IOError(
                         f"The output file {image_name!r} exists and "
-                        "overwrite = False."
+                        "clobber = False."
                     )
 
         x, y, wcs = self._get_xy(crdelt=cellsize)
@@ -2955,7 +2947,7 @@ class SkyModel(object):
 
         # Make region file if needed
         if write_region_file and self.hasPatches:
-            ra, dec = self.getPatchPositions(as_array=True)
+            ra, dec = self.getPatchPositions(asArray=True)
             patch_names = self.getPatchNames()
             x_pix_list = []
             y_pix_list = []
@@ -2998,7 +2990,7 @@ class SkyModel(object):
                 else:
                     raise IOError(
                         f"The output file {outputfile!r} exists and "
-                        "overwrite = False."
+                        "clobber = False."
                     )
             with open(outputfile, "w") as f:
                 f.writelines(lines)
