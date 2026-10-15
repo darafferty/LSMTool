@@ -10,12 +10,12 @@ import os
 import tempfile
 
 import astropy.units as u
-from astropy.wcs import WCS
 import numpy as np
 from astropy.coordinates import Angle, SkyCoord
 from astropy.io import fits as pyfits
 from astropy.io.ascii import InconsistentTableError
 from astropy.table import Column, Table
+from astropy.wcs import WCS
 
 # relative
 from . import operations, tableio
@@ -343,7 +343,6 @@ class SkyModel(object):
 
         return lsm_copy
 
-    
     def more(
         self,
         colName=None,
@@ -381,11 +380,11 @@ class SkyModel(object):
 
         """
         col_name = colName
-        patch_name=patchName
-        source_name=sourceName
+        patch_name = patchName
+        source_name = sourceName
         sort_by = sortBy
-        low_to_high =lowToHigh
-        
+        low_to_high = lowToHigh
+
         if patch_name is not None and source_name is not None:
             raise ValueError(
                 "patch_name and source_name cannot both be specified."
@@ -500,7 +499,6 @@ class SkyModel(object):
 
         return col_name_key
 
-    
     def getPatchPositions(
         self,
         patchName=None,
@@ -562,12 +560,11 @@ class SkyModel(object):
         >>> s.getPatchPositions(method="wmean", as_array=True)
 
         """
-        patch_name=patchName
-        as_array=asArray
-        apply_beam=applyBeam
+        patch_name = patchName
+        as_array = asArray
+        apply_beam = applyBeam
         per_patch_projection = perPatchProjection
-        
-        
+
         if self.hasPatches:
             if patch_name is None:
                 patch_name = self.getPatchNames()
@@ -664,7 +661,7 @@ class SkyModel(object):
 
         return None
 
-    def setPatchPositions(
+    def set_patch_positions(
         self,
         patchDict=None,
         method="mid",
@@ -714,10 +711,10 @@ class SkyModel(object):
         >>> s.setPatchPositions({"bin0": [123.231, 23.4321]})
 
         """
-        patch_dict=patchDict
-        apply_beam=applyBeam
+        patch_dict = patchDict
+        apply_beam = applyBeam
         per_patch_projection = perPatchProjection
-        
+
         if self.hasPatches:
             if method not in ["mid", "mean", "wmean", "zero"]:
                 raise ValueError("Invalid method parameter")
@@ -830,8 +827,8 @@ class SkyModel(object):
         wcs : astropy.wcs.WCS
             WCS object used for the projection.
         """
-        ra = self.table['Ra'] if ra is None else ra
-        dec = self.table['Dec'] if dec is None else dec
+        ra = self.table["Ra"] if ra is None else ra
+        dec = self.table["Dec"] if dec is None else dec
 
         if len(ra) == 0:
             return [], [], None
@@ -1690,8 +1687,8 @@ class SkyModel(object):
             ra_avg_full = np.zeros(len(self.table), dtype=float)
             dec_avg_full = np.zeros(len(self.table), dtype=float)
             for i, ind in enumerate(self.table.groups.indices[1:]):
-                ra_avg_full[self.table.groups.indices[i]: ind] = ra_avg[i]
-                dec_avg_full[self.table.groups.indices[i]: ind] = dec_avg[i]
+                ra_avg_full[self.table.groups.indices[i] : ind] = ra_avg[i]
+                dec_avg_full[self.table.groups.indices[i] : ind] = dec_avg[i]
 
             dist = self._calculate_separation(
                 self.table["Ra"], self.table["Dec"], ra_avg_full, dec_avg_full
@@ -1967,8 +1964,8 @@ class SkyModel(object):
                 )
 
             ref_ra, ref_dec = self._get_midpoint()
-            table.meta['refRA'] = ref_ra
-            table.meta['refDec'] = ref_dec
+            table.meta["refRA"] = ref_ra
+            table.meta["refDec"] = ref_dec
 
             if width is not None:
                 table.meta["width"] = width
@@ -2278,7 +2275,6 @@ class SkyModel(object):
             force=force,
         )
 
-    
     def group(
         self,
         algorithm,
@@ -2750,7 +2746,6 @@ class SkyModel(object):
             make_plots=make_plots,
         )
 
-
     def plot(self, filename=None, labelBy=None):
         """
         Shows a simple plot of the sky model.
@@ -2779,7 +2774,6 @@ class SkyModel(object):
 
         """
         operations.plot.plot(self, filename, labelBy=labelBy)
-
 
     def rasterize(
         self, cellsize, fileRoot=None, writeRegionFile=False, clobber=False
@@ -2818,7 +2812,7 @@ class SkyModel(object):
         file_root = fileRoot
         write_region_file = writeRegionFile
         overwrite = clobber
-        
+
         # TODO: Fix circular import and move to module scope
         from lsmtool.facet import tessellate  # noqa
 
@@ -2949,8 +2943,8 @@ class SkyModel(object):
                     c1, c2 = ys, xs
                     b = np.ceil(s1 * 2.5)
                     bbox = np.s_[
-                        max(0, int(c1 - b)): min(xsize, int(c1 + b + 1)),
-                        max(0, int(c2 - b)): min(ysize, int(c2 + b + 1)),
+                        max(0, int(c1 - b)) : min(xsize, int(c1 + b + 1)),
+                        max(0, int(c2 - b)) : min(ysize, int(c2 + b + 1)),
                     ]
                     x_ax, y_ax = np.mgrid[bbox]
                     g = [v, c1, c2, s1, s2, th]
