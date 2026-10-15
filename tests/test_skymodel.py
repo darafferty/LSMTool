@@ -143,7 +143,7 @@ def test_row_index_sources(grouped, sky_no_patches, monkeypatch):
         pytest.fail("Row lookup must not use copying name/column helpers")
 
     monkeypatch.setattr(sky, "getColValues", unexpected_copy)
-    monkeypatch.setattr(sky, "_getNameIndx", unexpected_copy)
+    monkeypatch.setattr(sky, "_get_name_index", unexpected_copy)
     indices = sky.getRowIndex("literal*")
     np.testing.assert_array_equal(indices, [0, 2])
     with pytest.raises(ValueError, match="not recognized"):
@@ -223,7 +223,7 @@ def test_column_values_beam_independent(sky_no_patches, monkeypatch):
         column[:] *= 0.5
         return column
 
-    monkeypatch.setattr(sky, "_applyBeamToCol", attenuate)
+    monkeypatch.setattr(sky, "_apply_beam_to_col", attenuate)
     result = sky.getColValues("I", applyBeam=True)
     np.testing.assert_allclose(result, original.data * 0.5)
     np.testing.assert_array_equal(sky.table["I"], original)

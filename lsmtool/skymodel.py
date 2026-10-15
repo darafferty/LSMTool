@@ -237,7 +237,7 @@ class SkyModel(object):
 
         self.log.debug("Processing patches (if any)...")
         self._patch_method = None
-        self._update_groups()
+        self._updateGroups()
 
         self.log.debug("Successfully loaded sky model")
 
@@ -253,7 +253,7 @@ class SkyModel(object):
         """
         return self.table.__str__()
 
-    def _update_groups(self):
+    def _updateGroups(self):
         """
         Updates the grouping of the table by patch name.
         """
@@ -336,7 +336,7 @@ class SkyModel(object):
         # them by hand:
         self.log = None
         lsm_copy = copy.deepcopy(self)
-        lsm_copy._update_groups()
+        lsm_copy._updateGroups()
         lsm_copy.log = logging.getLogger("LSMTool")
         lsm_copy._add_history("COPY")
         self.log = logging.getLogger("LSMTool")
@@ -393,7 +393,7 @@ class SkyModel(object):
         table = self.table
 
         # Get columns
-        col_name = self._verify_col_name(col_name)
+        col_name = self._verify_column_name(col_name)
         if col_name is not None:
             if isinstance(col_name, str):
                 col_name = [
@@ -403,19 +403,19 @@ class SkyModel(object):
 
         # Get patches
         if patch_name is not None:
-            pindx = self._get_name_indx(patch_name, patch=True)
+            pindx = self._get_name_index(patch_name, patch=True)
             if pindx is not None:
                 table = table.groups[pindx]
 
         # Get sources
         if source_name is not None:
-            sindx = self._get_name_indx(source_name)
+            sindx = self._get_name_index(source_name)
             if sindx is not None:
                 table = table[sindx]
 
         # Sort if desired
         if sort_by is not None:
-            col_name = self._verify_col_name(sort_by)
+            col_name = self._verify_column_name(sort_by)
             indx = table.argsort(col_name)
             if not low_to_high:
                 indx = indx[::-1]
@@ -423,7 +423,7 @@ class SkyModel(object):
 
         table.more(show_unit=True)
 
-    def _verify_col_name(self, col_name, only_existing=True, quiet=False):
+    def _verify_column_name(self, col_name, only_existing=True, quiet=False):
         """
         Verifies that column(s) exist and returns correctly formatted string or
         list of strings suitable for accessing the data table.
@@ -609,9 +609,9 @@ class SkyModel(object):
                 positions = []
                 if method == "mid":
                     min_x = self._get_min_column("X")
-                    max_x = self._get_max_column("X")
+                    max_x = self.get_max_column("X")
                     min_y = self._get_min_column("Y")
-                    max_y = self._get_max_column("Y")
+                    max_y = self.get_max_column("Y")
                     mid_x = min_x + (max_x - min_x) / 2.0
                     mid_y = min_y + (max_y - min_y) / 2.0
                     for i, _ in enumerate(patch_name):
@@ -661,7 +661,7 @@ class SkyModel(object):
 
         return None
 
-    def set_patch_positions(
+    def setPatchPositions(
         self,
         patchDict=None,
         method="mid",
@@ -893,7 +893,7 @@ class SkyModel(object):
                 if patch_name in self.table.meta:
                     self.table.meta.pop(patch_name)
             self.table.remove_column("Patch")
-            self._update_groups()
+            self._updateGroups()
             self._add_history("UNGROUP")
             self._info()
 
@@ -986,7 +986,7 @@ class SkyModel(object):
         col_name = colName
         apply_beam = applyBeam
 
-        col_name = self._verify_col_name(col_name)
+        col_name = self._verify_column_name(col_name)
         if col_name is None:
             return None
         if isinstance(col_name, list):
@@ -998,7 +998,7 @@ class SkyModel(object):
         if aggregate not in allowed_fcns and aggregate is not None:
             raise ValueError("Value of parameter 'aggregate' not understood.")
         if aggregate in allowed_fcns and self.hasPatches:
-            col = self._get_aggregated_column(
+            col = self.get_aggregated_column(
                 col_name, aggregate, apply_beam=apply_beam
             )
         else:
@@ -1056,7 +1056,7 @@ class SkyModel(object):
         """
         col_name = colName
 
-        col_name = self._verify_col_name(col_name, only_existing=False)
+        col_name = self._verify_column_name(col_name, only_existing=False)
         if col_name is None:
             return
         if isinstance(col_name, list):
@@ -1072,7 +1072,7 @@ class SkyModel(object):
                 data = [0] * len(self.table)
                 mask = [True] * len(self.table)
             for source_name, value in values.items():
-                indx = self._get_name_indx(source_name)
+                indx = self._get_name_index(source_name)
                 if col_name in {"Ra", "Dec"}:
                     val = Angle(value, unit=u.deg)
                 else:
@@ -1106,7 +1106,7 @@ class SkyModel(object):
                 new_col = Column(name=col_name, data=data)
             self.table.add_column(new_col, index=index)
         if col_name == "Patch":
-            self._update_groups()
+            self._updateGroups()
 
     def getRowValues(self, rowName):
         """
@@ -1144,12 +1144,12 @@ class SkyModel(object):
         # its patch, as in this case the patch and source row index are
         # identical (since such a patch can have only one member source)
         if self.hasPatches and row_name in self.getPatchNames():
-            pindx = self._get_name_indx(row_name, patch=True)
+            pindx = self._get_name_index(row_name, patch=True)
             table = self.table.groups[pindx]
             return table.group_by("Patch")  # ensure that grouping is preserved
 
         if row_name in self.getColValues("Name"):
-            indx = self._get_name_indx(row_name)
+            indx = self._get_name_index(row_name)
             return self.table.filled()[indx]
 
         raise ValueError(f"Row name {row_name!r} not recognized.")
@@ -1310,7 +1310,7 @@ class SkyModel(object):
             return outcol.data
         return None
 
-    def _get_name_indx(self, name, patch=False):
+    def _get_name_index(self, name, patch=False):
         """
         Returns a list of indices corresponding to the given names.
 
@@ -1391,7 +1391,7 @@ class SkyModel(object):
             beam attenuation is applied; callers must copy before modifying it.
 
         """
-        col_name = self._verify_col_name(col_name)
+        col_name = self._verify_column_name(col_name)
         if col_name is None:
             return None
 
@@ -1402,7 +1402,7 @@ class SkyModel(object):
 
         return col
 
-    def _get_aggregated_column(
+    def get_aggregated_column(
         self, col_name, aggregate="sum", apply_beam=False
     ):
         """
@@ -1430,7 +1430,7 @@ class SkyModel(object):
             Column object with aggregated values
 
         """
-        col_name = self._verify_col_name(col_name)
+        col_name = self._verify_column_name(col_name)
         if col_name is None:
             return None
 
@@ -1447,7 +1447,7 @@ class SkyModel(object):
         elif aggregate == "min":
             col = self._get_min_column(col_name, apply_beam=apply_beam)
         elif aggregate == "max":
-            col = self._get_max_column(col_name, apply_beam=apply_beam)
+            col = self.get_max_column(col_name, apply_beam=apply_beam)
         else:
             raise ValueError("Aggregation function not understood.")
         return col
@@ -1564,7 +1564,7 @@ class SkyModel(object):
 
         return gcol
 
-    def _get_max_column(self, col_name, apply_beam=False):
+    def get_max_column(self, col_name, apply_beam=False):
         """
         Returns column maximum value by group.
 
@@ -1931,7 +1931,7 @@ class SkyModel(object):
         # Sort if desired. For 'factor' output, save the order of patches in the
         # table meta
         if sort_by is not None:
-            col_name = self._verify_col_name(sort_by)
+            col_name = self._verify_column_name(sort_by)
             if format.lower() == "factor" and self.hasPatches:
                 indx = np.argsort(self.getColValues("I", aggregate="sum"))
                 if not low_to_high:
@@ -2044,7 +2044,7 @@ class SkyModel(object):
             self.log.info(
                 "Removed %s duplicate sources.", n_rows_orig - n_rows_new
             )
-        self._update_groups()
+        self._updateGroups()
 
     def select(
         self,
