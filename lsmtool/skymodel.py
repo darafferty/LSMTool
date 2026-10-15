@@ -10,17 +10,19 @@ import os
 import tempfile
 
 import astropy.units as u
-from astropy.wcs import WCS
 import numpy as np
 from astropy.coordinates import Angle, SkyCoord
 from astropy.io import fits as pyfits
 from astropy.io.ascii import InconsistentTableError
 from astropy.table import Column, Table
+from astropy.wcs import WCS
 
 # relative
 from . import operations, tableio
 from .operations_lib import (
-    apply_beam,
+    apply_beam as apply_beam_operation,
+)
+from .operations_lib import (
     calculateSeparation,
     gaussian_fcn,
     make_template_image,
@@ -34,146 +36,206 @@ class SkyModel(object):
     """
     Object that stores the sky model and provides methods for accessing it.
     """
-    def __init__(self, fileName, beamMS=None, checkDup=False, VOPosition=None,
-                 VORadius=None):
+
+    def __init__(
+        self,
+        filename,
+        beamMS=None,
+        checkDup=False,
+        VOPosition=None,
+        VORadius=None,
+    ):
         """
         Initializes SkyModel object.
 
         Parameters
         ----------
-        fileName : str
+        filename : str
             Input ASCII file from which the sky model is read (must respect the
-            makesourcedb format or the LSM/GSM format), name of VO service to query
-            (must be one of 'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or 'WENSS'),
-            or dict (single source only)
+            makesourcedb format or the LSM/GSM format), name of VO service to
+            query (must be one of 'GSM', 'LOTSS', 'NVSS', 'TGSS', 'VLSSR', or
+            'WENSS'), or dict (single source only).
         beamMS : str, optional
             Measurement set from which the primary beam will be estimated. A
             column of attenuated Stokes I fluxes will be added to the table
         checkDup: bool, optional
             If True, the sky model is checked for duplicate sources (with the
-            same name)
+            same name).
         VOPosition : list of floats
             A list specifying a new position as [RA, Dec] in either makesourcedb
             format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
-            [123.2312, 23.3422]) for a cone search
+            [123.2312, 23.3422]) for a cone search.
         VORadius : float or str, optional
             Radius in degrees (if float) or 'value unit' (if str; e.g.,
-            '30 arcsec') for cone search region in degrees
+            '30 arcsec') for cone search region in degrees.
 
         Examples
         --------
         Create a SkyModel object::
 
-            >>> s = SkyModel('sky.model')
+        >>> s = SkyModel("sky.model")
 
         Create a SkyModel object with a beam MS so that apparent fluxes will
         be available::
 
-            >>> s = SkyModel('sky.model', beamMS='SB100.MS')
+        >>> s = SkyModel("sky.model", beamMS="SB100.MS")
 
         Load a WENSS catalog into a SkyModel object::
 
-            >>> s = SkyModel('WENSS', VOPosition=[212.8352792, 52.202644],
-                VORadius=5.0)
+        >>> s = SkyModel(
+        ...     "WENSS", VOPosition=[212.8352792, 52.202644], VORadius=5.0
+        ... )
 
         """
 
-        self.log = logging.getLogger('LSMTool')
+        beam_ms = beamMS
+        check_dup = checkDup
+        vo_position = VOPosition
+        vo_radius = VORadius
+
+        self.log = logging.getLogger("LSMTool")
         self.history = []
-        if type(fileName) is str:
-            # First check if fileName points to a VO query
-            if VOPosition is not None and VORadius is not None:
+        if isinstance(filename, str):
+            # First check if filename points to a VO query
+            if vo_position is not None and vo_radius is not None:
                 try:
-                    if fileName.lower() in tableio.allowedVOServices:
-                        self.log.debug("Attempting to load model from VO service '{0}'...".format(fileName))
-                        self.table = tableio.coneSearch(fileName, VOPosition, VORadius)
-                        self.log.debug("Successfully loaded model from VO service '{0}'".format(fileName))
-                        self._fileName = fileName.lower() + "_vo"
-                        self._addHistory("LOAD (from {0} at position {1})".format(fileName, VOPosition))
-                    elif fileName.lower() == 'tgss':
+                    if filename.lower() in tableio.allowedVOServices:
+                        self.log.debug(
+                            "Attempting to load model from VO service %r...",
+                            filename,
+                        )
+                        self.table = tableio.coneSearch(
+                            filename, vo_position, vo_radius
+                        )
+                        self.log.debug(
+                            "Successfully loaded model from VO service %r",
+                            filename,
+                        )
+                        self._filename = filename.lower() + "_vo"
+                        self._add_history(
+                            f"LOAD (from {filename} at position {vo_position})"
+                        )
+                    elif filename.lower() == "tgss":
                         self.log.debug("Attempting to load model from TGSS...")
-                        self.table = tableio.getTGSS(VOPosition, VORadius)
+                        self.table = tableio.getTGSS(vo_position, vo_radius)
                         self.log.debug("Successfully loaded model from TGSS")
-                        self._fileName = "tgss_vo"
-                        self._addHistory("LOAD (from TGSS at position {0})".format(VOPosition))
-                    elif fileName.lower() == 'gsm':
+                        self._filename = "tgss_vo"
+                        self._add_history(
+                            f"LOAD (from TGSS at position {vo_position})"
+                        )
+                    elif filename.lower() == "gsm":
                         self.log.debug("Attempting to load model from GSM...")
-                        self.table = tableio.getGSM(VOPosition, VORadius)
+                        self.table = tableio.getGSM(vo_position, vo_radius)
                         self.log.debug("Successfully loaded model from GSM")
-                        self._fileName = "gsm_vo"
-                        self._addHistory("LOAD (from GSM at position {0})".format(VOPosition))
-                    elif fileName.lower() == 'lotss':
+                        self._filename = "gsm_vo"
+                        self._add_history(
+                            f"LOAD (from GSM at position {vo_position})"
+                        )
+                    elif filename.lower() == "lotss":
                         self.log.debug("Attempting to load model from LoTSS...")
-                        self.table = tableio.getLoTSS(VOPosition, VORadius)
+                        self.table = tableio.getLoTSS(vo_position, vo_radius)
                         self.log.debug("Successfully loaded model from LoTSS")
-                        self._fileName = "lotss_vo"
-                        self._addHistory("LOAD (from LoTSS at position {0})".format(VOPosition))
+                        self._filename = "lotss_vo"
+                        self._add_history(
+                            f"LOAD (from LoTSS at position {vo_position})"
+                        )
                     else:
-                        raise ValueError("VO service '{}' not understood. Must be one of "
-                                         "'WENSS', 'NVSS', 'TGSS', 'GSM', or 'LOTSS'. If you want "
-                                         "instead to load a model from a local file, do not "
-                                         "set VOPosition or VORadius.".format(fileName))
+                        raise ValueError(
+                            f"VO service {filename!r} not understood. Must be "
+                            "one of 'WENSS', 'NVSS', 'TGSS', 'GSM', or "
+                            "'LOTSS'. If you want instead to load a model from "
+                            "a local file, do not set vo_position or vo_radius."
+                        )
                 except (IndexError, InconsistentTableError):
-                    # Empty result due to no coverage in the catalog at the queried position
-                    self.log.warning('No sources found for the given VO query parameters '
-                                     '(VO service "{0}" with VOPosition = {1} and VORadius = {2}). '
-                                     'Sky model is empty.'.format(fileName, VOPosition, VORadius))
+                    # Empty result due to no coverage in the catalog at the
+                    # queried position
+                    self.log.warning(
+                        "No sources found for the given VO query parameters (VO"
+                        " service %r with vo_position = %s and vo_radius = %s)."
+                        " Sky model is empty.",
+                        filename,
+                        vo_position,
+                        vo_radius,
+                    )
                     self.table = tableio.makeEmptyTable()
-                    self._fileName = None
-            elif tableio.validateLSMFormat(fileName):
-                self.log.debug("Attempting to load LSM model from file '{0}'...".format(fileName))
-                self.table = tableio.loadTableFromLSM(fileName)
-                self.log.debug("Successfully loaded model from file '{0}'".format(fileName))
-                self._addHistory("LOAD (from file '{0}')".format(fileName))
+                    self._filename = None
+            elif tableio.validateLSMFormat(filename):
+                self.log.debug(
+                    "Attempting to load LSM model from file %r...", filename
+                )
+                self.table = tableio.loadTableFromLSM(filename)
+                self.log.debug(
+                    "Successfully loaded model from file %r", filename
+                )
+                self._add_history(
+                    f"LOAD (from file {filename!r})",
+                )
             else:
-                # If fileName does not point to a VO query, assume it points to a local file
-                self.log.debug("Attempting to load model from file '{0}'...".format(fileName))
-                if fileName.lower() in ('wenss', 'nvss', 'tgss', 'gsm', 'lotss', 'vlssr'):
-                    self.log.warning("It appears from the filename that you may be trying to "
-                                     "query a VO service. If so, you must provide values for "
-                                     "both VOPosition and VORadius.")
-                self.table = Table.read(fileName, format='makesourcedb')
-                self.log.debug("Successfully loaded model from file '{0}'".format(fileName))
-                self._fileName = fileName
-                self._addHistory("LOAD (from file '{0}')".format(fileName))
-        elif type(fileName) is dict:
+                # If filename does not point to a VO query, assume it points to
+                # a local file
+                self.log.debug(
+                    "Attempting to load model from file %r...", filename
+                )
+                if filename.lower() in (
+                    "wenss",
+                    "nvss",
+                    "tgss",
+                    "gsm",
+                    "lotss",
+                    "vlssr",
+                ):
+                    self.log.warning(
+                        "It appears from the filename that you may be trying to"
+                        " query a VO service. If so, you must provide values "
+                        "for both vo_position and vo_radius."
+                    )
+                self.table = Table.read(filename, format="makesourcedb")
+                self.log.debug(
+                    "Successfully loaded model from file %r", filename
+                )
+                self._filename = filename
+                self._add_history(f"LOAD (from file {filename!r})")
+        elif isinstance(filename, dict):
             self.log.debug("Attempting to create model from input dict...")
             # Create header
-            formatString = '#FORMAT = ' + ', '.join(fileName.keys())
+            format_string = "#FORMAT = " + ", ".join(filename.keys())
 
             # Process the header
-            colNames, hasPatches, colDefaults, metaDict = processFormatString(formatString)
+            col_names, has_patches, col_defaults, meta_dict = (
+                processFormatString(format_string)
+            )
 
             # Process the model
             outlines = []
-            stringValues = ['{0}'.format(v) for v in fileName.values()]
-            line = ', '.join(stringValues)
-            outline, metaDict = processLine(line, metaDict, colNames)
+            line = ", ".join((f"{v}" for v in filename.values()))
+            outline, meta_dict = processLine(line, meta_dict, col_names)
             if outline is not None:
                 outlines.append(outline)
-            outlines.append('\n')  # needed in case of single-line sky models
-            self.table = createTable(outlines, metaDict, colNames, colDefaults)
+            outlines.append("\n")  # needed in case of single-line sky models
+            self.table = createTable(
+                outlines, meta_dict, col_names, col_defaults
+            )
             self.log.debug("Successfully created model from input dict")
-            self._fileName = None
-            self._addHistory("LOAD (from input dict)")
+            self._filename = None
+            self._add_history("LOAD (from input dict)")
         else:
             raise ValueError("Filename not understood. Exiting...")
 
-        if beamMS is not None:
-            self.beamMS = beamMS
-            self._hasBeam = True
+        if beam_ms is not None:
+            self.beamMS = beam_ms
+            self._has_beam = True
             self.beamTime = 0.5
         else:
             self.beamMS = None
-            self._hasBeam = False
+            self._has_beam = False
             self.beamTime = None
 
-        if checkDup:
-            self.log.debug('Checking model for duplicate lines...')
+        if check_dup:
+            self.log.debug("Checking model for duplicate lines...")
             self._clean()
 
-        self.log.debug('Processing patches (if any)...')
-        self._patchMethod = None
+        self.log.debug("Processing patches (if any)...")
+        self._patch_method = None
         self._updateGroups()
 
         self.log.debug("Successfully loaded sky model")
@@ -194,21 +256,21 @@ class SkyModel(object):
         """
         Updates the grouping of the table by patch name.
         """
-        if 'Patch' in self.table.keys():
-            self.table = self.table.group_by('Patch')
+        if "Patch" in self.table.keys():
+            self.table = self.table.group_by("Patch")
             self.hasPatches = True
 
             # Check if any patches have undefined positions
-            patchDict = {}
-            for patchName in self.getPatchNames():
-                if patchName not in self.table.meta:
-                    patchDict.update({patchName: None})
-            if patchDict:
-                self.setPatchPositions(patchDict=patchDict, method='mid')
+            patch_dict = {}
+            for patch_name in self.getPatchNames():
+                if patch_name not in self.table.meta:
+                    patch_dict.update({patch_name: None})
+            if patch_dict:
+                self.setPatchPositions(patch_dict, method="mid")
         else:
             self.hasPatches = False
 
-    def _addHistory(self, entry=""):
+    def _add_history(self, entry=""):
         """
         Adds entry to the history with current date and time
 
@@ -218,51 +280,51 @@ class SkyModel(object):
             String to add to history
 
         """
-        current_time = str(datetime.datetime.now()).split('.')[0]
+        current_time = str(datetime.datetime.now()).split(".")[0]
         self.history.append(current_time + ": " + str(entry))
 
-    def _info(self, useLogInfo=False):
+    def _info(self, use_log_info=False):
         """
         Prints information about the sky model.
         """
         if self.hasPatches:
-            nPatches = len(set(self.getPatchNames()))
+            n_patches = len(set(self.getPatchNames()))
         else:
-            nPatches = 0
+            n_patches = 0
 
-        nPoint = len(np.where(self.getColValues('Type') == 'POINT')[0])
-        nGaus = len(np.where(self.getColValues('Type') == 'GAUSSIAN')[0])
+        n_point = len(np.where(self.getColValues("Type") == "POINT")[0])
+        n_gaus = len(np.where(self.getColValues("Type") == "GAUSSIAN")[0])
 
-        if nPatches == 1:
-            plur = ''
+        if n_patches == 1:
+            plur = ""
         else:
-            plur = 'es'
-        if useLogInfo:
-            logCall = self.log.info
+            plur = "es"
+        if use_log_info:
+            log_call = self.log.info
         else:
-            logCall = self.log.debug
+            log_call = self.log.debug
 
-        refRA, refDec = self._get_midpoint()
-        totFlux = np.sum(self.getColValues('I', units='Jy'))
+        ref_ra, ref_dec = self._get_midpoint()
+        tot_flux = np.sum(self.getColValues("I", units="Jy"))
 
-        info = 'Model contains {0} sources in {1} patch{2} of which:\n'\
-               '      {3} are type POINT\n'\
-               '      {4} are type GAUSSIAN\n'\
-               '      Associated beam MS: {5}\n'\
-               '      Approximate RA, Dec of center: {6}, {7}\n'\
-               '      Total flux: {8} Jy\n\n'\
-               '      History:\n'\
-               '      {9}'.format(len(self.table), nPatches, plur,
-                                  nPoint, nGaus, self.beamMS, refRA, refDec, totFlux,
-                                  '\n      '.join(self.history))
-        logCall(info)
+        info = (
+            f"Model contains {len(self.table)} sources in {n_patches} "
+            f"patch{plur} of which:\n"
+            f"    {n_point} are type POINT\n"
+            f"    {n_gaus} are type GAUSSIAN\n"
+            f"    Associated beam MS: {self.beamMS}\n"
+            f"    Approximate RA, Dec of center: {ref_ra}, {ref_dec}\n"
+            f"    Total flux: {tot_flux} Jy\n\n"
+            f"    History:\n        " + "\n        ".join(self.history)
+        )
+        log_call(info)
         return info
 
     def info(self):
         """
         Prints information about the sky model.
         """
-        _ = self._info(useLogInfo=True)
+        _ = self._info(use_log_info=True)
 
     def copy(self):
         """
@@ -272,16 +334,22 @@ class SkyModel(object):
         # The logger's stream handlers are not copyable with deepcopy, so copy
         # them by hand:
         self.log = None
-        LSMCopy = copy.deepcopy(self)
-        LSMCopy._updateGroups()
-        LSMCopy.log = logging.getLogger('LSMTool')
-        LSMCopy._addHistory('COPY')
-        self.log = logging.getLogger('LSMTool')
+        lsm_copy = copy.deepcopy(self)
+        lsm_copy._updateGroups()
+        lsm_copy.log = logging.getLogger("LSMTool")
+        lsm_copy._add_history("COPY")
+        self.log = logging.getLogger("LSMTool")
 
-        return LSMCopy
+        return lsm_copy
 
-    def more(self, colName=None, patchName=None, sourceName=None, sortBy=None,
-             lowToHigh=False):
+    def more(
+        self,
+        colName=None,
+        patchName=None,
+        sourceName=None,
+        sortBy=None,
+        lowToHigh=False,
+    ):
         """
         Prints the sky model table to the screen with more-like commands.
 
@@ -303,122 +371,141 @@ class SkyModel(object):
         --------
         Print the entire model::
 
-            >>> s.more()
+        >>> s.more()
 
         Print only the 'Name' and 'I' columns for the 'bin0' patch::
 
-            >>> s.more(['Name', 'I'], 'bin0', sortBy=['I'])
+        >>> s.more(["Name", "I"], "bin0", sort_by=["I"])
 
         """
-        if patchName is not None and sourceName is not None:
-            raise ValueError('patchName and sourceName cannot both be specified.')
+        col_name = colName
+        patch_name = patchName
+        source_name = sourceName
+        sort_by = sortBy
+        low_to_high = lowToHigh
+
+        if patch_name is not None and source_name is not None:
+            raise ValueError(
+                "patch_name and source_name cannot both be specified."
+            )
 
         table = self.table
 
         # Get columns
-        colName = self._verifyColName(colName)
-        if colName is not None:
-            if type(colName) is str:
-                colName = [colName]  # needed in order to get a table instead of a column
-            table = table[colName]
+        col_name = self._verify_column_name(col_name)
+        if col_name is not None:
+            if isinstance(col_name, str):
+                col_name = [
+                    col_name
+                ]  # needed in order to get a table instead of a column
+            table = table[col_name]
 
         # Get patches
-        if patchName is not None:
-            pindx = self._getNameIndx(patchName, patch=True)
+        if patch_name is not None:
+            pindx = self._get_name_index(patch_name, patch=True)
             if pindx is not None:
                 table = table.groups[pindx]
 
         # Get sources
-        if sourceName is not None:
-            sindx = self._getNameIndx(sourceName)
+        if source_name is not None:
+            sindx = self._get_name_index(source_name)
             if sindx is not None:
                 table = table[sindx]
 
         # Sort if desired
-        if sortBy is not None:
-            colName = self._verifyColName(sortBy)
-            indx = table.argsort(colName)
-            if not lowToHigh:
+        if sort_by is not None:
+            col_name = self._verify_column_name(sort_by)
+            indx = table.argsort(col_name)
+            if not low_to_high:
                 indx = indx[::-1]
             table = table[indx]
 
         table.more(show_unit=True)
 
-    def _verifyColName(self, colName, onlyExisting=True, applyBeam=False,
-                       quiet=False):
+    def _verify_column_name(self, col_name, only_existing=True, quiet=False):
         """
         Verifies that column(s) exist and returns correctly formatted string or
         list of strings suitable for accessing the data table.
 
         Parameters
         ----------
-        colName : str, list of str
+        col_name : str, list of str
             Name of column or columns
-        onlyExisting : bool, optional
+        only_existing : bool, optional
             If True, only columns that exist in the table are allowed. If False,
             columns that are valid but do not exist in the table are returned
             without error.
-        applyBeam : bool, optional
-            If True and colName = 'I', the attenuated Stokes I column will be
-            returned
         quiet : bool, optional
             If True, errors will be suppressed
 
         Returns
         -------
-        colName : str, None
-            Properly formatted name of column or None if colName not found
+        col_name : str, None
+            Properly formatted name of column or None if col_name not found
 
         """
-        if type(colName) is str:
-            colNameLower = colName.lower()
-            if colNameLower not in tableio.allowedColumnNames:
+        if isinstance(col_name, str):
+            col_name_lower = col_name.lower()
+            if col_name_lower not in tableio.allowedColumnNames:
                 if not quiet:
-                    raise ValueError('Column name "{0}" is not a valid makesourcedb '
-                                     'column.'.format(colName))
+                    raise ValueError(
+                        f"Column name {col_name!r} is not a valid makesourcedb "
+                        "column."
+                    )
                 return None
-            else:
-                colNameKey = tableio.allowedColumnNames[colNameLower]
-            if colNameKey not in self.table.keys() and onlyExisting:
+            col_name_key = tableio.allowedColumnNames[col_name_lower]
+            if col_name_key not in self.table.keys() and only_existing:
                 if not quiet:
-                    raise ValueError('Column name "{0}" not found in sky model.'.
-                                     format(colName))
+                    raise ValueError(
+                        f"Column name {col_name!r} not found in sky model."
+                    )
                 return None
 
-        elif type(colName) is list:
-            colNameLower = [c.lower() for c in colName]
-            for name in colNameLower[:]:
-                badNames = []
+        elif isinstance(col_name, list):
+            col_name_lower = [c.lower() for c in col_name]
+            for name in col_name_lower[:]:
+                bad_names = []
                 if name not in tableio.allowedColumnNames:
-                    badNames.append(name)
-                    colNameLower.remove(name)
+                    bad_names.append(name)
+                    col_name_lower.remove(name)
                 else:
-                    colNameKey = tableio.allowedColumnNames[name]
-                    if colNameKey not in self.table.keys():
-                        badNames.append(name)
-                        colNameLower.remove(name)
+                    col_name_key = tableio.allowedColumnNames[name]
+                    if col_name_key not in self.table.keys():
+                        bad_names.append(name)
+                        col_name_lower.remove(name)
 
-            if len(badNames) > 0:
-                if len(badNames) == 1:
-                    plur = ''
+            if len(bad_names) > 0:
+                if len(bad_names) == 1:
+                    plur = ""
                 else:
-                    plur = 's'
+                    plur = "s"
                 if not quiet:
-                    self.log.warning("Column name{0} '{1}' not recognized. Ignoring.".
-                                     format(plur, ','.join(badNames)))
-            if len(colNameLower) == 0:
+                    self.log.warning(
+                        "Column name%s %r not recognized. Ignoring.",
+                        plur,
+                        ",".join(bad_names),
+                    )
+            if len(col_name_lower) == 0:
                 return None
-            else:
-                colNameKey = [tableio.allowedColumnNames[n] for n in colNameLower]
+            col_name_key = [
+                tableio.allowedColumnNames[n] for n in col_name_lower
+            ]
         else:
-            colNameKey = None
+            col_name_key = None
 
-        return colNameKey
+        return col_name_key
 
-    def getPatchPositions(self, patchName=None, asArray=False, method=None,
-                          applyBeam=False, perPatchProjection=True):
+    def getPatchPositions(
+        self,
+        patchName=None,
+        asArray=False,
+        method=None,
+        applyBeam=False,
+        perPatchProjection=True,
+    ):
         """
-        Returns arrays or a dict of patch positions (as {'patchName':(RA, Dec)}).
+        Returns arrays or a dict of patch positions (as {'patchName':(RA,
+        Dec)}).
 
         Parameters
         ----------
@@ -432,10 +519,11 @@ class SkyModel(object):
             model, if any, will be returned.
             - 'mid' => calculate the midpoint of the patch
             - 'mean' => calculate the mean RA and Dec of the patch
-            - 'wmean' => calculate the flux-weighted mean RA and Dec of the patch
+            - 'wmean' => calculate the flux-weighted mean RA and Dec of the
+               patch
             - None => current patch positions are returned
-            Note that the mid, mean, and wmean positions are calculated from TAN-
-            projected values.
+            Note that the mid, mean, and wmean positions are calculated from
+            TAN- projected values.
         applyBeam : bool, optional
             If True, fluxes used as weights will be attenuated by the beam.
         perPatchProjection : bool, optional
@@ -445,112 +533,137 @@ class SkyModel(object):
         Returns
         -------
         positions : numpy.ndarray or dict
-            (RA, Dec) arrays (if asArray is False) of patch positions or a
+            (RA, Dec) arrays (if as_array is False) of patch positions or a
             dictionary of {'patchName':(RA, Dec)}.
 
         Examples
         --------
         Get the current patch positions::
 
-            >>> s.getPatchPositions()
-            {'bin0': [<Angle 91.77565208333331 deg>, <Angle 41.57834805555555 deg>],
-             'bin1': [<Angle 91.59991874999997 deg>, <Angle 41.90387583333333 deg>],
-             'bin2': [<Angle 90.83773333333332 deg>, <Angle 42.189861944444445 deg>],
+        >>> s.getPatchPositions()
+        {'bin0': [<Angle 91.77565208333331 deg>, <Angle 41.57834805555555 deg>],
+        'bin1': [<Angle 91.59991874999997 deg>, <Angle 41.90387583333333 deg>],
+        'bin2': [<Angle 90.83773333333332 deg>, <Angle 42.189861944444445 deg>],
 
         Get them as RA and Dec arrays in degrees::
 
-            >>> s.getPatchPositions(asArray=True)
-            (array([ 91.77565208,  91.59991875,  90.83773333]),
-             array([ 41.57834806,  41.90387583,  42.18986194]))
+        >>> s.getPatchPositions(asArray=True)
+        (array([ 91.77565208,  91.59991875,  90.83773333]),
+        array([ 41.57834806,  41.90387583,  42.18986194]))
 
         Calculate the flux-weighted mean positions of each patch::
 
-            >>> s.getPatchPositions(method='wmean', asArray=True)
+        >>> s.getPatchPositions(method="wmean", asArray=True)
 
         """
+        patch_name = patchName
+        as_array = asArray
+        apply_beam = applyBeam
+        per_patch_projection = perPatchProjection
+
         if self.hasPatches:
-            if patchName is None:
-                patchName = self.getPatchNames()
-            if type(patchName) not in (list, np.ndarray):
-                patchName = [patchName]
+            if patch_name is None:
+                patch_name = self.getPatchNames()
+            if type(patch_name) not in (list, np.ndarray):
+                patch_name = [patch_name]
             if method is None:
-                patchDict = {}
-                for patch in patchName:
+                patch_dict = {}
+                for patch in patch_name:
                     if patch in self.table.meta:
-                        patchDict[patch] = self.table.meta[patch]
+                        patch_dict[patch] = self.table.meta[patch]
                     else:
-                        patchDict[patch] = [Angle(0.0, unit=u.deg), Angle(0.0, unit=u.deg)]
+                        patch_dict[patch] = [
+                            Angle(0.0, unit=u.deg),
+                            Angle(0.0, unit=u.deg),
+                        ]
             else:
-                patchDict = {}
+                patch_dict = {}
 
                 # Add projected x and y columns.
-                if perPatchProjection:
+                if per_patch_projection:
                     # Each patch has a different projection center
-                    xAll = []  # has length = num of sources
-                    yAll = []
-                    wcsAll = []
-                    for name in patchName:
+                    x_all = []  # has length = num of sources
+                    y_all = []
+                    wcs_all = []
+                    for name in patch_name:
                         patch_indices = self.getRowIndex(name)
-                        patch_ra = self.table['Ra'][patch_indices]
-                        patch_dec = self.table['Dec'][patch_indices]
-
+                        patch_ra = self.table["Ra"][patch_indices]
+                        patch_dec = self.table["Dec"][patch_indices]
                         x, y, wcs = self._get_xy(patch_ra, patch_dec)
-                        xAll.extend(x)
-                        yAll.extend(y)
-                        wcsAll.append(wcs)
+                        x_all.extend(x)
+                        y_all.extend(y)
+                        wcs_all.append(wcs)
                 else:
-                    xAll, yAll, wcs = self._get_xy()
-                    wcsAll = [wcs] * len(patchName)
+                    x_all, y_all, wcs = self._get_xy()
+                    wcs_all = [wcs] * len(patch_name)
 
-                xCol = Column(name='X', data=xAll)
-                yCol = Column(name='Y', data=yAll)
-                self.table.add_column(xCol)
-                self.table.add_column(yCol)
+                x_col = Column(name="X", data=x_all)
+                y_col = Column(name="Y", data=y_all)
+                self.table.add_column(x_col)
+                self.table.add_column(y_col)
 
                 positions = []
-                if method == 'mid':
-                    minX = self._getMinColumn('X')
-                    maxX = self._getMaxColumn('X')
-                    minY = self._getMinColumn('Y')
-                    maxY = self._getMaxColumn('Y')
-                    midX = minX + (maxX - minX) / 2.0
-                    midY = minY + (maxY - minY) / 2.0
-                    for i, name in enumerate(patchName):
-                        RA, Dec = wcsAll[i].wcs_pix2world(midX[i], midY[i], 0)
-                        positions.append((RA.item(), Dec.item()))
-                elif method == 'mean' or method == 'wmean':
-                    if method == 'mean':
+                if method == "mid":
+                    min_x = self._get_min_column("X")
+                    max_x = self.get_max_column("X")
+                    min_y = self._get_min_column("Y")
+                    max_y = self.get_max_column("Y")
+                    mid_x = min_x + (max_x - min_x) / 2.0
+                    mid_y = min_y + (max_y - min_y) / 2.0
+                    for i, _ in enumerate(patch_name):
+                        ra, dec = wcs_all[i].wcs_pix2world(
+                            mid_x[i], mid_y[i], 0
+                        )
+                        positions.append((ra.item(), dec.item()))
+                elif method in {"mean", "wmean"}:
+                    if method == "mean":
                         weight = False
                     else:
                         weight = True
-                    meanX = self._getAveragedColumn('X', applyBeam=applyBeam,
-                                                    weight=weight)
-                    meanY = self._getAveragedColumn('Y', applyBeam=applyBeam,
-                                                    weight=weight)
-                    for i, name in enumerate(patchName):
-                        RA, Dec = wcsAll[i].wcs_pix2world(meanX[i], meanY[i], 0)
-                        positions.append((RA.item(), Dec.item()))
+                    mean_x = self._get_averaged_column(
+                        "X", apply_beam=apply_beam, weight=weight
+                    )
+                    mean_y = self._get_averaged_column(
+                        "Y", apply_beam=apply_beam, weight=weight
+                    )
+                    for i, _ in enumerate(patch_name):
+                        ra, dec = wcs_all[i].wcs_pix2world(
+                            mean_x[i], mean_y[i], 0
+                        )
+                        positions.append((ra.item(), dec.item()))
                 if positions:
-                    RANorm, DecNorm = tableio.RADec2Angle(*map(list, zip(*positions)))
-                    patchDict = dict(zip(patchName, zip(RANorm, DecNorm)))
-                self.table.remove_column('X')
-                self.table.remove_column('Y')
+                    ra_norm, dec_norm = tableio.RADec2Angle(
+                        *map(list, zip(*positions, strict=True))
+                    )
+                    patch_dict = dict(
+                        zip(
+                            patch_name,
+                            zip(ra_norm, dec_norm, strict=True),
+                            strict=True,
+                        )
+                    )
 
-            if asArray:
-                RA = []
-                Dec = []
-                for patch in patchName:
-                    RA.append(patchDict[patch][0].value)
-                    Dec.append(patchDict[patch][1].value)
-                return np.array(RA), np.array(Dec)
-            else:
-                return patchDict
+                self.table.remove_column("X")
+                self.table.remove_column("Y")
 
-        else:
-            return None
+            if as_array:
+                ra = []
+                dec = []
+                for patch in patch_name:
+                    ra.append(patch_dict[patch][0].value)
+                    dec.append(patch_dict[patch][1].value)
+                return np.array(ra), np.array(dec)
+            return patch_dict
 
-    def setPatchPositions(self, patchDict=None, method='mid', applyBeam=False,
-                          perPatchProjection=True):
+        return None
+
+    def setPatchPositions(
+        self,
+        patchDict=None,
+        method="mid",
+        applyBeam=False,
+        perPatchProjection=True,
+    ):
         """
         Sets the patch positions.
 
@@ -562,7 +675,7 @@ class SkyModel(object):
             If None, positions are set for all patches using the method given
             by the 'method' parameter.
         method : None or str, optional
-            If no patchDict is given, this parameter specifies the method used
+            If no patch_dict is given, this parameter specifies the method used
             to set the patch positions:
             - 'mid' => the position is set to the midpoint of the patch
             - 'mean' => the position is set to the mean RA and Dec of the patch
@@ -570,8 +683,8 @@ class SkyModel(object):
             Dec of the patch
             - 'zero' => set all positions to [0.0, 0.0]
 
-            Note that the mid, mean, and wmean positions are calculated from TAN-
-            projected values.
+            Note that the mid, mean, and wmean positions are calculated from
+            TAN- projected values.
         applyBeam : bool, optional
             If True, fluxes used as weights will be attenuated by the beam.
         perPatchProjection : bool, optional
@@ -582,52 +695,69 @@ class SkyModel(object):
         --------
         Set all patch positions to their (projected) midpoints::
 
-            >>> s.setPatchPositions()
+        >>> s.setPatchPositions()
 
         Set all patch positions to their (projected) flux-weighted mean
         positions::
 
-             >>> s.setPatchPositions(method='wmean')
+        >>> s.setPatchPositions(method="wmean")
 
         Set new position for the 'bin0' patch only::
 
-            >>> s.setPatchPositions({'bin0': [123.231, 23.4321]})
+        >>> s.setPatchPositions({"bin0": [123.231, 23.4321]})
 
         """
-        if self.hasPatches:
-            if method not in ['mid', 'mean', 'wmean', 'zero']:
-                raise ValueError('Invalid method parameter')
+        patch_dict = patchDict
+        apply_beam = applyBeam
+        per_patch_projection = perPatchProjection
 
-            if patchDict is None:
+        if self.hasPatches:
+            if method not in ["mid", "mean", "wmean", "zero"]:
+                raise ValueError("Invalid method parameter")
+
+            if patch_dict is None:
                 # Delete any previous patch positions
-                patchNames = self.getPatchNames()
-                for patchName in patchNames:
-                    if patchName in self.table.meta:
-                        self.table.meta.pop(patchName)
-                if method == 'zero':
-                    patchDict = {}
-                    for n in patchNames:
-                        patchDict[n] = [Angle(0.0, unit=u.deg), Angle(0.0, unit=u.deg)]
+                patch_names = self.getPatchNames()
+                for patch_name in patch_names:
+                    if patch_name in self.table.meta:
+                        self.table.meta.pop(patch_name)
+                if method == "zero":
+                    patch_dict = {}
+                    for n in patch_names:
+                        patch_dict[n] = [
+                            Angle(0.0, unit=u.deg),
+                            Angle(0.0, unit=u.deg),
+                        ]
                 else:
-                    patchDict = self.getPatchPositions(method=method, applyBeam=applyBeam,
-                                                       perPatchProjection=perPatchProjection)
+                    patch_dict = self.getPatchPositions(
+                        method=method,
+                        applyBeam=apply_beam,
+                        perPatchProjection=per_patch_projection,
+                    )
             else:
                 # Get positions for those patches that need them
-                patchNames = [patch for patch, pos in patchDict.items() if pos is None]
-                patchDictNoPos = self.getPatchPositions(method=method, applyBeam=applyBeam,
-                                                        patchName=patchNames,
-                                                        perPatchProjection=False)
-                patchDict.update(patchDictNoPos)
+                patch_names = [
+                    patch for patch, pos in patch_dict.items() if pos is None
+                ]
+                patch_dict_no_pos = self.getPatchPositions(
+                    method=method,
+                    applyBeam=apply_beam,
+                    patchName=patch_names,
+                    perPatchProjection=False,
+                )
+                patch_dict.update(patch_dict_no_pos)
 
-            for patch, pos in patchDict.items():
-                if type(pos[0]) is str or type(pos[0]) is float:
-                    ra, dec = tableio.RADec2Angle(pos[0], pos[1])
+            for patch, pos in patch_dict.items():
+                if isinstance(pos[0], str) or isinstance(pos[0], float):
+                    ra, dec = tableio.RADec2Angle(*pos)
                     # Each patch stores scalar Angles, not length-one arrays.
-                    pos = [ra[0], dec[0]]
-                self.table.meta[patch] = list(pos)
-            self._addHistory("SETPATCHPOSITIONS (method = '{0}')".format(method))
+                    self.table.meta[patch] = [ra[0], dec[0]]
+                else:
+                    self.table.meta[patch] = list(pos)
+
+            self._add_history(f"SETPATCHPOSITIONS (method = {method!r})")
         else:
-            raise RuntimeError('Sky model does not have patches.')
+            raise RuntimeError("Sky model does not have patches.")
 
     def _get_midpoint(self, ra=None, dec=None, *, crdelt=None):
         """
@@ -646,15 +776,15 @@ class SkyModel(object):
 
         Returns
         -------
-        midRA, midDec : float
+        ra_midpoint, dec_midpoint : float
             Midpoint RA and Dec values.
         """
-        ra = self.table['Ra'] if ra is None else ra
-        dec = self.table['Dec'] if dec is None else dec
+        ra = self.table["Ra"] if ra is None else ra
+        dec = self.table["Dec"] if dec is None else dec
 
         if len(ra) == 0:
             return 0, 0
-        elif len(ra) == 1:
+        if len(ra) == 1:
             ra_midpoint, dec_midpoint = ra[0], dec[0]
         else:
             wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
@@ -670,7 +800,6 @@ class SkyModel(object):
             ra_midpoint, dec_midpoint = ra[xind[midxind]], dec[yind[midyind]]
 
         return normalize_ra_dec(ra_midpoint, dec_midpoint)
-
 
     def _get_xy(self, ra=None, dec=None, *, crdelt=None):
         """
@@ -690,12 +819,12 @@ class SkyModel(object):
         Returns
         -------
         x, y : numpy.ndarray
-            Arrays of x and y values.
+            Arrays of x and y values
         wcs : astropy.wcs.WCS
             WCS object used for the projection.
         """
-        ra = self.table['Ra'] if ra is None else ra
-        dec = self.table['Dec'] if dec is None else dec
+        ra = self.table["Ra"] if ra is None else ra
+        dec = self.table["Dec"] if dec is None else dec
 
         if len(ra) == 0:
             return [], [], None
@@ -708,20 +837,20 @@ class SkyModel(object):
 
     def getDefaultValues(self):
         """
-        Returns dict of {colName:default} values for all columns with defaults.
+        Returns dict of {col_name:default} values for all columns with defaults.
 
         Returns
         -------
-        defaultDict : dict
-            Dict of {colName:default} values
+        default_dict : dict
+            Dict of {col_name:default} values
 
         """
-        colNames = self.getColNames()
-        defaultDict = {}
-        for colName in colNames:
-            if colName in self.table.meta:
-                defaultDict[colName] = self.table.meta[colName]
-        return defaultDict
+        col_names = self.getColNames()
+        default_dict = {}
+        for col_name in col_names:
+            if col_name in self.table.meta:
+                default_dict[col_name] = self.table.meta[col_name]
+        return default_dict
 
     def setDefaultValues(self, colDict):
         """
@@ -731,18 +860,18 @@ class SkyModel(object):
         ----------
         colDict : dict
             Dict specifying column names and default values as
-            {'colName':value} where the value is in the units accepted by
-            makesourcedb (e.g., Hz for 'ReferenceFrequency').
+            {'col_name':value} where the value is in the units accepted by
+            makesourcedb (e.g., Hz for 'Reference_frequency').
 
         Examples
         --------
         Set new default value for ReferenceFrequency::
 
-            >>> s.setDefaultValues({'ReferenceFrequency': 140e6})
+        >>> s.setDefaultValues({"ReferenceFrequency": 140e6})
 
         """
-        for colName, default in colDict.items():
-            self.table.meta[colName] = default
+        for col_name, default in colDict.items():
+            self.table.meta[col_name] = default
 
     def ungroup(self):
         """
@@ -752,16 +881,16 @@ class SkyModel(object):
         --------
         Remove all patches::
 
-            >>> s.ungroup()
+        >>> s.ungroup()
 
         """
         if self.hasPatches:
-            for patchName in self.getPatchNames():
-                if patchName in self.table.meta:
-                    self.table.meta.pop(patchName)
-            self.table.remove_column('Patch')
+            for patch_name in self.getPatchNames():
+                if patch_name in self.table.meta:
+                    self.table.meta.pop(patch_name)
+            self.table.remove_column("Patch")
             self._updateGroups()
-            self._addHistory('UNGROUP')
+            self._add_history("UNGROUP")
             self._info()
 
     def getColNames(self):
@@ -770,20 +899,21 @@ class SkyModel(object):
 
         Returns
         -------
-        colNames : list
+        col_names : list
             List of all column names
 
         Examples
         --------
         Get column names::
 
-            >>> s.getColNames()
+        >>> s.getColNames()
 
         """
         return self.table.keys()
 
-    def getColValues(self, colName, units=None, aggregate=None,
-                     applyBeam=False):
+    def getColValues(
+        self, colName, units=None, aggregate=None, applyBeam=False
+    ):
         """
         Returns a numpy array of column values.
 
@@ -807,9 +937,9 @@ class SkyModel(object):
                 - 'max': maximum of patch values
 
             Note that, in some cases, certain aggregation functions will not
-            produce meaningful results. For example, asking for the sum of
-            the MajorAxis values per patch will not give a good indication of
-            the size of the patch (to get the sizes, use the getPatchSizes()
+            produce meaningful results. For example, asking for the sum of the
+            MajorAxis values per patch will not give a good indication of the
+            size of the patch (to get the sizes, use the getPatchSizes()
             method). Additionally, applying the 'mean' or 'wmean' functions to
             the RA or Dec columns may give strange results near the poles or
             near RA = 0h. For aggregated RA and Dec values, use the
@@ -821,7 +951,7 @@ class SkyModel(object):
 
         Returns
         -------
-        colValues : numpy.ndarray
+        col_values : numpy.ndarray
             Independent array of column values. Modifying it does not change
             the sky model. None is returned if column is not found.
 
@@ -829,42 +959,46 @@ class SkyModel(object):
         --------
         Get Stokes I fluxes in Jy::
 
-            >>> s.getColValues('I')
-            array([ 60.4892,   1.2413,   1.216 , ...,   1.12  ,   1.25  ,   1.16  ])
+        >>> s.getColValues("I")
+        array([ 60.4892,   1.2413,   1.216 , ...,   1.12  ,   1.25  ,   1.16  ])
 
         Get Stokes I fluxes in mJy::
 
-            >>> s.getColValues('I', units='mJy')
-            array([ 60489.2,   1241.3,   1216. , ...,   1120. ,   1250. ,   1160. ])
+        >>> s.getColValues("I", units="mJy")
+        array([ 60489.2,   1241.3,   1216. , ...,   1120. ,   1250. ,   1160. ])
 
         Get total Stokes I flux for the patches::
 
-            >>> s.getColValues('I', aggregate='sum')
-            array([ 61.7305,   1.216 ,   3.9793, ...,   1.12  ,   1.25  ,   1.16  ])
+        >>> s.getColValues("I", aggregate="sum")
+        array([ 61.7305,   1.216 ,   3.9793, ...,   1.12  ,   1.25  ,   1.16  ])
 
-        Get flux-weighted average RA and Dec for the patches. As noted above, the
-        getColValues() method is not appropriate for use with RA or Dec, so
-        we must use getPatchPositions() instead::
+        Get flux-weighted average RA and Dec for the patches. As noted above,
+        the getColValues() method is not appropriate for use with RA or Dec,
+        so we must use getPatchPositions() instead::
 
-            >>> RA, Dec = s.getPatchPositions(method='wmean', asArray=True)
+        >>> ra, dec = s.getPatchPositions(method="wmean", asArray=True)
 
         """
-        colName = self._verifyColName(colName)
-        if colName is None:
-            return None
-        if type(colName) is list:
-            if len(colName) > 1:
-                raise ValueError('Only one column can be specified.')
-            else:
-                colName = colName[0]
+        col_name = colName
+        apply_beam = applyBeam
 
-        allowedFcns = ['sum', 'mean', 'wmean', 'min', 'max']
-        if aggregate not in allowedFcns and aggregate is not None:
+        col_name = self._verify_column_name(col_name)
+        if col_name is None:
+            return None
+        if isinstance(col_name, list):
+            if len(col_name) > 1:
+                raise ValueError("Only one column can be specified.")
+            col_name = col_name[0]
+
+        allowed_fcns = ["sum", "mean", "wmean", "min", "max"]
+        if aggregate not in allowed_fcns and aggregate is not None:
             raise ValueError("Value of parameter 'aggregate' not understood.")
-        if aggregate in allowedFcns and self.hasPatches:
-            col = self._getAggregatedColumn(colName, aggregate, applyBeam=applyBeam)
+        if aggregate in allowed_fcns and self.hasPatches:
+            col = self.get_aggregated_column(
+                col_name, aggregate, apply_beam=apply_beam
+            )
         else:
-            col = self._getColumn(colName, applyBeam=applyBeam)
+            col = self._get_column(col_name, apply_beam=apply_beam)
 
         if col is None:
             return None
@@ -872,9 +1006,9 @@ class SkyModel(object):
         # Filling a masked column already creates independent storage.
         # Aggregation and beam attenuation also produce owned columns; only
         # an unmodified table column needs an explicit copy here.
-        if hasattr(col, 'filled'):
+        if hasattr(col, "filled"):
             outcol = col.filled()
-        elif col is self.table[colName]:
+        elif col is self.table[col_name]:
             outcol = col.copy()
         else:
             outcol = col
@@ -894,7 +1028,7 @@ class SkyModel(object):
             Name of column. If not already present in the table, a new column
             will be created.
         values : list, numpy.ndarray, or dict
-            Array of values or dict of {sourceName:value} pairs. If list or
+            Array of values or dict of {source_name:value} pairs. If list or
             array, the length must match the number of rows in the table. If
             dict, missing values will be masked unless already present. Values
             are assumed to be in units required by makesourcedb.
@@ -909,60 +1043,65 @@ class SkyModel(object):
         --------
         Set Stokes I fluxes::
 
-            >>> s.setColValues('I', [1.0, 1.1, 1.2, 0.0, 1.3], mask=[False,
-                    False, False, True, False])
+        >>> s.setColValues(
+        ...     "I",
+        ...     [1.0, 1.1, 1.2, 0.0, 1.3],
+        ...     mask=[False, False, False, True, False],
+        ... )
 
         """
-        colName = self._verifyColName(colName, onlyExisting=False)
-        if colName is None:
-            return None
-        if type(colName) is list:
-            if len(colName) > 1:
-                raise ValueError('Only one column can be specified.')
-            else:
-                colName = colName[0]
+        col_name = colName
+
+        col_name = self._verify_column_name(col_name, only_existing=False)
+        if col_name is None:
+            return
+        if isinstance(col_name, list):
+            if len(col_name) > 1:
+                raise ValueError("Only one column can be specified.")
+            col_name = col_name[0]
 
         if isinstance(values, dict):
-            if colName in self.table.keys():
-                data = self.table[colName].data
-                mask = self.table[colName].mask
+            if col_name in self.table.keys():
+                data = self.table[col_name].data
+                mask = self.table[col_name].mask
             else:
                 data = [0] * len(self.table)
                 mask = [True] * len(self.table)
-            for sourceName, value in values.items():
-                indx = self._getNameIndx(sourceName)
-                if colName == 'Ra' or colName == 'Dec':
+            for source_name, value in values.items():
+                indx = self._get_name_index(source_name)
+                if col_name in {"Ra", "Dec"}:
                     val = Angle(value, unit=u.deg)
                 else:
                     val = value
                 data[indx] = val
                 mask[indx] = False
+        elif len(values) != len(self.table):
+            raise ValueError(
+                "Length of input values must match length of table."
+            )
         else:
-            if len(values) != len(self.table):
-                raise ValueError('Length of input values must match length of table.')
+            if col_name in {"Ra", "Dec"}:
+                vals = Angle(values, unit=u.deg)
             else:
-                if colName == 'Ra' or colName == 'Dec':
-                    vals = Angle(values, unit=u.deg)
-                else:
-                    vals = values
-                data = vals
+                vals = values
+            data = vals
 
         if mask is not None:
             data = np.ma.masked_array(data, mask)
         else:
             data = np.array(data)
-        if colName in self.table.keys():
-            units = self.table.columns[colName].unit
-            self.table[colName] = data
-            self.table.columns[colName].unit = units
+        if col_name in self.table.keys():
+            units = self.table.columns[col_name].unit
+            self.table[col_name] = data
+            self.table.columns[col_name].unit = units
         else:
-            if colName == 'Patch':
+            if col_name == "Patch":
                 # Specify length of 50 characters
-                newCol = Column(name=colName, data=data, dtype='U50')
+                new_col = Column(name=col_name, data=data, dtype="U50")
             else:
-                newCol = Column(name=colName, data=data)
-            self.table.add_column(newCol, index=index)
-        if colName == 'Patch':
+                new_col = Column(name=col_name, data=data)
+            self.table.add_column(new_col, index=index)
+        if col_name == "Patch":
             self._updateGroups()
 
     def getRowValues(self, rowName):
@@ -976,7 +1115,7 @@ class SkyModel(object):
 
         Returns
         -------
-        rowValues : astropy table or row
+        row_values : astropy table or row
             Table (if more than one source) or row (if one source). None is
             returned if source is not found.
 
@@ -984,29 +1123,32 @@ class SkyModel(object):
         --------
         Get row values for the source 'src1'::
 
-            >>> rows = s.getRowValues('src1')
+        >>> rows = s.getRowValues("src1")
 
         Sum over the fluxes of sources in the 'bin1' patch::
 
-            >>> tot = 0.0
-            >>> for row in s.getRowValues('bin1'): tot += row['I']
+        >>> tot = 0.0
+        ... for row in s.getRowValues("bin1"):
+        ...     tot += row["I"]
 
         """
-        # Check first for the rowName as a patch name. If no patch matches (or
+        row_name = rowName
+
+        # Check first for the row_name as a patch name. If no patch matches (or
         # the model is not grouped into patches), Try it as a source name. This
         # logic should work even if a row has the same name for the source and
         # its patch, as in this case the patch and source row index are
         # identical (since such a patch can have only one member source)
-        if self.hasPatches and rowName in self.getPatchNames():
-            pindx = self._getNameIndx(rowName, patch=True)
+        if self.hasPatches and row_name in self.getPatchNames():
+            pindx = self._get_name_index(row_name, patch=True)
             table = self.table.groups[pindx]
-            table = table.group_by('Patch')  # ensure that grouping is preserved
-            return table
-        elif rowName in self.getColValues('Name'):
-            indx = self._getNameIndx(rowName)
+            return table.group_by("Patch")  # ensure that grouping is preserved
+
+        if row_name in self.getColValues("Name"):
+            indx = self._get_name_index(row_name)
             return self.table.filled()[indx]
-        else:
-            raise ValueError("Row name '{0}' not recognized.".format(rowName))
+
+        raise ValueError(f"Row name {row_name!r} not recognized.")
 
     def getRowIndex(self, rowName):
         """
@@ -1032,33 +1174,35 @@ class SkyModel(object):
         --------
         Get row index for the source 'src1'::
 
-            >>> s.getRowIndex('src1')
-            array([0])
+        >>> s.getRowIndex("src1")
+        array([0])
 
         Get row indices for the patch 'bin1' and verify the patch name::
 
-            >>> ind = s.getRowIndex('bin1')
-            >>> print(s.getColValues('patch')[ind])
-            ['bin1', 'bin1', 'bin1']
+        >>> ind = s.getRowIndex("bin1")
+        ... print(s.getColValues("patch")[ind])
+        ['bin1', 'bin1', 'bin1']
 
         """
+        row_name = rowName
+
         # Patch members occupy contiguous rows in the grouped table.
         if self.hasPatches:
-            patchNames = self.table.groups.keys['Patch']
-            patchInd = np.where(patchNames == rowName)[0]
+            patch_names = self.table.groups.keys["Patch"]
+            patch_ind = np.where(patch_names == row_name)[0]
 
-            if len(patchInd) > 0:
-                groupInd = patchInd[0]
-                start = self.table.groups.indices[groupInd]
-                end = self.table.groups.indices[groupInd + 1]
+            if len(patch_ind) > 0:
+                group_ind = patch_ind[0]
+                start = self.table.groups.indices[group_ind]
+                end = self.table.groups.indices[group_ind + 1]
                 return slice(start, end)
 
-        indices = np.flatnonzero(self.table['Name'] == rowName)
+        indices = np.flatnonzero(self.table["Name"] == row_name)
         if indices.size:
             return indices
-        raise ValueError("Row name '{0}' not recognized.".format(rowName))
+        raise ValueError(f"Row name {row_name!r} not recognized.")
 
-    def setRowValues(self, values, mask=None, returnVerified=False):
+    def setRowValues(self, values):
         """
         Sets values for a single row.
 
@@ -1068,37 +1212,47 @@ class SkyModel(object):
         Parameters
         ----------
         values : list, numpy.ndarray, or dict
-            Array of values or dict of {colName:value} pairs. If list or
+            Array of values or dict of {col_name:value} pairs. If list or
             array, the length must match the number and order of the columns in
             the table. If dict, missing values will be masked unless already
             present.
-        mask : list or numpy.ndarray of bool, optional
-            If values is a list or array, a mask can be specified (True means
-            the value is masked).
-        returnVerified : bool, optional
-            If True, the values are verified and returned, allowing them to be
-            passed to table.add_row().
 
         Examples
         --------
         Set row values for the source 'src1' (which can be a new source or an
         existing source)::
 
-            >>> s.setRowValues({'Name':'src1', 'Ra':213.123, 'Dec':23.1232,
-                'I':23.2, 'Type':'POINT'})
+        >>> s.setRowValues(
+        ...     {
+        ...         "Name": "src1",
+        ...         "Ra": 213.123,
+        ...         "Dec": 23.1232,
+        ...         "I": 23.2,
+        ...         "Type": "POINT",
+        ...     }
+        ... )
 
         The RA and Dec values can be in degrees (as above) or in makesourcedb
         format. E.g.::
 
-            >>> s.setRowValues({'Name':'src1', 'Ra':'12:22:21.1',
-                'Dec':'+14.46.31.5', 'I':23.2, 'Type':'POINT'})
+        >>> s.setRowValues(
+        ...     {
+        ...         "Name": "src1",
+        ...         "Ra": "12:22:21.1",
+        ...         "Dec": "+14.46.31.5",
+        ...         "I": 23.2,
+        ...         "Type": "POINT",
+        ...     }
+        ... )
 
         """
         # Read model into astropy table object
-        tempLSM = SkyModel(values)
+        temp_skymodel = SkyModel(values)
 
         # Concatenate tables
-        self.concatenate(tempLSM, matchBy='name', keep='from2', inheritPatches=False)
+        self.concatenate(
+            temp_skymodel, matchBy="name", keep="from2", inheritPatches=False
+        )
 
     def getPatchSizes(self, units=None, weight=False, applyBeam=False):
         """
@@ -1122,38 +1276,37 @@ class SkyModel(object):
 
         """
         if self.hasPatches:
-            col = self._getSizeColumn(weight=weight, applyBeam=applyBeam)
+            col = self._get_size_column(weight=weight, apply_beam=applyBeam)
             if units is not None:
                 col.convert_unit_to(units)
             return col.data
-        else:
-            return None
+        return None
 
     def getPatchNames(self):
         """
-        Returns array of all patch names in the sky model, with duplicates removed.
+        Returns array of all patch names in the sky model, with duplicates
+        removed.
 
-        Note: use getColValues('Patch') if you want the patch names for each source
-        in the sky model.
+        Note: use getColValues('Patch') if you want the patch names for each
+        source in the sky model.
 
         Returns
         -------
         names : numpy.ndarray
-            Array of patch names. None is returned if the sky model
-            does not have patches
+            Array of patch names. None is returned if the sky model does not
+            have patches
 
         """
         if self.hasPatches:
-            col = self.table.groups.keys['Patch']
-            if hasattr(col, 'filled'):
+            col = self.table.groups.keys["Patch"]
+            if hasattr(col, "filled"):
                 outcol = col.filled().copy()
             else:
                 outcol = col.copy()
             return outcol.data
-        else:
-            return None
+        return None
 
-    def _getNameIndx(self, name, patch=False):
+    def _get_name_index(self, name, patch=False):
         """
         Returns a list of indices corresponding to the given names.
 
@@ -1179,44 +1332,52 @@ class SkyModel(object):
             else:
                 return None
         else:
-            names = self.getColValues('Name').tolist()
+            names = self.getColValues("Name").tolist()
 
-        if type(name) is str or type(name) is np.bytes_:
-            indx = [i for i, item in enumerate(names) if fnmatch.fnmatch(item, name)]
+        if isinstance(name, str) or isinstance(name, np.bytes_):
+            indx = [
+                i for i, item in enumerate(names) if fnmatch.fnmatch(item, name)
+            ]
             if len(indx) == 0:
                 return None
             return indx
-        elif type(name) is list:
+        if isinstance(name, list):
             indx = []
             for n in name:
-                badNames = []
-                nindx = [i for i, item in enumerate(names) if fnmatch.fnmatch(item, n)]
+                bad_names = []
+                nindx = [
+                    i
+                    for i, item in enumerate(names)
+                    if fnmatch.fnmatch(item, n)
+                ]
                 if len(nindx) == 0:
-                    badNames.append(n)
+                    bad_names.append(n)
                 else:
                     indx += nindx
-            if len(badNames) > 0:
-                if len(badNames) == 1:
-                    plur = ''
+            if len(bad_names) > 0:
+                if len(bad_names) == 1:
+                    plur = ""
                 else:
-                    plur = 's'
-                self.log.warning("Name{0} '{1}' not recognized. Ignoring.".
-                                 format(plur, ','.join(badNames)))
+                    plur = "s"
+                self.log.warning(
+                    "Name%s %r not recognized. Ignoring.",
+                    plur,
+                    ",".join(bad_names),
+                )
             if len(indx) == 0:
                 raise ValueError("None of the specified names were found.")
             return indx
-        else:
-            return None
+        return None
 
-    def _getColumn(self, colName, applyBeam=False):
+    def _get_column(self, col_name, apply_beam=False):
         """
         Returns the appropriate column (nonaggregated).
 
         Parameters
         ----------
-        colName : str
+        col_name : str
             Name of column to get. If not found, None is returned
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, fluxes will be attenuated by the beam
 
         Returns
@@ -1225,25 +1386,27 @@ class SkyModel(object):
             Nonaggregated Column object. Shares storage with the table unless
             beam attenuation is applied; callers must copy before modifying it.
 
-         """
-        colName = self._verifyColName(colName)
-        if colName is None:
+        """
+        col_name = self._verify_column_name(col_name)
+        if col_name is None:
             return None
 
-        col = self.table[colName]
+        col = self.table[col_name]
 
-        if applyBeam and colName in ['I', 'Q', 'U', 'V']:
-            col = self._applyBeamToCol(col.copy())
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
+            col = self._apply_beam_to_col(col.copy())
 
         return col
 
-    def _getAggregatedColumn(self, colName, aggregate='sum', applyBeam=False):
+    def get_aggregated_column(
+        self, col_name, aggregate="sum", apply_beam=False
+    ):
         """
         Returns the appropriate column aggregated by group.
 
         Parameters
         ----------
-        colName : str
+        col_name : str
             Name of column to get. If not found, None is returned
         aggregate : str, optional
             If set, the array returned will be of values aggregated
@@ -1254,7 +1417,7 @@ class SkyModel(object):
                 - 'wmean': Stokes I weighted mean of patch values
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, fluxes will be attenuated by the beam
 
         Returns
@@ -1262,28 +1425,30 @@ class SkyModel(object):
         col : astropy Column
             Column object with aggregated values
 
-         """
-        colName = self._verifyColName(colName)
-        if colName is None:
+        """
+        col_name = self._verify_column_name(col_name)
+        if col_name is None:
             return None
 
-        if aggregate == 'mean':
-            col = self._getAveragedColumn(colName, weight=False,
-                                          applyBeam=applyBeam)
-        elif aggregate == 'wmean':
-            col = self._getAveragedColumn(colName, weight=True,
-                                          applyBeam=applyBeam)
-        elif aggregate == 'sum':
-            col = self._getSummedColumn(colName, applyBeam=applyBeam)
-        elif aggregate == 'min':
-            col = self._getMinColumn(colName, applyBeam=applyBeam)
-        elif aggregate == 'max':
-            col = self._getMaxColumn(colName, applyBeam=applyBeam)
+        if aggregate == "mean":
+            col = self._get_averaged_column(
+                col_name, weight=False, apply_beam=apply_beam
+            )
+        elif aggregate == "wmean":
+            col = self._get_averaged_column(
+                col_name, weight=True, apply_beam=apply_beam
+            )
+        elif aggregate == "sum":
+            col = self._get_summed_column(col_name, apply_beam=apply_beam)
+        elif aggregate == "min":
+            col = self._get_min_column(col_name, apply_beam=apply_beam)
+        elif aggregate == "max":
+            col = self.get_max_column(col_name, apply_beam=apply_beam)
         else:
-            raise ValueError('Aggregation function not understood.')
+            raise ValueError("Aggregation function not understood.")
         return col
 
-    def _applyBeamToCol(self, col, patch=False):
+    def _apply_beam_to_col(self, col, patch=False):
         """
         Applies beam attenuation to the column values.
 
@@ -1301,37 +1466,45 @@ class SkyModel(object):
 
         """
 
-        if not self._hasBeam:
-            self.log.warning('No beam MS has been specified. No beam attenuation applied.')
+        if not self._has_beam:
+            self.log.warning(
+                "No beam MS has been specified. No beam attenuation applied."
+            )
             return col
 
         if patch:
-            if self._patchMethod is not None:
+            if self._patch_method is not None:
                 # Try to get patch positions from the meta data
-                RADeg, DecDeg = self.getPatchPositions(asArray=True)
+                ra_deg, dec_deg = self.getPatchPositions(asArray=True)
             else:
                 # If patch positions are not set, use weighted mean positions
-                RADeg = self.getColValues('Ra', applyBeam=True, aggregate='wmean')
-                DecDeg = self.getColValues('Dec', applyBeam=True, aggregate='wmean')
+                ra_deg = self.getColValues(
+                    "Ra", applyBeam=True, aggregate="wmean"
+                )
+                dec_deg = self.getColValues(
+                    "Dec", applyBeam=True, aggregate="wmean"
+                )
         else:
-            RADeg = self.getColValues('Ra')
-            DecDeg = self.getColValues('Dec')
+            ra_deg = self.getColValues("Ra")
+            dec_deg = self.getColValues("Dec")
 
         flux = col.data
-        vals = apply_beam(self.beamMS, flux, RADeg, DecDeg, timeIndx=self.beamTime)
+        vals = apply_beam_operation(
+            self.beamMS, flux, ra_deg, dec_deg, timeIndx=self.beamTime
+        )
         col[:] = vals
 
         return col
 
-    def _getSummedColumn(self, colName, applyBeam=False):
+    def _get_summed_column(self, col_name, apply_beam=False):
         """
         Returns column summed by group.
 
         Parameters
         ----------
-        colName : str
+        col_name : str
             Column name
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, fluxes will be attenuated by the beam
 
         Returns
@@ -1340,29 +1513,30 @@ class SkyModel(object):
             Column object with aggregated sum of values
 
         """
+
         def npsum(array):
             return np.sum(array, axis=0)
 
-        if hasattr(self.table[colName], 'filled'):
-            col = self.table[colName].filled()
-            gcol = col.group_by(self.table['Patch'])
+        if hasattr(self.table[col_name], "filled"):
+            col = self.table[col_name].filled()
+            gcol = col.group_by(self.table["Patch"])
             gcol = gcol.groups.aggregate(npsum)
         else:
-            gcol = self.table[colName].groups.aggregate(npsum)
-        if applyBeam and colName in ['I', 'Q', 'U', 'V']:
-            gcol = self._applyBeamToCol(gcol, patch=True)
+            gcol = self.table[col_name].groups.aggregate(npsum)
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
+            gcol = self._apply_beam_to_col(gcol, patch=True)
 
         return gcol
 
-    def _getMinColumn(self, colName, applyBeam=False):
+    def _get_min_column(self, col_name, apply_beam=False):
         """
         Returns column minimum value by group.
 
         Parameters
         ----------
-        colName : str
+        col_name : str
             Column name
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, fluxes will be attenuated by the beam
 
         Returns
@@ -1371,29 +1545,30 @@ class SkyModel(object):
             Column object with aggregated min values
 
         """
+
         def npmin(array):
             return np.min(array, axis=0)
 
-        if hasattr(self.table[colName], 'filled'):
-            col = self.table[colName].filled()
-            gcol = col.group_by(self.table['Patch'])
+        if hasattr(self.table[col_name], "filled"):
+            col = self.table[col_name].filled()
+            gcol = col.group_by(self.table["Patch"])
             gcol = gcol.groups.aggregate(npmin)
         else:
-            gcol = self.table[colName].groups.aggregate(npmin)
-        if applyBeam and colName in ['I', 'Q', 'U', 'V']:
-            gcol = self._applyBeamToCol(gcol, patch=True)
+            gcol = self.table[col_name].groups.aggregate(npmin)
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
+            gcol = self._apply_beam_to_col(gcol, patch=True)
 
         return gcol
 
-    def _getMaxColumn(self, colName, applyBeam=False):
+    def get_max_column(self, col_name, apply_beam=False):
         """
         Returns column maximum value by group.
 
         Parameters
         ----------
-        colName : str
+        col_name : str
             Column name
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, fluxes will be attenuated by the beam
 
         Returns
@@ -1402,31 +1577,32 @@ class SkyModel(object):
             Column object with aggregated max values
 
         """
+
         def npmax(array):
             return np.max(array, axis=0)
 
-        if hasattr(self.table[colName], 'filled'):
-            col = self.table[colName].filled()
-            gcol = col.group_by(self.table['Patch'])
+        if hasattr(self.table[col_name], "filled"):
+            col = self.table[col_name].filled()
+            gcol = col.group_by(self.table["Patch"])
             gcol = gcol.groups.aggregate(npmax)
         else:
-            gcol = self.table[colName].groups.aggregate(npmax)
-        if applyBeam and colName in ['I', 'Q', 'U', 'V']:
-            gcol = self._applyBeamToCol(gcol, patch=True)
+            gcol = self.table[col_name].groups.aggregate(npmax)
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
+            gcol = self._apply_beam_to_col(gcol, patch=True)
 
         return gcol
 
-    def _getAveragedColumn(self, colName, weight=True, applyBeam=False):
+    def _get_averaged_column(self, col_name, weight=True, apply_beam=False):
         """
         Returns column averaged by group.
 
         Parameters
         ----------
-        colName : str
+        col_name : str
             Column name
         weight : bool, optional
             If True, return average weighted by flux
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, fluxes will be attenuated by the beam
 
         Returns
@@ -1436,40 +1612,44 @@ class SkyModel(object):
 
         """
         if weight:
+
             def npsum(array):
                 return np.sum(array, axis=0)
 
-            if hasattr(self.table[colName], 'filled'):
-                vals = self.table[colName].filled().data
+            if hasattr(self.table[col_name], "filled"):
+                vals = self.table[col_name].filled().data
             else:
-                vals = self.table[colName].data
+                vals = self.table[col_name].data
             if weight:
-                weights = self.getColValues('I', applyBeam=applyBeam)
+                weights = self.getColValues("I", applyBeam=apply_beam)
                 if weights.shape != vals.shape:
                     weights = np.resize(weights, vals.shape)
-                weightCol = Column(name='Weight', data=weights)
-                valWeightCol = Column(name='ValWeight', data=vals*weights)
-                self.table.add_column(valWeightCol)
-                self.table.add_column(weightCol)
-                numer = self.table['ValWeight'].groups.aggregate(npsum).data
-                denom = self.table['Weight'].groups.aggregate(npsum).data
-                self.table.remove_column('ValWeight')
-                self.table.remove_column('Weight')
+                weight_col = Column(name="Weight", data=weights)
+                val_weight_col = Column(name="ValWeight", data=vals * weights)
+                self.table.add_column(val_weight_col)
+                self.table.add_column(weight_col)
+                numer = self.table["ValWeight"].groups.aggregate(npsum).data
+                denom = self.table["Weight"].groups.aggregate(npsum).data
+                self.table.remove_column("ValWeight")
+                self.table.remove_column("Weight")
             else:
-                valCol = Column(name='Val', data=vals)
-                self.table.add_column(valCol)
-                numer = self.table['Val'].groups.aggregate(npsum).data
-                self.table.remove_column('Val')
+                val_col = Column(name="Val", data=vals)
+                self.table.add_column(val_col)
+                numer = self.table["Val"].groups.aggregate(npsum).data
+                self.table.remove_column("Val")
 
-            return Column(name=colName, data=np.array(numer/denom),
-                          unit=self.table[colName].unit)
-        else:
-            def npavg(c):
-                return np.average(c, axis=0)
+            return Column(
+                name=col_name,
+                data=np.array(numer / denom),
+                unit=self.table[col_name].unit,
+            )
 
-            return self.table[colName].groups.aggregate(npavg)
+        def npavg(c):
+            return np.average(c, axis=0)
 
-    def _getSizeColumn(self, weight=True, applyBeam=False):
+        return self.table[col_name].groups.aggregate(npavg)
+
+    def _get_size_column(self, weight=True, apply_beam=False):
         """
         Returns column of source largest angular sizes.
 
@@ -1477,73 +1657,83 @@ class SkyModel(object):
         ----------
         weight : bool, optional
             If True, return size weighted by flux
-        applyBeam : bool, optional
+        apply_beam : bool, optional
             If True, fluxes will be attenuated by the beam
 
         Returns
         -------
         col : astropy Column
-            Column object with sizes from MajorAxis or from aggregated values if
-            the model has patches
+            Column object with sizes from Major_axis or from aggregated values
+            if the model has patches
 
         """
         if weight:
-            method = 'wmean'
+            method = "wmean"
         else:
-            method = 'mean'
+            method = "mean"
 
         if self.hasPatches:
             # Get patch positions
-            RAAvg, DecAvg = self.getPatchPositions(method=method, asArray=True,
-                                                   applyBeam=applyBeam)
+            ra_avg, dec_avg = self.getPatchPositions(
+                method=method, asArray=True, applyBeam=apply_beam
+            )
 
             # Fill out the columns by repeating the average value over the
             # entire group
-            RAAvgFull = np.zeros(len(self.table), dtype=float)
-            DecAvgFull = np.zeros(len(self.table), dtype=float)
+            ra_avg_full = np.zeros(len(self.table), dtype=float)
+            dec_avg_full = np.zeros(len(self.table), dtype=float)
             for i, ind in enumerate(self.table.groups.indices[1:]):
-                RAAvgFull[self.table.groups.indices[i]: ind] = RAAvg[i]
-                DecAvgFull[self.table.groups.indices[i]: ind] = DecAvg[i]
+                ra_avg_full[self.table.groups.indices[i] : ind] = ra_avg[i]
+                dec_avg_full[self.table.groups.indices[i] : ind] = dec_avg[i]
 
-            dist = self._calculateSeparation(self.table['Ra'],
-                                             self.table['Dec'], RAAvgFull, DecAvgFull)
+            dist = self._calculate_separation(
+                self.table["Ra"], self.table["Dec"], ra_avg_full, dec_avg_full
+            )
             if weight:
-                if applyBeam and self._hasBeam:
-                    appFluxes = self.getColValues('I', applyBeam=True)
-                    weightCol = Column(name='Weight', data=appFluxes)
-                    valWeightCol = Column(name='ValWeight', data=dist*appFluxes)
+                if apply_beam and self._has_beam:
+                    app_fluxes = self.getColValues("I", applyBeam=True)
+                    weight_col = Column(name="Weight", data=app_fluxes)
+                    val_weight_col = Column(
+                        name="ValWeight", data=dist * app_fluxes
+                    )
                 else:
-                    weightCol = Column(name='Weight', data=self.table['I'].data)
-                    valWeightCol = Column(name='ValWeight', data=dist*self.table['I'].data)
-                self.table.add_column(valWeightCol)
-                self.table.add_column(weightCol)
-                numer = self.table['ValWeight'].groups.aggregate(np.sum).data * 2.0
-                denom = self.table['Weight'].groups.aggregate(np.sum).data
-                self.table.remove_column('ValWeight')
-                self.table.remove_column('Weight')
-                col = Column(name='Size', data=numer/denom,
-                             unit='degree')
+                    weight_col = Column(
+                        name="Weight", data=self.table["I"].data
+                    )
+                    val_weight_col = Column(
+                        name="ValWeight", data=dist * self.table["I"].data
+                    )
+                self.table.add_column(val_weight_col)
+                self.table.add_column(weight_col)
+                numer = (
+                    self.table["ValWeight"].groups.aggregate(np.sum).data * 2.0
+                )
+                denom = self.table["Weight"].groups.aggregate(np.sum).data
+                self.table.remove_column("ValWeight")
+                self.table.remove_column("Weight")
+                col = Column(name="Size", data=numer / denom, unit="degree")
             else:
-                valCol = Column(name='Val', data=dist)
-                self.table.add_column(valCol)
-                size = self.table['Val'].groups.aggregate(np.max).data * 2.0
-                self.table.remove_column('Val')
-                col = Column(name='Size', data=size, unit='degree')
+                val_col = Column(name="Val", data=dist)
+                self.table.add_column(val_col)
+                size = self.table["Val"].groups.aggregate(np.max).data * 2.0
+                self.table.remove_column("Val")
+                col = Column(name="Size", data=size, unit="degree")
+        elif "majoraxis" in self.table.colnames:
+            col = self.table["Major_axis"]
         else:
-            if 'majoraxis' in self.table.colnames:
-                col = self.table['MajorAxis']
-            else:
-                col = Column(name='Size', data=np.zeros(len(self.table)), unit='degree')
+            col = Column(
+                name="Size", data=np.zeros(len(self.table)), unit="degree"
+            )
 
-        if hasattr(col, 'filled'):
+        if hasattr(col, "filled"):
             outcol = col.filled(fill_value=0.0)
         else:
             outcol = col
-        outcol.convert_unit_to('arcsec')
+        outcol.convert_unit_to("arcsec")
 
         return outcol
 
-    def _calculateSeparation(self, ra1, dec1, ra2, dec2):
+    def _calculate_separation(self, ra1, dec1, ra2, dec2):
         """
         Returns angular separation between two coordinates (all in degrees)
 
@@ -1567,16 +1757,16 @@ class SkyModel(object):
 
         return calculateSeparation(ra1, dec1, ra2, dec2)
 
-    def getDistance(self, RA, Dec, byPatch=False, units=None):
+    def getDistance(self, ra, dec, byPatch=False, units=None):
         """
         Returns angular distance for each source or patch to specified position
 
         Parameters
         ----------
-        RA : float or str
+        ra : float or str
             RA of position to which the distance is desired (in degrees or
             makesourcedb format)
-        Dec : float or str
+        dec : float or str
             Dec of position to which the distance is desired (in degrees or
             makesourcedb format)
         byPatch : bool, optional
@@ -1593,42 +1783,51 @@ class SkyModel(object):
         --------
         Find distance in degrees to a position for all sources::
 
-            >>> s.getDistance(94.0, 42.0)
+        >>> s.getDistance(94.0, 42.0)
 
         Find distance in arcmin::
 
-            >>> s.getDistance(94.0, 42.0, units='arcmin')
+        >>> s.getDistance(94.0, 42.0, units="arcmin")
 
         Find distance to patch centers:
 
-            >>> s.setPatchPositions(method='mid')
-            >>> s.getDistance(94.0, 42.0, byPatch=True)
+        >>> s.setPatchPositions(method="mid")
+        ... s.getDistance(94.0, 42.0, by_patch=True)
 
         """
         if byPatch and self.hasPatches:
             # Get patch positions
-            sRA, sDec = self.getPatchPositions(asArray=True)
+            s_ra, s_dec = self.getPatchPositions(asArray=True)
         else:
-            sRA = self.getColValues('RA')
-            sDec = self.getColValues('Dec')
+            s_ra = self.getColValues("RA")
+            s_dec = self.getColValues("Dec")
 
-        RA, Dec = tableio.RADec2Angle(RA, Dec)
+        ra, dec = tableio.RADec2Angle(ra, dec)
 
-        dist = self._calculateSeparation(sRA, sDec, RA, Dec)
+        dist = self._calculate_separation(s_ra, s_dec, ra, dec)
         if units is not None:
             return dist.to(units).value
-        else:
-            return dist.value
+        return dist.value
 
-    def write(self, fileName=None, format='makesourcedb', clobber=False,
-              sortBy=None, lowToHigh=False, addHistory=True, applyBeam=False,
-              invertBeam=False, width=None):
+    def write(
+        self,
+        fileName=None,
+        format="makesourcedb",  # noqa
+        clobber=False,
+        *,
+        sortBy=None,
+        lowToHigh=False,
+        addHistory=True,
+        applyBeam=False,
+        invertBeam=False,
+        width=None,
+    ):
         """
         Writes the sky model to a file.
 
         Parameters
         ----------
-        filename : str
+        fileName : str
             Name of output file.
         format: str, optional
             Format of the output file. Allowed formats are:
@@ -1640,7 +1839,8 @@ class SkyModel(object):
                 - 'kvis'
                 - 'casa'
                 - 'factor'
-                - 'facet' (ds9 region file of Voronoi facets; model must have patches)
+                - 'facet' (ds9 region file of Voronoi facets; model must have
+                  patches)
                 - plus all other formats supported by the astropy.table package
         clobber : bool, optional
             If True, an existing file is overwritten.
@@ -1658,119 +1858,141 @@ class SkyModel(object):
             If True, the beam correction is inverted (i.e., from apparent sky to
             true sky).
         width : float, optional
-            The width in degrees of the total extent of the output facet regions.
-            Only used when format = 'facet'. If not given, the width will be set
-            to fully cover the extent of the model
+            The width in degrees of the total extent of the output facet
+            regions. Only used when format = 'facet'. If not given, the width
+            will be set to fully cover the extent of the model
 
         Examples
         --------
         Write the model to a makesourcedb sky model file suitable for use with
         BBS::
 
-            >>> s.write('modsky.model')
+        >>> s.write("modsky.model")
 
         Write to a fits catalog::
 
-            >>> s.write('sky.fits', format='fits')
+        >>> s.write("sky.fits", format="fits")
 
-        Write to a ds9 region file (point sources are indicated by points and Gaussians
-        by ellipses)::
+        Write to a ds9 region file (point sources are indicated by points and
+        Gaussians by ellipses)::
 
-            >>> s.write('sky.reg', format='ds9')
+        >>> s.write("sky.reg", format="ds9")
 
-        Write to a WSClean/ds9 facet region file (regions define Voronoi facets around patch
-        positions)::
+        Write to a WSClean/ds9 facet region file (regions define Voronoi facets
+        around patch positions)::
 
-            >>> s.write('facets.reg', format='facet')
+        >>> s.write("facets.reg", format="facet")
 
         """
+        filename = fileName
+        overwrite = clobber
+        sort_by = sortBy
+        low_to_high = lowToHigh
+        add_history = addHistory
+        apply_beam = applyBeam
+        invert_beam = invertBeam
 
-        if fileName is None:
-            if self._fileName is None:
+        if filename is None:
+            if self._filename is None:
                 raise IOError("No file name specified.")
-            else:
-                fileName = self._fileName
+            filename = self._filename
 
-        if os.path.exists(fileName):
-            if clobber:
-                os.remove(fileName)
+        if os.path.exists(filename):
+            if overwrite:
+                os.remove(filename)
             else:
-                raise IOError("The output file '{0}' exists and clobber = False.".
-                              format(fileName))
+                raise IOError(
+                    f"The output file {filename!r} exists and clobber = False."
+                )
 
         table = self.table.copy()
 
         # Apply beam attenuation
-        if applyBeam:
-            I_orig = self.getColValues('I')
-            RADeg = self.getColValues('Ra')
-            DecDeg = self.getColValues('Dec')
-            I_adj = apply_beam(self.beamMS, I_orig, RADeg, DecDeg,
-                               timeIndx=self.beamTime, invert=invertBeam)
-            units = self.table.columns['I'].unit
-            table['I'] = I_adj
-            table.columns['I'].unit = units
+        if apply_beam:
+            i_orig = self.getColValues("I")
+            ra_deg = self.getColValues("Ra")
+            dec_deg = self.getColValues("Dec")
+            i_adj = apply_beam_operation(
+                self.beamMS,
+                i_orig,
+                ra_deg,
+                dec_deg,
+                timeIndx=self.beamTime,
+                invert=invert_beam,
+            )
+            units = self.table.columns["I"].unit
+            table["I"] = i_adj
+            table.columns["I"].unit = units
 
         # Sort if desired. For 'factor' output, save the order of patches in the
         # table meta
-        if sortBy is not None:
-            colName = self._verifyColName(sortBy)
-            if format.lower() == 'factor' and self.hasPatches:
-                indx = np.argsort(self.getColValues('I', aggregate='sum'))
-                if not lowToHigh:
+        if sort_by is not None:
+            col_name = self._verify_column_name(sort_by)
+            if format.lower() == "factor" and self.hasPatches:
+                indx = np.argsort(self.getColValues("I", aggregate="sum"))
+                if not low_to_high:
                     indx = indx[::-1]
-                table.meta['patch_order'] = indx
+                table.meta["patch_order"] = indx
             else:
-                indx = table.argsort(colName)
-                if not lowToHigh:
+                indx = table.argsort(col_name)
+                if not low_to_high:
                     indx = indx[::-1]
                 table = table[indx]
 
-        if addHistory:
-            table.meta['History'] = self.history
+        if add_history:
+            table.meta["History"] = self.history
 
         # Add patch sizes in degrees
-        if format.lower() == 'factor' and self.hasPatches:
-            table.meta['patch_size'] = self.getPatchSizes(units='deg')
+        if format.lower() == "factor" and self.hasPatches:
+            table.meta["patch_size"] = self.getPatchSizes(units="deg")
 
-        # Add patch fluxes in mJy
-        if format.lower() == 'factor' and self.hasPatches:
-            table.meta['patch_flux'] = self.getColValues('I', aggregate='sum',
-                                                         units='mJy')
+        # Add patch fluxes in m_jy
+        if format.lower() == "factor" and self.hasPatches:
+            table.meta["patch_flux"] = self.getColValues(
+                "I", aggregate="sum", units="mJy"
+            )
 
         # And reference coordinates and width in degrees
-        if format.lower() == 'facet':
+        if format.lower() == "facet":
             if not self.hasPatches:
-                raise ValueError("Model must be grouped into patches when format = 'facet'.")
+                raise ValueError(
+                    "Model must be grouped into patches when format = 'facet'."
+                )
 
-            refRA, refDec = self._get_midpoint()
-            table.meta['refRA'] = refRA
-            table.meta['refDec'] = refDec
+            ref_ra, ref_dec = self._get_midpoint()
+            table.meta["refRA"] = ref_ra
+            table.meta["refDec"] = ref_dec
 
             if width is not None:
-                table.meta['width'] = width
+                table.meta["width"] = width
             else:
-                # Find the approximate width in RA and Dec that the model covers and
-                # add 20% padding
-                source_coord = SkyCoord(ra=table['Ra'].value*u.degree,
-                                        dec=table['Dec'].value*u.degree)
-                ref_coord = SkyCoord(ra=table.meta['refRA']*u.degree,
-                                     dec=table.meta['refDec']*u.degree)
+                # Find the approximate width in RA and Dec that the model covers
+                # and add 20% padding
+                source_coord = SkyCoord(
+                    ra=table["Ra"].value * u.degree,
+                    dec=table["Dec"].value * u.degree,
+                )
+                ref_coord = SkyCoord(
+                    ra=table.meta["refRA"] * u.degree,
+                    dec=table.meta["refDec"] * u.degree,
+                )
                 separation = ref_coord.separation(source_coord)
-                max_distance = np.max(np.array([sep.value for sep in separation]))
-                table.meta['width'] = 2 * max_distance * 1.2
+                max_distance = np.max(
+                    np.array([sep.value for sep in separation])
+                )
+                table.meta["width"] = 2 * max_distance * 1.2
 
         # Clean up as needed
-        if format.lower() not in ['makesourcedb', 'factor', 'facet']:
+        if format.lower() not in ["makesourcedb", "factor", "facet"]:
             # Make sure the metadata is empty when not needed
             table.meta = {}
-        if format.lower() == 'fits':
+        if format.lower() == "fits":
             # Remove custom formaters
-            table.columns['Ra'].format = None
-            table.columns['Dec'].format = None
-            table.columns['I'].format = None
+            table.columns["Ra"].format = None
+            table.columns["Dec"].format = None
+            table.columns["I"].format = None
 
-        table.write(fileName, format=format.lower())
+        table.write(filename, format=format.lower())
 
     def broadcast(self):
         """
@@ -1784,14 +2006,14 @@ class SkyModel(object):
         --------
         Send the model to TOPCAT. First, start TOPCAT, then run the command::
 
-            >>> s.broadcast()
+        >>> s.broadcast()
 
         TOPCAT should then load the table.
 
         """
 
         tfile = tempfile.NamedTemporaryFile()
-        self.table.write(tfile, format='votable')
+        self.table.write(tfile, format="votable")
         tableio.broadcastTable(tfile.name)
         tfile.close()
 
@@ -1799,32 +2021,40 @@ class SkyModel(object):
         """
         Removes duplicate entries.
         """
-        names = self.getColValues('Name')
-        nameSet = set(names)
-        if len(names) == len(nameSet):
+        names = self.getColValues("Name")
+        name_set = set(names)
+        if len(names) == len(name_set):
             return
 
-        filtNames = []
-        filtIndices = []
-        for i, name in enumerate(self.getColValues('Name')):
-            if name in filtNames:
-                filtIndices.append(i)
+        filt_names = []
+        filt_indices = []
+        for i, name in enumerate(self.getColValues("Name")):
+            if name in filt_names:
+                filt_indices.append(i)
             else:
-                filtNames.append(name)
-        nRowsOrig = len(self.table)
-        self.table = self.table[filtIndices]
-        nRowsNew = len(self.table)
-        if nRowsOrig-nRowsNew > 0:
-            self.log.info('Removed {0} duplicate sources.'.format(nRowsOrig-nRowsNew))
+                filt_names.append(name)
+        n_rows_orig = len(self.table)
+        self.table = self.table[filt_indices]
+        n_rows_new = len(self.table)
+        if n_rows_orig - n_rows_new > 0:
+            self.log.info(
+                "Removed %s duplicate sources.", n_rows_orig - n_rows_new
+            )
         self._updateGroups()
 
-    def select(self, filterExpression, aggregate=None, applyBeam=False,
-               useRegEx=False, force=True):
+    def select(
+        self,
+        filterExpression,
+        aggregate=None,
+        applyBeam=False,
+        useRegEx=False,
+        force=True,
+    ):
         """
-        Filters the sky model, keeping all sources that meet the given expression.
+        Filters the sky model, keeping all sources that meet the given
+        expression.
 
-        After filtering, the sky model contains only those sources for which the
-        given filter expression is true.
+        After filtering, thqion is true.
 
         Parameters
         ----------
@@ -1843,12 +2073,12 @@ class SkyModel(object):
               [property, operator, value] or
               [property, operator, value, units]
             - If `numpy.ndarray`:
-              The indices to filter on can be specified directly as a numpy array
-              of row or patch indices such as:
+              The indices to filter on can be specified directly as a numpy
+              array of row or patch indices such as:
               ``np.array([ 0,  2, 19, 20, 31, 37])``
-              or as a numpy array of bools with the same length as the sky model.
-              If a numpy array is given and the indices correspond to patches, then
-              set aggregate=True.
+              or as a numpy array of bools with the same length as the sky
+              model. If a numpy array is given and the indices correspond to
+              patches, then set aggregate=True.
               The property to filter on must be one of the following:
 
                 - a valid column name
@@ -1862,7 +2092,8 @@ class SkyModel(object):
                   - <
                   - = (or '==')
 
-              Units are optional and must be specified as required by astropy.units.
+              Units are optional and must be specified as required by
+              astropy.units.
         aggregate : str, optional
             If set, the selection will be done on values aggregated
             over the patch members. The following aggregation functions are
@@ -1873,9 +2104,9 @@ class SkyModel(object):
                 - 'wmean': Stokes I weighted mean of patch values
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
-                - True: only valid when the filter indices are specified directly
-                  as a numpy array. If True, filtering is done on patches instead
-                  of sources.
+                - True: only valid when the filter indices are specified
+                  directly as a numpy array. If True, filtering is done on
+                  patches instead of sources.
 
         applyBeam : bool, optional
             If True, apparent fluxes will be used.
@@ -1884,44 +2115,58 @@ class SkyModel(object):
             False, string matching uses Unix filename matching.
         force : bool, optional
             If True, selections that result in empty sky models are allowed. If
-            False, such selections are not applied and the sky model is unaffected.
+            False, such selections are not applied and the sky model is
+            unaffected.
 
         Examples
         --------
-        Filter on column 'I' (Stokes I flux). This filter will select all sources
-        with Stokes I flux greater than 1.5 Jy::
+        Filter on column 'I' (Stokes I flux). This filter will select all
+        sources with Stokes I flux greater than 1.5 Jy::
 
-            >>> s.select('I > 1.5 Jy')
-            INFO: Kept 1102 sources.
+        >>> s.select("I > 1.5 Jy")
+        INFO: Kept 1102 sources.
 
         If the sky model has patches and the filter is desired per patch, use
         ``aggregate = function``. For example, to select on the sum of the patch
         fluxes::
 
-            >>> s.select('I > 1.5 Jy', aggregate='sum')
+        >>> s.select("I > 1.5 Jy", aggregate="sum")
 
         Or, to filter on patches smaller than 5 arcmin in size::
 
-            >>> sizes = s.getPatchSizes(units='arcmin')
-            >>> s.select(sizes < 5.0, aggregate=True)
+        >>> sizes = s.getPatchSizes(units="arcmin")
+        ... s.select(sizes < 5.0, aggregate=True)
 
         Filter on source names, keeping those that match "src*_1?"::
 
-            >>> s.select('Name == src*_1?')
+        >>> s.select("Name == src*_1?")
 
         Use a CASA clean mask image named 'clean_mask.mask' to select sources
         that lie in masked regions::
 
-            >>> s.select('clean_mask.mask == True')
+        >>> s.select("clean_mask.mask == True")
 
         """
-        operations.select.select(self, filterExpression, aggregate=aggregate,
-                                 applyBeam=applyBeam, useRegEx=useRegEx, force=force)
+        operations.select.select(
+            self,
+            filterExpression,
+            aggregate=aggregate,
+            applyBeam=applyBeam,
+            useRegEx=useRegEx,
+            force=force,
+        )
 
-    def remove(self, filterExpression, aggregate=None, applyBeam=None,
-               useRegEx=False, force=True):
+    def remove(
+        self,
+        filterExpression,
+        aggregate=None,
+        applyBeam=None,
+        useRegEx=False,
+        force=True,
+    ):
         """
-        Filters the sky model, removing all sources that meet the given expression.
+        Filters the sky model, removing all sources that meet the given
+        expression.
 
         After filtering, the sky model contains only those sources for which the
         given filter expression is false.
@@ -1943,12 +2188,12 @@ class SkyModel(object):
               [property, operator, value] or
               [property, operator, value, units]
             - If `numpy.ndarray`:
-              The indices to filter on can be specified directly as a numpy array
-              of row or patch indices such as:
+              The indices to filter on can be specified directly as a numpy
+              array of row or patch indices such as:
               ``array([ 0,  2, 19, 20, 31, 37])``
-              or as a numpy array of bools with the same length as the sky model.
-              If a numpy array is given and the indices correspond to patches, then
-              set ``aggregate=True``.
+              or as a numpy array of bools with the same length as the sky
+              model. If a numpy array is given and the indices correspond to
+              patches, then set ``aggregate=True``.
               The property to filter on must be one of the following:
 
                 - a valid column name
@@ -1963,7 +2208,8 @@ class SkyModel(object):
                 - <
                 - = (or '==')
 
-            Units are optional and must be specified as required by astropy.units.
+            Units are optional and must be specified as required by
+            astropy.units.
 
         aggregate : str, optional
             If set, the selection will be done on values aggregated
@@ -1988,116 +2234,142 @@ class SkyModel(object):
 
         Examples
         --------
-        Filter on column 'I' (Stokes I flux). This filter will remove all sources
-        with Stokes I flux greater than 1.5 Jy::
+        Filter on column 'I' (Stokes I flux). This filter will remove all
+        sources with Stokes I flux greater than 1.5 Jy::
 
-            >>> s.remove('I > 1.5 Jy')
-            INFO: Removed 1102 sources.
+        >>> s.remove("I > 1.5 Jy")
+        INFO: Removed 1102 sources.
 
         If the sky model has patches and the filter is desired per patch, use
         ``aggregate = function``. For example, to filter on the sum of the patch
         fluxes::
 
-            >>> s.remove('I > 1.5 Jy', aggregate='sum')
+        >>> s.remove("I > 1.5 Jy", aggregate="sum")
 
         Or, to filter on patches smaller than 5 arcmin in size::
 
-            >>> sizes = s.getPatchSizes(units='arcmin')
-            >>> s.remove(sizes < 5.0, aggregate=True)
+        >>> sizes = s.getPatchSizes(units="arcmin")
+        >>> s.remove(sizes < 5.0, aggregate=True)
 
         Filter on source names, removing those that match "src*_1?" (e.g.,
-        'src2345_15', 'srcB2_1a', etc.)::
+        'src2345_15', 'src_b2_1a', etc.)::
 
-            >>> s.remove('Name == src*_1?')
+        >>> s.remove("Name == src*_1?")
 
         Use a CASA clean mask image named 'clean_mask.mask' to remove sources
         that lie in masked regions::
 
-            >>> s.remove('clean_mask.mask == True')
+        >>> s.remove("clean_mask.mask == True")
 
         """
-        operations.remove.remove(self, filterExpression, aggregate=aggregate,
-                                 applyBeam=applyBeam, useRegEx=useRegEx, force=force)
+        operations.remove.remove(
+            self,
+            filterExpression,
+            aggregate=aggregate,
+            applyBeam=applyBeam,
+            useRegEx=useRegEx,
+            force=force,
+        )
 
-    def group(self, algorithm, targetFlux=None, patchNames=None, weightBySize=False,
-              numClusters=100, FWHM=None, threshold=0.1, applyBeam=False, root='Patch',
-              pad_index=False, method='mid', facet="", byPatch=False, kernelSize=0.1,
-              nIterations=100, lookDistance=0.2, groupingDistance=0.01):
+    def group(
+        self,
+        algorithm,
+        targetFlux=None,
+        patchNames=None,
+        weightBySize=False,
+        numClusters=100,
+        *,
+        FWHM=None,
+        threshold=0.1,
+        applyBeam=False,
+        root="Patch",
+        pad_index=False,
+        method="mid",
+        facet="",
+        byPatch=False,
+        kernelSize=0.1,
+        nIterations=100,
+        lookDistance=0.2,
+        groupingDistance=0.01,
+    ):
         """
         Groups sources into patches.
 
         Parameters
         ----------
-        LSM : SkyModel
-            Input sky model.
         algorithm : str
             Algorithm to use for grouping:
 
             - 'single' => all sources are grouped into a single patch
             - 'every' => every source gets a separate patch named 'source_patch'
             - 'cluster' => SAGECAL clustering algorithm that groups sources into
-              specified number of clusters (specified by the numClusters parameter)
-            - 'tessellate' => group into tiles whose total flux approximates
-              the target flux (specified by the targetFlux parameter)
-            - 'threshold' => group by convolving the sky model with a Gaussian beam
-              and then thresholding to find islands of emission (NOTE: all sources
-              are currently considered to be point sources of flux unity)
-            - 'facet' => group by facets using as an input a fits file. It requires
-              the use of the additional parameter 'facet' to enter the name of the
-              fits file.
-            - 'voronoi' => given a previously grouped sky model, Voronoi tessellate
-              using the patch positions for patches above the target flux
-              (specified by the targetFlux parameter) or whose names match the
-              input names (specified by the patchNames parameter)
+              specified number of clusters (specified by the num_clusters
+              parameter)
+            - 'tessellate' => group into tiles whose total flux approximates the
+              target flux (specified by the target_flux parameter)
+            - 'threshold' => group by convolving the sky model with a Gaussian
+              beam and then thresholding to find islands of emission (NOTE: all
+              sources are currently considered to be point sources of flux
+              unity)
+            - 'facet' => group by facets using as an input a fits file. It
+              requires the use of the additional parameter 'facet' to enter the
+              name of the fits file.
+            - 'voronoi' => given a previously grouped sky model, Voronoi
+              tessellate using the patch positions for patches above the target
+              flux (specified by the target_flux parameter) or whose names match
+              the input names (specified by the patch_names parameter)
             - 'meanshift' => use the meanshift clustering algorithm
-            - the filename of a mask image => group by masked regions (where mask =
-              True). Sources outside of masked regions are given patches of their
-              own
+            - the filename of a mask image => group by masked regions (where
+              mask = True). Sources outside of masked regions are given patches
+              of their own
 
         targetFlux : str or float, optional
-            Target flux for 'tessellate' (the total flux of each tile will be close
-            to this value) and 'voronoi' algorithms. The target flux can be specified
-            as either a float in Jy or as a string with units (e.g., '25.0 mJy')
+            Target flux for 'tessellate' (the total flux of each tile will be
+            close to this value) and 'voronoi' algorithms. The target flux can
+            be specified as either a float in Jy or as a string with units
+            (e.g., '25.0 m_jy')
         patchNames : list, optional
-            List of patch names to use for the 'voronoi' algorithm. If both patchNames
-            and targetFlux are given, the targetFlux selection is applied first
+            List of patch names to use for the 'voronoi' algorithm. If both
+            patch_names and target_flux are given, the target_flux selection is
+            applied first
         weightBySize : bool, optional
-            If True, fluxes are weighted by patch size (as median_size / size) when
-            the targetFlux criterion is applied. Patches with sizes below the median
-            (flux-weighted) size are upweighted and those above the mean are
-            downweighted
+            If True, fluxes are weighted by patch size (as median_size / size)
+            when the target_flux criterion is applied. Patches with sizes below
+            the median (flux-weighted) size are upweighted and those above the
+            mean are downweighted
         numClusters : int, optional
             Number of clusters for clustering. Sources are grouped around the
-            numClusters brightest sources.
+            num_clusters brightest sources.
         FWHM : str or float, optional
             FWHM of convolving Gaussian used for thresholding. The FWHM can
             be specified as either a float in degrees or as a string with units
             (e.g., '25.0 arcsec')
         threshold : float, optional
-            Value between 0 and 1 above which emission is considered for thresholding
-        applyBeam : bool, optional
+            Value between 0 and 1 above which emission is considered for
+            thresholding
+        apply_beam : bool, optional
             If True, fluxes will be attenuated by the beam.
         root : str, optional
-            Root string from which patch names are constructed. For 'single', the
-            patch name will be set to root; for the other grouping algorithms, the
-            patch names will be 'root_INDX', where INDX is an integer ranging from
-            (0:nPatches).
+            Root string from which patch names are constructed. For 'single',
+            the patch name will be set to root; for the other grouping
+            algorithms, the patch names will be 'root_INDX', where INDX is an
+            integer ranging from (0:n_patches).
         pad_index : bool, optional
-            If True, pad the INDX is used in the patch names. E.g., facet_patch_001
-            instead of facet_patch_1
+            If True, pad the INDX is used in the patch names. E.g.,
+            facet_patch_001 instead of facet_patch_1
         method : None or str, optional
             This parameter specifies the method used to set the patch positions:
             - 'mid' => the position is set to the midpoint of the patch
             - 'mean' => the positions is set to the mean RA and Dec of the patch
             - 'wmean' => the position is set to the flux-weighted mean RA and
-            Dec of the patch
+               Dec of the patch
             - 'zero' => set all positions to [0.0, 0.0]
         facet : str, optional
             Facet fits file used with the algorithm 'facet'
         byPatch : bool, optional
-            For the 'tessellate' or 'meanshift' algorithms, use patches instead of
-            sources
-        kernelSize : float, optional
+            For the 'tessellate' or 'meanshift' algorithms, use patches instead
+            of sources
+        kernel_size : float, optional
             Kernel size in degrees for 'meanshift' grouping
         nIterations : int, optional
             Number of iterations for 'meanshift' grouping
@@ -2111,30 +2383,43 @@ class SkyModel(object):
         Tesselate the sky model into patches with approximately 30 Jy total
         flux:
 
-            >>> s.group('tessellate', targetFlux=30.0)
+        >>> s.group("tessellate", target_flux=30.0)
 
         """
-        operations.group.group(self, algorithm, targetFlux=targetFlux, patchNames=patchNames,
-                               weightBySize=weightBySize, numClusters=numClusters,
-                               FWHM=FWHM, threshold=threshold, applyBeam=applyBeam,
-                               root=root, pad_index=pad_index, method=method, facet=facet,
-                               byPatch=byPatch, kernelSize=kernelSize,
-                               nIterations=nIterations, lookDistance=lookDistance,
-                               groupingDistance=groupingDistance)
+        operations.group.group(
+            self,
+            algorithm,
+            targetFlux=targetFlux,
+            patchNames=patchNames,
+            weightBySize=weightBySize,
+            numClusters=numClusters,
+            FWHM=FWHM,
+            threshold=threshold,
+            applyBeam=applyBeam,
+            root=root,
+            pad_index=pad_index,
+            method=method,
+            facet=facet,
+            byPatch=byPatch,
+            kernelSize=kernelSize,
+            nIterations=nIterations,
+            lookDistance=lookDistance,
+            groupingDistance=groupingDistance,
+        )
 
-    def transfer(self, patchSkyModel, matchBy='name', radius=0.1):
+    def transfer(self, patch_skymodel, matchBy="name", radius=0.1):
         """
         Transfer patches from the input sky model.
 
-        Sources matching those in patchSkyModel will be grouped into
-        the patches defined in patchSkyModel. Sources that do not appear in
-        patchSkyModel will be placed into separate patches (one per source).
-        Patch positions are not transferred (as they may no longer be appropriate
-        after transfer).
+        Sources matching those in patch_sky_model will be grouped into the
+        patches defined in patch_sky_model. Sources that do not appear in
+        patch_sky_model will be placed into separate patches (one per source).
+        Patch positions are not transferred (as they may no longer be
+        appropriate after transfer).
 
         Parameters
         ----------
-        patchSkyModel : str or SkyModel
+        patch_sky_model : str or Sky_model
             Input sky model from which to transfer patches.
         matchBy : str, optional
             Determines how matching sources are determined:
@@ -2144,20 +2429,21 @@ class SkyModel(object):
               radius specified by the radius parameter are considered matches
 
         radius : float or str, optional
-            Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
-            for matching when matchBy='position'
+            Radius in degrees (if float) or 'value unit' (if str; e.g., '30
+            arcsec') for matching when matchBy='position'
 
         Examples
         --------
         Transfer patches from one sky model to another and set their positions
         (matching sources are identified by name)::
 
-            >>> s.transfer('master_sky.model')
-            >>> s.setPatchPositions(method='mid')
+        >>> s.transfer("master_sky.model")
+        >>> s.setPatchPositions(method="mid")
 
         """
-        operations.transfer.transfer(self, patchSkyModel, matchBy=matchBy,
-                                     radius=radius)
+        operations.transfer.transfer(
+            self, patch_skymodel, matchBy=matchBy, radius=radius
+        )
 
     def move(self, name, position=None, shift=None):
         """
@@ -2168,14 +2454,12 @@ class SkyModel(object):
         moved to a new position. However, multiple sources can be shifted.
 
         If an xyshift is specified, a FITS file must also be specified to define
-        the WCS system. If a position, a shift, and an xyshift are all specified,
-        a source is moved to the new position, shifted in RA and Dec, and then
-        shifted in x and y.
+        the WCS system. If a position, a shift, and an xyshift are all
+        specified, a source is moved to the new position, shifted in RA and Dec,
+        and then shifted in x and y.
 
         Parameters
         ----------
-        LSM : SkyModel
-            Input sky model
         name : str or list
             Source name or list of names (can include wildcards)
         position : list, optional
@@ -2185,38 +2469,31 @@ class SkyModel(object):
         shift : list, optional
             A list specifying the shift as [RAShift, DecShift] in degrees (e.g.,
             [0.02312, 0.00342])
-        xyshift : list, optional
-            A list specifying the shift as [xShift, yShift] in pixels. A FITS file
-            must be specified with the fitsFILE argument
-        fitsFile : str, optional
-            A FITS file from which to take WCS information to transform the pixel
-            coordinates to RA and Dec values. The xyshift argument must be specfied
-            for this to be useful
 
         Examples
         --------
         Move source '1609.6+6556' to a new position::
 
-            >>> s.move('1609.6+6556', position=['16:10:00', '+65.57.00'])
+        >>> s.move("1609.6+6556", position=["16:10:00", "+65.57.00"])
 
         Shift the source by 10 arcsec in Dec::
 
-            >>> s.move('1609.6+6556', shift=[0.0, 10.0/3600.0])
+        >>> s.move("1609.6+6556", shift=[0.0, 10.0 / 3600.0])
 
         Shift all sources by 10 pixels in x::
 
-            >>> s.move('*', xyshift=[10, 0], fitsFile='image.fits')
+        >>> s.move("*", xyshift=[10, 0], fitsFile="image.fits")
 
         """
         operations.move.move(self, name, position=position, shift=shift)
 
-    def add(self, colNamesVals):
+    def add(self, col_names_vals):
         """
         Add a source to the sky model.
 
         Parameters
         ----------
-        colNamesVals : dict
+        col_namesVals : dict
             A dictionary that specifies the column values for the source to be
             added
 
@@ -2224,12 +2501,17 @@ class SkyModel(object):
         --------
         Add a point source::
 
-            >>> source = {'Name':'src1', 'Type':'POINT', 'Ra':'12:32:10.1',
-                'Dec':'23.43.21.21', 'I':2.134}
-            >>> s.add(source)
+        >>> source = {
+        ...     "Name": "src1",
+        ...     "Type": "POINT",
+        ...     "Ra": "12:32:10.1",
+        ...     "Dec": "23.43.21.21",
+        ...     "I": 2.134,
+        ... }
+        ... s.add(source)
 
         """
-        operations.add.add(self, colNamesVals)
+        operations.add.add(self, col_names_vals)
 
     def merge(self, patches, name=None):
         """
@@ -2247,72 +2529,101 @@ class SkyModel(object):
         --------
         Merge three patches into one named 'binmerged'::
 
-            >>> s.merge(['bin0', 'bin1', 'bin2'], 'binmerged')
+        >>> s.merge(["bin0", "bin1", "bin2"], "binmerged")
 
         """
         operations.merge.merge(self, patches, name=name)
 
-    def concatenate(self, LSM2, matchBy='name', radius=0.1, keep='all',
-                    inheritPatches=False):
+    def concatenate(
+        self,
+        skymodel2,
+        matchBy="name",
+        radius=0.1,
+        keep="all",
+        inheritPatches=False,
+    ):
         """
         Concatenate two sky models.
 
         Parameters
         ----------
-        LSM2 : str or SkyModel
+        skymodel2 : str or SkyModel
             Secondary sky model to concatenate with the parent sky model
         matchBy : str, optional
             Determines how duplicate sources are determined:
 
             - 'name' => duplicates are identified by name
-            - 'position' => duplicates are identified by radius. Sources within the
-              radius specified by the radius parameter are considered duplicates
+            - 'position' => duplicates are identified by radius. Sources within
+              the radius specified by the radius parameter are considered
+              duplicates
 
         radius : float or str, optional
-            Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
-            for matching when matchBy='position'
+            Radius in degrees (if float) or 'value unit' (if str; e.g., '30
+            arcsec') for matching when matchBy='position'
         keep : str, optional
             Determines how duplicates are treated:
 
-            - 'all' => all duplicates are kept; those with identical names are re-
-              named
+            - 'all' => all duplicates are kept; those with identical names are
+              re- named
             - 'from1' => duplicates kept are those from sky model 1 (the parent)
-            - 'from2' => duplicates kept are those from sky model 2 (the secondary)
+            - 'from2' => duplicates kept are those from sky model 2 (the
+              secondary)
 
         inheritPatches : bool, optional
-            If True, duplicates inherit the patch name from the parent sky model. If
-            False, duplicates keep their own patch names.
+            If True, duplicates inherit the patch name from the parent sky
+            model. If False, duplicates keep their own patch names.
 
         Examples
         --------
-        Concatenate two sky models, identifying duplicates by matching to the source
-        names. When duplicates are found, keep the source from the parent sky model
-        and discard the duplicate from secondary sky model (this might be useful when
-        merging two gsm.py sky models that have some overlap)::
+        Concatenate two sky models, identifying duplicates by matching to the
+        source names. When duplicates are found, keep the source from the parent
+        sky model and discard the duplicate from secondary sky model (this might
+        be useful when merging two gsm.py sky models that have some overlap)::
 
-            >>> LSM2 = lsmtool.load('gsm_sky2.model')
-            >>> s.concatenate(LSM2, matchBy='name', keep='from1')
+        >>> skymodel2 = lsmtool.load("gsm_sky2.model")
+        ... s.concatenate(skymodel2, matchBy="name", keep="from1")
 
-        Concatenate two sky models, identifying duplicates by matching to the source
-        positions within a radius of 10 arcsec. When duplicates are found, keep the
-        source from the secondary sky model and discard the duplicate from the parent
-        sky model (this might be useful when replacing parts of a low-resolution
-        sky model with a high-resolution one)::
+        Concatenate two sky models, identifying duplicates by matching to the
+        source positions within a radius of 10 arcsec. When duplicates are
+        found, keep the source from the secondary sky model and discard the
+        duplicate from the parent sky model (this might be useful when replacing
+        parts of a low-resolution sky model with a high-resolution one)::
 
-            >>> LSM2 = lsmtool.load('high_res_sky.model')
-            >>> s.concatenate(LSM2, matchBy='position', radius=10.0/3600.0,
-                keep='from2')
+        >>> skymodel2 = lsmtool.load("high_res_sky.model")
+        ... s.concatenate(
+        ...     skymodel2,
+        ...     matchBy="position",
+        ...     radius=10.0 / 3600.0,
+        ...     keep="from2",
+        ... )
 
         """
-        if type(LSM2) is str:
-            LSM2 = SkyModel(LSM2)
-        operations.concatenate.concatenate(self, LSM2, matchBy=matchBy,
-                                           radius=radius, keep=keep,
-                                           inheritPatches=inheritPatches)
+        if isinstance(skymodel2, str):
+            skymodel2 = SkyModel(skymodel2)
+        operations.concatenate.concatenate(
+            self,
+            skymodel2,
+            matchBy=matchBy,
+            radius=radius,
+            keep=keep,
+            inheritPatches=inheritPatches,
+        )
 
-    def compare(self, LSM2, radius='10 arcsec', outDir='.', labelBy=None,
-                ignoreSpec=None, excludeMultiple=True, excludeByFlux=False, name1=None,
-                name2=None, format='pdf', make_plots=True):
+    def compare(
+        self,
+        skymodel2,
+        radius="10 arcsec",
+        *,
+        outDir=".",
+        labelBy=None,
+        ignoreSpec=None,
+        excludeMultiple=True,
+        excludeByFlux=False,
+        name1=None,
+        name2=None,
+        format="pdf",  # noqa
+        make_plots=True,
+    ):
         """
         Compare two sky models.
 
@@ -2324,7 +2635,8 @@ class SkyModel(object):
           - flux ratio vs flux
           - position offsets
 
-        The following statistics are saved to 'stats.txt' in the output directory:
+        The following statistics are saved to 'stats.txt' in the output
+        directory:
 
             - mean and standard deviation of flux ratio
             - mean and standard deviation of RA offsets
@@ -2334,16 +2646,16 @@ class SkyModel(object):
 
         Parameters
         ----------
-        LSM2 : SkyModel
+        skymodel2 : SkyModel
             Secondary sky model to compare to the parent sky model
         radius : float or str, optional
-            Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
-            for matching
+            Radius in degrees (if float) or 'value unit' (if str; e.g., '30
+            arcsec') for matching
         outDir : str, optional
             Plots are saved to this directory
         labelBy : str, optional
-            One of 'source' or 'patch': label points using source names ('source') or
-            patch names ('patch')
+            One of 'source' or 'patch': label points using source names
+            ('source') or patch names ('patch')
         ignoreSpec : float, optional
             Ignore sources with this spectral index
         excludeMultiple : bool, optional
@@ -2353,9 +2665,10 @@ class SkyModel(object):
             If True, matches whose predicted fluxes differ from the parent model
             fluxes by 25% are excluded from the positional offset plot.
         name1 : str, optional
-            Name to use in the plots for the primary sky model. If None, 'Model 1' is used.
+            Name to use in the plots for the primary sky model. If None, 'Model
+            1' is used.
         name2 : str, optional
-            Name to use in the plots for LSM2. If None, 'Model 2' is used.
+            Name to use in the plots for skymodel2. If None, 'Model 2' is used.
         format : str, optional
             Format of plot files.
         make_plots : bool, optional
@@ -2384,63 +2697,83 @@ class SkyModel(object):
         --------
         Compare two sky models and save plots::
 
-            >>> LSM2 = lsmtool.load('sky2.model')
-            >>> s.compare(LSM2, outDir='comparison_results/')
+        >>> skymodel2 = lsmtool.load("sky2.model")
+        ... s.compare(skymodel2, outDir="comparison_results/")
 
-        Compare a LOFAR sky model to a global sky model made from VLSS+TGSS+NVSS (where
-        refRA and refDec are the approximate center of the LOFAR sky model coverage)::
+        Compare a LOFAR sky model to a global sky model made from VLSS+TGSS+NVSS
+        (where refRA and refDec are the approximate center of the LOFAR sky
+        model coverage)::
 
-            >>> LSM2 = lsmtool.load('GSM', VOPosition=[refRA, refDec], VORadius='5 deg')
-            >>> s.compare(LSM2, radius='30 arcsec', excludeMultiple=True,
-                outDir='comparison_results/', name1='LOFAR', name2='GSM', format='png')
-
+        >>> skymodel2 = lsmtool.load(
+        ...     "GSM", VOPosition=[refRA, refDec], VORadius="5 deg"
+        ... )
+        ... s.compare(
+        ...     skymodel2,
+        ...     radius="30 arcsec",
+        ...     excludeMultiple=True,
+        ...     outDir="comparison_results/",
+        ...     name1="LOFAR",
+        ...     name2="GSM",
+        ...     format="png",
+        ... )
         """
-        if type(LSM2) is str:
-            LSM2 = SkyModel(LSM2)
-        stats = operations.compare.compare(self, LSM2, radius=radius, outDir=outDir,
-                                           labelBy=labelBy, ignoreSpec=ignoreSpec,
-                                           excludeMultiple=excludeMultiple,
-                                           excludeByFlux=excludeByFlux, name1=name1,
-                                           name2=name2, format=format, make_plots=make_plots)
-        return stats
 
-    def plot(self, fileName=None, labelBy=None):
+        if isinstance(skymodel2, str):
+            skymodel2 = SkyModel(skymodel2)
+        return operations.compare.compare(
+            self,
+            skymodel2,
+            radius=radius,
+            outDir=outDir,
+            labelBy=labelBy,
+            ignoreSpec=ignoreSpec,
+            excludeMultiple=excludeMultiple,
+            excludeByFlux=excludeByFlux,
+            name1=name1,
+            name2=name2,
+            format=format,
+            make_plots=make_plots,
+        )
+
+    def plot(self, filename=None, labelBy=None):
         """
         Shows a simple plot of the sky model.
 
-        The circles in the plot are scaled with flux. If the sky model is grouped
-        into patches, sources are colored by patch and the patch positions are
-        indicated with stars.
+        The circles in the plot are scaled with flux. If the sky model is
+        grouped into patches, sources are colored by patch and the patch
+        positions are indicated with stars.
 
         Parameters
         ----------
-        fileName : str, optional
+        filename : str, optional
             If given, the plot is saved to a file instead of displayed.
         labelBy : str, optional
-            One of 'source' or 'patch': label points using source names ('source')
-            or patch names ('patch')
+            One of 'source' or 'patch': label points using source names
+            ('source') or patch names ('patch')
 
         Examples
         --------
         Plot and display to the screen::
 
-            >>> s.plot()
+        >>> s.plot()
 
         Plot and save to a PDF file::
 
-            >>> s.plot('sky_plot.pdf')
+        >>> s.plot("sky_plot.pdf")
 
         """
-        operations.plot.plot(self, fileName=fileName, labelBy=labelBy)
+        operations.plot.plot(self, filename, labelBy=labelBy)
 
-    def rasterize(self, cellsize, fileRoot=None, writeRegionFile=False, clobber=False):
+    def rasterize(
+        self, cellsize, fileRoot=None, writeRegionFile=False, clobber=False
+    ):
         """
         Rasterize the sky model to FITS images (one image per spectral term).
 
-        The resulting images can be used with DDECal in DP3 for prediction using IDG.
-        If the sky model is grouped into contiguous patches, a ds9 region file defining
-        the Voronoi patches can also written (this file is required for use with IDG
-        predict).
+        The resulting images can be used with DDECal in DP3 for prediction using
+        IDG. If the sky model is grouped into contiguous patches, a ds9 region
+        file defining the Voronoi patches can also written (this file is
+        required for use with IDG predict).
 
         Note: currently, when writing the FITS images, only sky models with
         LogarithmicSI = False are supported.
@@ -2450,65 +2783,78 @@ class SkyModel(object):
         cellsize : float
             The cellsize in degrees for the output image.
         fileRoot : str, optional
-            Filename root for the output FITS images. The images will be named fileRoot +
-            '_0.fits', fileRoot + '_1.fits', etc. (one for each spectral term in the sky
-            model). If writeRegionFile is True, a ds9 region file is also written as
-            fileRoot + '.reg'. If not given, the root is taken from the filename of the
-            input sky model (with its extension, if any, removed), if available, and
-            otherwise is set to 'skymodel'
+            Filename root for the output FITS images. The images will be named
+            file_root + '_0.fits', file_root + '_1.fits', etc. (one for each
+            spectral term in the sky model). If write_region_file is True, a ds9
+            region file is also written as file_root + '.reg'. If not given, the
+            root is taken from the filename of the input sky model (with its
+            extension, if any, removed), if available, and otherwise is set to
+            'skymodel'
         writeRegionFile : bool, optional
-            If True and the sky model is grouped into contiguous patches, a ds9 region
-            file defining the Voronoi patches will be written (this file is required
-            for DDECal)
+            If True and the sky model is grouped into contiguous patches, a ds9
+            region file defining the Voronoi patches will be written (this file
+            is required for DDECal)
         clobber : bool, optional
             If True, existing files are overwritten.
         """
 
+        file_root = fileRoot
+        write_region_file = writeRegionFile
+        overwrite = clobber
+
         # TODO: Fix circular import and move to module scope
-        from lsmtool.facet import tessellate
+        from lsmtool.facet import tessellate  # noqa
 
         # Check inputs
-        if writeRegionFile and not self.hasPatches:
-            raise ValueError('writeRegionFile = True but sky model is not grouped into '
-                             'patches.')
-        if fileRoot is None:
-            if self._fileName is None:
-                fileRoot = 'skymodel'
+        if write_region_file and not self.hasPatches:
+            raise ValueError(
+                "writeRegionFile = True but sky model is not grouped into "
+                "patches."
+            )
+        if file_root is None:
+            if self._filename is None:
+                file_root = "skymodel"
             else:
-                fileRoot = os.path.splitext(self._fileName)[0]
+                file_root = os.path.splitext(self._filename)[0]
 
         # Make a blank image for each spectral term
-        referenceFrequency = self.getColValues('ReferenceFrequency')
-        refFreq = referenceFrequency[0]  # TODO: allow per-source ref freq
-        fluxes = self.getColValues('I')
-        types = self.getColValues('Type')
+        reference_frequency = self.getColValues("ReferenceFrequency")
+        ref_freq = reference_frequency[0]  # TODO: allow per-source ref freq
+        fluxes = self.getColValues("I")
+        types = self.getColValues("Type")
         nsources = len(fluxes)
-        if 'SpectralIndex' in self.getColNames():
-            spectral_indices = self.getColValues('SpectralIndex')
+        if "SpectralIndex" in self.getColNames():
+            spectral_indices = self.getColValues("SpectralIndex")
         else:
             spectral_indices = [[]] * nsources
         nterms = len(spectral_indices[0]) + 1
 
         # Check that LogarithmicSI = False for all entries
         if nterms > 1:
-            logsi = self.getColValues('LogarithmicSI')
-            if np.any(logsi == 'true'):
-                raise RuntimeError('Sky model has one or more sources with '
-                                   'LogarithmicSI = True. Only sky models with '
-                                   'LogarithmicSI = False are supported at this time.')
+            logsi = self.getColValues("LogarithmicSI")
+            if np.any(logsi == "true"):
+                raise RuntimeError(
+                    "Sky model has one or more sources with "
+                    "LogarithmicSI = True. Only sky models with "
+                    "LogarithmicSI = False are supported at this time."
+                )
 
-        image_names = ['{0}_{1}.fits'.format(fileRoot, i) for i in range(nterms)]
+        image_names = [f"{file_root}_{i}.fits" for i in range(nterms)]
         for image_name in image_names:
             if os.path.exists(image_name):
-                if clobber:
+                if overwrite:
                     os.remove(image_name)
                 else:
-                    raise IOError("The output file '{0}' exists and clobber = False.".
-                                  format(image_name))
+                    raise IOError(
+                        f"The output file {image_name!r} exists and "
+                        "clobber = False."
+                    )
 
         x, y, wcs = self._get_xy(crdelt=cellsize)
-        if 'GAUSSIAN' in types:
-            fwhm = np.max(self.getColValues('MajorAxis', units='degree') * cellsize)
+        if "GAUSSIAN" in types:
+            fwhm = np.max(
+                self.getColValues("MajorAxis", units="degree") * cellsize
+            )
             max_source_size = int(np.ceil(fwhm * 1.5))
         else:
             max_source_size = 2
@@ -2526,13 +2872,20 @@ class SkyModel(object):
         # Now we have the size, refine the RA, Dec of the image center
         xcen = np.min(x) + (np.max(x) - np.min(x)) / 2.0
         ycen = np.min(y) + (np.max(y) - np.min(y)) / 2.0
-        refRA, refDec = wcs.wcs_pix2world(xcen, ycen, 0)
-        RA = self.getColValues('Ra')
-        Dec = self.getColValues('Dec')
+        ref_ra, ref_dec = wcs.wcs_pix2world(xcen, ycen, 0)
+        ra = self.getColValues("Ra")
+        dec = self.getColValues("Dec")
 
         for image_name in image_names:
-            make_template_image(image_name, refRA, refDec, refFreq,
-                                ximsize=xsize, yimsize=ysize, cellsize_deg=cellsize)
+            make_template_image(
+                image_name,
+                ref_ra,
+                ref_dec,
+                ref_freq,
+                ximsize=xsize,
+                yimsize=ysize,
+                cellsize_deg=cellsize,
+            )
 
         # Build each image, one at a time (to minimize memory usage)
         for t, image_name in enumerate(image_names):
@@ -2541,77 +2894,100 @@ class SkyModel(object):
             imdata = hdu[0].data
             w = WCS(hdu[0].header)
 
-            # Loop over sources, adding them to the images (note that the spectral terms
-            # sum together when summing polynomials, just as the flux densities do)
+            # Loop over sources, adding them to the images (note that the
+            # spectral terms sum together when summing polynomials, just as the
+            # flux densities do)
             if t == 0:
                 # Flux densities
                 itervalues = fluxes
             else:
                 # Spectral terms
                 itervalues = spectral_indices
-            for i, (ra_src, dec_src, val, type) in enumerate(zip(RA, Dec, itervalues, types)):
+            for i, (ra_src, dec_src, val, type_) in enumerate(
+                zip(ra, dec, itervalues, types, strict=True)
+            ):
                 if t > 0:
-                    v = val[t-1]
+                    v = val[t - 1]
                     const = True
                 else:
                     v = val
                     const = False
                 ra_dec = np.array([[ra_src, dec_src, 0.0, 0.0]])
-                xs, ys = w.wcs_world2pix(ra_dec, 0)[0][0], w.wcs_world2pix(ra_dec, 0)[0][1]
-                if type == 'POINT':
+                xs, ys = (
+                    w.wcs_world2pix(ra_dec, 0)[0][0],
+                    w.wcs_world2pix(ra_dec, 0)[0][1],
+                )
+                if type_ == "POINT":
                     imdata[0, 0, int(np.round(ys)), int(np.round(xs))] += v
-                elif type == 'GAUSSIAN':
-                    S1 = self.getColValues('MajorAxis', units='degree')[i] / cellsize  # pixels
-                    S2 = self.getColValues('MinorAxis', units='degree')[i] / cellsize  # pixels
-                    Th = self.getColValues('Orientation')[i]  # degrees
-                    C1, C2 = ys, xs
-                    b = np.ceil(S1 * 2.5)
-                    bbox = np.s_[max(0, int(C1-b)):min(xsize, int(C1+b+1)),
-                                 max(0, int(C2-b)):min(ysize, int(C2+b+1))]
+                elif type_ == "GAUSSIAN":
+                    s1 = (
+                        self.getColValues("MajorAxis", units="degree")[i]
+                        / cellsize
+                    )  # pixels
+                    s2 = (
+                        self.getColValues("MinorAxis", units="degree")[i]
+                        / cellsize
+                    )  # pixels
+                    th = self.getColValues("Orientation")[i]  # degrees
+                    c1, c2 = ys, xs
+                    b = np.ceil(s1 * 2.5)
+                    bbox = np.s_[
+                        max(0, int(c1 - b)) : min(xsize, int(c1 + b + 1)),
+                        max(0, int(c2 - b)) : min(ysize, int(c2 + b + 1)),
+                    ]
                     x_ax, y_ax = np.mgrid[bbox]
-                    g = [v, C1, C2, S1, S2, Th]
+                    g = [v, c1, c2, s1, s2, th]
                     ffimg = gaussian_fcn(g, x_ax, y_ax, const=const)
                     imdata[0, 0, :, :][bbox] += ffimg
             hdu[0].data = imdata
             hdu.writeto(image_name, overwrite=True)
 
         # Make region file if needed
-        if writeRegionFile and self.hasPatches:
-            RA, Dec = self.getPatchPositions(asArray=True)
+        if write_region_file and self.hasPatches:
+            ra, dec = self.getPatchPositions(asArray=True)
             patch_names = self.getPatchNames()
             x_pix_list = []
             y_pix_list = []
-            for ra_src, dec_src in zip(RA, Dec):
+            for ra_src, dec_src in zip(ra, dec, strict=True):
                 ra_dec = np.array([[ra_src, dec_src, 0.0, 0.0]])
-                y_pix, x_pix = w.wcs_world2pix(ra_dec, 0)[0][0], w.wcs_world2pix(ra_dec, 0)[0][1]
+                y_pix, x_pix = (
+                    w.wcs_world2pix(ra_dec, 0)[0][0],
+                    w.wcs_world2pix(ra_dec, 0)[0][1],
+                )
                 x_pix_list.append(x_pix)
                 y_pix_list.append(y_pix)
             dist_pix = np.sqrt(xsize**2 + ysize**2)
             width_pix = dist_pix * cellsize
             _, vertices = tessellate(
-                SkyCoord(RA, Dec, unit='deg'),
-                SkyCoord(refRA[0], refDec[0], unit='deg'),
-                [width_pix, width_pix]
+                SkyCoord(ra, dec, unit="deg"),
+                SkyCoord(ref_ra[0], ref_dec[0], unit="deg"),
+                [width_pix, width_pix],
             )
             lines = []
-            lines.append('# Region file format: DS9 version 4.0\nglobal color=green '
-                         'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
-                         'move=1 delete=1 include=1 fixed=0 source=1\nfk5\n')
-            for verts, pname in zip(vertices, patch_names):
+            lines.append(
+                "# Region file format: DS9 version 4.0\nglobal color=green "
+                'font="helvetica 10 normal" select=1 highlite=1 edit=1 '
+                "move=1 delete=1 include=1 fixed=0 source=1\nfk5\n"
+            )
+            for verts, pname in zip(vertices, patch_names, strict=True):
                 xylist = []
                 varray = np.array(verts).T
-                RAs = varray[0]
-                Decs = varray[1]
-                for x, y in zip(RAs, Decs):
-                    xylist.append('{0}, {1}'.format(x, y))
-                lines.append('polygon({0}) # text={{{1}}}\n'.format(', '.join(xylist), pname))
+                ras = varray[0]
+                decs = varray[1]
+                for x, y in zip(ras, decs, strict=True):
+                    xylist.append(f"{x}, {y}")
+                lines.append(
+                    f"polygon({', '.join(xylist)}) # text={{{pname}}}\n"
+                )
 
-            outputfile = '{0}.reg'.format(fileRoot)
+            outputfile = f"{file_root}.reg"
             if os.path.exists(outputfile):
-                if clobber:
+                if overwrite:
                     os.remove(outputfile)
                 else:
-                    raise IOError("The output file '{0}' exists and clobber = False.".
-                                  format(outputfile))
-            with open(outputfile, 'w') as f:
+                    raise IOError(
+                        f"The output file {outputfile!r} exists and "
+                        "clobber = False."
+                    )
+            with open(outputfile, "w") as f:
                 f.writelines(lines)

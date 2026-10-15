@@ -78,5 +78,5 @@ def add(LSM, colNamesVals):
 
     LSM.setRowValues(colNamesVals)
     LSM._updateGroups()
-    LSM._addHistory("ADD (source '{0}')".format(colNamesVals['Name']))
+    LSM._add_history("ADD (source '{0}')".format(colNamesVals['Name']))
     LSM._info()

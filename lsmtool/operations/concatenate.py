@@ -162,7 +162,7 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
     table1 = LSM1.table.filled()
     table2 = LSM2.table.filled()
     for entry in table1.meta:
-        if LSM1._verifyColName(entry, quiet=True) is not None:
+        if LSM1._verify_column_name(entry, quiet=True) is not None:
             if entry in table2.meta.keys():
                 table1.meta[entry] = table2.meta[entry]
     table1['Ra'].format = table2['Ra'].format
@@ -228,6 +228,6 @@ def concatenate(LSM1, LSM2, matchBy='name', radius=0.1, keep='all',
     if matchBy.lower() == 'position':
         history += "radius = {0}".format(radius)
     history += " keep = '{0}'".format(keep)
-    LSM1._addHistory("CONCATENATE ({0})".format(history))
+    LSM1._add_history("CONCATENATE ({0})".format(history))
     LSM1._info()
 
