@@ -597,40 +597,27 @@ class SkyModel(object):
                     x_all, y_all, wcs = self._get_xy()
                     wcs_all = [wcs] * len(patch_name)
 
-                x_col = Column(name="X", data=x_all)
-                y_col = Column(name="Y", data=y_all)
-                self.table.add_column(x_col)
-                self.table.add_column(y_col)
+                self.table.add_column(Column(name='X', data=x_all))
+                self.table.add_column(Column(name='Y', data=y_all))
+
+                if method == "mid":
+                    xCol = 0.5 * (self._get_min_column('X') + self._get_max_column('X'))
+                    yCol = 0.5 * (self._get_min_column('Y') + self._get_max_column('Y'))
+                elif method == "mean":
+                    xCol = self._get_averaged_column('X', apply_beam=apply_beam, weight=False)
+                    yCol = self._get_averaged_column('Y', apply_beam=apply_beam, weight=False)
+                elif method == "wmean":
+                    xCol = self._get_averaged_column('X', apply_beam=apply_beam, weight=True)
+                    yCol = self._get_averaged_column('Y', apply_beam=apply_beam, weight=True)
+                else:
+                    self.table.remove_column('X')
+                    self.table.remove_column('Y')
+                    raise ValueError(f"Unknown method '{method}' for setting patch positions.")
 
                 positions = []
-                if method == "mid":
-                    min_x = self._get_min_column("X")
-                    max_x = self._get_max_column("X")
-                    min_y = self._get_min_column("Y")
-                    max_y = self._get_max_column("Y")
-                    mid_x = min_x + (max_x - min_x) / 2.0
-                    mid_y = min_y + (max_y - min_y) / 2.0
-                    for i, _ in enumerate(patch_name):
-                        ra, dec = wcs_all[i].wcs_pix2world(
-                            mid_x[i], mid_y[i], 0
-                        )
-                        positions.append((ra.item(), dec.item()))
-                elif method in {"mean", "wmean"}:
-                    if method == "mean":
-                        weight = False
-                    else:
-                        weight = True
-                    mean_x = self._get_averaged_column(
-                        "X", apply_beam=apply_beam, weight=weight
-                    )
-                    mean_y = self._get_averaged_column(
-                        "Y", apply_beam=apply_beam, weight=weight
-                    )
-                    for i, _ in enumerate(patch_name):
-                        ra, dec = wcs_all[i].wcs_pix2world(
-                            mean_x[i], mean_y[i], 0
-                        )
-                        positions.append((ra.item(), dec.item()))
+                for i, _ in enumerate(patch_name):
+                    ra, dec = wcs_all[i].wcs_pix2world(xCol[i], yCol[i], 0)
+                    positions.append((ra.item(), dec.item()))
                 if positions:
                     ra_norm, dec_norm = tableio.RADec2Angle(
                         *map(list, zip(*positions, strict=True))
