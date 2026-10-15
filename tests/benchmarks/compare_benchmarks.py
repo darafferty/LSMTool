@@ -25,7 +25,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 import yaml
-from git import BadName, Repo
+from git import Repo
 
 # ---------------------------------------------------------------------------- #
 # Constants
@@ -152,8 +152,7 @@ def run_benchmark(commit, label, *pytest_args):
                 )
 
             print(f"Running benchmark: {label}, Commit: {commit}")
-            retcode = pytest.main(pytest_command)
-            return retcode
+            return pytest.main(pytest_command)
 
         finally:
             # Remove the temporary worktree after benchmarking
