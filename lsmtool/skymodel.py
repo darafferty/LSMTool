@@ -2067,8 +2067,8 @@ class SkyModel(object):
                 )
 
             ref_ra, ref_dec = self._get_midpoint()
-            table.meta['refRA'] = ref_ra
-            table.meta['refDec'] = ref_dec
+            table.meta["refRA"] = ref_ra
+            table.meta["refDec"] = ref_dec
 
             if width is not None:
                 table.meta["width"] = width
