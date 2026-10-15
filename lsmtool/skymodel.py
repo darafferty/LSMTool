@@ -105,7 +105,7 @@ class SkyModel(object):
                             "Attempting to load model from VO service %r...",
                             filename,
                         )
-                        self.table = tableio.cone_search(
+                        self.table = tableio.coneSearch(
                             filename, vo_position, vo_radius
                         )
                         self.log.debug(
