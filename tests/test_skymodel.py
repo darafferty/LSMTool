@@ -282,8 +282,20 @@ def test_column_values_no_patches(sky_no_patches, aggregate):
     "aggregate, first_i, last_i, first_si, last_si",
     [
         ("sum", 62.9465, 17.0805, [-2.1247, -0.2024], [-6.3179, -0.2652]),
-        ("mean", 20.982167, 1.70805, [-0.708233, -0.067467], [-0.63179, -0.02652]),
-        ("wmean", 58.175797, 2.948043, [-0.643019, -0.168112], [-0.679728, -0.013426]),
+        (
+            "mean",
+            20.982167,
+            1.70805,
+            [-0.708233, -0.067467],
+            [-0.63179, -0.02652],
+        ),
+        (
+            "wmean",
+            58.175797,
+            2.948043,
+            [-0.643019, -0.168112],
+            [-0.679728, -0.013426],
+        ),
         ("min", 1.216, 0.4888, [-0.9809, -0.2064], [-0.7, -0.2652]),
         ("max", 60.4892, 4.7717, [-0.5145, 0.004], [-0.2657, 0]),
     ],
@@ -298,7 +310,7 @@ def test_column_values_with_patches(
     with pytest.raises(TypeError):
         sky_patches.getColValues("Name", aggregate=aggregate)
 
-    # Aggregation of the "I" column should succeed and return the expected shape.
+    # Aggregation of the "I" column should return the expected shape.
     i = sky_patches.getColValues("I", aggregate=aggregate)
     assert i.shape == (n_patches,)
     # Check the values for the first and last patches ('bin0' and 'bin99').
