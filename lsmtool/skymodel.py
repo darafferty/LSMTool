@@ -597,22 +597,32 @@ class SkyModel(object):
                     x_all, y_all, wcs = self._get_xy()
                     wcs_all = [wcs] * len(patch_name)
 
-                self.table.add_column(Column(name='X', data=x_all))
-                self.table.add_column(Column(name='Y', data=y_all))
+                self.table.add_column(Column(name="X", data=x_all))
+                self.table.add_column(Column(name="Y", data=y_all))
 
                 if method == "mid":
-                    xCol = 0.5 * (self._get_min_column('X') + self._get_max_column('X'))
-                    yCol = 0.5 * (self._get_min_column('Y') + self._get_max_column('Y'))
+                    xCol = 0.5 * (
+                        self._get_min_column("X") + self._get_max_column("X")
+                    )
+                    yCol = 0.5 * (
+                        self._get_min_column("Y") + self._get_max_column("Y")
+                    )
                 elif method == "mean":
-                    xCol = self._get_averaged_column('X', apply_beam=apply_beam, weight=False)
-                    yCol = self._get_averaged_column('Y', apply_beam=apply_beam, weight=False)
+                    xCol = self._get_mean_column("X")
+                    yCol = self._get_mean_column("Y")
                 elif method == "wmean":
-                    xCol = self._get_averaged_column('X', apply_beam=apply_beam, weight=True)
-                    yCol = self._get_averaged_column('Y', apply_beam=apply_beam, weight=True)
+                    xCol = self._get_weighted_mean_column(
+                        "X", apply_beam=apply_beam
+                    )
+                    yCol = self._get_weighted_mean_column(
+                        "Y", apply_beam=apply_beam
+                    )
                 else:
-                    self.table.remove_column('X')
-                    self.table.remove_column('Y')
-                    raise ValueError(f"Unknown method '{method}' for setting patch positions.")
+                    self.table.remove_column("X")
+                    self.table.remove_column("Y")
+                    raise ValueError(
+                        f"Unknown method '{method}' for setting patch positions."
+                    )
 
                 positions = []
                 for i, _ in enumerate(patch_name):
@@ -1422,13 +1432,11 @@ class SkyModel(object):
             return None
 
         if aggregate == "mean":
-            col = self._get_averaged_column(
-                col_name, weight=False, apply_beam=apply_beam
-            )
+            col = self._get_mean_column(col_name)
             apply_beam = False
         elif aggregate == "wmean":
-            col = self._get_averaged_column(
-                col_name, weight=True, apply_beam=apply_beam
+            col = self._get_weighted_mean_column(
+                col_name, apply_beam=apply_beam
             )
             apply_beam = False
         elif aggregate == "sum":
@@ -1440,7 +1448,7 @@ class SkyModel(object):
         else:
             raise ValueError("Aggregation function not understood.")
 
-        if apply_beam and col_name in ['I', 'Q', 'U', 'V']:
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
             col = self._apply_beam_to_col(col, patch=True)
 
         return col
@@ -1574,7 +1582,7 @@ class SkyModel(object):
 
         return self._get_filled_column(col_name).groups.aggregate(npmax)
 
-    def _get_averaged_column(self, col_name, weight=True, apply_beam=False):
+    def _get_mean_column(self, col_name):
         """
         Returns column averaged by group.
 
@@ -1582,59 +1590,66 @@ class SkyModel(object):
         ----------
         col_name : str
             Column name
-        weight : bool, optional
-            If True, return average weighted by flux
+
+        Returns
+        -------
+        col : astropy Column
+            Column object with averaged values
+
+        """
+
+        def npavg(array):
+            return np.average(array, axis=0)
+
+        return self._get_filled_column(col_name).groups.aggregate(npavg)
+
+    def _get_weighted_mean_column(self, col_name, apply_beam=False):
+        """
+        Returns column averaged by group, using weighted averaging.
+
+        Parameters
+        ----------
+        col_name : str
+            Column name
         apply_beam : bool, optional
-            If True, fluxes will be attenuated by the beam
+            If True, weights will be attenuated by the beam
 
         Returns
         -------
         col : astropy Column
             Column object with averaged values
         """
-        if weight:
-            # Using 'axis=0' makes the aggregation support array-valued columns.
-            # For scalar-valued columns, a plain np.sum would suffice.
-            # Note that this is an undocumented feature of astropy tables:
-            # https://docs.astropy.org/en/stable/table/operations.html#aggregation
-            # says the aggregation function should return a scalar value.
-            def npsum(array):
-                return np.sum(array, axis=0)
-
-            if hasattr(self.table[col_name], "filled"):
-                vals = self.table[col_name].filled().data
-            else:
-                vals = self.table[col_name].data
-            if weight:
-                weights = self.getColValues("I", applyBeam=apply_beam)
-                if weights.shape != vals.shape:
-                    weights = np.resize(weights, vals.shape)
-                weight_col = Column(name="Weight", data=weights)
-                val_weight_col = Column(name="ValWeight", data=vals * weights)
-                self.table.add_column(val_weight_col)
-                self.table.add_column(weight_col)
-                numer = self.table["ValWeight"].groups.aggregate(npsum).data
-                denom = self.table["Weight"].groups.aggregate(npsum).data
-                self.table.remove_column("ValWeight")
-                self.table.remove_column("Weight")
-            else:
-                val_col = Column(name="Val", data=vals)
-                self.table.add_column(val_col)
-                numer = self.table["Val"].groups.aggregate(npsum).data
-                self.table.remove_column("Val")
-
-            return Column(
-                name=col_name,
-                data=np.array(numer / denom),
-                unit=self.table[col_name].unit,
-            )
 
         # Using 'axis=0' makes the aggregation support array-valued columns.
-        # For scalar-valued columns, a plain np.average would suffice.
-        def npavg(c):
-            return np.average(c, axis=0)
+        # For scalar-valued columns, a plain np.sum would suffice.
+        # Note that this is an undocumented feature of astropy tables:
+        # https://docs.astropy.org/en/stable/table/operations.html#aggregation
+        # says the aggregation function should return a scalar value.
+        def npsum(array):
+            return np.sum(array, axis=0)
 
-        return self._get_filled_column(col_name).groups.aggregate(npavg)
+        if hasattr(self.table[col_name], "filled"):
+            vals = self.table[col_name].filled().data
+        else:
+            vals = self.table[col_name].data
+
+        weights = self.getColValues("I", applyBeam=apply_beam)
+        if weights.shape != vals.shape:
+            weights = np.resize(weights, vals.shape)
+        weight_col = Column(name="Weight", data=weights)
+        val_weight_col = Column(name="ValWeight", data=vals * weights)
+        self.table.add_column(val_weight_col)
+        self.table.add_column(weight_col)
+        numer = self.table["ValWeight"].groups.aggregate(npsum).data
+        denom = self.table["Weight"].groups.aggregate(npsum).data
+        self.table.remove_column("ValWeight")
+        self.table.remove_column("Weight")
+
+        return Column(
+            name=col_name,
+            data=np.array(numer / denom),
+            unit=self.table[col_name].unit,
+        )
 
     def _get_size_column(self, weight=True, apply_beam=False):
         """
