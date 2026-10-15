@@ -596,7 +596,7 @@ class SkyModel(object):
                         x, y, wcs = self._get_xy(patch_ra, patch_dec)
                         x_all.extend(x)
                         y_all.extend(y)
-                        wcs_all.append(make_wcs(mid_ra, mid_dec))
+                        wcs_all.append(wcs)
                 else:
                     x_all, y_all, wcs = self._get_xy()
                     wcs_all = [wcs] * len(patch_name)
