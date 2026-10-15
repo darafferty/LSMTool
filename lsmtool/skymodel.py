@@ -355,16 +355,16 @@ class SkyModel(object):
 
         Parameters
         ----------
-        col_name : str, list of str, optional
+        colName : str, list of str, optional
             Name of column or columns to print. If None, all columns are printed
-        patch_name : str, list of str, optional
+        patchName : str, list of str, optional
             If given, returns column values for specified patch or patches only
-        source_name : str, list of str, optional
+        sourceName : str, list of str, optional
             If given, returns column value for specified source or sources only
-        sort_by : str or list of str, optional
+        sortBy : str or list of str, optional
             Name of columns to sort on. If None, no sorting is done. If
             a list is given, sorting is done on the columns in the order given
-        low_to_high : bool, optional
+        lowToHigh : bool, optional
             If True, sort values from low to high instead of high to low
 
         Examples
@@ -435,9 +435,6 @@ class SkyModel(object):
             If True, only columns that exist in the table are allowed. If False,
             columns that are valid but do not exist in the table are returned
             without error.
-        apply_beam : bool, optional
-            If True and col_name = 'I', the attenuated Stokes I column will be
-            returned
         quiet : bool, optional
             If True, errors will be suppressed
 
@@ -861,7 +858,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        col_dict : dict
+        colDict : dict
             Dict specifying column names and default values as
             {'col_name':value} where the value is in the units accepted by
             makesourcedb (e.g., Hz for 'Reference_frequency').
@@ -922,7 +919,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        col_name : str
+        colName : str
             Name of column
         units : str, optional
             Output units (the values are converted as needed). By default, the
@@ -948,7 +945,7 @@ class SkyModel(object):
             near RA = 0h. For aggregated RA and Dec values, use the
             getPatchPositions() method instead which projects the sources onto
             the image plane before aggregation.
-        apply_beam : bool, optional
+        applyBeam : bool, optional
             If True, fluxes will be attenuated by the beam. This attenuation
             also applies to fluxes used in aggregation functions.
 
@@ -1027,7 +1024,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        col_name : str
+        colName : str
             Name of column. If not already present in the table, a new column
             will be created.
         values : list, numpy.ndarray, or dict
@@ -1113,7 +1110,7 @@ class SkyModel(object):
 
         Parameters
         ----------
-        row_name : str
+        rowName : str
             Name of the source or patch
 
         Returns
@@ -2618,7 +2615,7 @@ class SkyModel(object):
         radius="10 arcsec",
         *,
         outDir=".",
-        label_by=None,
+        labelBy=None,
         ignoreSpec=None,
         excludeMultiple=True,
         excludeByFlux=False,
@@ -2701,7 +2698,7 @@ class SkyModel(object):
         Compare two sky models and save plots::
 
         >>> skymodel2 = lsmtool.load("sky2.model")
-        ... s.compare(skymodel2, out_dir="comparison_results/")
+        ... s.compare(skymodel2, outDir="comparison_results/")
 
         Compare a LOFAR sky model to a global sky model made from VLSS+TGSS+NVSS
         (where refRA and refDec are the approximate center of the LOFAR sky
@@ -2713,8 +2710,8 @@ class SkyModel(object):
         ... s.compare(
         ...     skymodel2,
         ...     radius="30 arcsec",
-        ...     exclude_multiple=True,
-        ...     out_dir="comparison_results/",
+        ...     excludeMultiple=True,
+        ...     outDir="comparison_results/",
         ...     name1="LOFAR",
         ...     name2="GSM",
         ...     format="png",
@@ -2728,7 +2725,7 @@ class SkyModel(object):
             skymodel2,
             radius=radius,
             outDir=outDir,
-            labelBy=label_by,
+            labelBy=labelBy,
             ignoreSpec=ignoreSpec,
             excludeMultiple=excludeMultiple,
             excludeByFlux=excludeByFlux,
@@ -2750,7 +2747,7 @@ class SkyModel(object):
         ----------
         filename : str, optional
             If given, the plot is saved to a file instead of displayed.
-        label_by : str, optional
+        labelBy : str, optional
             One of 'source' or 'patch': label points using source names
             ('source') or patch names ('patch')
 
