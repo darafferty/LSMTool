@@ -140,7 +140,6 @@ exclude = [
     "lsmtool/lsmtool.py",
     "lsmtool/operations",
     "lsmtool/operations_lib.py",
-    "lsmtool/skymodel.py",
     "lsmtool/tableio.py",
     "tests/test_lsmtool.py",
 ]
@@ -158,6 +157,12 @@ docstring-code-format = true
     "PLR0917", # Too many positional arguments
     "S101",    # Use of `assert` detected
     "S108"    # Probable insecure usage of temporary file or directory
+]
+"lsmtool/skymodel.py" = [
+    "N802",    # Function names should be lowercase
+    "PLR0912", # Too many branches in function definition
+    "PLR0913", # Too many arguments in function definition
+    "PLR0915" # Too many statements in function definition
 ]
 
 [tool.ruff.lint]

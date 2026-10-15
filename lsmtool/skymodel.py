@@ -787,7 +787,7 @@ class SkyModel(object):
 
         if len(ra) == 0:
             return 0, 0
-        elif len(ra) == 1:
+        if len(ra) == 1:
             ra_midpoint, dec_midpoint = ra[0], dec[0]
         else:
             wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
