@@ -340,7 +340,7 @@ commands = [
     ],
     # Sort python import
     [ "python", "-m", "ruff", "check", "--select", "I", "--fix" ],
-    # Format pyproject.toml
+    # Format pyproject.toml. The "-" makes tox ignore the exit code.
     [ "-", "python", "-m", "pyproject_fmt", "pyproject.toml" ]
 ]
 
