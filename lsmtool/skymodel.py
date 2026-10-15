@@ -2,12 +2,14 @@
 Defines the SkyModel object used by LSMTool for all operations.
 """
 
+import contextlib
 import copy
 import datetime
 import fnmatch
 import logging
 import os
 import tempfile
+from pathlib import Path
 
 import astropy.units as u
 import numpy as np
@@ -85,7 +87,6 @@ class SkyModel(object):
         >>> s = SkyModel(
         ...     "WENSS", VOPosition=[212.8352792, 52.202644], VORadius=5.0
         ... )
-
         """
 
         beam_ms = beamMS
@@ -95,129 +96,19 @@ class SkyModel(object):
 
         self.log = logging.getLogger("LSMTool")
         self.history = []
-        if isinstance(filename, str):
+        self._filename = None
+
+        if isinstance(filename, (str, Path)):
             # First check if filename points to a VO query
             if vo_position is not None and vo_radius is not None:
-                try:
-                    if filename.lower() in tableio.ALLOWED_VO_SERVICES:
-                        self.log.debug(
-                            "Attempting to load model from VO service %r...",
-                            filename,
-                        )
-                        self.table = tableio.coneSearch(
-                            filename, vo_position, vo_radius
-                        )
-                        self.log.debug(
-                            "Successfully loaded model from VO service %r",
-                            filename,
-                        )
-                        self._filename = filename.lower() + "_vo"
-                        self._add_history(
-                            f"LOAD (from {filename} at position {vo_position})"
-                        )
-                    elif filename.lower() == "tgss":
-                        self.log.debug("Attempting to load model from TGSS...")
-                        self.table = tableio.getTGSS(vo_position, vo_radius)
-                        self.log.debug("Successfully loaded model from TGSS")
-                        self._filename = "tgss_vo"
-                        self._add_history(
-                            f"LOAD (from TGSS at position {vo_position})"
-                        )
-                    elif filename.lower() == "gsm":
-                        self.log.debug("Attempting to load model from GSM...")
-                        self.table = tableio.getGSM(vo_position, vo_radius)
-                        self.log.debug("Successfully loaded model from GSM")
-                        self._filename = "gsm_vo"
-                        self._add_history(
-                            f"LOAD (from GSM at position {vo_position})"
-                        )
-                    elif filename.lower() == "lotss":
-                        self.log.debug("Attempting to load model from LoTSS...")
-                        self.table = tableio.getLoTSS(vo_position, vo_radius)
-                        self.log.debug("Successfully loaded model from LoTSS")
-                        self._filename = "lotss_vo"
-                        self._add_history(
-                            f"LOAD (from LoTSS at position {vo_position})"
-                        )
-                    else:
-                        raise ValueError(
-                            f"VO service {filename!r} not understood. Must be "
-                            "one of 'WENSS', 'NVSS', 'TGSS', 'GSM', or "
-                            "'LOTSS'. If you want instead to load a model from "
-                            "a local file, do not set vo_position or vo_radius."
-                        )
-                except (IndexError, InconsistentTableError):
-                    # Empty result due to no coverage in the catalog at the
-                    # queried position
-                    self.log.warning(
-                        "No sources found for the given VO query parameters (VO"
-                        " service %r with vo_position = %s and vo_radius = %s)."
-                        " Sky model is empty.",
-                        filename,
-                        vo_position,
-                        vo_radius,
-                    )
-                    self.table = tableio.makeEmptyTable()
-                    self._filename = None
-            elif tableio.validateLSMFormat(filename):
-                self.log.debug(
-                    "Attempting to load LSM model from file %r...", filename
-                )
-                self.table = tableio.loadTableFromLSM(filename)
-                self.log.debug(
-                    "Successfully loaded model from file %r", filename
-                )
-                self._add_history(
-                    f"LOAD (from file {filename!r})",
+                self.table = self.load_from_remote_service(
+                    filename, vo_position, vo_radius
                 )
             else:
-                # If filename does not point to a VO query, assume it points to
-                # a local file
-                self.log.debug(
-                    "Attempting to load model from file %r...", filename
-                )
-                if filename.lower() in (
-                    "wenss",
-                    "nvss",
-                    "tgss",
-                    "gsm",
-                    "lotss",
-                    "vlssr",
-                ):
-                    self.log.warning(
-                        "It appears from the filename that you may be trying to"
-                        " query a VO service. If so, you must provide values "
-                        "for both vo_position and vo_radius."
-                    )
-                self.table = Table.read(filename, format="makesourcedb")
-                self.log.debug(
-                    "Successfully loaded model from file %r", filename
-                )
-                self._filename = filename
-                self._add_history(f"LOAD (from file {filename!r})")
+                self.table = self.load_from_file(filename)
+
         elif isinstance(filename, dict):
-            self.log.debug("Attempting to create model from input dict...")
-            # Create header
-            format_string = "#FORMAT = " + ", ".join(filename.keys())
-
-            # Process the header
-            col_names, has_patches, col_defaults, meta_dict = (
-                processFormatString(format_string)
-            )
-
-            # Process the model
-            outlines = []
-            line = ", ".join((f"{v}" for v in filename.values()))
-            outline, meta_dict = processLine(line, meta_dict, col_names)
-            if outline is not None:
-                outlines.append(outline)
-            outlines.append("\n")  # needed in case of single-line sky models
-            self.table = createTable(
-                outlines, meta_dict, col_names, col_defaults
-            )
-            self.log.debug("Successfully created model from input dict")
-            self._filename = None
-            self._add_history("LOAD (from input dict)")
+            self.table = self.load_from_dict(filename)
         else:
             raise ValueError("Filename not understood. Exiting...")
 
@@ -244,13 +135,182 @@ class SkyModel(object):
         """
         Returns the table len() value (number of rows).
         """
-        return self.table.__len__()
+        return len(self.table)
 
     def __str__(self):
         """
         Returns string with info about sky model contents.
         """
-        return self.table.__str__()
+        return str(self.table)
+
+    def load_from_file(self, filename):
+        """
+        Load a SkyModel from a local file.
+
+        This method attempts to load a sky model from the specified local file.
+        It first checks if the file is in the LSM format and uses the
+        appropriate loader. If the file is not in LSM format, it attempts to
+        read it using the Astropy Table reader with the "makesourcedb" format.
+
+        Parameters
+        ----------
+        filename : str or Path
+            _description_
+
+        Returns
+        -------
+        astropy.table.Table
+            Table containing the source catalog returned by the remote service.
+
+        """
+
+        if tableio.validateLSMFormat(filename):
+            with self._load_context(filename, f"LSM file {filename!r}"):
+                return tableio.loadTableFromLSM(filename)
+
+        else:
+            # If filename does not point to a VO query, assume it points to
+            # a local file
+            if filename.lower() in (
+                "wenss",
+                "nvss",
+                "tgss",
+                "gsm",
+                "lotss",
+                "vlssr",
+            ):
+                self.log.warning(
+                    "It appears from the filename that you may be trying to"
+                    " query a VO service. If so, you must provide values "
+                    "for both vo_position and vo_radius."
+                )
+
+            with self._load_context(filename, f"file {filename}"):
+                return Table.read(filename, format="makesourcedb")
+
+    def load_from_remote_service(self, service, vo_position, vo_radius):
+        """
+        Load a SkyModel from a remote service based on the given filename and
+        VO parameters.
+
+        Parameters
+        ----------
+        service : {"nvss", "wenss", "vlssr", "tgss", "gsm", "lotts"}
+            Name of the remote service to query.
+        vo_position : _type_
+            Position for the VO query.
+        vo_radius : _type_
+            Cone search radius.
+
+        Returns
+        -------
+        astropy.table.Table
+            Table containing the source catalog returned by the remote service.
+
+        Raises
+        ------
+        ValueError
+            If the specified VO service is not recognized or the query fails.
+        """
+        key = service.lower()
+        if key in tableio.ALLOWED_VO_SERVICES:
+            with self._load_remote_context(
+                service, f"VO service {service}", vo_position, vo_radius
+            ):
+                tableio.coneSearch(key, vo_position, vo_radius)
+
+        if key in tableio.ALLOWED_SURVEYS:
+            with self._load_remote_context(
+                service, f"{service} survey", vo_position, vo_radius
+            ):
+                return tableio.get_survey(key, vo_position, vo_radius)
+
+        raise ValueError(
+            f"VO service {service!r} not understood. Must be one of "
+            f"{tableio.ALLOWED_REMOTE_SERVICES}. If you want instead to load a "
+            f"model from a local file, do not set vo_position or vo_radius."
+        )
+
+    @contextlib.contextmanager
+    def _load_remote_context(self, filename, service, vo_position, vo_radius):
+        """Context manager for loading SkyModels from remote services."""
+
+        with self._load_context(filename, service, vo_position):
+            try:
+                yield
+            except (IndexError, InconsistentTableError):
+                # Empty result due to no coverage in the catalog at the queried
+                # position
+                self.log.warning(
+                    "No sources found for the given VO query parameters "
+                    "(%s  with vo_position = %s and vo_radius = %s). "
+                    "Returning an empty %s instance.",
+                    service,
+                    vo_position,
+                    vo_radius,
+                    self.__class__.__name__,
+                )
+                self._filename = None
+                return tableio.makeEmptyTable()
+            else:
+                self._filename = f"{filename}_vo"
+
+    @contextlib.contextmanager
+    def _load_context(self, filename, service, vo_position=None):
+        """Context manager for loading SkyModels."""
+
+        self.log.debug(
+            "Attempting to load %s from %s.", self.__class__.__name__, service
+        )
+
+        # Control flow goes back to the caller to perform the actual loading of
+        # the model during the yield block
+        try:
+            yield
+        except:
+            raise
+        else:
+            self.log.debug(
+                "Successfully loaded %s from %s.",
+                self.__class__.__name__,
+                service,
+            )
+            pos = f" at position {vo_position}" if vo_position else ""
+            self._add_history(f"LOAD (from {service}{pos})")
+            self._filename = filename
+
+    def load_from_dict(self, columns):
+        """
+        Load SkyModel from dict of columns.
+
+        Parameters
+        ----------
+        columns : dict
+            Dictionary where keys are column names and values are column data.
+
+        Returns
+        -------
+        astropy.table.Table
+            Table containing the source catalog returned by the remote service.
+
+        """
+        with self._load_context(None, "input dict"):
+            # Create header
+            format_string = f"#FORMAT = {', '.join(columns)}"
+
+            # Process the header
+            col_names, has_patches, col_defaults, meta_dict = (
+                processFormatString(format_string)
+            )
+
+            # Process the model
+            line = ", ".join(map(str, columns.values()))
+            outline, meta_dict = processLine(line, meta_dict, col_names)
+            outlines = []
+            if outline is not None:
+                outlines.append(outline)
+            outlines.append("\n")  # needed in case of single-line sky models
+            return createTable(outlines, meta_dict, col_names, col_defaults)
 
     def _updateGroups(self):
         """
