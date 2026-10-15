@@ -1633,22 +1633,22 @@ class SkyModel(object):
         else:
             vals = self.table[col_name].data
 
-        weights = self.getColValues("I", applyBeam=apply_beam)
-        if weights.shape != vals.shape:
-            weights = np.resize(weights, vals.shape)
-        weight_col = Column(name="Weight", data=weights)
-        val_weight_col = Column(name="ValWeight", data=vals * weights)
-        self.table.add_column(val_weight_col)
-        self.table.add_column(weight_col)
-        numer = self.table["ValWeight"].groups.aggregate(npsum).data
-        denom = self.table["Weight"].groups.aggregate(npsum).data
-        self.table.remove_column("ValWeight")
-        self.table.remove_column("Weight")
+        weight_col = self.table["I"]
+        if apply_beam:
+            weight_col = self._apply_beam_to_col(weight_col)
+        if weight_col.shape != vals.shape:
+            weights = np.resize(weight_col, vals.shape)
+            weight_col = Column(data=weights)
+            weight_col = weight_col.group_by(self.table["Patch"])
+
+        val_weight_col = Column(data=vals * weight_col.data)
+        val_weight_col = val_weight_col.group_by(self.table["Patch"])
+
+        numer = val_weight_col.groups.aggregate(npsum).data
+        denom = weight_col.groups.aggregate(npsum).data
 
         return Column(
-            name=col_name,
-            data=np.array(numer / denom),
-            unit=self.table[col_name].unit,
+            name=col_name, data=numer / denom, unit=self.table[col_name].unit
         )
 
     def _get_size_column(self, weight=True, apply_beam=False):
