@@ -221,7 +221,7 @@ class SkyModel(object):
             query = tableio.get_survey
             description = f"{service} survey"
 
-        with self._load_remote_context(
+        with self._load_context(
             f"{key}_vo", description, vo_position, vo_radius
         ):
             try:
