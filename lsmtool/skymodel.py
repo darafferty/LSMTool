@@ -1511,33 +1511,6 @@ class SkyModel(object):
 
         return col
 
-    def _wrap_aggregation_function(self, col_name, np_function):
-        """
-        For a given column, returns an function for use in group aggregation.
-
-        Parameters
-        ----------
-        col_name : str
-            Column name
-        np_function : function
-            Numpy function to use for aggregation (e.g., np.sum, np.min)
-
-        Returns
-        -------
-        func : function
-            Aggregation kernel function suitable for use with group aggregation
-        """
-        # For scalar-valued columns, using np_function directly is much faster
-        # than using the aggregation function with 'axis=0'.
-        if self.table[col_name].ndim == 1:
-            return np_function
-
-        # Support array-valued columns using 'axis=0'.
-        # Note that this is an undocumented feature of astropy tables:
-        # https://docs.astropy.org/en/stable/table/operations.html#aggregation
-        # says the aggregation function should return a scalar value.
-        return lambda array: np_function(array, axis=0)
-
     def _get_filled_column(self, col_name):
         """
         For a given column, returns the filled column data, grouped by patch.
@@ -1601,6 +1574,33 @@ class SkyModel(object):
         return Column(
             name=col_name, data=numer / denom, unit=self.table[col_name].unit
         )
+
+    def _wrap_aggregation_function(self, col_name, np_function):
+        """
+        For a given column, returns an function for use in group aggregation.
+
+        Parameters
+        ----------
+        col_name : str
+            Column name
+        np_function : function
+            Numpy function to use for aggregation (e.g., np.sum, np.min)
+
+        Returns
+        -------
+        func : function
+            Aggregation kernel function suitable for use with group aggregation
+        """
+        # For scalar-valued columns, using np_function directly is much faster
+        # than using the aggregation function with 'axis=0'.
+        if self.table[col_name].ndim == 1:
+            return np_function
+
+        # Support array-valued columns using 'axis=0'.
+        # Note that this is an undocumented feature of astropy tables:
+        # https://docs.astropy.org/en/stable/table/operations.html#aggregation
+        # says the aggregation function should return a scalar value.
+        return lambda array: np_function(array, axis=0)
 
     def _get_size_column(self, weight=True, apply_beam=False):
         """
