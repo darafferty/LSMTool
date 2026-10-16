@@ -217,7 +217,7 @@ class SkyModel(object):
             with self._load_remote_context(
                 service, f"VO service {service}", vo_position, vo_radius
             ):
-                tableio.coneSearch(key, vo_position, vo_radius)
+                return tableio.coneSearch(key, vo_position, vo_radius)
 
         if key in tableio.ALLOWED_SURVEYS:
             with self._load_remote_context(
