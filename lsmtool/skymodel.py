@@ -99,7 +99,7 @@ class SkyModel(object):
             # First check if filename points to a VO query
             if vo_position is not None and vo_radius is not None:
                 try:
-                    if filename.lower() in tableio.allowedVOServices:
+                    if filename.lower() in tableio.ALLOWED_VO_SERVICES:
                         self.log.debug(
                             "Attempting to load model from VO service %r...",
                             filename,
@@ -446,14 +446,14 @@ class SkyModel(object):
         """
         if isinstance(col_name, str):
             col_name_lower = col_name.lower()
-            if col_name_lower not in tableio.allowedColumnNames:
+            if col_name_lower not in tableio.ALLOWED_COLUMN_NAMES:
                 if not quiet:
                     raise ValueError(
                         f"Column name {col_name!r} is not a valid makesourcedb "
                         "column."
                     )
                 return None
-            col_name_key = tableio.allowedColumnNames[col_name_lower]
+            col_name_key = tableio.ALLOWED_COLUMN_NAMES[col_name_lower]
             if col_name_key not in self.table.keys() and only_existing:
                 if not quiet:
                     raise ValueError(
@@ -465,11 +465,11 @@ class SkyModel(object):
             col_name_lower = [c.lower() for c in col_name]
             for name in col_name_lower[:]:
                 bad_names = []
-                if name not in tableio.allowedColumnNames:
+                if name not in tableio.ALLOWED_COLUMN_NAMES:
                     bad_names.append(name)
                     col_name_lower.remove(name)
                 else:
-                    col_name_key = tableio.allowedColumnNames[name]
+                    col_name_key = tableio.ALLOWED_COLUMN_NAMES[name]
                     if col_name_key not in self.table.keys():
                         bad_names.append(name)
                         col_name_lower.remove(name)
@@ -488,7 +488,7 @@ class SkyModel(object):
             if len(col_name_lower) == 0:
                 return None
             col_name_key = [
-                tableio.allowedColumnNames[n] for n in col_name_lower
+                tableio.ALLOWED_COLUMN_NAMES[n] for n in col_name_lower
             ]
         else:
             col_name_key = None

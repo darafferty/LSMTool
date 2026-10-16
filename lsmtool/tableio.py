@@ -33,7 +33,7 @@ from .operations_lib import normalize_ra_dec
 # name of the column, the entry value is the key used in the astropy table of the
 # SkyModel object. For details, see:
 # https://www.astron.nl/lofarwiki/doku.php?id=public:user_software:documentation:makesourcedb
-allowedColumnNames = {
+ALLOWED_COLUMN_NAMES = {
     "name": "Name",
     "type": "Type",
     "patch": "Patch",
@@ -61,7 +61,7 @@ allowedColumnNames = {
     "spectralindex": "SpectralIndex",
 }
 
-allowedColumnUnits = {
+ALLOWED_COLUMN_UNITS = {
     "name": None,
     "type": None,
     "patch": None,
@@ -90,7 +90,7 @@ allowedColumnUnits = {
     "spectralindex": None,
 }
 
-allowedColumnDefaults = {
+ALLOWED_COLUMN_DEFAULTS = {
     "name": "N/A",
     "type": "N/A",
     "patch": "N/A",
@@ -118,9 +118,9 @@ allowedColumnDefaults = {
     "spectralindex": [0.0],
 }
 
-requiredColumnNames = ["Name", "Type", "Ra", "Dec", "I"]
+REQUIRED_COLUMN_NAMES = ["Name", "Type", "Ra", "Dec", "I"]
 
-allowedVOServices = {
+ALLOWED_VO_SERVICES = {
     "nvss": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/65&amp;",
     "wenss": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;",
     "vlssr": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/97&amp;",
@@ -433,10 +433,10 @@ def createTable(outlines, metaDict, colNames, colDefaults):
     for i, colName in enumerate(colNames):
         log.debug(
             "Setting units for column '{0}' to {1}".format(
-                colName, allowedColumnUnits[colName.lower()]
+                colName, ALLOWED_COLUMN_UNITS[colName.lower()]
             )
         )
-        table.columns[colName].unit = allowedColumnUnits[colName.lower()]
+        table.columns[colName].unit = ALLOWED_COLUMN_UNITS[colName.lower()]
 
         if (
             hasattr(table.columns[colName], "filled")
@@ -558,22 +558,22 @@ def processFormatString(formatString):
 
         if colName == "":
             raise IOError("Skipping of columns is not yet supported.")
-        if colName not in allowedColumnNames:
+        if colName not in ALLOWED_COLUMN_NAMES:
             raise IOError(
                 "Column '{0}' is not currently allowed".format(colName)
             )
         else:
-            colNames[i] = allowedColumnNames[colName]
+            colNames[i] = ALLOWED_COLUMN_NAMES[colName]
             if defaultVal is not None:
                 colDefaults[i] = defaultVal
                 metaDict[colNames[i]] = defaultVal
-            elif allowedColumnDefaults[colName] is not None:
+            elif ALLOWED_COLUMN_DEFAULTS[colName] is not None:
                 # Note: we used deepcopy() here to ensure that the original
                 # is not altered by later changes to colDefaults
-                colDefaults[i] = deepcopy(allowedColumnDefaults)[colName]
+                colDefaults[i] = deepcopy(ALLOWED_COLUMN_DEFAULTS)[colName]
 
     # Check for required columns
-    for reqCol in requiredColumnNames:
+    for reqCol in REQUIRED_COLUMN_NAMES:
         if reqCol not in colNames:
             raise IOError("Sky model must have a '{0}' column.".format(reqCol))
 
@@ -628,7 +628,7 @@ def processLine(line, metaDict, colNames):
     checkColNames = [
         name
         for name in colNames
-        if allowedColumnDefaults[name.lower()] != "N/A"
+        if ALLOWED_COLUMN_DEFAULTS[name.lower()] != "N/A"
     ]
     for name in checkColNames:
         try:
@@ -819,7 +819,7 @@ def skyModelWriter(table, fileName):
 
     # Make sure all columns have the correct makesourcedb units
     for colName in table.columns:
-        units = allowedColumnUnits[colName.lower()]
+        units = ALLOWED_COLUMN_UNITS[colName.lower()]
         if units is not None and len(table) > 0:
             table[colName].convert_unit_to(units)
 
@@ -827,9 +827,9 @@ def skyModelWriter(table, fileName):
     outLines = []
     formatString = []
     for colKey in table.keys():
-        if colKey.lower() not in allowedColumnNames:
+        if colKey.lower() not in ALLOWED_COLUMN_NAMES:
             continue
-        colName = allowedColumnNames[colKey.lower()]
+        colName = ALLOWED_COLUMN_NAMES[colKey.lower()]
 
         if colName in table.meta and colName != "Patch":
             colHeader = "{0}='{1}'".format(colName, table.meta[colName])
@@ -906,13 +906,13 @@ def rowStr(row, metaDict):
     line = []
     for colKey in row.columns:
         try:
-            colName = allowedColumnNames[colKey.lower()]
+            colName = ALLOWED_COLUMN_NAMES[colKey.lower()]
         except KeyError:
             continue
 
         # Determine whether the header (metaDict) defined a fill value and,
         # if so, use that for blank entries. If not, use the default value
-        defaultVal = allowedColumnDefaults[colName.lower()]
+        defaultVal = ALLOWED_COLUMN_DEFAULTS[colName.lower()]
         if colName in metaDict:
             fillVal = metaDict[colName]
             hasfillVal = True
@@ -989,7 +989,7 @@ def ds9RegionWriter(table, fileName):
 
     # Make sure all columns have the correct units
     for colName in table.columns:
-        units = allowedColumnUnits[colName.lower()]
+        units = ALLOWED_COLUMN_UNITS[colName.lower()]
         if units is not None:
             table[colName].convert_unit_to(units)
 
@@ -1041,7 +1041,7 @@ def kvisAnnWriter(table, fileName):
 
     # Make sure all columns have the correct units
     for colName in table.columns:
-        units = allowedColumnUnits[colName.lower()]
+        units = ALLOWED_COLUMN_UNITS[colName.lower()]
         if units is not None:
             table[colName].convert_unit_to(units)
 
@@ -1089,7 +1089,7 @@ def casaRegionWriter(table, fileName):
 
     # Make sure all columns have the correct units
     for colName in table.columns:
-        units = allowedColumnUnits[colName.lower()]
+        units = ALLOWED_COLUMN_UNITS[colName.lower()]
         if units is not None:
             table[colName].convert_unit_to(units)
 
@@ -1157,7 +1157,7 @@ def factorDirectionsWriter(table, fileName):
 
     # Make sure all columns have the correct units
     for colName in table.columns:
-        units = allowedColumnUnits[colName.lower()]
+        units = ALLOWED_COLUMN_UNITS[colName.lower()]
         if units is not None:
             table[colName].convert_unit_to(units)
 
@@ -1323,7 +1323,7 @@ def coneSearch(VOService, position, radius):
     Parameters
     ----------
     VOService : str
-        Name of VO service to query (must be one of allowedVOServices)
+        Name of VO service to query (must be one of ALLOWED_VO_SERVICES)
     position : list of floats
         A list specifying a position as [RA, Dec] in either makesourcedb
         format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
@@ -1398,12 +1398,12 @@ def coneSearch(VOService, position, radius):
         },
     }
 
-    if VOService.lower() in allowedVOServices:
-        url = allowedVOServices[VOService.lower()]
+    if VOService.lower() in ALLOWED_VO_SERVICES:
+        url = ALLOWED_VO_SERVICES[VOService.lower()]
     else:
         raise ValueError(
             "VO query service not known. Allowed services are: {0}".format(
-                allowedVOServices.keys()
+                ALLOWED_VO_SERVICES.keys()
             )
         )
 
@@ -1461,7 +1461,7 @@ def convertExternalTable(table, columnMapping, catalogProperties):
     log = logging.getLogger("LSMTool.Load")
 
     # Add required columns
-    for colName in requiredColumnNames:
+    for colName in REQUIRED_COLUMN_NAMES:
         for k, v in columnMapping.items():
             if v == colName.lower():
                 tableColname = k
@@ -1487,16 +1487,16 @@ def convertExternalTable(table, columnMapping, catalogProperties):
     for colName in table.colnames:
         if colName not in columnMapping:
             colsToRemove.append(colName)
-        elif columnMapping[colName] not in allowedColumnNames:
+        elif columnMapping[colName] not in ALLOWED_COLUMN_NAMES:
             colsToRemove.append(colName)
     for colName in colsToRemove:
         table.remove_column(colName)
 
     # Rename columns to match makesourcedb conventions
     for colName in table.colnames:
-        if colName != allowedColumnNames[columnMapping[colName]]:
+        if colName != ALLOWED_COLUMN_NAMES[columnMapping[colName]]:
             table.rename_column(
-                colName, allowedColumnNames[columnMapping[colName]]
+                colName, ALLOWED_COLUMN_NAMES[columnMapping[colName]]
             )
 
     # Convert RA and Dec to Angle objects
@@ -1540,8 +1540,8 @@ def convertExternalTable(table, columnMapping, catalogProperties):
     ):
         for i, (minor, major) in enumerate(
             zip(
-                table[allowedColumnNames["minoraxis"]],
-                table[allowedColumnNames["majoraxis"]],
+                table[ALLOWED_COLUMN_NAMES["minoraxis"]],
+                table[ALLOWED_COLUMN_NAMES["majoraxis"]],
             )
         ):
             if (catalogProperties["deconvolved"] and minor > 0.0) or (
@@ -1552,15 +1552,15 @@ def convertExternalTable(table, columnMapping, catalogProperties):
                 if catalogProperties["fluxtype"] == "peak":
                     # For extended sources in catalogs with peak flux, we need
                     # to correct from peak to total flux using the source size
-                    table.columns[allowedColumnNames["i"]][i] *= (
+                    table.columns[ALLOWED_COLUMN_NAMES["i"]][i] *= (
                         minor * major / catalogProperties["psf"] ** 2
                     )
             else:
                 # Make sure semimajor and semiminor axes and orientation are 0 for POINT type
-                table[allowedColumnNames["minoraxis"]][i] = 0.0
-                table[allowedColumnNames["majoraxis"]][i] = 0.0
+                table[ALLOWED_COLUMN_NAMES["minoraxis"]][i] = 0.0
+                table[ALLOWED_COLUMN_NAMES["majoraxis"]][i] = 0.0
                 if "orientation" in columnMapping.values():
-                    table[allowedColumnNames["orientation"]][i] = 0.0
+                    table[ALLOWED_COLUMN_NAMES["orientation"]][i] = 0.0
     col = Column(name="Type", data=types, dtype="U100")
     table.add_column(col, index=1)
 
@@ -1577,7 +1577,7 @@ def convertExternalTable(table, columnMapping, catalogProperties):
     for i, colName in enumerate(table.colnames):
         log.debug(
             "Setting units for column '{0}' to {1}".format(
-                colName, allowedColumnUnits[colName.lower()]
+                colName, ALLOWED_COLUMN_UNITS[colName.lower()]
             )
         )
         if colName == "I":
@@ -1585,15 +1585,15 @@ def convertExternalTable(table, columnMapping, catalogProperties):
             table.columns[colName].convert_unit_to("Jy")
             table.columns[colName].format = fluxformat
         else:
-            table.columns[colName].unit = allowedColumnUnits[colName.lower()]
+            table.columns[colName].unit = ALLOWED_COLUMN_UNITS[colName.lower()]
 
         if (
             hasattr(table.columns[colName], "filled")
-            and allowedColumnDefaults[colName.lower()] is not None
+            and ALLOWED_COLUMN_DEFAULTS[colName.lower()] is not None
         ):
             # Note: we used deepcopy() here to ensure that the original
             # is not altered by later changes to fillVal
-            fillVal = deepcopy(allowedColumnDefaults)[colName.lower()]
+            fillVal = deepcopy(ALLOWED_COLUMN_DEFAULTS)[colName.lower()]
             log.debug(
                 "Setting default value for column '{0}' to {1}".format(
                     colName, fillVal

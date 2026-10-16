@@ -287,11 +287,11 @@ def parseFilter(filterExpression):
     units), all as strings.
     """
     try:
-        from ..tableio import allowedColumnNames
-        from ..tableio import allowedColumnDefaults
+        from ..tableio import ALLOWED_COLUMN_NAMES
+        from ..tableio import ALLOWED_COLUMN_DEFAULTS
     except:
-        from .tableio import allowedColumnNames
-        from .tableio import allowedColumnDefaults
+        from .tableio import ALLOWED_COLUMN_NAMES
+        from .tableio import ALLOWED_COLUMN_DEFAULTS
     from itertools import groupby
 
     # Get operator function
@@ -306,7 +306,7 @@ def parseFilter(filterExpression):
 
     # Get the column to filter on
     filterProp = filterParts[0].strip().lower()
-    if filterProp not in allowedColumnNames:
+    if filterProp not in ALLOWED_COLUMN_NAMES:
         log.info('"{0}" is not a valid column. Trying it as a mask '
                  'filename instead...'.format(filterProp))
         filterProp = filterParts[0].strip() # don't use lower-case version if filename
@@ -315,7 +315,7 @@ def parseFilter(filterExpression):
 
     # Get the filter value(s)
     filterValAndUnits = filterParts[1].strip()
-    if allowedColumnDefaults[filterProp] == 'N/A':
+    if ALLOWED_COLUMN_DEFAULTS[filterProp] == 'N/A':
         # Column values are strings. Allow only '==' and '!=' operators
         if filterOperStr not in ['=', '==', '!=']:
             raise ValueError("Filter operator '{0}' not allow with string columns. "
