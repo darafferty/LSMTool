@@ -239,7 +239,7 @@ class SkyModel(object):
                     self.__class__.__name__,
                 )
                 self._filename = None
-                yield tableio.makeEmptyTable()
+                return tableio.makeEmptyTable()
 
     @contextlib.contextmanager
     def _load_context(self, filename, service, vo_position=None):
