@@ -168,18 +168,17 @@ class SkyModel(object):
             with self._load_context(filename, f"LSM file {filename!r}"):
                 return tableio.loadTableFromLSM(filename)
 
-        else:
-            # If filename does not point to a VO query, assume it points to a
-            # local file
-            if str(filename).lower() in tableio.ALLOWED_REMOTE_SERVICES:
-                self.log.warning(
-                    "It appears from the filename that you may be trying to"
-                    " query a VO service. If so, you must provide values "
-                    "for both vo_position and vo_radius."
-                )
+        # If filename does not point to a VO query, assume it points to a local
+        # file
+        if str(filename).lower() in tableio.ALLOWED_REMOTE_SERVICES:
+            self.log.warning(
+                "It appears from the filename that you may be trying to query a"
+                " VO service. If so, you must provide values for both "
+                "vo_position and vo_radius."
+            )
 
-            with self._load_context(filename, f"file {filename}"):
-                return Table.read(filename, format="makesourcedb")
+        with self._load_context(filename, f"file {filename}"):
+            return Table.read(filename, format="makesourcedb")
 
     def load_from_remote_service(self, service, vo_position, vo_radius):
         """
@@ -206,31 +205,26 @@ class SkyModel(object):
             If the specified VO service is not recognized or the query fails.
         """
         key = service.lower()
+        if key not in tableio.ALLOWED_REMOTE_SERVICES:
+            raise ValueError(
+                f"VO service {service!r} not understood. Must be one of "
+                f"{tableio.ALLOWED_REMOTE_SERVICES}. If you want instead to load a "
+                f"model from a local file, do not set vo_position or vo_radius."
+            )
+
         if key in tableio.ALLOWED_VO_SERVICES:
-            with self._load_remote_context(
-                service, f"VO service {service}", vo_position, vo_radius
-            ):
-                return tableio.coneSearch(key, vo_position, vo_radius)
+            query = tableio.coneSearch
+            description = f"VO service {service}"
 
         if key in tableio.ALLOWED_SURVEYS:
-            with self._load_remote_context(
-                service, f"{service} survey", vo_position, vo_radius
-            ):
-                return tableio.get_survey(key, vo_position, vo_radius)
+            query = tableio.get_survey
+            description = f"{service} survey"
 
-        raise ValueError(
-            f"VO service {service!r} not understood. Must be one of "
-            f"{tableio.ALLOWED_REMOTE_SERVICES}. If you want instead to load a "
-            f"model from a local file, do not set vo_position or vo_radius."
-        )
-
-    @contextlib.contextmanager
-    def _load_remote_context(self, filename, service, vo_position, vo_radius):
-        """Context manager for loading SkyModels from remote services."""
-
-        with self._load_context(filename, service, vo_position):
+        with self._load_remote_context(
+            f"{key}_vo", description, vo_position, vo_radius
+        ):
             try:
-                yield
+                return query(key, vo_position, vo_radius)
             except (IndexError, InconsistentTableError):
                 # Empty result due to no coverage in the catalog at the queried
                 # position
@@ -245,8 +239,6 @@ class SkyModel(object):
                 )
                 self._filename = None
                 yield tableio.makeEmptyTable()
-            else:
-                self._filename = f"{filename}_vo"
 
     @contextlib.contextmanager
     def _load_context(self, filename, service, vo_position=None):
@@ -259,8 +251,10 @@ class SkyModel(object):
         # Control flow goes back to the caller to perform the actual loading of
         # the model during the yield block
         try:
+            self._filename = filename
             yield
         except:
+            self._filename = None
             raise
         else:
             self.log.debug(
@@ -270,7 +264,6 @@ class SkyModel(object):
             )
             pos = f" at position {vo_position}" if vo_position else ""
             self._add_history(f"LOAD (from {service}{pos})")
-            self._filename = filename
 
     def load_from_dict(self, columns):
         """
