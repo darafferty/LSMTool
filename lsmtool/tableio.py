@@ -127,7 +127,7 @@ ALLOWED_VO_SERVICES = {
     "wenss": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;",
     "vlssr": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/97&amp;",
 }
-ALLOWED_SURVEYS = {"lotss": "LoTSS", "tgss": "TGSS", "gsm": "GSM",}
+ALLOWED_SURVEYS = {"lotss": "LoTSS", "tgss": "TGSS", "gsm": "GSM", }
 ALLOWED_REMOTE_SERVICES = {*ALLOWED_VO_SERVICES, *ALLOWED_SURVEYS}
 
 
@@ -617,7 +617,7 @@ def processLine(line, metaDict, colNames):
     line = line.strip("\n")
     a = re.search(r"\[.*\]", line)
     if a is not None:
-        b = line[a.start() : a.end()]
+        b = line[a.start(): a.end()]
         c = b.strip("[]")
         if "," in c:
             c = c.replace(",", ";")
@@ -688,20 +688,20 @@ def _parse_sexagesimal(values, hourangle=False):
     for i, value in enumerate(values):
         if not isinstance(value, str):
             return None
-        
+
         match = _SEXAGESIMAL.fullmatch(value)
         if match is None or (hourangle and match[2] != ":"):
             return None
-        
+
         first = float(match[1])
         if hourangle and abs(first) >= 24:
             return None
-        
+
         seconds = float(match[4])
         if seconds >= 60:
             # Decimal values just below 60 can round to 60 in float64.
             return None
-        
+
         components[:, i] = first, float(match[3]), seconds
 
     first, minutes, seconds = components
@@ -1895,6 +1895,8 @@ def getLoTSS(position, radius):
 
     return table
 
+
+
 def get_survey(survey, position, radius):
     """
     Query a remote astronomical survey for sources within a specified region and
@@ -1923,14 +1925,15 @@ def get_survey(survey, position, radius):
     ValueError
         If the specified survey is not recognized. 
     """
-    survey = survey.lower()
-    if survey not in ALLOWED_REMOTE_SERVICES:
+    survey = ALLOWED_REMOTE_SERVICES.get(survey.lower())
+    if survey is None:
         raise ValueError(
             f"Survey {survey} is not recognized. Allowed surveys are: "
             f"{ALLOWED_REMOTE_SERVICES}")
-        
-    query_method = getattr(sys.modules[__name__], f"get{survey.upper()}")
+
+    query_method = getattr(sys.modules[__name__], f"get{survey}")
     return query_method(position, radius)
+
 
 def makeEmptyTable():
     """
