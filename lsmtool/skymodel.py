@@ -995,7 +995,7 @@ class SkyModel(object):
         if aggregate not in allowed_fcns and aggregate is not None:
             raise ValueError("Value of parameter 'aggregate' not understood.")
         if aggregate in allowed_fcns and self.hasPatches:
-            col = self.get_aggregated_column(
+            col = self._get_aggregated_column(
                 col_name, aggregate, apply_beam=apply_beam
             )
         else:
@@ -1399,7 +1399,7 @@ class SkyModel(object):
 
         return col
 
-    def get_aggregated_column(
+    def _get_aggregated_column(
         self, col_name, aggregate="sum", apply_beam=False
     ):
         """
@@ -1433,12 +1433,10 @@ class SkyModel(object):
 
         if aggregate == "mean":
             col = self._get_mean_column(col_name)
-            apply_beam = False
         elif aggregate == "wmean":
             col = self._get_weighted_mean_column(
                 col_name, apply_beam=apply_beam
             )
-            apply_beam = False
         elif aggregate == "sum":
             col = self._get_summed_column(col_name)
         elif aggregate == "min":
