@@ -610,12 +610,8 @@ class SkyModel(object):
                     x_max = x_groups.aggregate(np.max)
                     y_min = y_groups.aggregate(np.min)
                     y_max = y_groups.aggregate(np.max)
-                    x_col = 0.5 * (
-                        x_min + x_max
-                    )
-                    y_col = 0.5 * (
-                        y_min + y_max
-                    )
+                    x_col = 0.5 * (x_min + x_max)
+                    y_col = 0.5 * (y_min + y_max)
                 elif method == "mean":
                     x_groups = self._get_filled_column("X").groups
                     y_groups = self._get_filled_column("Y").groups
@@ -1456,7 +1452,9 @@ class SkyModel(object):
             else:
                 raise ValueError("Aggregation function not understood.")
 
-            np_function = self._wrap_aggregation_function(col_name, base_function)
+            np_function = self._wrap_aggregation_function(
+                col_name, base_function
+            )
             col = self._get_filled_column(col_name)
             col = col.groups.aggregate(np_function)
 
