@@ -208,8 +208,9 @@ class SkyModel(object):
         if key not in tableio.ALLOWED_REMOTE_SERVICES:
             raise ValueError(
                 f"VO service {service!r} not understood. Must be one of "
-                f"{tableio.ALLOWED_REMOTE_SERVICES}. If you want instead to load a "
-                f"model from a local file, do not set vo_position or vo_radius."
+                f"{tableio.ALLOWED_REMOTE_SERVICES}. If you want instead to "
+                "load a model from a local file, do not set vo_position or "
+                f"vo_radius."
             )
 
         if key in tableio.ALLOWED_VO_SERVICES:
