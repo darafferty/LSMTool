@@ -1925,15 +1925,14 @@ def get_survey(survey, position, radius):
     ValueError
         If the specified survey is not recognized. 
     """
-    survey = ALLOWED_REMOTE_SERVICES.get(survey.lower())
-    if survey is None:
-        raise ValueError(
+    
+    if survey := ALLOWED_SURVEYS.get(survey.lower()):
+        query_method = getattr(sys.modules[__name__], f"get{survey}")
+        return query_method(position, radius)
+
+    raise ValueError(
             f"Survey {survey} is not recognized. Allowed surveys are: "
-            f"{ALLOWED_REMOTE_SERVICES}")
-
-    query_method = getattr(sys.modules[__name__], f"get{survey}")
-    return query_method(position, radius)
-
+            f"{ALLOWED_SURVEYS}")
 
 def makeEmptyTable():
     """
