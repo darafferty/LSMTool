@@ -169,16 +169,9 @@ class SkyModel(object):
                 return tableio.loadTableFromLSM(filename)
 
         else:
-            # If filename does not point to a VO query, assume it points to
-            # a local file
-            if filename.lower() in (
-                "wenss",
-                "nvss",
-                "tgss",
-                "gsm",
-                "lotss",
-                "vlssr",
-            ):
+            # If filename does not point to a VO query, assume it points to a
+            # local file
+            if str(filename).lower() in tableio.ALLOWED_REMOTE_SERVICES:
                 self.log.warning(
                     "It appears from the filename that you may be trying to"
                     " query a VO service. If so, you must provide values "
@@ -251,7 +244,7 @@ class SkyModel(object):
                     self.__class__.__name__,
                 )
                 self._filename = None
-                return tableio.makeEmptyTable()
+                yield tableio.makeEmptyTable()
             else:
                 self._filename = f"{filename}_vo"
 
