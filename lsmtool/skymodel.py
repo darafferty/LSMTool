@@ -1633,11 +1633,15 @@ class SkyModel(object):
             vals = self.table[col_name].data
 
         weight_col = self.table["I"]
+        weight_col_is_grouped = True
         if apply_beam:
-            weight_col = self._apply_beam_to_col(weight_col)
+            weight_col = self._apply_beam_to_col(weight_col.copy())
+            weight_col_is_grouped = False
         if weight_col.shape != vals.shape:
             weights = np.resize(weight_col, vals.shape)
             weight_col = Column(data=weights)
+            weight_col_is_grouped = False
+        if not weight_col_is_grouped:
             weight_col = weight_col.group_by(self.table["Patch"])
 
         val_weight_col = Column(data=vals * weight_col.data)
