@@ -561,98 +561,99 @@ class SkyModel(object):
         apply_beam = applyBeam
         per_patch_projection = perPatchProjection
 
-        if self.hasPatches:
-            if patch_name is None:
-                patch_name = self.getPatchNames()
-            if type(patch_name) not in (list, np.ndarray):
-                patch_name = [patch_name]
-            if method is None:
-                patch_dict = {}
-                for patch in patch_name:
-                    if patch in self.table.meta:
-                        patch_dict[patch] = self.table.meta[patch]
-                    else:
-                        patch_dict[patch] = [
-                            Angle(0.0, unit=u.deg),
-                            Angle(0.0, unit=u.deg),
-                        ]
-            else:
-                patch_dict = {}
+        if not self.hasPatches:
+            return None
 
-                # Add projected x and y columns.
-                if per_patch_projection:
-                    # Each patch has a different projection center
-                    x_all = []  # has length = num of sources
-                    y_all = []
-                    wcs_all = []
-                    for name in patch_name:
-                        patch_indices = self.getRowIndex(name)
-                        patch_ra = self.table["Ra"][patch_indices]
-                        patch_dec = self.table["Dec"][patch_indices]
-                        x, y, wcs = self._get_xy(patch_ra, patch_dec)
-                        x_all.extend(x)
-                        y_all.extend(y)
-                        wcs_all.append(wcs)
+        if patch_name is None:
+            patch_name = self.getPatchNames()
+        if type(patch_name) not in (list, np.ndarray):
+            patch_name = [patch_name]
+        if method is None:
+            patch_dict = {}
+            for patch in patch_name:
+                if patch in self.table.meta:
+                    patch_dict[patch] = self.table.meta[patch]
                 else:
-                    x_all, y_all, wcs = self._get_xy()
-                    wcs_all = [wcs] * len(patch_name)
+                    patch_dict[patch] = [
+                        Angle(0.0, unit=u.deg),
+                        Angle(0.0, unit=u.deg),
+                    ]
+        else:
+            patch_dict = {}
 
-                self.table.add_column(Column(name="X", data=x_all))
-                self.table.add_column(Column(name="Y", data=y_all))
+            # Add projected x and y columns.
+            if per_patch_projection:
+                # Each patch has a different projection center
+                x_all = []  # has length = num of sources
+                y_all = []
+                wcs_all = []
+                for name in patch_name:
+                    patch_indices = self.getRowIndex(name)
+                    patch_ra = self.table["Ra"][patch_indices]
+                    patch_dec = self.table["Dec"][patch_indices]
+                    x, y, wcs = self._get_xy(patch_ra, patch_dec)
+                    x_all.extend(x)
+                    y_all.extend(y)
+                    wcs_all.append(wcs)
+            else:
+                x_all, y_all, wcs = self._get_xy()
+                wcs_all = [wcs] * len(patch_name)
 
+            self.table.add_column(Column(name="X", data=x_all))
+            self.table.add_column(Column(name="Y", data=y_all))
+
+            try:
                 if method == "mid":
-                    xCol = 0.5 * (
+                    x_col = 0.5 * (
                         self._get_min_column("X") + self._get_max_column("X")
                     )
-                    yCol = 0.5 * (
+                    y_col = 0.5 * (
                         self._get_min_column("Y") + self._get_max_column("Y")
                     )
                 elif method == "mean":
-                    xCol = self._get_mean_column("X")
-                    yCol = self._get_mean_column("Y")
+                    x_col = self._get_mean_column("X")
+                    y_col = self._get_mean_column("Y")
                 elif method == "wmean":
-                    xCol = self._get_weighted_mean_column(
+                    x_col = self._get_weighted_mean_column(
                         "X", apply_beam=apply_beam
                     )
-                    yCol = self._get_weighted_mean_column(
+                    y_col = self._get_weighted_mean_column(
                         "Y", apply_beam=apply_beam
                     )
                 else:
-                    self.table.remove_column("X")
-                    self.table.remove_column("Y")
                     raise ValueError(
-                        f"Unknown method '{method}' for setting patch positions."
+                        f"Unknown method '{method}' for setting "
+                        "patch positions."
                     )
 
                 positions = []
                 for i, _ in enumerate(patch_name):
-                    ra, dec = wcs_all[i].wcs_pix2world(xCol[i], yCol[i], 0)
+                    ra, dec = wcs_all[i].wcs_pix2world(x_col[i], y_col[i], 0)
                     positions.append((ra.item(), dec.item()))
-                if positions:
-                    ra_norm, dec_norm = tableio.RADec2Angle(
-                        *map(list, zip(*positions, strict=True))
-                    )
-                    patch_dict = dict(
-                        zip(
-                            patch_name,
-                            zip(ra_norm, dec_norm, strict=True),
-                            strict=True,
-                        )
-                    )
-
+            finally:
                 self.table.remove_column("X")
                 self.table.remove_column("Y")
 
-            if as_array:
-                ra = []
-                dec = []
-                for patch in patch_name:
-                    ra.append(patch_dict[patch][0].value)
-                    dec.append(patch_dict[patch][1].value)
-                return np.array(ra), np.array(dec)
-            return patch_dict
+            if positions:
+                ra_norm, dec_norm = tableio.RADec2Angle(
+                    *map(list, zip(*positions, strict=True))
+                )
+                patch_dict = dict(
+                    zip(
+                        patch_name,
+                        zip(ra_norm, dec_norm, strict=True),
+                        strict=True,
+                    )
+                )
 
-        return None
+        if as_array:
+            ra = []
+            dec = []
+            for patch in patch_name:
+                ra.append(patch_dict[patch][0].value)
+                dec.append(patch_dict[patch][1].value)
+            return np.array(ra), np.array(dec)
+        return patch_dict
 
     def setPatchPositions(
         self,
