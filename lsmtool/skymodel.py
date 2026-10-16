@@ -936,6 +936,10 @@ class SkyModel(object):
                 - 'min': minimum of patch values
                 - 'max': maximum of patch values
 
+            When the column has an array value, the aggregation function is
+            applied independently to each element of the array. For example,
+            when the values are [1, -1] and [5, -5], the sum is [6, -6].
+
             Note that, in some cases, certain aggregation functions will not
             produce meaningful results. For example, asking for the sum of the
             MajorAxis values per patch will not give a good indication of the
@@ -1496,6 +1500,26 @@ class SkyModel(object):
 
         return col
 
+    def _get_filled_column(self, col_name):
+        """
+        For a given column, returns the filled column data, grouped by patch.
+
+        Parameters
+        ----------
+        col_name : str
+            Column name
+
+        Returns
+        -------
+        col : astropy Column
+            Column object with filled values
+        """
+        col = self.table[col_name]
+        if hasattr(self.table[col_name], "filled"):
+            col = self.table[col_name].filled()
+            col = col.group_by(self.table["Patch"])
+        return col
+
     def _get_summed_column(self, col_name, apply_beam=False):
         """
         Returns column summed by group.
@@ -1511,22 +1535,18 @@ class SkyModel(object):
         -------
         col : astropy Column
             Column object with aggregated sum of values
-
         """
 
         def npsum(array):
             return np.sum(array, axis=0)
 
-        if hasattr(self.table[col_name], "filled"):
-            col = self.table[col_name].filled()
-            gcol = col.group_by(self.table["Patch"])
-            gcol = gcol.groups.aggregate(npsum)
-        else:
-            gcol = self.table[col_name].groups.aggregate(npsum)
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            gcol = self._apply_beam_to_col(gcol, patch=True)
+        col = self._get_filled_column(col_name)
+        col = col.groups.aggregate(npsum)
 
-        return gcol
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
+            col = self._apply_beam_to_col(col, patch=True)
+
+        return col
 
     def _get_min_column(self, col_name, apply_beam=False):
         """
@@ -1543,22 +1563,18 @@ class SkyModel(object):
         -------
         col : astropy Column
             Column object with aggregated min values
-
         """
 
         def npmin(array):
             return np.min(array, axis=0)
 
-        if hasattr(self.table[col_name], "filled"):
-            col = self.table[col_name].filled()
-            gcol = col.group_by(self.table["Patch"])
-            gcol = gcol.groups.aggregate(npmin)
-        else:
-            gcol = self.table[col_name].groups.aggregate(npmin)
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            gcol = self._apply_beam_to_col(gcol, patch=True)
+        col = self._get_filled_column(col_name)
+        col = col.groups.aggregate(npmin)
 
-        return gcol
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
+            col = self._apply_beam_to_col(col, patch=True)
+
+        return col
 
     def get_max_column(self, col_name, apply_beam=False):
         """
@@ -1581,16 +1597,13 @@ class SkyModel(object):
         def npmax(array):
             return np.max(array, axis=0)
 
-        if hasattr(self.table[col_name], "filled"):
-            col = self.table[col_name].filled()
-            gcol = col.group_by(self.table["Patch"])
-            gcol = gcol.groups.aggregate(npmax)
-        else:
-            gcol = self.table[col_name].groups.aggregate(npmax)
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            gcol = self._apply_beam_to_col(gcol, patch=True)
+        col = self._get_filled_column(col_name)
+        col = col.groups.aggregate(npmax)
 
-        return gcol
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
+            col = self._apply_beam_to_col(col, patch=True)
+
+        return col
 
     def _get_averaged_column(self, col_name, weight=True, apply_beam=False):
         """
@@ -1608,11 +1621,14 @@ class SkyModel(object):
         Returns
         -------
         col : astropy Column
-            Column object with aggregated mean values
-
+            Column object with averaged values
         """
         if weight:
-
+            # Using 'axis=0' makes the aggregation support array-valued columns.
+            # For scalar-valued columns, a plain np.sum would suffice.
+            # Note that this is an undocumented feature of astropy tables:
+            # https://docs.astropy.org/en/stable/table/operations.html#aggregation
+            # says the aggregation function should return a scalar value.
             def npsum(array):
                 return np.sum(array, axis=0)
 
@@ -1644,10 +1660,13 @@ class SkyModel(object):
                 unit=self.table[col_name].unit,
             )
 
+        # Using 'axis=0' makes the aggregation support array-valued columns.
+        # For scalar-valued columns, a plain np.average would suffice.
         def npavg(c):
             return np.average(c, axis=0)
 
-        return self.table[col_name].groups.aggregate(npavg)
+        col = self._get_filled_column(col_name)
+        return col.groups.aggregate(npavg)
 
     def _get_size_column(self, weight=True, apply_beam=False):
         """
