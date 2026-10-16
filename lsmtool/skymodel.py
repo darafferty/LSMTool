@@ -221,9 +221,7 @@ class SkyModel(object):
             query = tableio.get_survey
             description = f"{service} survey"
 
-        with self._load_context(
-            f"{key}_vo", description, vo_position, vo_radius
-        ):
+        with self._load_context(f"{key}_vo", description, vo_position):
             try:
                 return query(key, vo_position, vo_radius)
             except (IndexError, InconsistentTableError):
