@@ -349,8 +349,9 @@ commands = [
     # Sort python import
     [ "python", "-m", "ruff", "check", "--select", "I", "--fix" ],
     # Format pyproject.toml. The "-" makes tox ignore the exit code.
-    [ "-", "python", "-m", "pyproject_fmt", "pyproject.toml" ]
+    [ "-", "pyproject-fmt", "pyproject.toml" ]
 ]
+allowlist_externals = [ "pyproject-fmt" ]
 
 # Linting environment
 # ---------------------------------------------------------------------------- #
@@ -370,8 +371,9 @@ commands = [
         { replace = "posargs", default = [], extend = true }
     ],
     # Check pyproject.toml formatting
-    [ "python", "-m", "pyproject_fmt", "pyproject.toml", "--check" ]
+    [ "pyproject-fmt", "pyproject.toml", "--check" ]
 ]
+allowlist_externals = [ "pyproject-fmt" ]
 
 # Base test environment
 # ---------------------------------------------------------------------------- #
