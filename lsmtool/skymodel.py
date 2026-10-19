@@ -1190,11 +1190,15 @@ class SkyModel(object):
 
         # Patch members occupy contiguous rows in the grouped table.
         if self.hasPatches:
+            # The patch list is sorted by name, since self.hasPatches only
+            # becomes True in _updateGroups, after calling
+            # table.group_by('Patch'), which sorts the patches by name.
             patch_names = self.table.groups.keys["Patch"]
-            patch_ind = np.where(patch_names == row_name)[0]
-
-            if len(patch_ind) > 0:
-                group_ind = patch_ind[0]
+            group_ind = np.searchsorted(patch_names, row_name)
+            if (
+                group_ind < len(patch_names)
+                and patch_names[group_ind] == row_name
+            ):
                 start = self.table.groups.indices[group_ind]
                 end = self.table.groups.indices[group_ind + 1]
                 return slice(start, end)
