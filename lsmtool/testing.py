@@ -218,7 +218,7 @@ class Constant:
 RVType = rv_frozen | Constant | None
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SkyModelGenerator:
     """
     Class for generating random skymodel data for testing purposes.
@@ -274,6 +274,13 @@ class SkyModelGenerator:
     minor_axis: RVType = uniform_range(0, 1)
     orientation: RVType = uniform_range(0, 180)
 
+    @property
+    def column_order(self):
+        """
+        Return the order of the fields, including name, type, and patch first.
+        """
+        return ["name", "type", "patch", *self.__dataclass_fields__.keys()]
+
     def __call__(self, n_sources, n_patches=None, random_state=None, **kws):
         """
         Generate a random skymodel.
@@ -301,13 +308,10 @@ class SkyModelGenerator:
         ra, dec = self.get_coords(samples)
         samples.update(ra=ra, dec=dec)
 
-        # NOTE: LSMTool expects a specific order of the items in the dictionary:
-        # The "name" and "type" keys should go first.
-        samples = {
-            "name": self.get_names(samples),
-            "type": self.get_types(samples),
-            **samples,
-        }
+        # Update the samples dictionary with the source names and types
+        samples.update(
+            name=self.get_names(samples), type=self.get_types(samples)
+        )
         return samples, patches
 
     def sample(self, n_sources, n_patches=None, random_state=None, **kws):
@@ -345,10 +349,7 @@ class SkyModelGenerator:
 
         if n_patches:
             # Get patch definitions
-            patch_defs, patch_col = self.get_patches(samples, n_patches)
-            # NOTE: LSMTool expects a specific order of the items in the
-            # dictionary: The "patch" key should go first.
-            samples = {"patch": patch_col, **samples}
+            patch_defs, samples["patch"] = self.get_patches(samples, n_patches)
         else:
             patch_defs = None
 
@@ -500,8 +501,30 @@ class SkyModelGenerator:
         header : str
             The makesourcedb format string for the header.
         """
+        keys = [key for key in self.column_order if key in samples]
         return "FORMAT = " + ", ".join(
-            np.char.replace(np.char.title(list(samples.keys())), "_", "")
+            np.char.replace(np.char.title(keys), "_", "")
+        )
+
+    def to_array(self, samples):
+        """
+        Convert the samples dictionary to a numpy array by stacking the columns
+        in the correct order.
+
+        Parameters
+        ----------
+        samples : dict
+            A dictionary containing the random samples of other parameters.
+
+        Returns
+        -------
+        array : numpy.ndarray
+            A 2D array where each column corresponds to a parameter in the
+            specified column order.
+        """
+        # ensure correct column order
+        return np.column_stack(
+            [samples[key] for key in self.column_order if key in samples]
         )
 
     def to_file(
@@ -522,18 +545,21 @@ class SkyModelGenerator:
             np.random), the numpy.random.RandomState singleton is used.
         """
 
+        # Get samples
         samples, patches = self(
             n_sources, n_patches, random_state=random_state, **kws
         )
 
+        # Save file
         np.savetxt(
             filename,
-            np.column_stack(list(samples.values())),
+            self.to_array(samples),
             header=self.get_header(samples),
             delimiter=", ",
             fmt="%s",
         )
 
+        # Add patch definitions if available
         if patches is not None:
             lines = Path(filename).read_text().splitlines()
             patch_defs = io.StringIO()
