@@ -561,101 +561,99 @@ class SkyModel(object):
         apply_beam = applyBeam
         per_patch_projection = perPatchProjection
 
-        if self.hasPatches:
-            if patch_name is None:
-                patch_name = self.getPatchNames()
-            if type(patch_name) not in (list, np.ndarray):
-                patch_name = [patch_name]
-            if method is None:
-                patch_dict = {}
-                for patch in patch_name:
-                    if patch in self.table.meta:
-                        patch_dict[patch] = self.table.meta[patch]
-                    else:
-                        patch_dict[patch] = [
-                            Angle(0.0, unit=u.deg),
-                            Angle(0.0, unit=u.deg),
-                        ]
-            else:
-                patch_dict = {}
+        if not self.hasPatches:
+            return None
 
-                # Add projected x and y columns.
-                if per_patch_projection:
-                    # Each patch has a different projection center
-                    x_all = []  # has length = num of sources
-                    y_all = []
-                    wcs_all = []
-                    for name in patch_name:
-                        patch_indices = self.getRowIndex(name)
-                        patch_ra = self.table["Ra"][patch_indices]
-                        patch_dec = self.table["Dec"][patch_indices]
-                        x, y, wcs = self._get_xy(patch_ra, patch_dec)
-                        x_all.extend(x)
-                        y_all.extend(y)
-                        wcs_all.append(wcs)
+        if patch_name is None:
+            patch_name = self.getPatchNames()
+        if type(patch_name) not in (list, np.ndarray):
+            patch_name = [patch_name]
+        if method is None:
+            patch_dict = {}
+            for patch in patch_name:
+                if patch in self.table.meta:
+                    patch_dict[patch] = self.table.meta[patch]
                 else:
-                    x_all, y_all, wcs = self._get_xy()
-                    wcs_all = [wcs] * len(patch_name)
+                    patch_dict[patch] = [
+                        Angle(0.0, unit=u.deg),
+                        Angle(0.0, unit=u.deg),
+                    ]
+        else:
+            patch_dict = {}
 
-                x_col = Column(name="X", data=x_all)
-                y_col = Column(name="Y", data=y_all)
-                self.table.add_column(x_col)
-                self.table.add_column(y_col)
+            # Add projected x and y columns.
+            if per_patch_projection:
+                # Each patch has a different projection center
+                x_all = []  # has length = num of sources
+                y_all = []
+                wcs_all = []
+                for name in patch_name:
+                    patch_indices = self.getRowIndex(name)
+                    patch_ra = self.table["Ra"][patch_indices]
+                    patch_dec = self.table["Dec"][patch_indices]
+                    x, y, wcs = self._get_xy(patch_ra, patch_dec)
+                    x_all.extend(x)
+                    y_all.extend(y)
+                    wcs_all.append(wcs)
+            else:
+                x_all, y_all, wcs = self._get_xy()
+                wcs_all = [wcs] * len(patch_name)
+
+            self.table.add_column(Column(name="X", data=x_all))
+            self.table.add_column(Column(name="Y", data=y_all))
+
+            try:
+                if method == "mid":
+                    x_col = 0.5 * (
+                        self._get_min_column("X") + self._get_max_column("X")
+                    )
+                    y_col = 0.5 * (
+                        self._get_min_column("Y") + self._get_max_column("Y")
+                    )
+                elif method == "mean":
+                    x_col = self._get_mean_column("X")
+                    y_col = self._get_mean_column("Y")
+                elif method == "wmean":
+                    x_col = self._get_weighted_mean_column(
+                        "X", apply_beam=apply_beam
+                    )
+                    y_col = self._get_weighted_mean_column(
+                        "Y", apply_beam=apply_beam
+                    )
+                else:
+                    raise ValueError(
+                        f"Unknown method '{method}' for setting "
+                        "patch positions."
+                    )
 
                 positions = []
-                if method == "mid":
-                    min_x = self._get_min_column("X")
-                    max_x = self.get_max_column("X")
-                    min_y = self._get_min_column("Y")
-                    max_y = self.get_max_column("Y")
-                    mid_x = min_x + (max_x - min_x) / 2.0
-                    mid_y = min_y + (max_y - min_y) / 2.0
-                    for i, _ in enumerate(patch_name):
-                        ra, dec = wcs_all[i].wcs_pix2world(
-                            mid_x[i], mid_y[i], 0
-                        )
-                        positions.append((ra.item(), dec.item()))
-                elif method in {"mean", "wmean"}:
-                    if method == "mean":
-                        weight = False
-                    else:
-                        weight = True
-                    mean_x = self._get_averaged_column(
-                        "X", apply_beam=apply_beam, weight=weight
-                    )
-                    mean_y = self._get_averaged_column(
-                        "Y", apply_beam=apply_beam, weight=weight
-                    )
-                    for i, _ in enumerate(patch_name):
-                        ra, dec = wcs_all[i].wcs_pix2world(
-                            mean_x[i], mean_y[i], 0
-                        )
-                        positions.append((ra.item(), dec.item()))
-                if positions:
-                    ra_norm, dec_norm = tableio.RADec2Angle(
-                        *map(list, zip(*positions, strict=True))
-                    )
-                    patch_dict = dict(
-                        zip(
-                            patch_name,
-                            zip(ra_norm, dec_norm, strict=True),
-                            strict=True,
-                        )
-                    )
-
+                for i, _ in enumerate(patch_name):
+                    ra, dec = wcs_all[i].wcs_pix2world(x_col[i], y_col[i], 0)
+                    positions.append((ra.item(), dec.item()))
+            finally:
                 self.table.remove_column("X")
                 self.table.remove_column("Y")
 
-            if as_array:
-                ra = []
-                dec = []
-                for patch in patch_name:
-                    ra.append(patch_dict[patch][0].value)
-                    dec.append(patch_dict[patch][1].value)
-                return np.array(ra), np.array(dec)
-            return patch_dict
+            if positions:
+                ra_norm, dec_norm = tableio.RADec2Angle(
+                    *map(list, zip(*positions, strict=True))
+                )
+                patch_dict = dict(
+                    zip(
+                        patch_name,
+                        zip(ra_norm, dec_norm, strict=True),
+                        strict=True,
+                    )
+                )
 
-        return None
+        if as_array:
+            ra = []
+            dec = []
+            for patch in patch_name:
+                ra.append(patch_dict[patch][0].value)
+                dec.append(patch_dict[patch][1].value)
+            return np.array(ra), np.array(dec)
+        return patch_dict
 
     def setPatchPositions(
         self,
@@ -998,7 +996,7 @@ class SkyModel(object):
         if aggregate not in allowed_fcns and aggregate is not None:
             raise ValueError("Value of parameter 'aggregate' not understood.")
         if aggregate in allowed_fcns and self.hasPatches:
-            col = self.get_aggregated_column(
+            col = self._get_aggregated_column(
                 col_name, aggregate, apply_beam=apply_beam
             )
         else:
@@ -1402,7 +1400,7 @@ class SkyModel(object):
 
         return col
 
-    def get_aggregated_column(
+    def _get_aggregated_column(
         self, col_name, aggregate="sum", apply_beam=False
     ):
         """
@@ -1435,21 +1433,23 @@ class SkyModel(object):
             return None
 
         if aggregate == "mean":
-            col = self._get_averaged_column(
-                col_name, weight=False, apply_beam=apply_beam
-            )
+            col = self._get_mean_column(col_name)
         elif aggregate == "wmean":
-            col = self._get_averaged_column(
-                col_name, weight=True, apply_beam=apply_beam
+            col = self._get_weighted_mean_column(
+                col_name, apply_beam=apply_beam
             )
         elif aggregate == "sum":
-            col = self._get_summed_column(col_name, apply_beam=apply_beam)
+            col = self._get_summed_column(col_name)
         elif aggregate == "min":
-            col = self._get_min_column(col_name, apply_beam=apply_beam)
+            col = self._get_min_column(col_name)
         elif aggregate == "max":
-            col = self.get_max_column(col_name, apply_beam=apply_beam)
+            col = self._get_max_column(col_name)
         else:
             raise ValueError("Aggregation function not understood.")
+
+        if apply_beam and col_name in ["I", "Q", "U", "V"]:
+            col = self._apply_beam_to_col(col, patch=True)
+
         return col
 
     def _apply_beam_to_col(self, col, patch=False):
@@ -1520,7 +1520,7 @@ class SkyModel(object):
             col = col.group_by(self.table["Patch"])
         return col
 
-    def _get_summed_column(self, col_name, apply_beam=False):
+    def _get_summed_column(self, col_name):
         """
         Returns column summed by group.
 
@@ -1528,8 +1528,6 @@ class SkyModel(object):
         ----------
         col_name : str
             Column name
-        apply_beam : bool, optional
-            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
@@ -1540,15 +1538,9 @@ class SkyModel(object):
         def npsum(array):
             return np.sum(array, axis=0)
 
-        col = self._get_filled_column(col_name)
-        col = col.groups.aggregate(npsum)
+        return self._get_filled_column(col_name).groups.aggregate(npsum)
 
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            col = self._apply_beam_to_col(col, patch=True)
-
-        return col
-
-    def _get_min_column(self, col_name, apply_beam=False):
+    def _get_min_column(self, col_name):
         """
         Returns column minimum value by group.
 
@@ -1556,8 +1548,6 @@ class SkyModel(object):
         ----------
         col_name : str
             Column name
-        apply_beam : bool, optional
-            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
@@ -1568,15 +1558,9 @@ class SkyModel(object):
         def npmin(array):
             return np.min(array, axis=0)
 
-        col = self._get_filled_column(col_name)
-        col = col.groups.aggregate(npmin)
+        return self._get_filled_column(col_name).groups.aggregate(npmin)
 
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            col = self._apply_beam_to_col(col, patch=True)
-
-        return col
-
-    def get_max_column(self, col_name, apply_beam=False):
+    def _get_max_column(self, col_name):
         """
         Returns column maximum value by group.
 
@@ -1584,8 +1568,6 @@ class SkyModel(object):
         ----------
         col_name : str
             Column name
-        apply_beam : bool, optional
-            If True, fluxes will be attenuated by the beam
 
         Returns
         -------
@@ -1597,15 +1579,9 @@ class SkyModel(object):
         def npmax(array):
             return np.max(array, axis=0)
 
-        col = self._get_filled_column(col_name)
-        col = col.groups.aggregate(npmax)
+        return self._get_filled_column(col_name).groups.aggregate(npmax)
 
-        if apply_beam and col_name in ["I", "Q", "U", "V"]:
-            col = self._apply_beam_to_col(col, patch=True)
-
-        return col
-
-    def _get_averaged_column(self, col_name, weight=True, apply_beam=False):
+    def _get_mean_column(self, col_name):
         """
         Returns column averaged by group.
 
@@ -1613,60 +1589,70 @@ class SkyModel(object):
         ----------
         col_name : str
             Column name
-        weight : bool, optional
-            If True, return average weighted by flux
+
+        Returns
+        -------
+        col : astropy Column
+            Column object with averaged values
+
+        """
+
+        def npavg(array):
+            return np.average(array, axis=0)
+
+        return self._get_filled_column(col_name).groups.aggregate(npavg)
+
+    def _get_weighted_mean_column(self, col_name, apply_beam=False):
+        """
+        Returns column averaged by group, using weighted averaging.
+
+        Parameters
+        ----------
+        col_name : str
+            Column name
         apply_beam : bool, optional
-            If True, fluxes will be attenuated by the beam
+            If True, weights will be attenuated by the beam
 
         Returns
         -------
         col : astropy Column
             Column object with averaged values
         """
-        if weight:
-            # Using 'axis=0' makes the aggregation support array-valued columns.
-            # For scalar-valued columns, a plain np.sum would suffice.
-            # Note that this is an undocumented feature of astropy tables:
-            # https://docs.astropy.org/en/stable/table/operations.html#aggregation
-            # says the aggregation function should return a scalar value.
-            def npsum(array):
-                return np.sum(array, axis=0)
-
-            if hasattr(self.table[col_name], "filled"):
-                vals = self.table[col_name].filled().data
-            else:
-                vals = self.table[col_name].data
-            if weight:
-                weights = self.getColValues("I", applyBeam=apply_beam)
-                if weights.shape != vals.shape:
-                    weights = np.resize(weights, vals.shape)
-                weight_col = Column(name="Weight", data=weights)
-                val_weight_col = Column(name="ValWeight", data=vals * weights)
-                self.table.add_column(val_weight_col)
-                self.table.add_column(weight_col)
-                numer = self.table["ValWeight"].groups.aggregate(npsum).data
-                denom = self.table["Weight"].groups.aggregate(npsum).data
-                self.table.remove_column("ValWeight")
-                self.table.remove_column("Weight")
-            else:
-                val_col = Column(name="Val", data=vals)
-                self.table.add_column(val_col)
-                numer = self.table["Val"].groups.aggregate(npsum).data
-                self.table.remove_column("Val")
-
-            return Column(
-                name=col_name,
-                data=np.array(numer / denom),
-                unit=self.table[col_name].unit,
-            )
 
         # Using 'axis=0' makes the aggregation support array-valued columns.
-        # For scalar-valued columns, a plain np.average would suffice.
-        def npavg(c):
-            return np.average(c, axis=0)
+        # For scalar-valued columns, a plain np.sum would suffice.
+        # Note that this is an undocumented feature of astropy tables:
+        # https://docs.astropy.org/en/stable/table/operations.html#aggregation
+        # says the aggregation function should return a scalar value.
+        def npsum(array):
+            return np.sum(array, axis=0)
 
-        col = self._get_filled_column(col_name)
-        return col.groups.aggregate(npavg)
+        if hasattr(self.table[col_name], "filled"):
+            vals = self.table[col_name].filled().data
+        else:
+            vals = self.table[col_name].data
+
+        weight_col = self.table["I"]
+        weight_col_is_grouped = True
+        if apply_beam:
+            weight_col = self._apply_beam_to_col(weight_col.copy())
+            weight_col_is_grouped = False
+        if weight_col.shape != vals.shape:
+            weights = np.resize(weight_col, vals.shape)
+            weight_col = Column(data=weights)
+            weight_col_is_grouped = False
+        if not weight_col_is_grouped:
+            weight_col = weight_col.group_by(self.table["Patch"])
+
+        val_weight_col = Column(data=vals * weight_col.data)
+        val_weight_col = val_weight_col.group_by(self.table["Patch"])
+
+        numer = val_weight_col.groups.aggregate(npsum).data
+        denom = weight_col.groups.aggregate(npsum).data
+
+        return Column(
+            name=col_name, data=numer / denom, unit=self.table[col_name].unit
+        )
 
     def _get_size_column(self, weight=True, apply_beam=False):
         """
