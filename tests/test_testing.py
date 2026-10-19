@@ -307,18 +307,13 @@ class TestSkyModelGenerator:
             [10_000, (20, 20)],
         ],
     )
-    def test_patches(self, pytestconfig, rng, n_sources, n_patches):
+    def test_patches(self, tmp_path, rng, n_sources, n_patches):
         """
         Test that we can generate a random skymodel with patches and that we can
         load it.
         """
         x_patches, y_patches = n_patches
-        path = (
-            pytestconfig.resource_dir
-            / "generated_skymodels"
-            / f"skymodel_{n_sources}_{x_patches}x{y_patches}.txt"
-        )
-        path.parent.mkdir(exist_ok=True)
+        path = tmp_path / f"skymodel_{n_sources}_{x_patches}x{y_patches}.txt"
 
         # Generate the skymodel file with the specified number of sources and
         # patches
