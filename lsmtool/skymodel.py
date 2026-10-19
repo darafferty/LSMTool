@@ -604,15 +604,19 @@ class SkyModel(object):
 
             try:
                 if method == "mid":
-                    x_col = 0.5 * (
-                        self._get_min_column("X") + self._get_max_column("X")
-                    )
-                    y_col = 0.5 * (
-                        self._get_min_column("Y") + self._get_max_column("Y")
-                    )
+                    x_groups = self._get_filled_column("X").groups
+                    y_groups = self._get_filled_column("Y").groups
+                    x_min = x_groups.aggregate(np.min)
+                    x_max = x_groups.aggregate(np.max)
+                    y_min = y_groups.aggregate(np.min)
+                    y_max = y_groups.aggregate(np.max)
+                    x_col = 0.5 * (x_min + x_max)
+                    y_col = 0.5 * (y_min + y_max)
                 elif method == "mean":
-                    x_col = self._get_mean_column("X")
-                    y_col = self._get_mean_column("Y")
+                    x_groups = self._get_filled_column("X").groups
+                    y_groups = self._get_filled_column("Y").groups
+                    x_col = x_groups.aggregate(np.average)
+                    y_col = y_groups.aggregate(np.average)
                 elif method == "wmean":
                     x_col = self._get_weighted_mean_column(
                         "X", apply_beam=apply_beam
@@ -1436,20 +1440,19 @@ class SkyModel(object):
         if col_name is None:
             return None
 
-        if aggregate == "mean":
-            col = self._get_mean_column(col_name)
-        elif aggregate == "wmean":
+        if aggregate == "wmean":
             col = self._get_weighted_mean_column(
                 col_name, apply_beam=apply_beam
             )
-        elif aggregate == "sum":
-            col = self._get_summed_column(col_name)
-        elif aggregate == "min":
-            col = self._get_min_column(col_name)
-        elif aggregate == "max":
-            col = self._get_max_column(col_name)
         else:
-            raise ValueError("Aggregation function not understood.")
+            if not (base_function := getattr(np, aggregate, None)):
+                raise ValueError("Aggregation function not understood.")
+
+            np_function = self._wrap_aggregation_function(
+                col_name, base_function
+            )
+            col = self._get_filled_column(col_name)
+            col = col.groups.aggregate(np_function)
 
         if apply_beam and col_name in ["I", "Q", "U", "V"]:
             col = self._apply_beam_to_col(col, patch=True)
@@ -1524,88 +1527,6 @@ class SkyModel(object):
             col = col.group_by(self.table["Patch"])
         return col
 
-    def _get_summed_column(self, col_name):
-        """
-        Returns column summed by group.
-
-        Parameters
-        ----------
-        col_name : str
-            Column name
-
-        Returns
-        -------
-        col : astropy Column
-            Column object with aggregated sum of values
-        """
-
-        def npsum(array):
-            return np.sum(array, axis=0)
-
-        return self._get_filled_column(col_name).groups.aggregate(npsum)
-
-    def _get_min_column(self, col_name):
-        """
-        Returns column minimum value by group.
-
-        Parameters
-        ----------
-        col_name : str
-            Column name
-
-        Returns
-        -------
-        col : astropy Column
-            Column object with aggregated min values
-        """
-
-        def npmin(array):
-            return np.min(array, axis=0)
-
-        return self._get_filled_column(col_name).groups.aggregate(npmin)
-
-    def _get_max_column(self, col_name):
-        """
-        Returns column maximum value by group.
-
-        Parameters
-        ----------
-        col_name : str
-            Column name
-
-        Returns
-        -------
-        col : astropy Column
-            Column object with aggregated max values
-
-        """
-
-        def npmax(array):
-            return np.max(array, axis=0)
-
-        return self._get_filled_column(col_name).groups.aggregate(npmax)
-
-    def _get_mean_column(self, col_name):
-        """
-        Returns column averaged by group.
-
-        Parameters
-        ----------
-        col_name : str
-            Column name
-
-        Returns
-        -------
-        col : astropy Column
-            Column object with averaged values
-
-        """
-
-        def npavg(array):
-            return np.average(array, axis=0)
-
-        return self._get_filled_column(col_name).groups.aggregate(npavg)
-
     def _get_weighted_mean_column(self, col_name, apply_beam=False):
         """
         Returns column averaged by group, using weighted averaging.
@@ -1622,15 +1543,6 @@ class SkyModel(object):
         col : astropy Column
             Column object with averaged values
         """
-
-        # Using 'axis=0' makes the aggregation support array-valued columns.
-        # For scalar-valued columns, a plain np.sum would suffice.
-        # Note that this is an undocumented feature of astropy tables:
-        # https://docs.astropy.org/en/stable/table/operations.html#aggregation
-        # says the aggregation function should return a scalar value.
-        def npsum(array):
-            return np.sum(array, axis=0)
-
         if hasattr(self.table[col_name], "filled"):
             vals = self.table[col_name].filled().data
         else:
@@ -1651,12 +1563,40 @@ class SkyModel(object):
         val_weight_col = Column(data=vals * weight_col.data)
         val_weight_col = val_weight_col.group_by(self.table["Patch"])
 
+        npsum = self._wrap_aggregation_function(col_name, np.sum)
         numer = val_weight_col.groups.aggregate(npsum).data
         denom = weight_col.groups.aggregate(npsum).data
 
         return Column(
             name=col_name, data=numer / denom, unit=self.table[col_name].unit
         )
+
+    def _wrap_aggregation_function(self, col_name, np_function):
+        """
+        For a given column, returns an function for use in group aggregation.
+
+        Parameters
+        ----------
+        col_name : str
+            Column name
+        np_function : function
+            Numpy function to use for aggregation (e.g., np.sum, np.min)
+
+        Returns
+        -------
+        func : function
+            Aggregation kernel function suitable for use with group aggregation
+        """
+        # For scalar-valued columns, using np_function directly is much faster
+        # than using the aggregation function with 'axis=0'.
+        if self.table[col_name].ndim == 1:
+            return np_function
+
+        # Support array-valued columns using 'axis=0'.
+        # Note that this is an undocumented feature of astropy tables:
+        # https://docs.astropy.org/en/stable/table/operations.html#aggregation
+        # says the aggregation function should return a scalar value.
+        return lambda array: np_function(array, axis=0)
 
     def _get_size_column(self, weight=True, apply_beam=False):
         """
