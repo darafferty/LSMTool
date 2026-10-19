@@ -677,7 +677,7 @@ class ClusteredCoordinates:
         coords = np.empty((n, 2))
         labels = np.empty(n, dtype=int)
         index = 0
-        for cluster_index, n_points in zip(*n_points_per_cluster):
+        for cluster_index, n_points in zip(*n_points_per_cluster, strict=True):
             if n_points:
                 labels[index : index + n_points] = cluster_index
                 coords[index : index + n_points] = self.distributions[
@@ -711,7 +711,7 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
         )
         return super().get_coords(samples)
 
-    def get_patches(self, samples, n_patches):
+    def get_patches(self, samples, _n_patches):
         patch_names = set(samples["patch"])
 
         ra_patch, dec_patch = self.get_coords(
