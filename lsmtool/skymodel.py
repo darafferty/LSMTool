@@ -304,7 +304,8 @@ class SkyModel(object):
         else:
             log_call = self.log.debug
 
-        ref_ra, ref_dec = self._get_midpoint()
+        wcs = self._get_midpoint_wcs()
+        ref_ra, ref_dec = wcs.wcs.crval[0], wcs.wcs.crval[1]
         tot_flux = np.sum(self.getColValues("I", units="Jy"))
 
         info = (
@@ -761,7 +762,7 @@ class SkyModel(object):
         else:
             raise RuntimeError("Sky model does not have patches.")
 
-    def _get_midpoint(self, ra=None, dec=None, *, crdelt=None):
+    def _get_midpoint_wcs(self, ra=None, dec=None, *, crdelt=None):
         """
         Compute the midpoint of the given RA and Dec coordinate lists.
 
@@ -778,30 +779,37 @@ class SkyModel(object):
 
         Returns
         -------
-        ra_midpoint, dec_midpoint : float
-            Midpoint RA and Dec values.
+        wcs : astropy.wcs.WCS or None
+            WCS object for the computed midpoint, with normalised RA and Dec
+            values in wcs.wcs.crval.
+            Returns None if:
+              - ra is not None: If ra is empty.
+              - ra is None: If the sky model has no sources.
+
         """
         ra = self.table["Ra"] if ra is None else ra
         dec = self.table["Dec"] if dec is None else dec
 
         if len(ra) == 0:
-            return 0, 0
+            return None
         if len(ra) == 1:
-            ra_midpoint, dec_midpoint = ra[0], dec[0]
-        else:
-            wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
-            x, y = wcs.wcs_world2pix(ra, dec, 0)
-            xind = np.argsort(x)
-            yind = np.argsort(y)
-            xsorted = x[xind]
-            ysorted = y[yind]
-            xmid = 0.5 * (xsorted[0] + xsorted[-1])
-            ymid = 0.5 * (ysorted[0] + ysorted[-1])
-            midxind = np.searchsorted(xsorted, xmid)
-            midyind = np.searchsorted(ysorted, ymid)
-            ra_midpoint, dec_midpoint = ra[xind[midxind]], dec[yind[midyind]]
+            ra_midpoint, dec_midpoint = normalize_ra_dec(ra[0], dec[0])
+            return make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
 
-        return normalize_ra_dec(ra_midpoint, dec_midpoint)
+        wcs = make_wcs(ra[0], dec[0], crdelt=crdelt)
+        x, y = wcs.wcs_world2pix(ra, dec, 0)
+        xind = np.argsort(x)
+        yind = np.argsort(y)
+        xsorted = x[xind]
+        ysorted = y[yind]
+        xmid = 0.5 * (xsorted[0] + xsorted[-1])
+        ymid = 0.5 * (ysorted[0] + ysorted[-1])
+        midxind = np.searchsorted(xsorted, xmid)
+        midyind = np.searchsorted(ysorted, ymid)
+        ra_midpoint, dec_midpoint = normalize_ra_dec(ra[xind[midxind]], dec[yind[midyind]])
+        wcs.wcs.crval = [ra_midpoint, dec_midpoint]
+
+        return wcs
 
     def _get_xy(self, ra=None, dec=None, *, crdelt=None):
         """
@@ -831,10 +839,13 @@ class SkyModel(object):
         if len(ra) == 0:
             return [], [], None
 
-        ra_midpoint, dec_midpoint = self._get_midpoint(ra, dec, crdelt=crdelt)
-        wcs = make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
-        x, y = wcs.wcs_world2pix(ra, dec, 0)
+        if len(ra) == 1:
+            ra, dec = normalize_ra_dec(ra[0], dec[0])
+            wcs = make_wcs(ra, dec, crdelt=crdelt)
+            return [wcs.wcs.crpix[0] - 1], [wcs.wcs.crpix[1] - 1], wcs
 
+        wcs = self._get_midpoint_wcs(ra, dec, crdelt=crdelt)
+        x, y = wcs.wcs_world2pix(ra, dec, 0)
         return x, y, wcs
 
     def getDefaultValues(self):
@@ -1908,9 +1919,9 @@ class SkyModel(object):
                     "Model must be grouped into patches when format = 'facet'."
                 )
 
-            ref_ra, ref_dec = self._get_midpoint()
-            table.meta["refRA"] = ref_ra
-            table.meta["refDec"] = ref_dec
+            wcs = self._get_midpoint_wcs()
+            table.meta["refRA"] = wcs.wcs.crval[0]
+            table.meta["refDec"] = wcs.wcs.crval[1]
 
             if width is not None:
                 table.meta["width"] = width
