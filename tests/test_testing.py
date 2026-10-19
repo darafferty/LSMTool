@@ -349,13 +349,13 @@ class TestSkyModelGenerator:
 
 class TestGroupedSkymodelGenerator:
     @pytest.mark.parametrize("n_sources", [100, 1000])
-    def test_read_write(self, output_skymodels_dir, n_sources, rng):
+    def test_read_write(self, tmp_path, n_sources, rng):
         """
         Test that we can generate a grouped skymodel, read it, and that it has
         the expected structure.
         """
 
-        path = output_skymodels_dir / f"grouped_skymodel_{n_sources}.txt"
+        path = tmp_path / f"grouped_skymodel_{n_sources}.txt"
 
         generator = ClusteredSkyModelGenerator(
             coordinates=ClusteredCoordinates(
