@@ -1445,15 +1445,7 @@ class SkyModel(object):
                 col_name, apply_beam=apply_beam
             )
         else:
-            if aggregate == "mean":
-                base_function = np.average
-            elif aggregate == "sum":
-                base_function = np.sum
-            elif aggregate == "min":
-                base_function = np.min
-            elif aggregate == "max":
-                base_function = np.max
-            else:
+            if not (base_func := getattr(np, aggregate, None)):
                 raise ValueError("Aggregation function not understood.")
 
             np_function = self._wrap_aggregation_function(
