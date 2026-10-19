@@ -9,6 +9,8 @@ from scipy.stats.distributions import uniform
 
 from lsmtool import load
 from lsmtool.testing import (
+    ClusteredCoordinates,
+    ClusteredSkyModelGenerator,
     SkyModelGenerator,
     Uniform,
     check_skymodels_equal,
@@ -342,3 +344,46 @@ class TestSkyModelGenerator:
             for patch_name in skymodel.table.meta
         ]
         assert sum(n_sources_per_patch) == n_sources
+
+
+class TestGroupedSkymodelGenerator:
+    @pytest.mark.parametrize("n_sources", [100, 1000])
+    def test_read_write(self, output_skymodels_dir, n_sources, rng):
+        """
+        Test that we can generate a grouped skymodel, read it, and that it has
+        the expected structure.
+        """
+
+        path = output_skymodels_dir / f"grouped_skymodel_{n_sources}.txt"
+
+        generator = ClusteredSkyModelGenerator(
+            coordinates=ClusteredCoordinates(
+                positions=[(0, 0), (30, 45)],
+                covariances=[np.eye(2), 10 * np.eye(2)],
+                probabilities=[0.75, 0.25],
+            )
+        )
+        generator.to_file(path, n_sources, random_state=rng)
+
+        assert path.exists()
+        skymodel = load(path)
+
+        assert skymodel.getColNames() == [
+            "Name",
+            "Type",
+            "Patch",
+            "Ra",
+            "Dec",
+            "I",
+            "Q",
+            "U",
+            "V",
+            "ReferenceFrequency",
+            "SpectralIndex",
+            "RotationMeasure",
+            "MajorAxis",
+            "MinorAxis",
+            "Orientation",
+        ]
+
+        assert len(skymodel) == n_sources

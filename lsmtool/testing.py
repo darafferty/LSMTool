@@ -224,7 +224,7 @@ class Uniform(rv_continuous):
 RandomState = Optional[int | np.random.RandomState | np.random.Generator]
 RandomVariate = Optional[rv_frozen | Constant]
 
-@dataclass(kw_only=True)
+@dataclass
 class SkyModelGenerator:
     """
     Class for generating random skymodel data for testing purposes.
@@ -301,6 +301,9 @@ class SkyModelGenerator:
         ----------
         n_sources : int
             The number of sources to generate in the skymodel.
+        n_patches : int, optional
+            The number of patches to divide the sky into. If None, no patching
+            is applied.
         random_state : int, RandomState instance or None, optional
             The random state to use for reproducibility. If None (or
             np.random), the numpy.random.RandomState singleton is used.
@@ -342,6 +345,9 @@ class SkyModelGenerator:
         ----------
         n_sources : int
             The number of sources to generate in the skymodel.
+        n_patches : int, optional
+            The number of patches to divide the sky into. If None, no patching
+            is applied.
         random_state : int, RandomState instance or None, optional
             The random state to use for reproducibility. If None (or
             np.random), the numpy.random.RandomState singleton is used.
@@ -565,9 +571,12 @@ class SkyModelGenerator:
             File will be saved as text file in CSV format.
         n_sources : int
             The number of sources to generate in the skymodel.
+        n_patches : int, optional
+            The number of patches to divide the sky into. If None, no patching
+            is applied.
         random_state : int, RandomState instance or None, optional
-            The random state to use for reproducibility. If None (or
-            np.random), the numpy.random.RandomState singleton is used.
+            The random state to use for reproducibility. If None (or np.random),
+            the numpy.random.RandomState singleton is used.
         """
 
         # Get samples
@@ -599,3 +608,124 @@ class SkyModelGenerator:
                 ]
             )
             Path(filename).write_text(content)
+
+
+class ClusteredCoordinates:
+    """
+    A class representing clustered sky coordinates.
+    """
+
+    def __init__(self, positions, covariances, probabilities=None):
+        """
+        Initialize the clustered coordinates with positions and covariances.
+
+        Parameters
+        ----------
+        positions : list of array-like
+            The mean positions of the clusters.
+        covariances : list of array-like
+            Sequence of symmetric positive (semi)definite covariance matrices
+            for the multivariate normal distributions of the clusters.
+        probabilities : list of float, optional
+            The probability amplitude associated with each cluster. If None,
+            sources are equally likely to come from any cluster.
+        """
+
+        if len(positions) != len(covariances):
+            raise ValueError(
+                "positions and covariances must have the same length (the "
+                "number of clusters)."
+            )
+
+        self.positions = positions
+        self.covariances = covariances
+        self.probabilities = probabilities
+        self.distributions = [
+            multivariate_normal(mean=pos, cov=cov)
+            for pos, cov in zip(positions, covariances, strict=True)
+        ]
+
+    @property
+    def n_clusters(self):
+        """Return the number of clusters."""
+        return len(self.positions)
+
+    def rvs(self, n, *_, **__):
+        """
+        Generate random samples for the clustered coordinates.
+
+        Parameters
+        ----------
+        n : int
+            The number of samples to generate.
+
+        Returns
+        -------
+        coordinates : np.ndarray
+            An array of shape (2, n) containing the generated coordinates.
+        labels : np.ndarray
+            An array of shape (n,) containing the cluster labels for each
+            generated coordinate.
+        """
+
+        cluster_indices = np.random.choice(
+            self.n_clusters,
+            p=self.probabilities,
+            size=n,
+        )
+        n_points_per_cluster = np.unique_counts(cluster_indices)
+        coords = np.empty((n, 2))
+        labels = np.empty(n, dtype=int)
+        index = 0
+        for cluster_index, n_points in zip(*n_points_per_cluster):
+            if n_points:
+                labels[index : index + n_points] = cluster_index
+                coords[index : index + n_points] = self.distributions[
+                    cluster_index
+                ].rvs(size=n_points)
+                index += n_points
+
+        labels = np.char.add("Patch", labels.astype(str))
+        return coords.T, labels
+
+
+@dataclass(kw_only=True)
+class ClusteredSkyModelGenerator(SkyModelGenerator):
+    """
+    A class for generating grouped sky models.
+
+    This class extends the functionality of the basic SkyModelGenerator to
+    support generating sources in clusters at various locations on the sky in
+    order to fascilitate testing of clustering algorithms in LSMTool.
+    """
+
+    coordinates: ClusteredCoordinates
+
+    def __post_init__(self):
+        self.ra = None
+        self.dec = None
+
+    def get_coords(self, samples):
+        (samples["ra"], samples["dec"]), samples["patch"] = samples.pop(
+            "coordinates"
+        )
+        return super().get_coords(samples)
+
+    def get_patches(self, samples, n_patches):
+        patch_names = set(samples["patch"])
+
+        ra_patch, dec_patch = self.get_coords(
+            {
+                "ra": self.coordinates.positions[:, 0],
+                "dec": self.coordinates.positions[:, 0],
+            }
+        )
+
+        patch_defs = np.empty((len(patch_names), 5), object)
+        patch_defs[:, 0] = " "
+        patch_defs[:, 1] = ""
+        patch_defs[:, 2] = patch_names
+        patch_defs[:, 3] = ra_patch
+        patch_defs[:, 4] = dec_patch
+
+        return patch_defs, patch_names
