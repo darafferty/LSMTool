@@ -1445,7 +1445,7 @@ class SkyModel(object):
                 col_name, apply_beam=apply_beam
             )
         else:
-            if not (base_func := getattr(np, aggregate, None)):
+            if not (base_function := getattr(np, aggregate, None)):
                 raise ValueError("Aggregation function not understood.")
 
             np_function = self._wrap_aggregation_function(
