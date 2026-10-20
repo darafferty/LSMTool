@@ -305,7 +305,11 @@ class SkyModel(object):
             log_call = self.log.debug
 
         wcs = self._get_midpoint_wcs()
-        ref_ra, ref_dec = wcs.wcs.crval[0], wcs.wcs.crval[1]
+        wcs = self._get_midpoint_wcs()
+        if wcs is None:
+            ref_ra, ref_dec = 0, 0
+        else:
+            ref_ra, ref_dec = wcs.wcs.crval[0], wcs.wcs.crval[1]
         tot_flux = np.sum(self.getColValues("I", units="Jy"))
 
         info = (
