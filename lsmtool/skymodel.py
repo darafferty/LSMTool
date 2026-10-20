@@ -842,7 +842,7 @@ class SkyModel(object):
         if len(ra) == 1:
             ra, dec = normalize_ra_dec(ra[0], dec[0])
             wcs = make_wcs(ra, dec, crdelt=crdelt)
-            return [wcs.wcs.crpix[0] - 1], [wcs.wcs.crpix[1] - 1], wcs
+            return np.array([wcs.wcs.crpix[0] - 1]), np.array([wcs.wcs.crpix[1] - 1]), wcs
 
         wcs = self._get_midpoint_wcs(ra, dec, crdelt=crdelt)
         x, y = wcs.wcs_world2pix(ra, dec, 0)
