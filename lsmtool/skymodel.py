@@ -806,7 +806,10 @@ class SkyModel(object):
         ymid = 0.5 * (ysorted[0] + ysorted[-1])
         midxind = np.searchsorted(xsorted, xmid)
         midyind = np.searchsorted(ysorted, ymid)
-        ra_midpoint, dec_midpoint = normalize_ra_dec(ra[xind[midxind]], dec[yind[midyind]])
+        ra_midpoint, dec_midpoint = normalize_ra_dec(
+            ra[xind[midxind]], dec[yind[midyind]]
+        )
+        # Reusing the WCS object avoids the overhead of creating a new one.
         wcs.wcs.crval = [ra_midpoint, dec_midpoint]
 
         return wcs
@@ -842,7 +845,11 @@ class SkyModel(object):
         if len(ra) == 1:
             ra, dec = normalize_ra_dec(ra[0], dec[0])
             wcs = make_wcs(ra, dec, crdelt=crdelt)
-            return np.array([wcs.wcs.crpix[0] - 1]), np.array([wcs.wcs.crpix[1] - 1]), wcs
+            return (
+                np.array([wcs.wcs.crpix[0] - 1]),
+                np.array([wcs.wcs.crpix[1] - 1]),
+                wcs,
+            )
 
         wcs = self._get_midpoint_wcs(ra, dec, crdelt=crdelt)
         x, y = wcs.wcs_world2pix(ra, dec, 0)
