@@ -782,9 +782,8 @@ class SkyModel(object):
         wcs : astropy.wcs.WCS
             WCS object for the computed midpoint, with normalised RA and Dec
             values in wcs.wcs.crval.
-            Returns None if:
-              - ra is not None: If ra is empty.
-              - ra is None: If the sky model has no sources.
+            If the ra list or the skymodel is empty, the WCS object is
+            centered at (0, 0).
 
         """
         ra = self.table["Ra"] if ra is None else ra
@@ -792,6 +791,7 @@ class SkyModel(object):
 
         if len(ra) == 0:
             return make_wcs(0, 0, crdelt=crdelt)
+
         if len(ra) == 1:
             ra_midpoint, dec_midpoint = normalize_ra_dec(ra[0], dec[0])
             return make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
