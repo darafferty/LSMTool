@@ -305,11 +305,7 @@ class SkyModel(object):
             log_call = self.log.debug
 
         wcs = self._get_midpoint_wcs()
-        wcs = self._get_midpoint_wcs()
-        if wcs is None:
-            ref_ra, ref_dec = 0, 0
-        else:
-            ref_ra, ref_dec = wcs.wcs.crval[0], wcs.wcs.crval[1]
+        ref_ra, ref_dec = wcs.wcs.crval[0], wcs.wcs.crval[1]
         tot_flux = np.sum(self.getColValues("I", units="Jy"))
 
         info = (
@@ -783,7 +779,7 @@ class SkyModel(object):
 
         Returns
         -------
-        wcs : astropy.wcs.WCS or None
+        wcs : astropy.wcs.WCS
             WCS object for the computed midpoint, with normalised RA and Dec
             values in wcs.wcs.crval.
             Returns None if:
@@ -795,7 +791,7 @@ class SkyModel(object):
         dec = self.table["Dec"] if dec is None else dec
 
         if len(ra) == 0:
-            return None
+            return make_wcs(0, 0, crdelt=crdelt)
         if len(ra) == 1:
             ra_midpoint, dec_midpoint = normalize_ra_dec(ra[0], dec[0])
             return make_wcs(ra_midpoint, dec_midpoint, crdelt=crdelt)
