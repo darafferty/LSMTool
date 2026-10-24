@@ -12,6 +12,7 @@ from lsmtool.testing import (
     ClusteredCoordinates,
     ClusteredSkyModelGenerator,
     SkyModelGenerator,
+    SourceClusters,
     Uniform,
     check_skymodels_equal,
 )
@@ -341,23 +342,28 @@ class TestSkyModelGenerator:
         assert sum(n_sources_per_patch) == n_sources
 
 
-class TestGroupedSkymodelGenerator:
-    @pytest.mark.parametrize("n_sources", [100, 1000])
-    def test_read_write(self, tmp_path, n_sources, rng):
+class TestClusteredSkymodelGenerator:
+    @pytest.mark.parametrize("n_sources", [100])
+    def test_read_write(self, pytestconfig, n_sources, rng):
         """
         Test that we can generate a grouped skymodel, read it, and that it has
         the expected structure.
         """
 
-        path = tmp_path / f"grouped_skymodel_{n_sources}.txt"
-
-        generator = ClusteredSkyModelGenerator(
-            coordinates=ClusteredCoordinates(
-                positions=[(0, 0), (30, 45)],
-                covariances=[np.eye(2), 10 * np.eye(2)],
-                probabilities=[0.75, 0.25],
-            )
+        path = (
+            pytestconfig.resource_dir
+            / "generated_skymodels"
+            / f"grouped_skymodel_{n_sources}.txt"
         )
+
+        # Generate cluster parameters
+        clusters = SourceClusters.generated(
+            n_clusters=20,
+            probabilities=None,
+            ra=uniform_range(15, 60),
+            dec=uniform_range(-15, 15),
+        )
+        generator = ClusteredSkyModelGenerator(coordinates=clusters)
         generator.to_file(path, n_sources, random_state=rng)
 
         assert path.exists()

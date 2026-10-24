@@ -5,18 +5,29 @@ Utility functions used for testing.
 import contextlib
 import io
 import itertools as itt
-from dataclasses import asdict, dataclass
+import warnings
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from astropy.coordinates import Angle
+from astropy.utils.decorators import lazyproperty
+from matplotlib.collections import EllipseCollection
+from scipy.spatial.distance import cdist
 from scipy.stats import binned_statistic_2d
 from scipy.stats._distn_infrastructure import rv_sample
-from scipy.stats.distributions import rv_continuous, rv_frozen, uniform
+from scipy.stats.distributions import (
+    cosine,
+    rv_continuous,
+    rv_discrete,
+    rv_frozen,
+    uniform,
+)
 
-from .io import PathLike, load
+from .io import PathLike, PathLike, load
 from .skymodel import SkyModel
 from .utils import format_coordinates
 
@@ -218,14 +229,114 @@ class Uniform(rv_continuous):
         rv_frozen
             A frozen uniform distribution object.
         """
-        return uniform(loc=a, scale=b - a)
+        return uniform(loc=a, scale=(b - a))
 
 
 RandomState = Optional[int | np.random.RandomState | np.random.Generator]
 RandomVariate = Optional[rv_frozen | Constant]
 
+
+class Sampler:
+    """
+    Mixin class for sampling random variables defined as dataclass fields.
+    """
+
+    def sample(self, n: int, random_state: RandomState = None, **kws):
+        """
+        Generate a random sample of numbers by looping over the distributions
+        that are fields of the class. Retrun a dictionary keyed on the field
+        names, with arrays of sampled numbers as values.
+
+        Parameters
+        ----------
+        n : int
+            The number of samples to generate.
+        random_state : int, RandomState instance or None, optional
+            The random state to use for reproducibility. If None (or np.random),
+            the numpy.random.RandomState singleton is used.
+        kws :
+            Additional keyword arguments to pass to custom sampler methods.
+
+        Returns
+        -------
+        samples : dict[str, numpy.ndarray]
+            A dictionary with arrays of `n` sampled values for each parameter.
+        """
+
+        samples = {}
+        for name, dist in asdict(self).items():
+            if dist is None:
+                continue
+
+            if dist := getattr(self, name):
+                samples[name] = dist.rvs(n, random_state=random_state)
+
+            if sampler := getattr(self, f"get_{name}", None):
+                samples[name] = sampler(samples, **kws)
+
+        return samples
+
+
+class ConditionalSampler(Sampler):
+    """
+    Mixin class for sampling random variables and optionally rejecting samples
+    based on user-defined conditions.
+    """
+
+    def sample(
+        self,
+        n: int,
+        max_rejections: int = 100,
+        random_state: RandomState = None,
+        **kws,
+    ):
+        index = 0
+        counter = itt.count()
+        samples = np.full(n, np.nan, self.dtype())
+        while index < n:
+            count = next(counter)
+            print(index, count)
+
+            # Generate a new sample and check if it is valid. If valid, store it. Otherwise, count as a rejection.
+            sample = Sampler.sample(self, 1, random_state=random_state, **kws)
+            if self.validate(sample, samples):
+                samples[index] = tuple(sample.values())
+                index += 1
+
+            elif count >= max_rejections:
+                warnings.warn(
+                    "Maximum number of sample rejections reached before "
+                    "reaching requested number of samples.",
+                )
+                break
+
+        if index == 0:
+            raise RuntimeError(
+                f"No valid samples could be generated in {index + count} "
+                "iterations."
+            )
+
+        if index < n:
+            warnings.warn(
+                f"Only {index} valid samples could be generated (out of "
+                f"requested {n}) in {count} iterations."
+            )
+
+        # convert to dict
+        return {key: samples[key] for key in samples.dtype.fields.keys()}
+
+    def dtype(self, **dtypes):
+        return [
+            (key, dtypes.get(key, float))
+            for key in self.__dataclass_fields__.keys()
+        ]
+
+    def validate(self, sample, samples):
+        return True
+
+
 @dataclass
-class SkyModelGenerator:
+class SkyModelGenerator(Sampler):
     """
     Class for generating random skymodel data for testing purposes.
 
@@ -610,49 +721,341 @@ class SkyModelGenerator:
             Path(filename).write_text(content)
 
 
-class ClusteredCoordinates:
+@dataclass
+class CovarianceMatrixGenerator(ConditionalSampler):
+    """
+    Generator for covariance matrices with specified standard deviations and
+    correlation. Ensures that generated matrices are non-singular.
+    """
+
+    std_ra: RandomVariate = Uniform(0.5, 1)
+    std_dec: RandomVariate = Uniform(0.5, 1)
+    cor: RandomVariate = cosine(-1, 1)
+
+    def validate(self, sample: dict, samples: dict):
+        sigma = self.get_matrix(**sample)
+        return np.linalg.det(sigma) != 0
+
+    def get_matrix(self, std_ra, std_dec, cor):
+
+        cov = cor * std_ra * std_dec
+        sigma = np.squeeze([[std_ra**2, cov], [cov, std_dec**2]])
+
+        if sigma.ndim > 2:
+            sigma = np.moveaxis(sigma, -1, 0)
+
+        return sigma
+
+    def rvs(self, n: int, *args, **kws):
+        samples = Sampler.sample(self, n, *args, **kws)
+        # All information is contained in the covariance matrix
+        return self.get_matrix(**samples)
+
+
+@dataclass
+class ClusterGenerator(ConditionalSampler):
+    """
+    Generator for cluster positions with associated covariance matrices.
+    Ensures that cluster centers are sufficiently far apart based on the
+    Mahalanobis distance.
+    """
+
+    MIN_DISTANCE_SIGMA = 6.0
+
+    ra: RandomVariate = Uniform(0, 360)
+    dec: RandomVariate = Uniform(-90, 90)
+    cov: RandomVariate = field(default_factory=CovarianceMatrixGenerator)
+
+    def sample(self, n: int, *args, **kws):
+        samples = super().sample(n, *args, **kws)
+        samples["pos"] = np.array([samples.pop("ra"), samples.pop("dec")]).T
+        return samples
+
+    def dtype(self):
+        return super().dtype(cov=(float, (2, 2)))
+
+    def validate(self, sample: dict, samples: dict):
+        # ensure cluster centres are far enough appart
+        positions = np.array([samples["ra"], samples["dec"]]).T
+        not_yet_generated = np.isnan(positions).any(1)
+        if not_yet_generated.all():
+            return True
+
+        positions = positions[~not_yet_generated]
+        covariances = samples["cov"][~not_yet_generated]
+
+        pos = np.array([sample["ra"], sample["dec"]]).T
+        cov = sample["cov"]
+
+        # Check distance of the new sample to existing cluster centers using
+        # Mahalanobis distance
+        mahalanobis_distance = cdist(
+            pos, positions, metric="mahalanobis", VI=np.linalg.inv(covariances)
+        )
+        if (mahalanobis_distance < self.MIN_DISTANCE_SIGMA).any():
+            return False
+
+        # Check distance of existing cluster centers to the new sample
+        mahalanobis_distance = cdist(
+            pos, positions, metric="mahalanobis", VI=np.linalg.inv(cov)
+        )
+        return (mahalanobis_distance >= self.MIN_DISTANCE_SIGMA).all()
+
+
+class Cluster:
+    """
+    Represents a single cluster for generating sources for a sky model.
+    """
+
+    def __init__(self, pos, cov):
+        """
+        Initialize the `Cluster` source generator.
+
+        Sources are generated from a multivariate normal probability
+        distribution centered a at the given position and with given
+        covariance matrix.
+
+        Parameters
+        ----------
+        pos : array-like
+            The position of the cluster center.
+        cov : array-like
+            The 2x2 covariance matrix of the cluster.
+        """
+        self.position = np.array(pos)
+        self.covariance = np.array(cov)
+
+    @property
+    def position(self):
+        """The position of the cluster centre in RA, Dec coordinates."""
+        return self._position
+
+    @position.setter
+    def position(self, position):
+        position = np.array(position)
+        if position.shape != (2,):
+            raise ValueError("Position must be a 2-element array.")
+        self._position = position
+
+    @lazyproperty
+    def covariance(self):
+        """The 2x2 covariance matrix of the source distribution."""
+        return self.sigma
+
+    @covariance.setter
+    def covariance_matrix(self, sigma):
+
+        covariance_matrix = np.array(sigma, dtype=float)
+        if covariance_matrix.shape != (2, 2):
+            raise ValueError("Covariance matrix must be 2x2")
+
+        if np.linalg.det(covariance_matrix) == 0:
+            raise ValueError("Covariance matrix is singular")
+
+        self.sigma = covariance_matrix
+
+        # Invalidate cached properties that depend on the covariance matrix
+        del self.semi_axes
+        del self.angles
+
+    @property
+    def distribution(self):
+        """The multivariate normal distribution representing the cluster."""
+        return multivariate_normal(mean=self.position, cov=self.covariance)
+
+    @property
+    def rvs(self):
+        return self.distribution.rvs
+
+    @property
+    def n_clusters(self):
+        """The number of clusters."""
+        return len(self.position)
+
+    @property
+    def var_ra(self):
+        """Variance of the RA coordinate for all clusters."""
+        return self.covariance[0, 0]
+
+    @property
+    def var_dec(self):
+        """Variance of the Dec coordinate for all clusters."""
+        return self.covariance[1, 1]
+
+    @property
+    def cov(self):
+        """Covariance between the RA and Dec coordinates for all clusters."""
+        return self.covariance[0, 1]
+
+    @lazyproperty
+    def semi_axes(self):
+        """
+        Compute the semi-major and semi-minor axes of the ellipses
+        representing the clusters based on their covariance matrices.
+
+        Returns
+        -------
+        a, b : np.ndarray
+            Semi-major  and semi-minor axes for all cluster.
+        """
+
+        # There is some degeneracy in the covariance matrix representation vs
+        # the shape parameter representation of the ellipse. The semi-major axis
+        # is defined as the largest of the two axis, and the rotation angle of
+        # the ellipse is the angle from the positive x-axis to the semi-major
+        # axis. Therefore, if std_ra > std_dec, we may swap the two axes and
+        # invert the angle to obtain an identical distribution.
+        eigenvalues, _ = np.linalg.eigh(self.covariance)
+        semi_axes = np.sqrt(eigenvalues)
+        a = semi_axes.max()
+        b = semi_axes.min()
+        return a, b
+
+    @property
+    def semi_major_axis(self):
+        """
+        The semi-major axes of the iso-probability ellipse of the source
+        distribution. This is defined as the larger of the two standard
+        deviations of the source distribution.
+        """
+        a, _ = self.semi_axes
+        return a
+
+    @property
+    def semi_minor_axis(self):
+        """
+        The semi-minr axes of the iso-probability ellipse of the source
+        distribution. This is defined as the smaller of the two standard
+        deviations of the source distribution.
+        """
+        _, b = self.semi_axes
+        return b
+
+    @lazyproperty
+    def angle(self):
+        """
+        Rotation angle of the the iso-probability ellipse of the source
+        distribution. This is the counter-clockwise angle from the positive
+        x-axis to the semi-major axis of the ellipse.
+        """
+        return np.degrees(
+            0.5 * np.arctan2(2 * self.cov, (self.var_ra - self.var_dec))
+        )
+
+
+class AttrVector:
+    """
+    Descriptor class for vectorised attribute lookup.
+    """
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def __get__(self, instance: "SourceClusters" | None, _):
+        if instance is None:
+            return self
+
+        return np.array(
+            [getattr(cluster, self.name) for cluster in instance.clusters]
+        )
+
+
+class SourceClusters:
     """
     A class representing clustered sky coordinates.
     """
 
+    positions = AttrVector("position")
+    covariances = AttrVector("covariance")
+    semi_major_axes = AttrVector("semi_major_axis")
+    semi_minor_axes = AttrVector("semi_minor_axis")
+    angles = AttrVector("angle")
+
+    @classmethod
+    def generated(
+        cls,
+        n_clusters: int,
+        probabilities=None,
+        random_state: RandomState = None,
+        **config,
+    ):
+        """
+        Generates a random set of clusters using the `ClusterGenerator` class,
+        and initializes a `SourceClusters` instance with the generated cluster
+        parameters.
+
+        Parameters
+        ----------
+        n_clusters : int
+            _description_
+        probabilities : list of float, optional
+            The probability amplitude associated with each cluster. This
+            determines the fraction of sources that will fall withing each
+            cluster. If None, sources are equally likely to come from any
+            cluster.
+        random_state : int, RandomState instance or None, optional
+            The random state to use for reproducibility. If None (or
+            np.random), the numpy.random.RandomState singleton is used.
+
+        Returns
+        -------
+        SourceClusters
+            Object contain the generated source cluster definitions.
+        """
+        clusters = ClusterGenerator(**config)
+        cluster_params = clusters.sample(n_clusters, random_state=random_state)
+
+        # Generate source coordinates from clusters
+        return cls(
+            positions=cluster_params["pos"],
+            covariances=cluster_params["cov"],
+            probabilities=probabilities,
+        )
+
     def __init__(self, positions, covariances, probabilities=None):
         """
-        Initialize the clustered coordinates with positions and covariances.
+        Initialize the clustered coordinates with centres and covariances.
 
         Parameters
         ----------
         positions : list of array-like
-            The mean positions of the clusters.
+            The locations of the clusters. Each element in the sequence
+            represents the mean of the 2-dimensional Gaussian distribution from
+            which samples will be genrated from that cluster.
         covariances : list of array-like
             Sequence of symmetric positive (semi)definite covariance matrices
-            for the multivariate normal distributions of the clusters.
+            for the multivariate normal distributions of the clusters. This
+            sequence must have the same length as the centres sequence.
         probabilities : list of float, optional
-            The probability amplitude associated with each cluster. If None,
-            sources are equally likely to come from any cluster.
+            The probability amplitude associated with each cluster. This
+            determines the fraction of sources that will fall withing each
+            cluster. If None, sources are equally likely to come from any
+            cluster.
         """
 
         if len(positions) != len(covariances):
             raise ValueError(
-                "positions and covariances must have the same length (the "
+                "centres and covariances must have the same length (the "
                 "number of clusters)."
             )
+        if probabilities is not None and len(probabilities) != len(positions):
+            raise ValueError(
+                "probabilities must have the same length as positions."
+            )
 
-        self.positions = positions
-        self.covariances = covariances
-        self.probabilities = probabilities
-        self.distributions = [
-            multivariate_normal(mean=pos, cov=cov)
+        self.clusters = [
+            Cluster(pos, cov)
             for pos, cov in zip(positions, covariances, strict=True)
         ]
+        self.probabilities = probabilities
 
     @property
     def n_clusters(self):
-        """Return the number of clusters."""
-        return len(self.positions)
+        return len(self.clusters)
 
-    def rvs(self, n, *_, **__):
+    def rvs(self, n: int, *_, **__):
         """
-        Generate random samples for the clustered coordinates.
+        Generate random samples for the clustered sources.
 
         Parameters
         ----------
@@ -680,13 +1083,85 @@ class ClusteredCoordinates:
         for cluster_index, n_points in zip(*n_points_per_cluster, strict=True):
             if n_points:
                 labels[index : index + n_points] = cluster_index
-                coords[index : index + n_points] = self.distributions[
+                coords[index : index + n_points] = self.clusters[
                     cluster_index
                 ].rvs(size=n_points)
                 index += n_points
 
         labels = np.char.add("Patch", labels.astype(str))
         return coords.T, labels
+
+    def plot(
+        self,
+        n_sigma: float = 3.0,
+        axes: Optional[plt.Axes] = None,
+        mark_centres: Optional[bool | dict] = None,
+        **kws,
+    ):
+        """
+        Plot the covariance ellipses of the clusters and optionally mark the
+        cluster centres.
+
+        Parameters
+        ----------
+        n_sigma : int, optional
+            The contour level at which to draw the ellipse, by default 3.
+        axes : matplotlib.axes.Axes, optional
+            Axes on which to draw the ellipses. If None (the default), a new
+            figure and axes will be created.
+        mark_centres : dict or bool or None, optional
+            Configuration for marking the cluster centres. If a dictionary is
+            provided, it will be passed as keyword arguments to the plotting
+            function. If True or None (the default), default marker settings
+            will be used. If False, cluster centres will not be marked.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            The figure containing the plotted ellipses.
+        """
+
+        if axes is None:
+            fig, ax = plt.subplots()
+        else:
+            ax = axes
+            fig = ax.figure
+
+        # Plot centres
+        if mark_centres is not False:
+            mark_centres = mark_centres or {}
+            mark_centres |= {
+                "color": "k",
+                "marker": ".",
+                "linestyle": "",
+            }
+            ax.plot(*self.positions.T, **mark_centres)
+
+        # Plot ellipses representing the covariance of each cluster
+        kws |= {
+            "linewidth": 1,
+            "facecolor": "none",
+        }
+        ec = EllipseCollection(
+            2 * self.semi_major_axes * n_sigma,
+            2 * self.semi_minor_axes * n_sigma,
+            self.angles,
+            units="xy",
+            offset_transform=ax.transData,
+            offsets=self.positions,
+            **kws,
+        )
+        ax.add_collection(ec)
+
+        ax.set_aspect("equal")
+        ax.grid()
+
+        # #
+        # for dist in self.distributions:
+        #     xy = dist.rvs(100)
+        #     ax.plot(*xy.T, ".", alpha=0.35)
+
+        return fig
 
 
 @dataclass(kw_only=True)
@@ -699,25 +1174,25 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
     order to fascilitate testing of clustering algorithms in LSMTool.
     """
 
-    coordinates: ClusteredCoordinates
+    coordinates: SourceClusters
 
     def __post_init__(self):
         self.ra = None
         self.dec = None
 
-    def get_coords(self, samples):
+    def get_coords(self, samples: dict):
         (samples["ra"], samples["dec"]), samples["patch"] = samples.pop(
             "coordinates"
         )
         return super().get_coords(samples)
 
-    def get_patches(self, samples, _n_patches):
+    def get_patches(self, samples: dict, _n_patches):
         patch_names = set(samples["patch"])
 
         ra_patch, dec_patch = self.get_coords(
             {
-                "ra": self.coordinates.positions[:, 0],
-                "dec": self.coordinates.positions[:, 0],
+                "ra": self.coordinates.centres[:, 0],
+                "dec": self.coordinates.centres[:, 0],
             }
         )
 
