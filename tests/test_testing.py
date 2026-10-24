@@ -9,7 +9,6 @@ from scipy.stats.distributions import uniform
 
 from lsmtool import load
 from lsmtool.testing import (
-    ClusteredCoordinates,
     ClusteredSkyModelGenerator,
     SkyModelGenerator,
     SourceClusters,
@@ -360,8 +359,8 @@ class TestClusteredSkymodelGenerator:
         clusters = SourceClusters.generated(
             n_clusters=20,
             probabilities=None,
-            ra=uniform_range(15, 60),
-            dec=uniform_range(-15, 15),
+            ra=Uniform(15, 60),
+            dec=Uniform(-15, 15),
         )
         generator = ClusteredSkyModelGenerator(coordinates=clusters)
         generator.to_file(path, n_sources, random_state=rng)
