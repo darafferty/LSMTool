@@ -27,7 +27,7 @@ from scipy.stats.distributions import (
     uniform,
 )
 
-from .io import PathLike, PathLike, load
+from .io import PathLike, load
 from .skymodel import SkyModel
 from .utils import format_coordinates
 
@@ -103,8 +103,8 @@ def check_skymodels_equal(
     check_patch_names_sizes : bool
         Whether to check patch names and sizes.
     """
-    left = load(str(left_filename))
-    right = load(str(right_filename))
+    left = load(left_filename)
+    right = load(right_filename)
 
     # Check the default (static) values
     return bool(
@@ -401,7 +401,7 @@ class SkyModelGenerator(Sampler):
     def __call__(
         self,
         n_sources: int,
-        n_patches: Optional[int] = None,
+        n_patches:Optional[int]=None,
         random_state: RandomState = None,
         **kws,
     ):
@@ -443,7 +443,7 @@ class SkyModelGenerator(Sampler):
     def sample(
         self,
         n_sources: int,
-        n_patches=None,
+        n_patches:Optional[int]=None,
         random_state: RandomState = None,
         **kws,
     ):
@@ -471,18 +471,7 @@ class SkyModelGenerator(Sampler):
         patches : np.ndarray
             The patch definitions as a (n, 5) array of strings.
         """
-        samples = {}
-        for name, dist in asdict(self).items():
-            if dist is None:
-                continue
-
-            if dist := getattr(self, name):
-                samples[name] = dist.rvs(
-                    size=n_sources, random_state=random_state
-                )
-
-            if sampler := getattr(self, f"get_{name}", None):
-                samples[name] = sampler(samples, **kws)
+        samples = super().sample(n_sources, random_state, **kws)
 
         if n_patches:
             # Get patch definitions
@@ -643,7 +632,7 @@ class SkyModelGenerator(Sampler):
             np.char.replace(np.char.title(keys), "_", "")
         )
 
-    def to_array(self, samples):
+    def to_array(self, samples: dict):
         """
         Convert the samples dictionary to a numpy array by stacking the columns
         in the correct order.
@@ -951,7 +940,7 @@ class AttrVector:
     def __init__(self, name: str):
         self.name = name
 
-    def __get__(self, instance: "SourceClusters" | None, _):
+    def __get__(self, instance: Optional["SourceClusters"], _):
         if instance is None:
             return self
 
