@@ -27,7 +27,7 @@ from scipy.stats.distributions import (
     uniform,
 )
 
-from .io import PathLike, PathLike, load
+from .io import PathLike, load
 from .skymodel import SkyModel
 from .utils import format_coordinates
 
@@ -942,7 +942,7 @@ class AttrVector:
     def __init__(self, name: str):
         self.name = name
 
-    def __get__(self, instance: "SourceClusters" | None, _):
+    def __get__(self, instance: Optional["SourceClusters"], _):
         if instance is None:
             return self
 
