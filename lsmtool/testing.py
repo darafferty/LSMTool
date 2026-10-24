@@ -92,8 +92,8 @@ def check_skymodels_equal(
     check_patch_names_sizes : bool
         Whether to check patch names and sizes.
     """
-    left = load(str(left_filename))
-    right = load(str(right_filename))
+    left = load(left_filename)
+    right = load(right_filename)
 
     # Check the default (static) values
     return bool(
@@ -567,7 +567,7 @@ class SkyModelGenerator(Sampler):
             np.char.replace(np.char.title(keys), "_", "")
         )
 
-    def to_array(self, samples):
+    def to_array(self, samples: dict):
         """
         Convert the samples dictionary to a numpy array by stacking the columns
         in the correct order.
