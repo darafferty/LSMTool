@@ -22,7 +22,6 @@ from scipy.stats._distn_infrastructure import rv_sample
 from scipy.stats.distributions import (
     cosine,
     rv_continuous,
-    rv_discrete,
     rv_frozen,
     uniform,
 )
@@ -302,9 +301,8 @@ class ConditionalSampler(Sampler):
         samples = np.full(n, np.nan, self.dtype())
         while index < n:
             count = next(counter)
-            print(index, count)
-
-            # Generate a new sample and check if it is valid. If valid, store it. Otherwise, count as a rejection.
+            # Generate a new sample and check if it is valid. If valid, store
+            # it. Otherwise, count as a rejection.
             sample = Sampler.sample(self, 1, random_state=random_state, **kws)
             if self.validate(sample, samples):
                 samples[index] = tuple(sample.values())
@@ -314,6 +312,7 @@ class ConditionalSampler(Sampler):
                 warnings.warn(
                     "Maximum number of sample rejections reached before "
                     "reaching requested number of samples.",
+                    stacklevel=2,
                 )
                 break
 
@@ -326,7 +325,8 @@ class ConditionalSampler(Sampler):
         if index < n:
             warnings.warn(
                 f"Only {index} valid samples could be generated (out of "
-                f"requested {n}) in {count} iterations."
+                f"requested {n}) in {count} iterations.",
+                stacklevel=2,
             )
 
         # convert to dict
@@ -338,7 +338,7 @@ class ConditionalSampler(Sampler):
             for key in self.__dataclass_fields__.keys()
         ]
 
-    def validate(self, sample, samples):
+    def validate(self, _sample, _samples):
         return True
 
 
@@ -723,7 +723,7 @@ class CovarianceMatrixGenerator(ConditionalSampler):
     std_dec: RandomVariate = Uniform(0.5, 1)
     cor: RandomVariate = cosine(-1, 1)
 
-    def validate(self, sample: dict, samples: dict):
+    def validate(self, sample: dict, _samples: dict):
         sigma = self.get_matrix(**sample)
         return np.linalg.det(sigma) != 0
 
