@@ -268,7 +268,7 @@ class Sampler:
                 continue
 
             if dist := getattr(self, name):
-                samples[name] = dist.rvs(n, random_state=random_state)
+                samples[name] = dist.rvs(size=n, random_state=random_state)
 
             if sampler := getattr(self, f"get_{name}", None):
                 samples[name] = sampler(samples, **kws)
@@ -719,7 +719,7 @@ class CovarianceMatrixGenerator(ConditionalSampler):
 
     std_ra: RandomVariate = Uniform(0.5, 1)
     std_dec: RandomVariate = Uniform(0.5, 1)
-    cor: RandomVariate = cosine(-1, 1)
+    cor: RandomVariate = cosine(scale=1 / np.pi)
 
     def validate(self, sample: dict, _samples: dict):
         sigma = self.get_matrix(**sample)
@@ -735,8 +735,8 @@ class CovarianceMatrixGenerator(ConditionalSampler):
 
         return sigma
 
-    def rvs(self, n: int, *args, **kws):
-        samples = Sampler.sample(self, n, *args, **kws)
+    def rvs(self, size: int, *args, **kws):
+        samples = Sampler.sample(self, size, *args, **kws)
         # All information is contained in the covariance matrix
         return self.get_matrix(**samples)
 
@@ -1042,13 +1042,13 @@ class SourceClusters:
     def n_clusters(self):
         return len(self.clusters)
 
-    def rvs(self, n: int, *_, **__):
+    def rvs(self, size: int, *_, **__):
         """
         Generate random samples for the clustered sources.
 
         Parameters
         ----------
-        n : int
+        size : int
             The number of samples to generate.
 
         Returns
@@ -1063,11 +1063,11 @@ class SourceClusters:
         cluster_indices = np.random.choice(
             self.n_clusters,
             p=self.probabilities,
-            size=n,
+            size=size,
         )
         n_points_per_cluster = np.unique_counts(cluster_indices)
-        coords = np.empty((n, 2))
-        labels = np.empty(n, dtype=int)
+        coords = np.empty((size, 2))
+        labels = np.empty(size, dtype=int)
         index = 0
         for cluster_index, n_points in zip(*n_points_per_cluster, strict=True):
             if n_points:
