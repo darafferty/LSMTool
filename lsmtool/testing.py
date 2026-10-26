@@ -758,7 +758,7 @@ class CovarianceMatrixGenerator(ConditionalSampler):
         return sigma
 
     def rvs(self, size: int, *args, **kws):
-        samples = Sampler.sample(self, size, *args, **kws)
+        samples = super().sample(size, *args, **kws)
         # All information is contained in the covariance matrix
         return self.get_matrix(**samples)
 
