@@ -240,7 +240,13 @@ class Sampler:
     Mixin class for sampling random variables defined as dataclass fields.
     """
 
-    def sample(self, size: int, random_state: RandomState = None, **kws):
+    def sample(
+        self,
+        size: int,
+        random_state: RandomState = None,
+        ignore: list[str] = None,
+        **kws,
+    ):
         """
         Generate a random sample of numbers by looping over the distributions
         that are fields of the class. Retrun a dictionary keyed on the field
@@ -253,7 +259,9 @@ class Sampler:
         random_state : int, RandomState instance or None, optional
             The random state to use for reproducibility. If None (or np.random),
             the numpy.random.RandomState singleton is used.
-        kws :
+        ignore : list of str, optional
+            A list of parameter names to ignore when sampling.
+        **kws
             Additional keyword arguments to pass to custom sampler methods.
 
         Returns
@@ -263,21 +271,13 @@ class Sampler:
         """
 
         samples = {}
-        for name in self.__dataclass_fields__:
+        fields = list(self.__dataclass_fields__)
+        for name in sorted(set(fields) - set(ignore or []), key=fields.index):
             dist = getattr(self, name)
             if dist is None:
                 continue
 
-            if sampler := getattr(dist, "rvs", None):
-                # Distribution has 'rvs' method, use it to generate the
-                # sample
-                samples[name] = dist.rvs(
-                    size=size, random_state=random_state
-                ).squeeze()
-            elif sampler := getattr(dist, "sample", None):
-                # Support recursion - parameter is a dataclass, use the
-                # sample method to generate samples.
-                samples |= sampler(size=size, random_state=random_state)
+            samples[name] = dist.rvs(size=size, random_state=random_state)
 
             if sampler := getattr(self, f"get_{name}", None):
                 # Custom sampler method defined for variable, use it to update
@@ -285,6 +285,10 @@ class Sampler:
                 samples[name] = sampler(samples, **kws)
 
         return samples
+
+
+def _squeeze(samples):
+    return {key: np.squeeze(datum) for key, datum in samples.items()}
 
 
 class ConditionalSampler(Sampler):
@@ -297,7 +301,6 @@ class ConditionalSampler(Sampler):
         self,
         size: int,
         max_rejections: int = 100,
-        random_state: RandomState = None,
         **kws,
     ):
         index = 0
@@ -307,9 +310,16 @@ class ConditionalSampler(Sampler):
             count = next(counter)
             # Generate a new sample and check if it is valid. If valid, store
             # it. Otherwise, count as a rejection.
-            sample = Sampler.sample(self, 1, random_state=random_state, **kws)
+            sample = Sampler.sample(self, 1, **kws)
+
+            # Since the samples are generated as arrays, we need to extract the
+            # element for each key to get a single sample point.
+            sample = _squeeze(sample)
+
             if self.validate(sample, samples):
-                samples[index] = tuple(sample.values())
+                samples[index] = tuple(
+                    sample[key] for key in samples.dtype.fields
+                )
                 index += 1
 
             elif count >= max_rejections:
@@ -338,8 +348,7 @@ class ConditionalSampler(Sampler):
 
     def dtype(self, **dtypes):
         return [
-            (key, dtypes.get(key, float))
-            for key in self.__dataclass_fields__.keys()
+            (key, dtypes.get(key, float)) for key in self.__dataclass_fields__
         ]
 
     def validate(self, _sample, _samples):
@@ -413,7 +422,6 @@ class SkyModelGenerator(Sampler):
         self,
         n_sources: int,
         n_patches: Optional[int] = None,
-        random_state: RandomState = None,
         **kws,
     ):
         """
@@ -426,9 +434,6 @@ class SkyModelGenerator(Sampler):
         n_patches : int, optional
             The number of patches to divide the sky into. If None, no patching
             is applied.
-        random_state : int, RandomState instance or None, optional
-            The random state to use for reproducibility. If None (or
-            np.random), the numpy.random.RandomState singleton is used.
 
         Returns
         -------
@@ -438,9 +443,7 @@ class SkyModelGenerator(Sampler):
         patches : np.ndarray
             The patch definitions as a (n, 5) array of strings.
         """
-        samples, patches = self.sample(
-            n_sources, n_patches, random_state=random_state, **kws
-        )
+        samples, patches = self.sample(n_sources, n_patches=n_patches, **kws)
 
         ra, dec = self.get_coords(samples)
         samples.update(ra=ra, dec=dec)
@@ -454,8 +457,7 @@ class SkyModelGenerator(Sampler):
     def sample(
         self,
         n_sources: int,
-        n_patches=None,
-        random_state: RandomState = None,
+        n_patches: Optional[int] = None,
         **kws,
     ):
         """
@@ -470,9 +472,6 @@ class SkyModelGenerator(Sampler):
         n_patches : int, optional
             The number of patches to divide the sky into. If None, no patching
             is applied.
-        random_state : int, RandomState instance or None, optional
-            The random state to use for reproducibility. If None (or
-            np.random), the numpy.random.RandomState singleton is used.
 
         Returns
         -------
@@ -482,7 +481,7 @@ class SkyModelGenerator(Sampler):
         patches : np.ndarray
             The patch definitions as a (n, 5) array of strings.
         """
-        samples = super().sample(n_sources, random_state, **kws)
+        samples = Sampler.sample(self, n_sources, **kws)
 
         if n_patches:
             # Get patch definitions
@@ -622,7 +621,7 @@ class SkyModelGenerator(Sampler):
             An array of values for the minor axis of the sources.
         """
         major_axis = samples["major_axis"]
-        return major_axis * self.minor_axis.rvs(size=len(major_axis))
+        return major_axis * self.minor_axis.rvs(size=major_axis.size)
 
     def get_header(self, samples: dict):
         """
@@ -688,6 +687,8 @@ class SkyModelGenerator(Sampler):
         random_state : int, RandomState instance or None, optional
             The random state to use for reproducibility. If None (or np.random),
             the numpy.random.RandomState singleton is used.
+        **kws
+            Additional keyword arguments passed to the sampler.
         """
 
         # Get samples
@@ -1053,7 +1054,7 @@ class SourceClusters:
     def n_clusters(self):
         return len(self.clusters)
 
-    def sample(self, size: int, random_state=None):
+    def sample(self, size: int, random_state: RandomState = None, **kws):
         """
         Generate random samples for the clustered sources.
 
@@ -1061,6 +1062,9 @@ class SourceClusters:
         ----------
         size : int
             The number of samples to generate.
+        random_state : int, RandomState instance or None, optional
+            The random state to use for reproducibility. If None (or np.random),
+            the numpy.random.RandomState singleton is used.
 
         Returns
         -------
@@ -1087,7 +1091,9 @@ class SourceClusters:
                 coords[index : index + n_points] = cluster.rvs(size=n_points)
                 index += n_points
 
-        labels = np.char.add("Patch", labels.astype(str))
+        # Generate patch names from cluster labels
+        labels = np.char.add("Patch", labels.astype(int).astype(str))
+
         return {"ra": coords[:, 0], "dec": coords[:, 1], "patch": labels}
 
     def plot(
@@ -1173,21 +1179,38 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
     order to fascilitate testing of clustering algorithms in LSMTool.
     """
 
-    coordinates: SourceClusters
+    # SourceClusters object generates coordinates, so we can set the
+    # RA and Dec generators to None
+    clusters: SourceClusters
 
-    def __post_init__(self):
-        # SourceClusters object generates coordinates, so we can set the
-        # RA and Dec generators to None
-        self.ra = None
-        self.dec = None
+    ra = None
+    dec = None
 
-    def get_patches(self, samples: dict, _n_patches):
-        patch_names = set(samples["patch"])
+    def sample(
+        self,
+        n_sources: int,
+        **kws,
+    ):
+        # Get coordinates by generating them from the SourceClusters object
+        clustered_data = self.clusters.sample(n_sources, **kws)
+
+        # Generate the remaining columns
+        samples, _ = super().sample(n_sources, ignore=["clusters"], **kws)
+        # Create patch definitions. Patch names column is already generated in
+        # the clustered_data dict
+        samples |= clustered_data
+        patch_defs, _ = self.get_patches(samples)
+
+        return samples, patch_defs
+
+    def get_patches(self, samples: dict, _n_patches=None):
+
+        patch_names = list(set(samples["patch"].tolist()))
 
         ra_patch, dec_patch = self.get_coords(
             {
-                "ra": self.coordinates.positions[:, 0],
-                "dec": self.coordinates.positions[:, 0],
+                "ra": self.clusters.positions[:, 0],
+                "dec": self.clusters.positions[:, 1],
             }
         )
 
