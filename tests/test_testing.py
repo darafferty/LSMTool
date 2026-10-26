@@ -342,8 +342,8 @@ class TestSkyModelGenerator:
 
 
 class TestClusteredSkymodelGenerator:
-    @pytest.mark.parametrize("n_sources", [100])
-    def test_read_write(self, tmp_path, n_sources, rng):
+    @pytest.mark.parametrize("n_sources, n_clusters", [(100, 20), (1_000, 50)])
+    def test_read_write(self, tmp_path, n_sources, n_clusters, rng):
         """
         Test that we can generate a grouped skymodel, read it, and that it has
         the expected structure.
@@ -355,8 +355,9 @@ class TestClusteredSkymodelGenerator:
 
         # Generate cluster parameters
         clusters = SourceClusters.generated(
-            n_clusters=20,
+            n_clusters=n_clusters,
             probabilities=None,
+            random_state=rng,
             ra=Uniform(15, 60),
             dec=Uniform(-15, 15),
         )
