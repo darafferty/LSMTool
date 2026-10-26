@@ -1209,6 +1209,7 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
         **kws,
     ):
         # Get coordinates by generating them from the SourceClusters object
+        kws["n_patches"] = None
         clustered_data = self.clusters.sample(n_sources, **kws)
 
         # Generate the remaining columns
