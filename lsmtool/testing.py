@@ -1054,7 +1054,7 @@ class SourceClusters:
     def n_clusters(self):
         return len(self.clusters)
 
-    def sample(self, size: int, random_state: RandomState = None, **kws):
+    def sample(self, size: int, random_state: RandomState = None, **_kws):
         """
         Generate random samples for the clustered sources.
 
