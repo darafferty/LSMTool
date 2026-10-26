@@ -222,7 +222,7 @@ class TestSkyModelGenerator:
             orientation=None,
         )
         # check that we can write and read the skymodel without errors
-        path = tmp_path / "test_skymodel_generator.txt"
+        path = tmp_path / "test_skymodel_generator_minimal.txt"
         generator.to_file(path, 10, random_state=rng)
 
         skymodel = load(path)
@@ -343,16 +343,14 @@ class TestSkyModelGenerator:
 
 class TestClusteredSkymodelGenerator:
     @pytest.mark.parametrize("n_sources", [100])
-    def test_read_write(self, pytestconfig, n_sources, rng):
+    def test_read_write(self, tmp_path, n_sources, rng):
         """
         Test that we can generate a grouped skymodel, read it, and that it has
         the expected structure.
         """
 
         path = (
-            pytestconfig.resource_dir
-            / "generated_skymodels"
-            / f"grouped_skymodel_{n_sources}.txt"
+            tmp_path / f"test_clustered_skymodel_{n_sources}_{n_clusters}.txt"
         )
 
         # Generate cluster parameters
