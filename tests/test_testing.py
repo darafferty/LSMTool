@@ -362,7 +362,7 @@ class TestClusteredSkymodelGenerator:
             ra=Uniform(15, 60),
             dec=Uniform(-15, 15),
         )
-        generator = ClusteredSkyModelGenerator(coordinates=clusters)
+        generator = ClusteredSkyModelGenerator(clusters=clusters)
         generator.to_file(path, n_sources, random_state=rng)
 
         assert path.exists()
