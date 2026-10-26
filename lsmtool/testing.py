@@ -300,7 +300,7 @@ class ConditionalSampler(Sampler):
     def sample(
         self,
         size: int,
-        max_rejections: int = 100,
+        max_rejections: int = 1000,
         **kws,
     ):
         index = 0
@@ -343,8 +343,11 @@ class ConditionalSampler(Sampler):
                 stacklevel=2,
             )
 
+        # Keep only the valid samples
+        samples = samples[:index]
+
         # convert to dict
-        return {key: samples[key] for key in samples.dtype.fields.keys()}
+        return {key: samples[key] for key in self.__dataclass_fields__}
 
     def dtype(self, **dtypes):
         return [
