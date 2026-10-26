@@ -6,7 +6,7 @@ import contextlib
 import io
 import itertools as itt
 import warnings
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -291,15 +291,15 @@ class ConditionalSampler(Sampler):
 
     def sample(
         self,
-        n: int,
+        size: int,
         max_rejections: int = 100,
         random_state: RandomState = None,
         **kws,
     ):
         index = 0
         counter = itt.count()
-        samples = np.full(n, np.nan, self.dtype())
-        while index < n:
+        samples = np.full(size, np.nan, self.dtype())
+        while index < size:
             count = next(counter)
             # Generate a new sample and check if it is valid. If valid, store
             # it. Otherwise, count as a rejection.
@@ -322,10 +322,10 @@ class ConditionalSampler(Sampler):
                 "iterations."
             )
 
-        if index < n:
+        if index < size:
             warnings.warn(
                 f"Only {index} valid samples could be generated (out of "
-                f"requested {n}) in {count} iterations.",
+                f"requested {size}) in {count} iterations.",
                 stacklevel=2,
             )
 
@@ -775,7 +775,7 @@ class ClusterGenerator(ConditionalSampler):
         positions = positions[~not_yet_generated]
         covariances = samples["cov"][~not_yet_generated]
 
-        pos = np.array([sample["ra"], sample["dec"]]).T
+        pos = np.array([[sample["ra"], sample["dec"]]])
         cov = sample["cov"]
 
         # Check distance of the new sample to existing cluster centers using
@@ -1044,7 +1044,7 @@ class SourceClusters:
     def n_clusters(self):
         return len(self.clusters)
 
-    def rvs(self, n: int, *_, **__):
+    def sample(self, size: int, random_state=None):
         """
         Generate random samples for the clustered sources.
 
@@ -1061,8 +1061,8 @@ class SourceClusters:
             An array of shape (n,) containing the cluster labels for each
             generated coordinate.
         """
-
-        cluster_indices = np.random.choice(
+        rng = np.random.default_rng(random_state)
+        cluster_indices = rng.choice(
             self.n_clusters,
             p=self.probabilities,
             size=n,
@@ -1073,14 +1073,13 @@ class SourceClusters:
         index = 0
         for cluster_index, n_points in zip(*n_points_per_cluster, strict=True):
             if n_points:
+                cluster = self.clusters[cluster_index]
                 labels[index : index + n_points] = cluster_index
-                coords[index : index + n_points] = self.clusters[
-                    cluster_index
-                ].rvs(size=n_points)
+                coords[index : index + n_points] = cluster.rvs(size=n_points)
                 index += n_points
 
         labels = np.char.add("Patch", labels.astype(str))
-        return coords.T, labels
+        return {"ra": coords[:, 0], "dec": coords[:, 1], "patch": labels}
 
     def plot(
         self,
@@ -1168,22 +1167,18 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
     coordinates: SourceClusters
 
     def __post_init__(self):
+        # SourceClusters object generates coordinates, so we can set the
+        # RA and Dec generators to None
         self.ra = None
         self.dec = None
-
-    def get_coords(self, samples: dict):
-        (samples["ra"], samples["dec"]), samples["patch"] = samples.pop(
-            "coordinates"
-        )
-        return super().get_coords(samples)
 
     def get_patches(self, samples: dict, _n_patches):
         patch_names = set(samples["patch"])
 
         ra_patch, dec_patch = self.get_coords(
             {
-                "ra": self.coordinates.centres[:, 0],
-                "dec": self.coordinates.centres[:, 0],
+                "ra": self.coordinates.positions[:, 0],
+                "dec": self.coordinates.positions[:, 0],
             }
         )
 
