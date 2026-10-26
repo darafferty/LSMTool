@@ -297,8 +297,15 @@ class ConditionalSampler(Sampler):
         self,
         size: int,
         max_rejections: int = 1000,
+        random_state: RandomState = None,
         **kws,
     ):
+
+        if isinstance(random_state, int):
+            # Need to deal with integer random states here since we will reuse
+            # the random state multiple times
+            random_state = np.random.RandomState(random_state)
+
         index = 0
         counter = itt.count()
         samples = np.full(size, np.nan, self.dtype())
@@ -306,7 +313,7 @@ class ConditionalSampler(Sampler):
             count = next(counter)
             # Generate a new sample and check if it is valid. If valid, store
             # it. Otherwise, count as a rejection.
-            sample = Sampler.sample(self, 1, **kws)
+            sample = Sampler.sample(self, 1, random_state=random_state, **kws)
 
             # Since the samples are generated as arrays, we need to extract the
             # element for each key to get a single sample point.
@@ -1076,8 +1083,12 @@ class SourceClusters:
             An array of shape (n,) containing the cluster labels for each
             generated coordinate.
         """
-        rng = np.random.default_rng(random_state)
-        cluster_indices = rng.choice(
+        if random_state is None or isinstance(random_state, int):
+            # Need to deal with integer random states here since we will reuse
+            # the random state multiple times
+            random_state = np.random.RandomState(random_state)
+
+        cluster_indices = random_state.choice(
             self.n_clusters,
             p=self.probabilities,
             size=n,
@@ -1090,7 +1101,10 @@ class SourceClusters:
             if n_points:
                 cluster = self.clusters[cluster_index]
                 labels[index : index + n_points] = cluster_index
-                coords[index : index + n_points] = cluster.rvs(size=n_points)
+                coords[index : index + n_points] = cluster.rvs(
+                    size=n_points,
+                    random_state=random_state,
+                )
                 index += n_points
 
         # Generate patch names from cluster labels
