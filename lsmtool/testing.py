@@ -245,11 +245,12 @@ class Sampler:
         size : int
             The number of samples to generate.
         random_state : int, RandomState instance or None, optional
-            The random state to use for reproducibility.
+            The random state to use for reproducibility. If None (or np.random),
+            the numpy.random.RandomState singleton is used.
         ignore : list of str, optional
-            Parameter names to omit from sampling.
+            A list of parameter names to ignore when sampling.
         **kws
-            Additional keyword arguments passed to custom sampler methods.
+            Additional keyword arguments to pass to custom sampler methods.
 
         Returns
         -------
@@ -340,7 +341,6 @@ class SkyModelGenerator(Sampler):
         self,
         n_sources: int,
         n_patches: Optional[int] = None,
-        random_state: RandomState = None,
         **kws,
     ):
         """
@@ -350,6 +350,9 @@ class SkyModelGenerator(Sampler):
         ----------
         n_sources : int
             The number of sources to generate in the skymodel.
+        n_patches : int, optional
+            The number of patches to divide the sky into. If None, no patching
+            is applied.
         random_state : int, RandomState instance or None, optional
             The random state to use for reproducibility. If None (or
             np.random), the numpy.random.RandomState singleton is used.
@@ -362,9 +365,7 @@ class SkyModelGenerator(Sampler):
         patches : np.ndarray
             The patch definitions as a (n, 5) array of strings.
         """
-        samples, patches = self.sample(
-            n_sources, n_patches, random_state=random_state, **kws
-        )
+        samples, patches = self.sample(n_sources, n_patches=n_patches, **kws)
 
         ra, dec = self.get_coords(samples)
         samples.update(ra=ra, dec=dec)
@@ -378,8 +379,7 @@ class SkyModelGenerator(Sampler):
     def sample(
         self,
         n_sources: int,
-        n_patches=None,
-        random_state: RandomState = None,
+        n_patches: Optional[int] = None,
         **kws,
     ):
         """
@@ -391,9 +391,9 @@ class SkyModelGenerator(Sampler):
         ----------
         n_sources : int
             The number of sources to generate in the skymodel.
-        random_state : int, RandomState instance or None, optional
-            The random state to use for reproducibility. If None (or
-            np.random), the numpy.random.RandomState singleton is used.
+        n_patches : int, optional
+            The number of patches to divide the sky into. If None, no patching
+            is applied.
 
         Returns
         -------
@@ -403,9 +403,7 @@ class SkyModelGenerator(Sampler):
         patches : np.ndarray
             The patch definitions as a (n, 5) array of strings.
         """
-        samples = Sampler.sample(
-            self, n_sources, random_state=random_state, **kws
-        )
+        samples = Sampler.sample(self, n_sources, **kws)
 
         if n_patches:
             # Get patch definitions
@@ -545,7 +543,7 @@ class SkyModelGenerator(Sampler):
             An array of values for the minor axis of the sources.
         """
         major_axis = samples["major_axis"]
-        return major_axis * self.minor_axis.rvs(size=len(major_axis))
+        return major_axis * self.minor_axis.rvs(size=major_axis.size)
 
     def get_header(self, samples: dict):
         """
@@ -606,8 +604,10 @@ class SkyModelGenerator(Sampler):
         n_sources : int
             The number of sources to generate in the skymodel.
         random_state : int, RandomState instance or None, optional
-            The random state to use for reproducibility. If None (or
-            np.random), the numpy.random.RandomState singleton is used.
+            The random state to use for reproducibility. If None (or np.random),
+            the numpy.random.RandomState singleton is used.
+        **kws
+            Additional keyword arguments passed to the sampler.
         """
 
         # Get samples
