@@ -1222,7 +1222,7 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
 
     def get_patches(self, samples: dict, _n_patches=None):
 
-        patch_names = list(set(samples["patch"].tolist()))
+        patch_names = np.unique(samples["patch"])
 
         ra_patch, dec_patch = self.get_coords(
             {
