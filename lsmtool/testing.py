@@ -843,7 +843,7 @@ class Cluster:
         return self.sigma
 
     @covariance.setter
-    def covariance_matrix(self, sigma):
+    def covariance(self, sigma):
 
         covariance_matrix = np.array(sigma, dtype=float)
         if covariance_matrix.shape != (2, 2):
@@ -856,7 +856,7 @@ class Cluster:
 
         # Invalidate cached properties that depend on the covariance matrix
         del self.semi_axes
-        del self.angles
+        del self.angle
 
     @property
     def distribution(self):
