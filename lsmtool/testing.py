@@ -836,15 +836,35 @@ class Cluster:
     }
 
     @classmethod
-    def from_shape_parameters(cls, xy, a, b, theta=0):
+    def from_shape_parameters(cls, pos, a, b, theta=0):
+        """
+        Initialize a `Cluster` object from the shape parameters of the
+        covariance ellipse.
 
+        Parameters
+        ----------
+        pos : array-like
+            Position (RA, Dec) of the cluster centre as an array-like object of
+            shape (2,).
+        a : float
+            Semi-major axis of the covariance ellipse.
+        b : float
+            Semi-minor axis of the covariance ellipse.
+        theta : int, optional
+            Rotation angle of the covariance ellipse in degrees, by default 0.
+
+        Returns
+        -------
+        Cluster
+            The initialized `Cluster` object.
+        """
         sin = np.sin(np.radians(theta))
         cos = np.cos(np.radians(theta))
         rotation = np.array([[cos, -sin], [sin, cos]])
         scale = np.array([[a, 0], [0, b]])
         covariance_matrix = rotation @ scale @ rotation.T
 
-        return cls(xy, covariance_matrix)
+        return cls(pos, covariance_matrix)
 
     def __init__(self, pos, cov):
         """
