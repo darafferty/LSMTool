@@ -847,9 +847,13 @@ class Cluster:
             Position (RA, Dec) of the cluster centre as an array-like object of
             shape (2,).
         a : float
-            Semi-major axis of the covariance ellipse.
+            Semi-major axis of the covariance ellipse. For uncorrellated
+            variables, this corresponds to the larger standard deviation of the
+            two variables.
         b : float
-            Semi-minor axis of the covariance ellipse.
+            Semi-minor axis of the covariance ellipse. For uncorrellated
+            variables, this corresponds to the smaller standard deviation of the
+            two variables.
         theta : int, optional
             Rotation angle of the covariance ellipse in degrees, by default 0.
 
@@ -861,7 +865,7 @@ class Cluster:
         sin = np.sin(np.radians(theta))
         cos = np.cos(np.radians(theta))
         rotation = np.array([[cos, -sin], [sin, cos]])
-        scale = np.array([[a, 0], [0, b]])
+        scale = np.array([[a**2, 0], [0, b**2]])
         covariance_matrix = rotation @ scale @ rotation.T
 
         return cls(pos, covariance_matrix)

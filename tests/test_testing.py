@@ -378,6 +378,16 @@ class TestCluster:
         assert np.allclose(cluster.semi_minor_axis, np.sqrt(0.5))
         assert cluster.angle == 45
 
+        #
+        cluster = Cluster.from_shape_parameters(
+            position,
+            cluster.semi_major_axis,
+            cluster.semi_minor_axis,
+            cluster.angle,
+        )
+
+        assert np.allclose(cluster.covariance, covariance)
+
     def test_covariance_update_refreshes_derived_properties(self):
         # Arrange
         cluster = Cluster([0.0, 0.0], [[1.0, 0.0], [0.0, 4.0]])
