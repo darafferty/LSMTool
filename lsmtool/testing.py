@@ -600,21 +600,25 @@ class SkyModelGenerator(Sampler):
 
         xcentre = xedge[:-1] + np.diff(xedge) / 2
         ycentre = yedge[:-1] + np.diff(yedge) / 2
-        ra_patch, dec_patch = np.array(list(itt.product(xcentre, ycentre))).T
-        ra_patch, dec_patch = self.get_coords(
-            {"ra": ra_patch, "dec": dec_patch}
-        )
+        ra, dec = np.array(list(itt.product(xcentre, ycentre))).T
+        ra, dec = self.get_coords({"ra": ra, "dec": dec})
 
-        patch_defs = np.empty((n_patches_total, 5), object)
-        patch_defs[:, 0] = " "
-        patch_defs[:, 1] = ""
-        patch_defs[:, 2] = patch_names
-        patch_defs[:, 3] = ra_patch
-        patch_defs[:, 4] = dec_patch
+        patch_defs = self._patch_definitions(
+            n_patches_total, patch_names, ra, dec
+        )
 
         patch_col = patch_names.reshape(n_patches)[tuple(binnumber - 1)]
 
         return patch_defs, patch_col
+
+    def _patch_definitions(self, n_patches, patch_names, ra, dec):
+        patch_defs = np.empty((n_patches, 5), object)
+        patch_defs[:, 0] = " "
+        patch_defs[:, 1] = ""
+        patch_defs[:, 2] = patch_names
+        patch_defs[:, 3] = ra
+        patch_defs[:, 4] = dec
+        return patch_defs
 
     def get_minor_axis(self, samples: dict):
         """
@@ -1174,9 +1178,24 @@ class SourceClusters:
         ]
         self.probabilities = probabilities
 
-    @property
-    def n_clusters(self):
+    def __len__(self):
         return len(self.clusters)
+
+    def names(self, prefix="Patch"):
+        """
+        Generate names for each cluster based on the given prefix.
+
+        Parameters
+        ----------
+        prefix : str, optional
+            Prefix to add to the cluster number, by default 'Patch'.
+
+        Returns
+        -------
+        np.ndarray
+            Array of names corresponding to each cluster.
+        """
+        return np.char.add(prefix, np.arange(len(self)).astype(str))
 
     def sample(self, size: int, random_state: RandomState = None, **_kws):
         """
@@ -1204,7 +1223,7 @@ class SourceClusters:
             random_state = np.random.RandomState(random_state)
 
         cluster_indices = random_state.choice(
-            self.n_clusters,
+            len(self),
             p=self.probabilities,
             size=size,
         )
@@ -1332,22 +1351,18 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
 
         return samples, patch_defs
 
-    def get_patches(self, samples: dict, _n_patches=None):
+    def get_patches(self, _samples: dict, _n_patches=None, prefix="Patch"):
 
-        patch_names = np.unique(samples["patch"])
-
-        ra_patch, dec_patch = self.get_coords(
+        patch_names = self.clusters.names(prefix=prefix)
+        ra, dec = self.get_coords(
             {
                 "ra": self.clusters.positions[:, 0],
                 "dec": self.clusters.positions[:, 1],
             }
         )
 
-        patch_defs = np.empty((len(patch_names), 5), object)
-        patch_defs[:, 0] = " "
-        patch_defs[:, 1] = ""
-        patch_defs[:, 2] = patch_names
-        patch_defs[:, 3] = ra_patch
-        patch_defs[:, 4] = dec_patch
+        patch_defs = self._patch_definitions(
+            len(self.clusters), patch_names, ra, dec
+        )
 
         return patch_defs, patch_names
