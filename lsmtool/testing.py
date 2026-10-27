@@ -508,24 +508,27 @@ class SkyModelGenerator(Sampler):
         patch_names = np.char.add(
             "Patch", np.arange(n_patches_total).astype(str)
         )
+        patch_col = patch_names.reshape(n_patches)[tuple(binnumber - 1)]
 
-        xcenter = xedge[:-1] + np.diff(xedge) / 2
-        ycenter = yedge[:-1] + np.diff(yedge) / 2
-        ra_patch, dec_patch = np.array(list(itt.product(xcenter, ycenter))).T
-        ra_patch, dec_patch = self.get_coords(
-            {"ra": ra_patch, "dec": dec_patch}
+        xcentre = xedge[:-1] + np.diff(xedge) / 2
+        ycentre = yedge[:-1] + np.diff(yedge) / 2
+        ra, dec = np.array(list(itt.product(xcentre, ycentre))).T
+        ra, dec = self.get_coords({"ra": ra, "dec": dec})
+
+        patch_defs = self._patch_definitions(
+            n_patches_total, patch_names, ra, dec
         )
 
-        patch_defs = np.empty((n_patches_total, 5), object)
+        return patch_defs, patch_col
+
+    def _patch_definitions(self, n_patches, patch_names, ra, dec):
+        patch_defs = np.empty((n_patches, 5), object)
         patch_defs[:, 0] = " "
         patch_defs[:, 1] = ""
         patch_defs[:, 2] = patch_names
-        patch_defs[:, 3] = ra_patch
-        patch_defs[:, 4] = dec_patch
-
-        patch_col = patch_names.reshape(n_patches)[tuple(binnumber - 1)]
-
-        return patch_defs, patch_col
+        patch_defs[:, 3] = ra
+        patch_defs[:, 4] = dec
+        return patch_defs
 
     def get_minor_axis(self, samples: dict):
         """
