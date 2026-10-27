@@ -71,7 +71,7 @@ benchmarks = [
     "pytest-benchmark>=5.3",
 ]
 dev = [
-    "lsmtool[benchmarks,docs,tests]",
+    "lsmtool[benchmarks,docs,sofia,tests]",
     "pyproject-fmt",
     "ruff",
 ]
