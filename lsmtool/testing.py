@@ -16,6 +16,7 @@ import pytest
 from astropy.coordinates import Angle
 from astropy.utils.decorators import lazyproperty
 from matplotlib.collections import EllipseCollection
+from matplotlib.patches import Ellipse
 from scipy.spatial.distance import cdist
 from scipy.stats import binned_statistic_2d
 from scipy.stats._distn_infrastructure import rv_sample
@@ -818,6 +819,18 @@ class Cluster:
     Represents a single cluster for generating sources for a sky model.
     """
 
+    _plot_style_defaults = {
+        "centre": {
+            "color": "k",
+            "marker": ".",
+            "linestyle": "",
+        },
+        "ellipse": {
+            "linewidth": 1,
+            "facecolor": "none",
+        },
+    }
+
     @classmethod
     def from_shape_parameters(cls, xy, a, b, theta=0):
 
@@ -964,6 +977,84 @@ class Cluster:
             0.5 * np.arctan2(2 * self.cov, (self.var_ra - self.var_dec))
         )
 
+    def plot(
+        self,
+        axes=None,
+        n_sigma: float = 3.0,
+        mark_centre: Optional[bool | dict] = None,
+        **kws,
+    ):
+        """
+        Plot the covariance ellipse of the cluster and optionally mark the
+        centre position.
+
+        Parameters
+        ----------
+        axes : matplotlib.axes.Axes, optional
+            Axes on which to draw the ellipses. If None (the default), a new
+            figure and axes will be created.
+        n_sigma : int, optional
+            The contour level at which to draw the ellipse, by default 3.
+        mark_centre : dict or bool or None, optional
+            Configuration for marking the cluster centres. If a dictionary is
+            provided, it will be passed as keyword arguments to the plotting
+            function. If True or None (the default), default marker settings
+            will be used. If False, cluster centres will not be marked.
+        **kws
+            Additional keyword arguments to be passed to the Ellipse
+            constructor.
+
+        Returns
+        -------
+        matplotlib.patches.Ellipse
+            The ellipse artist.
+        """
+        if axes is None:
+            fig, ax = plt.subplots()
+        else:
+            ax = axes
+            fig = ax.figure
+
+        # Plot centre
+        centre_mark = None
+        if mark_centre is not False:
+            if mark_centre in (True, None):
+                mark_centre = {}
+
+            centre_mark = ax.plot(
+                *self.position.T,
+                **(
+                    self._plot_style_defaults["centre"]
+                    | _normalize_plot_kws(mark_centre)
+                ),
+            )
+
+        # Plot iso-probability ellipse
+        ellipse = Ellipse(
+            self.position,
+            2 * self.semi_major_axis * n_sigma,
+            2 * self.semi_minor_axis * n_sigma,
+            angle=self.angle,
+            **(self._plot_style_defaults["ellipse"] | _normalize_plot_kws(kws)),
+        )
+        ax.add_patch(ellipse)
+        ax.set_aspect("equal")
+        return ellipse, centre_mark
+
+
+def _normalize_plot_kws(kws):
+    remap = {
+        "c": "color",
+        "ec": "edgecolor",
+        "fc": "facecolor",
+        "ls": "linestyle",
+        "lw": "linewidth",
+        "m": "marker",
+        "mew": "markeredgewidth",
+        "mec": "markeredgecolor",
+    }
+    return {remap.get(k, k): v for k, v in kws.items()}
+
 
 class AttrVector:
     """
@@ -992,6 +1083,18 @@ class SourceClusters:
     semi_major_axes = AttrVector("semi_major_axis")
     semi_minor_axes = AttrVector("semi_minor_axis")
     angles = AttrVector("angle")
+
+    _plot_style_defaults = {
+        "centre": {
+            "color": "k",
+            "marker": ".",
+            "linestyle": "",
+        },
+        "ellipse": {
+            "linewidth": 1,
+            "facecolor": "none",
+        },
+    }
 
     @classmethod
     def generated(
@@ -1126,8 +1229,8 @@ class SourceClusters:
 
     def plot(
         self,
-        n_sigma: float = 3.0,
         axes: Optional[plt.Axes] = None,
+        n_sigma: float = 3.0,
         mark_centres: Optional[bool | dict] = None,
         **kws,
     ):
@@ -1164,20 +1267,19 @@ class SourceClusters:
             fig = ax.figure
 
         # Plot centres
+        mark_centres = kws.pop("mark_centre", mark_centres)
         if mark_centres is not False:
-            mark_centres = mark_centres or {}
-            mark_centres |= {
-                "color": "k",
-                "marker": ".",
-                "linestyle": "",
-            }
-            ax.plot(*self.positions.T, **mark_centres)
+            if mark_centres in (True, None):
+                mark_centres = {}
+            ax.plot(
+                *self.positions.T,
+                **(
+                    self._plot_style_defaults["centre"]
+                    | _normalize_plot_kws(mark_centres)
+                ),
+            )
 
-        # Plot ellipses representing the covariance of each cluster
-        kws |= {
-            "linewidth": 1,
-            "facecolor": "none",
-        }
+        # Plot iso-probability ellipses
         ec = EllipseCollection(
             2 * self.semi_major_axes * n_sigma,
             2 * self.semi_minor_axes * n_sigma,
@@ -1185,17 +1287,12 @@ class SourceClusters:
             units="xy",
             offset_transform=ax.transData,
             offsets=self.positions,
-            **kws,
+            **(self._plot_style_defaults["ellipse"] | _normalize_plot_kws(kws)),
         )
         ax.add_collection(ec)
 
         ax.set_aspect("equal")
         ax.grid()
-
-        # #
-        # for dist in self.distributions:
-        #     xy = dist.rvs(100)
-        #     ax.plot(*xy.T, ".", alpha=0.35)
 
         return fig
 
