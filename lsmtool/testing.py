@@ -1354,6 +1354,27 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
         n_sources: int,
         **kws,
     ):
+        """
+        Generate a random sample of sources (with clustered positions),
+        returning a dictionary with parameter names as keys and arrays of
+        sampled values as values.
+
+        Parameters
+        ----------
+        n_sources : int
+            The number of sources to generate in the skymodel.
+        **kws
+            Additional keyword arguments passed to the sampling functions of the
+            underlying clusters and sky model generator.
+
+        Returns
+        -------
+        samples : dict[str, numpy.ndarray]
+            A dictionary with arrays of `n_sources` sampled values for each
+            parameter.
+        patches : np.ndarray
+            The patch definitions as a (n, 5) array of strings.
+        """
         # Get coordinates by generating them from the SourceClusters object
         kws["n_patches"] = None
         clustered_data = self.clusters.sample(n_sources, **kws)
