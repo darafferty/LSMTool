@@ -907,11 +907,6 @@ class Cluster:
         return self.distribution.rvs
 
     @property
-    def n_clusters(self):
-        """The number of clusters."""
-        return len(self.position)
-
-    @property
     def var_ra(self):
         """Variance of the RA coordinate for all clusters."""
         return self.covariance[0, 0]
