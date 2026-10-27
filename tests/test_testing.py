@@ -590,7 +590,7 @@ class TestClusteredSkymodelGenerator:
     Test generating skymodels from clustered source distribution.
     """
 
-    @pytest.mark.parametrize("n_sources, n_clusters", [(100, 20), (1_000, 50)])
+    @pytest.mark.parametrize("n_sources, n_clusters", [(100, 20), (1_000, 40)])
     def test_read_write(self, tmp_path, n_sources, n_clusters, rng):
         """
         Test that we can generate a grouped skymodel, read it, and that it has
