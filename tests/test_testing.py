@@ -2,6 +2,9 @@
 Tests for skymodel assertion helpers.
 """
 
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from scipy.stats import kstest
@@ -17,6 +20,10 @@ from lsmtool.testing import (
     Uniform,
     check_skymodels_equal,
 )
+
+# ---------------------------------------------------------------------------- #
+TEST_PATH = Path(__file__).parent
+RESOURCES_PATH = TEST_PATH / "resources"
 
 # ---------------------------------------------------------------------------- #
 # Fixtures
@@ -415,7 +422,102 @@ class TestCluster:
             kstest(samples[:, 1], normal(-3.0, np.sqrt(2.0)).cdf).pvalue > 0.05
         )
 
+    @pytest.mark.mpl_image_compare(
+        baseline_dir=RESOURCES_PATH / "plotting" / "baseline_images",
+    )
+    def test_plot_cluster(self):
+        # Arrange
+        cluster = Cluster([0.34, -0.22], [[1.5, 0.5], [0.5, 1.5]])
+
+        fig, (ax0, ax1) = plt.subplots(1, 2)
+
+        cluster.plot(ax0, n_sigma=1, mark_centre=True)
+        cluster.plot(ax0, n_sigma=3, mark_centre=False, ls="--")
+        cluster.plot(ax0, n_sigma=5, mark_centre=False, ls="-.")
+        ax0.plot(
+            *cluster.rvs(100, random_state=13).T,
+            ls="",
+            marker="o",
+            color="orangered",
+            alpha=0.3,
+        )
+        cluster.plot(
+            ax1,
+            n_sigma=1,
+            mark_centre={
+                "m": "x",
+                "c": "orange",
+                "ms": 10,
+                "mew": 2,
+            },
+            ls="-",
+            linewidth=5,
+            edgecolor="purple",
+            facecolor="c",
+            alpha=0.25,
+        )
+        return fig
+
+
+class TestSourceClusters:
+    """
+    Test the functionality of the SourceClusters class and derived properties.
+    """
+
+    @pytest.mark.mpl_image_compare(
+            baseline_dir=RESOURCES_PATH / "plotting" / "baseline_images",
+        )
+    def test_plot_clusters(self):
+
+        clusters = SourceClusters.generated(
+            n_clusters=12,
+            probabilities=None,
+            random_state=11,
+            ra=Uniform(15, 60),
+            dec=Uniform(-15, 15),
+        )
+
+        fig, (ax0, ax1) = plt.subplots(1, 2, sharex=True, sharey=True)
+
+        clusters.plot(ax0, n_sigma=1, mark_centres=True, ls="-")
+        clusters.plot(ax0, n_sigma=3, mark_centres=False, ls=":")
+        clusters.plot(ax0, n_sigma=5, mark_centres=False, ls="-")
+
+        sample = clusters.sample(120, random_state=12)
+        labels = np.char.lstrip(sample["patch"], "Patch").astype(int)
+
+        # plot samples
+        ax0.scatter(
+            sample["ra"],
+            sample["dec"],
+            c=labels,
+            cmap="tab20",
+            alpha=0.3,
+        )
+        clusters.plot(
+            ax1,
+            n_sigma=3,
+            mark_centres={
+                "m": "x",
+                "c": "orange",
+                "ms": 5,
+                "mew": 1,
+            },
+            ls="-",
+            linewidth=1,
+            edgecolor="purple",
+            alpha=0.5,
+        )
+        ax0.grid(False)
+        ax1.grid(False)
+        return fig
+
+
 class TestClusteredSkymodelGenerator:
+    """
+    Test generating skymodels from clustered source distribution.
+    """
+
     @pytest.mark.parametrize("n_sources, n_clusters", [(100, 20), (1_000, 50)])
     def test_read_write(self, tmp_path, n_sources, n_clusters, rng):
         """
