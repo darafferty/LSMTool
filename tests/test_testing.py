@@ -464,9 +464,40 @@ class TestSourceClusters:
     Test the functionality of the SourceClusters class and derived properties.
     """
 
+    @pytest.mark.parametrize(
+        "pos, cov, prob, message",
+        [
+            pytest.param(
+                [1.0],
+                (cov := [[1.0, 0.0], [0.0, 1.0]]),
+                None,
+                "centres and covariances must have the same length",
+            ),
+            pytest.param(
+                [1.0, 2.0],
+                cov,
+                [1],
+                "probabilities must have the same length as positions",
+            ),
+            pytest.param(
+                [(1.0, 2.0)],
+                [[1.0, 0.0]],
+                None,
+                "Covariance matrix must be 2x2",
+            ),
+        ],
+    )
+    def test_invalid_input(self, pos, cov, prob, message):
+
+        with pytest.raises(
+            ValueError,
+            match=message,
+        ):
+            SourceClusters(pos, cov, prob)
+
     @pytest.mark.mpl_image_compare(
-            baseline_dir=RESOURCES_PATH / "plotting" / "baseline_images",
-        )
+        baseline_dir=RESOURCES_PATH / "plotting" / "baseline_images",
+    )
     def test_plot_clusters(self):
 
         clusters = SourceClusters.generated(
