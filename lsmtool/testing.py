@@ -353,9 +353,6 @@ class SkyModelGenerator(Sampler):
         n_patches : int, optional
             The number of patches to divide the sky into. If None, no patching
             is applied.
-        random_state : int, RandomState instance or None, optional
-            The random state to use for reproducibility. If None (or
-            np.random), the numpy.random.RandomState singleton is used.
 
         Returns
         -------
