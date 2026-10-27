@@ -597,9 +597,9 @@ class SkyModelGenerator(Sampler):
             "Patch", np.arange(n_patches_total).astype(str)
         )
 
-        xcenter = xedge[:-1] + np.diff(xedge) / 2
-        ycenter = yedge[:-1] + np.diff(yedge) / 2
-        ra_patch, dec_patch = np.array(list(itt.product(xcenter, ycenter))).T
+        xcentre = xedge[:-1] + np.diff(xedge) / 2
+        ycentre = yedge[:-1] + np.diff(yedge) / 2
+        ra_patch, dec_patch = np.array(list(itt.product(xcentre, ycentre))).T
         ra_patch, dec_patch = self.get_coords(
             {"ra": ra_patch, "dec": dec_patch}
         )
@@ -767,7 +767,7 @@ class CovarianceMatrixGenerator(ConditionalSampler):
 class ClusterGenerator(ConditionalSampler):
     """
     Generator for cluster positions with associated covariance matrices.
-    Ensures that cluster centers are sufficiently far apart based on the
+    Ensures that cluster centres are sufficiently far apart based on the
     Mahalanobis distance.
     """
 
@@ -798,7 +798,7 @@ class ClusterGenerator(ConditionalSampler):
         pos = np.array([[sample["ra"], sample["dec"]]])
         cov = sample["cov"]
 
-        # Check distance of the new sample to existing cluster centers using
+        # Check distance of the new sample to existing cluster centres using
         # Mahalanobis distance
         mahalanobis_distance = cdist(
             pos, positions, metric="mahalanobis", VI=np.linalg.inv(covariances)
@@ -806,7 +806,7 @@ class ClusterGenerator(ConditionalSampler):
         if (mahalanobis_distance < self.MIN_DISTANCE_SIGMA).any():
             return False
 
-        # Check distance of existing cluster centers to the new sample
+        # Check distance of existing cluster centres to the new sample
         mahalanobis_distance = cdist(
             pos, positions, metric="mahalanobis", VI=np.linalg.inv(cov)
         )
@@ -818,18 +818,29 @@ class Cluster:
     Represents a single cluster for generating sources for a sky model.
     """
 
+    @classmethod
+    def from_shape_parameters(cls, xy, a, b, theta=0):
+
+        sin = np.sin(np.radians(theta))
+        cos = np.cos(np.radians(theta))
+        rotation = np.array([[cos, -sin], [sin, cos]])
+        scale = np.array([[a, 0], [0, b]])
+        covariance_matrix = rotation @ scale @ rotation.T
+
+        return cls(xy, covariance_matrix)
+
     def __init__(self, pos, cov):
         """
         Initialize the `Cluster` source generator.
 
         Sources are generated from a multivariate normal probability
-        distribution centered a at the given position and with given
+        distribution centred a at the given position and with given
         covariance matrix.
 
         Parameters
         ----------
         pos : array-like
-            The position of the cluster center.
+            The position of the cluster centre.
         cov : array-like
             The 2x2 covariance matrix of the cluster.
         """
@@ -851,7 +862,7 @@ class Cluster:
     @property
     def covariance(self):
         """The 2x2 covariance matrix of the source distribution."""
-        return self.sigma
+        return self._sigma
 
     @covariance.setter
     def covariance(self, sigma):
@@ -863,7 +874,7 @@ class Cluster:
         if np.linalg.det(covariance_matrix) == 0:
             raise ValueError("Covariance matrix is singular")
 
-        self.sigma = covariance_matrix
+        self._sigma = covariance_matrix
 
         # Invalidate cached properties that depend on the covariance matrix
         del self.semi_axes
@@ -1126,16 +1137,19 @@ class SourceClusters:
 
         Parameters
         ----------
-        n_sigma : int, optional
-            The contour level at which to draw the ellipse, by default 3.
         axes : matplotlib.axes.Axes, optional
             Axes on which to draw the ellipses. If None (the default), a new
             figure and axes will be created.
+        n_sigma : int, optional
+            The contour level at which to draw the ellipse, by default 3.
         mark_centres : dict or bool or None, optional
             Configuration for marking the cluster centres. If a dictionary is
             provided, it will be passed as keyword arguments to the plotting
             function. If True or None (the default), default marker settings
             will be used. If False, cluster centres will not be marked.
+        **kws
+            Additional keyword arguments to be passed to the EllipseCollection
+            constructor.
 
         Returns
         -------
