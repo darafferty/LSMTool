@@ -1192,6 +1192,22 @@ class SourceClusters:
     def n_clusters(self):
         return len(self.clusters)
 
+    def get_names(self, prefix="Patch"):
+        """
+        Generate names for each cluster based on the given prefix.
+
+        Parameters
+        ----------
+        prefix : str, optional
+            Prefix to add to the cluster number, by default 'Patch'.
+
+        Returns
+        -------
+        np.ndarray
+            Array of names corresponding to each cluster.
+        """
+        return np.char.add(prefix, np.arange(len(self)).astype(str))
+
     def sample(self, size: int, random_state: RandomState = None, **_kws):
         """
         Generate random samples for the clustered sources.
@@ -1348,9 +1364,8 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
 
     def get_patches(self, samples: dict, _n_patches=None):
 
-        patch_names = np.unique(samples["patch"])
-
-        ra_patch, dec_patch = self.get_coords(
+        patch_names = self.clusters.get_names(prefix=prefix)
+        ra, dec = self.get_coords(
             {
                 "ra": self.clusters.positions[:, 0],
                 "dec": self.clusters.positions[:, 1],
