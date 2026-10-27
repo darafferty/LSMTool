@@ -848,7 +848,7 @@ class Cluster:
             raise ValueError("Position must be a 2-element array.")
         self._position = position
 
-    @lazyproperty
+    @property
     def covariance(self):
         """The 2x2 covariance matrix of the source distribution."""
         return self.sigma

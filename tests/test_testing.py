@@ -5,10 +5,12 @@ Tests for skymodel assertion helpers.
 import numpy as np
 import pytest
 from scipy.stats import kstest
+from scipy.stats.distributions import norm as normal
 from scipy.stats.distributions import uniform
 
 from lsmtool import load
 from lsmtool.testing import (
+    Cluster,
     ClusteredSkyModelGenerator,
     SkyModelGenerator,
     SourceClusters,
@@ -340,6 +342,78 @@ class TestSkyModelGenerator:
         ]
         assert sum(n_sources_per_patch) == n_sources
 
+
+class TestCluster:
+    """
+    Test the functionality of the Cluster class and derived properties or the
+    iso-probability ellipse of the underlying multivariate normal distribution.
+    """
+
+    def test_properties(self):
+
+        # Arrange
+        position = [12.0, -4.0]
+        covariance = [[1.0, 0.5], [0.5, 1.0]]
+
+        # Act
+        cluster = Cluster(position, covariance)
+
+        # Assert
+        np.testing.assert_array_equal(cluster.position, position)
+        np.testing.assert_array_equal(cluster.covariance, covariance)
+        np.testing.assert_array_equal(cluster.distribution.mean, position)
+        np.testing.assert_array_equal(cluster.distribution.cov, covariance)
+
+        assert cluster.var_ra == 1.0
+        assert cluster.var_dec == 1.0
+        assert cluster.cov == 0.5
+        assert cluster.semi_major_axis == np.sqrt(1.5)
+        assert np.allclose(cluster.semi_minor_axis, np.sqrt(0.5))
+        assert cluster.angle == 45
+
+    def test_covariance_update_refreshes_derived_properties(self):
+        # Arrange
+        cluster = Cluster([0.0, 0.0], [[1.0, 0.0], [0.0, 4.0]])
+
+        # Check initial derived properties
+        assert cluster.semi_major_axis == 2.0
+        assert cluster.angle == 90.0
+
+        # Act: update the covariance
+        cluster.covariance = [[4.0, 0.0], [0.0, 1.0]]
+
+        # Assert: check updated derived properties
+        assert cluster.semi_major_axis == 2.0
+        assert cluster.semi_minor_axis == 1.0
+        assert cluster.angle == 0.0
+
+    @pytest.mark.parametrize(
+        "position, covariance, message",
+        [
+            ([1.0], [[1.0, 0.0], [0.0, 1.0]], "Position must be"),
+            ([1.0, 2.0], [[1.0, 0.0]], "Covariance matrix must be 2x2"),
+            ([1.0, 2.0], [[1.0, 0.0], [0.0, 0.0]], "matrix is singular"),
+        ],
+    )
+    def test_invalid_inputs(self, position, covariance, message):
+        with pytest.raises(ValueError, match=message):
+            Cluster(position, covariance)
+
+    def test_rvs(self):
+        """Test the random number sampling from the cluster distribution."""
+
+        # Arrange
+        cluster = Cluster([2.0, -3.0], [[1.0, 0.2], [0.2, 2.0]])
+        # Act
+        samples = cluster.rvs(size=500, random_state=1)
+        # Assert
+        assert samples.shape == (500, 2)
+
+        # test that samples are drawn from the correct distributions
+        assert kstest(samples[:, 0], normal(2.0, 1.0).cdf).pvalue > 0.05
+        assert (
+            kstest(samples[:, 1], normal(-3.0, np.sqrt(2.0)).cdf).pvalue > 0.05
+        )
 
 class TestClusteredSkymodelGenerator:
     @pytest.mark.parametrize("n_sources, n_clusters", [(100, 20), (1_000, 50)])
