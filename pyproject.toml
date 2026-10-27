@@ -399,6 +399,8 @@ commands = [
         "-vv",
         "-n",
         "auto",
+        # Enable matplotlib image comparison tests
+        "--mpl",
         { replace = "posargs", default = [], extend = true }
     ]
 ]
