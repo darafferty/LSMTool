@@ -1033,10 +1033,7 @@ class Cluster:
             The ellipse artist.
         """
         if axes is None:
-            fig, ax = plt.subplots()
-        else:
-            ax = axes
-            fig = ax.figure
+            _, axes = plt.subplots()
 
         # Plot centre
         centre_mark = None
@@ -1044,7 +1041,7 @@ class Cluster:
             if mark_centre in (True, None):
                 mark_centre = {}
 
-            centre_mark = ax.plot(
+            centre_mark = axes.plot(
                 *self.position.T,
                 **(
                     self._plot_style_defaults["centre"]
@@ -1060,8 +1057,8 @@ class Cluster:
             angle=self.angle,
             **(self._plot_style_defaults["ellipse"] | _normalize_plot_kws(kws)),
         )
-        ax.add_patch(ellipse)
-        ax.set_aspect("equal")
+        axes.add_patch(ellipse)
+        axes.set_aspect("equal")
         return ellipse, centre_mark
 
 

@@ -378,7 +378,6 @@ class TestCluster:
         assert np.allclose(cluster.semi_minor_axis, np.sqrt(0.5))
         assert cluster.angle == 45
 
-        #
         cluster = Cluster.from_shape_parameters(
             position,
             cluster.semi_major_axis,
