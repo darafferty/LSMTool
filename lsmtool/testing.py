@@ -1196,7 +1196,7 @@ class SourceClusters:
     def __len__(self):
         return len(self.clusters)
 
-    def names(self, prefix="Patch"):
+    def get_names(self, prefix="Patch"):
         """
         Generate names for each cluster based on the given prefix.
 
@@ -1368,7 +1368,7 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
 
     def get_patches(self, _samples: dict, _n_patches=None, prefix="Patch"):
 
-        patch_names = self.clusters.names(prefix=prefix)
+        patch_names = self.clusters.get_names(prefix=prefix)
         ra, dec = self.get_coords(
             {
                 "ra": self.clusters.positions[:, 0],
