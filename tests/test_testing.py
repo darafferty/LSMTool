@@ -363,7 +363,10 @@ class TestCluster:
     """
 
     def test_properties(self):
-
+        """
+        Test that the properties derived from the covariance matrix are
+        initialized correctly.
+        """
         # Arrange
         position = [12.0, -4.0]
         covariance = [[1.0, 0.5], [0.5, 1.0]]
@@ -381,19 +384,24 @@ class TestCluster:
         assert cluster.var_dec == 1.0
         assert cluster.cov == 0.5
         assert cluster.semi_major_axis == np.sqrt(1.5)
-        assert np.allclose(cluster.semi_minor_axis, np.sqrt(0.5))
+        assert cluster.semi_minor_axis == np.sqrt(0.5)
         assert cluster.angle == 45
 
+        # Recreate the cluster using shape parameters and check covariance
+        # consistency
         cluster = Cluster.from_shape_parameters(
             position,
             cluster.semi_major_axis,
             cluster.semi_minor_axis,
             cluster.angle,
         )
-
         assert np.allclose(cluster.covariance, covariance)
 
     def test_covariance_update_refreshes_derived_properties(self):
+        """
+        Test that the properties derived from the covariance matrix are
+        updated correctly when the covariance matrix changes.
+        """
         # Arrange
         cluster = Cluster([0.0, 0.0], [[1.0, 0.0], [0.0, 4.0]])
 
@@ -418,11 +426,18 @@ class TestCluster:
         ],
     )
     def test_invalid_inputs(self, position, covariance, message):
+        """
+        Test that initializing Cluster with invalid inputs raises an exception
+        with the appropriate message.
+        """
         with pytest.raises(ValueError, match=message):
             Cluster(position, covariance)
 
     def test_rvs(self):
-        """Test the random number sampling from the cluster distribution."""
+        """
+        Test the random number generation (of source positions) from the
+        multivariate normal distribution of the cluster.
+        """
 
         # Arrange
         cluster = Cluster([2.0, -3.0], [[1.0, 0.2], [0.2, 2.0]])
@@ -441,6 +456,10 @@ class TestCluster:
         baseline_dir=RESOURCES_PATH / "plotting" / "baseline_images",
     )
     def test_plot_cluster(self):
+        """
+        Test the plotting of a single cluster with various options. Resulting
+        figure is compared against the baseline image.
+        """
         # Arrange
         cluster = Cluster([0.34, -0.22], [[1.5, 0.5], [0.5, 1.5]])
 
@@ -503,7 +522,10 @@ class TestSourceClusters:
         ],
     )
     def test_invalid_input(self, pos, cov, prob, message):
-
+        """
+        Test that initializing the SourceClusters with invalid inputs raises an
+        exception with the appropriate message.
+        ."""
         with pytest.raises(
             ValueError,
             match=message,
@@ -514,7 +536,10 @@ class TestSourceClusters:
         baseline_dir=RESOURCES_PATH / "plotting" / "baseline_images",
     )
     def test_plot_clusters(self):
-
+        """
+        Test the plotting of multiple clusters with various options. Resulting
+        figure is compared against the baseline image.
+        """
         clusters = SourceClusters.generated(
             n_clusters=12,
             probabilities=None,
