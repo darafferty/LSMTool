@@ -75,6 +75,11 @@ run_unit_tests:
   parallel:
     matrix: # use the matrix for testing
       - PY_VERSION: [10, 11, 12, 13, 14]
+  artifacts:
+    paths:
+      - tests/resources/plotting/results
+    when: always
+  when: manual
 
 # Run code coverage on the base image thus also performing unit tests
 run_unit_tests_coverage:
@@ -90,12 +95,18 @@ run_unit_tests_coverage:
         path: coverage.xml
     paths:
       - htmlcov/*
+  when: manual    
 
 # Run benchmark unit tests
 run_benchmark_tests:
   stage: test
   extends: [ ".run_unit_test_version_base", ".default-image" ]
   script:
+    - git fetch --all
+    - git checkout -B master FETCH_HEAD
+    - git checkout "$CI_COMMIT_BRANCH"
+    - git checkout master -- tests/benchmarks
+    - git stash
     - tox -e benchmark -- --benchmark-save "$CI_COMMIT_REF_SLUG"
   artifacts:
     paths:
