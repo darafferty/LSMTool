@@ -19,6 +19,7 @@ special meaning (i.e. can be anything the user chooses) and are only used for
 labelling the results.
 """
 
+import os
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -113,13 +114,15 @@ def run_benchmark(commit, label, *pytest_args):
         try:
             print("Adding temporary worktree at:", worktree)
             print("... and checking out the commit:", commit)
+            print(os.getcwd())
+
             # Check out the commit in the temporary worktree
             REPO.git.worktree("add", "--detach", str(worktree), commit)
 
             # Since the benchmark scripts may not exist on the current branch we
             # are testing, we need to check out the benchmark scripts from
             # master as well.
-            REPO.git.checkout("master", "--", "tests/benchmarks")
+            # REPO.git.checkout("master", "--", "tests/benchmarks")
 
             pytest_command = [
                 "tests/benchmarks/test_skymodel_benchmarks.py",
