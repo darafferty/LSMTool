@@ -138,6 +138,10 @@ def main(filename=None):
     """
     fig, ax = plt.subplots(1, 1, figsize=[10.5, 6.8], tight_layout=True)
     benchmarks = collect_benchmarks()
+    if not benchmarks:
+        print("No benchmark results found. Exiting")
+        return
+
     plot_benchmarks(ax, benchmarks, title="SkyModel.getPatchPositions")
 
     if filename:
