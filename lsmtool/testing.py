@@ -17,7 +17,6 @@ from astropy.coordinates import Angle
 from astropy.utils.decorators import lazyproperty
 from matplotlib.collections import EllipseCollection
 from matplotlib.patches import Ellipse
-from scipy.spatial.distance import cdist
 from scipy.stats import binned_statistic_2d
 from scipy.stats._distn_infrastructure import rv_sample
 from scipy.stats.distributions import (
@@ -382,7 +381,7 @@ class SkyModelGenerator(Sampler):
 
     Attributes
     ----------
-    ra : RandomVariate
+    # ra : RandomVariate
         Distribution for Right ascension (in degrees). Default: uniform(0, 360).
     dec : RandomVariate
         Distribution for Declination (in degrees). Default: uniform(-90, 90).
@@ -768,6 +767,33 @@ class CovarianceMatrixGenerator(ConditionalSampler):
         return self.get_matrix(**samples)
 
 
+def mahalanobis_distance(pos, positions, covariances):
+    """
+    Fast computation of the Mahalanobis distances from point to a set of
+    reference poistions (cluster centres), given their covariance matrices.
+
+    Parameters
+    ----------
+    pos : array-like
+        Coordinate position (RA, Dec) as array-like of size 2.
+    positions : array-like
+        Reference positions (RA, DEc) as array-like of size (N, 2).
+    covariances : array-like
+        Covariance matrices as array-like of of size (N, 2, 2).
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (N,) containing the Mahalanobis distance of the reference
+        points to the input position.
+    """
+    delta_ra, delta_dec = (np.atleast_2d(positions) - np.atleast_2d(pos)).T
+    delta_ra[delta_ra > 180] -= 360
+    r = np.array([delta_ra, delta_dec]).T
+    precisions = np.linalg.inv(covariances)
+    return np.sqrt((r * np.einsum("ijk,ij...->ik", precisions, r)).sum(-1))
+
+
 @dataclass
 class ClusterGenerator(ConditionalSampler):
     """
@@ -795,27 +821,24 @@ class ClusterGenerator(ConditionalSampler):
         positions = np.array([samples["ra"], samples["dec"]]).T
         not_yet_generated = np.isnan(positions).any(1)
         if not_yet_generated.all():
+            # This is the first sample
             return True
 
+        # Check mahalanobis distance of the new sample to existing cluster
+        # centres using covarinance matrices of the existing clusters
+        pos = np.array([[sample["ra"], sample["dec"]]])
         positions = positions[~not_yet_generated]
         covariances = samples["cov"][~not_yet_generated]
-
-        pos = np.array([[sample["ra"], sample["dec"]]])
-        cov = sample["cov"]
-
-        # Check distance of the new sample to existing cluster centres using
-        # Mahalanobis distance
-        mahalanobis_distance = cdist(
-            pos, positions, metric="mahalanobis", VI=np.linalg.inv(covariances)
-        )
-        if (mahalanobis_distance < self.MIN_DISTANCE_SIGMA).any():
+        distances = mahalanobis_distance(pos, positions, covariances)
+        if (distances < self.MIN_DISTANCE_SIGMA).any():
             return False
 
-        # Check distance of existing cluster centres to the new sample
-        mahalanobis_distance = cdist(
-            pos, positions, metric="mahalanobis", VI=np.linalg.inv(cov)
-        )
-        return (mahalanobis_distance >= self.MIN_DISTANCE_SIGMA).all()
+        # Check mahalanobis distance of existing cluster centres to the new
+        # sample, with the covariance matrix of the new sample
+        r = positions - pos
+        p = np.linalg.inv(sample["cov"])
+        distance = np.sqrt((r * (p @ r.T).T).sum(1))
+        return (distance >= self.MIN_DISTANCE_SIGMA).all()
 
 
 class Cluster:
@@ -929,6 +952,9 @@ class Cluster:
         return multivariate_normal(mean=self.position, cov=self.covariance)
 
     def rvs(self, size, random_state=None):
+        if size == 1:
+            from IPython import embed
+            embed(header="Embedded interpreter at 'lsmtool/testing.py':973")
         ra, dec = self.distribution.rvs(size=size, random_state=random_state).T
         to_wrap = np.abs(dec) > 90
         dec[to_wrap] = (180 - np.abs(dec[to_wrap])) * np.sign(dec[to_wrap])
