@@ -28,7 +28,7 @@ TEST_DATA_PATH = TEST_PATH / "resources"
 LOFAR_HBA_URL = "https://users.astron.nl/dijkema/software/ci_data/EveryBeam/L258627-one-timestep.tar.bz2"
 
 # Random number generator seed for reproducibility
-RNG_SEED = 881726
+RNG_SEED = 8817261
 
 # ---------------------------------------------------------------------------- #
 
@@ -107,10 +107,10 @@ def test_data_path(request):
     )
 
 
-@pytest.fixture(scope="session")
-def rng():
+@pytest.fixture(scope="session", params=[RNG_SEED])
+def rng(request):
     """Random number generator as a fixture."""
-    return np.random.default_rng(seed=RNG_SEED)
+    return np.random.default_rng(seed=request.param)
 
 
 @pytest.fixture
