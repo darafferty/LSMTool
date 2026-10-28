@@ -71,14 +71,14 @@ run_unit_tests:
   extends: .run_unit_test_version_base
   image: python:3.${PY_VERSION}
   script:
-    - tox -e py3${PY_VERSION}
+    - tox -e py3${PY_VERSION} -- --mpl-results-path=tests/resources/plotting/results --mpl-results-always
   parallel:
     matrix: # use the matrix for testing
       - PY_VERSION: [10, 11, 12, 13, 14]
   artifacts:
     paths:
       - tests/resources/plotting/results
-    when: always
+    when: on_failure
     
 
 # Run code coverage on the base image thus also performing unit tests
@@ -105,7 +105,6 @@ run_benchmark_tests:
   artifacts:
     paths:
       - tests/benchmarks/results
-      - tests/resources/plotting/results
     when: always
   allow_failure: true
 
