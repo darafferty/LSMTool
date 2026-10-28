@@ -1059,6 +1059,7 @@ class Cluster:
         )
         axes.add_patch(ellipse)
         axes.set_aspect("equal")
+        axes.autoscale_view()
         return ellipse, centre_mark
 
 
