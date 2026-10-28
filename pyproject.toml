@@ -401,8 +401,6 @@ commands = [
         "auto",
         # Enable matplotlib image comparison tests
         "--mpl",
-        "--mpl-results-path=tests/resources/plotting/results",
-        "--mpl-results-always",
         { replace = "posargs", default = [], extend = true }
     ]
 ]
