@@ -455,6 +455,7 @@ class TestCluster:
 
     @pytest.mark.mpl_image_compare(
         baseline_dir=RESOURCES_PATH / "plotting" / "baseline_images",
+        results_dir=RESOURCES_PATH / "plotting" / "generated_images",
     )
     def test_plot_cluster(self):
         """
@@ -535,6 +536,7 @@ class TestSourceClusters:
 
     @pytest.mark.mpl_image_compare(
         baseline_dir=RESOURCES_PATH / "plotting" / "baseline_images",
+        results_dir=RESOURCES_PATH / "plotting" / "generated_images",
     )
     def test_plot_clusters(self):
         """

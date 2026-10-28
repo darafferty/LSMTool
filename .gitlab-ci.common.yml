@@ -75,6 +75,11 @@ run_unit_tests:
   parallel:
     matrix: # use the matrix for testing
       - PY_VERSION: [10, 11, 12, 13, 14]
+  artifacts:
+    paths:
+      - tests/resources/plotting/results
+    when: always
+    
 
 # Run code coverage on the base image thus also performing unit tests
 run_unit_tests_coverage:
@@ -100,6 +105,7 @@ run_benchmark_tests:
   artifacts:
     paths:
       - tests/benchmarks/results
+      - tests/resources/plotting/results
     when: always
   allow_failure: true
 
