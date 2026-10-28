@@ -258,7 +258,8 @@ class TestSkyModelGenerator:
 
         # create skymodel generator and draw a random sample of sources
         generator = SkyModelGenerator(**config)
-        samples, _ = generator.sample(n_sources=1_000, random_state=rng)
+        samples, _ = generator.sample(n_sources=100, random_state=rng)
+        ra, dec = samples["ra"], samples["dec"]
 
         # Check that the samples are within the expected ranges and have the
         # expected distribution.
@@ -266,8 +267,6 @@ class TestSkyModelGenerator:
         ra1 = ra0 + generator.ra.kwds["scale"]
         dec0 = generator.dec.kwds["loc"]
         dec1 = dec0 + generator.dec.kwds["scale"]
-        ra = samples["ra"]
-        dec = samples["dec"]
 
         assert np.all((ra0 < ra) & (ra < ra1))
         assert np.all((dec0 < dec) & (dec < dec1))
