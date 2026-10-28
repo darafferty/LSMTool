@@ -301,7 +301,7 @@ class ConditionalSampler(Sampler):
     def sample(
         self,
         size: int,
-        max_rejections: int = 1000,
+        max_rejections: int = 100,
         random_state: RandomState = None,
         **kws,
     ):
@@ -330,7 +330,7 @@ class ConditionalSampler(Sampler):
                 )
                 index += 1
 
-            elif count >= max_rejections:
+            elif count - index >= max_rejections:
                 warnings.warn(
                     "Maximum number of sample rejections reached before "
                     "reaching requested number of samples.",
