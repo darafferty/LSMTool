@@ -266,9 +266,11 @@ class TestSkyModelGenerator:
         ra1 = ra0 + generator.ra.kwds["scale"]
         dec0 = generator.dec.kwds["loc"]
         dec1 = dec0 + generator.dec.kwds["scale"]
+        ra = samples["ra"]
+        dec = samples["dec"]
 
-        assert np.all((ra0 < samples["ra"]) & (samples["ra"] < ra1))
-        assert np.all((dec0 < samples["dec"]) & (samples["dec"] < dec1))
+        assert np.all((ra0 < ra) & (ra < ra1))
+        assert np.all((dec0 < dec) & (dec < dec1))
         assert not any(
             map(len, np.nonzero([samples["q"], samples["u"], samples["v"]]))
         )
@@ -276,10 +278,8 @@ class TestSkyModelGenerator:
         assert np.all(samples["minor_axis"] < samples["major_axis"])
 
         # test that samples are drawn from the correct distributions
-        assert kstest(samples["ra"], uniform(ra0, ra1 - ra0).cdf).pvalue > 0.05
-        assert (
-            kstest(samples["dec"], uniform(dec0, dec1 - dec0).cdf).pvalue > 0.05
-        )
+        assert kstest(ra, uniform(ra0, ra1 - ra0).cdf).pvalue > 0.05
+        assert kstest(dec, uniform(dec0, dec1 - dec0).cdf).pvalue > 0.05
 
     @pytest.mark.parametrize("n_sources", [1, 1000])
     def test_read_write(self, tmp_path, config, n_sources, rng):
