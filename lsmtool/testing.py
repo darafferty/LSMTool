@@ -907,7 +907,9 @@ class Cluster:
 
     @covariance.setter
     def covariance(self, sigma):
-
+        # Check tht the covaraince matrix is valid. If it is valid, et the
+        # `_sigma` attribute and invalidate the cached properties derived from
+        # it.
         covariance_matrix = np.array(sigma, dtype=float)
         if covariance_matrix.shape != (2, 2):
             raise ValueError("Covariance matrix must be 2x2")
@@ -926,9 +928,13 @@ class Cluster:
         """The multivariate normal distribution representing the cluster."""
         return multivariate_normal(mean=self.position, cov=self.covariance)
 
-    @property
-    def rvs(self):
-        return self.distribution.rvs
+    def rvs(self, size, random_state=None):
+        ra, dec = self.distribution.rvs(size=size, random_state=random_state).T
+        to_wrap = np.abs(dec) > 90
+        dec[to_wrap] = (180 - np.abs(dec[to_wrap])) * np.sign(dec[to_wrap])
+        ra[to_wrap] = ra[to_wrap] + 180
+        ra[ra > 360] -= 360
+        return np.array([ra, dec]).T
 
     @property
     def var_ra(self):
@@ -1239,13 +1245,13 @@ class SourceClusters:
             # the random state multiple times
             random_state = np.random.RandomState(random_state)
 
+        coords = np.empty((size, 2))
+        labels = np.empty(size, dtype=int)
         cluster_indices = random_state.choice(
             len(self),
             p=self.probabilities,
             size=size,
         )
-        coords = np.empty((size, 2))
-        labels = np.empty(size, dtype=int)
         index = 0
         for cluster_index, n_points in zip(
             *np.unique(cluster_indices, return_counts=True),
