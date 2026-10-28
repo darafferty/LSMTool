@@ -85,3 +85,6 @@ tests/benchmarks/results/benchmark_compare.png
 
 # default pytest benchmark results folder
 .benchmarks
+
+# Results from plotting tests
+tests/resources/plotting/results
