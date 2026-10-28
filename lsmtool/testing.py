@@ -1243,11 +1243,13 @@ class SourceClusters:
             p=self.probabilities,
             size=size,
         )
-        n_points_per_cluster = np.unique_counts(cluster_indices)
         coords = np.empty((size, 2))
         labels = np.empty(size, dtype=int)
         index = 0
-        for cluster_index, n_points in zip(*n_points_per_cluster, strict=True):
+        for cluster_index, n_points in zip(
+            *np.unique(cluster_indices, return_counts=True),
+            strict=True,
+        ):
             if n_points:
                 cluster = self.clusters[cluster_index]
                 labels[index : index + n_points] = cluster_index
