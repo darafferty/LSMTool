@@ -19,6 +19,7 @@ from lsmtool.testing import (
     SourceClusters,
     Uniform,
     check_skymodels_equal,
+    mahalanobis_distance,
 )
 
 # ---------------------------------------------------------------------------- #
@@ -548,6 +549,13 @@ class TestSourceClusters:
             match=message,
         ):
             SourceClusters(pos, cov, prob)
+
+    def test_distance_wrapping(self):
+        positions = [(1, 0), (359, 0)]
+        covariances = np.tile(4 * np.eye(2), (2, 1, 1))
+        assert np.all(
+            mahalanobis_distance([0, 0], positions, covariances) == 0.5
+        )
 
     @pytest.mark.mpl_image_compare(
         baseline_dir=RESOURCES_PATH / "plotting" / "baseline_images",
