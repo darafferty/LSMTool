@@ -1326,6 +1326,13 @@ class SourceClusters:
         )
         ax.add_collection(ec)
 
+        # Update axes limits
+        deltas = n_sigma * self.semi_major_axes[None].T
+        maxima = (self.positions + deltas).max(0)
+        minima = (self.positions - deltas).min(0)
+        xlim, ylim = np.array([minima, maxima]).T
+        ax.set(xlim=xlim, ylim=ylim)
+
         ax.set_aspect("equal")
         ax.grid()
 
