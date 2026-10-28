@@ -452,6 +452,21 @@ class TestCluster:
             kstest(samples[:, 1], normal(-3.0, np.sqrt(2.0)).cdf).pvalue > 0.05
         )
 
+    @pytest.mark.parametrize("pole", [1, -1])
+    def test_cluster_at_pole(self, pole):
+        """
+        Test that the cluster correctly handles positions near the celestial poles.
+        """
+        # Arrange
+        cluster = Cluster([0.0, pole * 90.0], [[1.0, 0.0], [0.0, 1.0]])
+
+        # Act
+        samples = cluster.rvs(size=100, random_state=1)
+
+        # Assert
+        assert samples.shape == (100, 2)
+        assert np.all(np.abs(samples[:, 1]) <= 90)
+
     @pytest.mark.mpl_image_compare(
         baseline_dir=RESOURCES_PATH / "plotting" / "baseline_images",
         results_dir=RESOURCES_PATH / "plotting" / "generated_images",
