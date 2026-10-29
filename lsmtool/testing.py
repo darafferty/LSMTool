@@ -964,7 +964,7 @@ class Cluster:
     def rvs(self, size, random_state=None):
         if size <= 0:
             return np.ndarray((0, 2), float)
-        
+
         ra, dec = np.atleast_2d(
             self.distribution.rvs(size=size, random_state=random_state)
         ).T
