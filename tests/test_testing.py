@@ -567,7 +567,7 @@ class TestSourceClusters:
         Test the plotting of multiple clusters with various options. Resulting
         figure is compared against the baseline image.
         """
-        clusters = SourceClusters.generated(
+        clusters = SourceClusters.generate(
             n_clusters=12,
             probabilities=None,
             random_state=11,
@@ -628,7 +628,7 @@ class TestClusteredSkymodelGenerator:
         )
 
         # Generate cluster parameters
-        clusters = SourceClusters.generated(
+        clusters = SourceClusters.generate(
             n_clusters=n_clusters,
             probabilities=None,
             random_state=rng,
