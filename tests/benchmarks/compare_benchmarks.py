@@ -157,7 +157,8 @@ def run_benchmark(commit, label, *pytest_args):
         finally:
             # Remove the temporary worktree after benchmarking
             print("Removing temporary worktree at:", worktree)
-            REPO.git.worktree("remove", "--force", str(worktree))
+            if worktree.exists():
+                REPO.git.worktree("remove", "--force", str(worktree))
 
 
 if __name__ == "__main__":
