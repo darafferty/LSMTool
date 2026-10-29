@@ -17,7 +17,7 @@ from astropy.coordinates import Angle
 from astropy.utils.decorators import lazyproperty
 from matplotlib.collections import EllipseCollection
 from matplotlib.patches import Ellipse
-from scipy.stats import binned_statistic_2d
+from scipy.stats import binned_statistic_2d, multivariate_normal
 from scipy.stats._distn_infrastructure import rv_sample
 from scipy.stats.distributions import (
     cosine,
@@ -962,9 +962,6 @@ class Cluster:
         return multivariate_normal(mean=self.position, cov=self.covariance)
 
     def rvs(self, size, random_state=None):
-        if size == 1:
-            from IPython import embed
-            embed(header="Embedded interpreter at 'lsmtool/testing.py':973")
         ra, dec = self.distribution.rvs(size=size, random_state=random_state).T
         to_wrap = np.abs(dec) > 90
         dec[to_wrap] = (180 - np.abs(dec[to_wrap])) * np.sign(dec[to_wrap])

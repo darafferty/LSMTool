@@ -456,7 +456,8 @@ class TestCluster:
     @pytest.mark.parametrize("pole", [1, -1])
     def test_cluster_at_pole(self, pole):
         """
-        Test that the cluster correctly handles positions near the celestial poles.
+        Test that the cluster correctly handles positions near the celestial
+        poles.
         """
         # Arrange
         cluster = Cluster([0.0, pole * 90.0], [[1.0, 0.0], [0.0, 1.0]])
@@ -482,7 +483,6 @@ class TestCluster:
         cluster = Cluster([0.34, -0.22], [[1.5, 0.5], [0.5, 1.5]])
 
         fig, (ax0, ax1) = plt.subplots(1, 2, sharex=True, sharey=True)
-
         cluster.plot(ax0, n_sigma=1, mark_centre=True)
         cluster.plot(ax0, n_sigma=3, mark_centre=False, ls="--")
         cluster.plot(ax0, n_sigma=5, mark_centre=False, ls="-.")
