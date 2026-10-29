@@ -962,7 +962,9 @@ class Cluster:
         return multivariate_normal(mean=self.position, cov=self.covariance)
 
     def rvs(self, size, random_state=None):
-        ra, dec = self.distribution.rvs(size=size, random_state=random_state).T
+        ra, dec = np.atleast_2d(
+            self.distribution.rvs(size=size, random_state=random_state)
+        ).T
         to_wrap = np.abs(dec) > 90
         dec[to_wrap] = (180 - np.abs(dec[to_wrap])) * np.sign(dec[to_wrap])
         ra[to_wrap] = ra[to_wrap] + 180
