@@ -923,6 +923,9 @@ class Cluster:
             raise ValueError("Position must be a 2-element array.")
         self._position = position
 
+        # Invalidate cached properties that depend on the position
+        del self.distribution
+
     @property
     def covariance(self):
         """The 2x2 covariance matrix of the source distribution."""
@@ -943,10 +946,17 @@ class Cluster:
         self._sigma = covariance_matrix
 
         # Invalidate cached properties that depend on the covariance matrix
+        del self.precision
+        del self.distribution
         del self.semi_axes
         del self.angle
 
-    @property
+    @lazyproperty
+    def precision(self):
+        """Precision matrix for the source distribution."""
+        return np.linalg.inv(self.covariance)
+
+    @lazyproperty
     def distribution(self):
         """The multivariate normal distribution representing the cluster."""
         return multivariate_normal(mean=self.position, cov=self.covariance)
@@ -1133,6 +1143,7 @@ class SourceClusters:
 
     positions = AttrVector("position")
     covariances = AttrVector("covariance")
+    precisions = AttrVector("precision")
     semi_major_axes = AttrVector("semi_major_axis")
     semi_minor_axes = AttrVector("semi_minor_axis")
     angles = AttrVector("angle")
@@ -1362,7 +1373,7 @@ class SourceClusters:
         ax.add_collection(ec)
 
         # Update axes limits
-        deltas = n_sigma * self.semi_major_axes[None].T
+        deltas = n_sigma * self.semi_major_axes[np.newaxis].T
         maxima = (self.positions + deltas).max(0)
         minima = (self.positions - deltas).min(0)
         xlim, ylim = np.array([minima, maxima]).T
