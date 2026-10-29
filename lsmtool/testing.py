@@ -1150,7 +1150,7 @@ class SourceClusters:
     }
 
     @classmethod
-    def generated(
+    def generate(
         cls,
         n_clusters: int,
         probabilities=None,
