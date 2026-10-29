@@ -962,6 +962,9 @@ class Cluster:
         return multivariate_normal(mean=self.position, cov=self.covariance)
 
     def rvs(self, size, random_state=None):
+        if size <= 0:
+            return np.ndarray((0, 2), float)
+        
         ra, dec = np.atleast_2d(
             self.distribution.rvs(size=size, random_state=random_state)
         ).T
@@ -1276,7 +1279,10 @@ class SourceClusters:
             An array of shape (n,) containing the cluster labels for each
             generated coordinate.
         """
-        if random_state is None or isinstance(random_state, int):
+        if random_state is None:
+            # Use numpy's shared internal random state
+            random_state = np.random
+        elif isinstance(random_state, int):
             # Need to deal with integer random states here since we will reuse
             # the random state multiple times
             random_state = np.random.RandomState(random_state)
