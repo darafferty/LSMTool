@@ -105,6 +105,8 @@ class SkyModel(object):
                     filename, vo_position, vo_radius
                 )
             else:
+                # If filename does not point to a VO query, assume it points to
+                # a local file.
                 self.table = self.load_from_file(filename)
 
         elif isinstance(filename, dict):
@@ -168,8 +170,6 @@ class SkyModel(object):
             with self._load_context(filename, f"LSM file {filename!r}"):
                 return tableio.loadTableFromLSM(filename)
 
-        # If filename does not point to a VO query, assume it points to a local
-        # file
         if str(filename).lower() in tableio.ALLOWED_REMOTE_SERVICES:
             self.log.warning(
                 "It appears from the filename that you may be trying to query a"
