@@ -7,6 +7,7 @@ import io
 import itertools as itt
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pytest
@@ -14,11 +15,12 @@ from astropy.coordinates import Angle
 from scipy.stats import binned_statistic_2d
 from scipy.stats.distributions import rv_frozen, uniform
 
-from .io import load
+from .io import PathLike, load
+from .skymodel import SkyModel
 from .utils import format_coordinates
 
 
-def get_context(expected, **kws):
+def get_context(expected: Exception | object, **kws):
     """
     Get the appropriate runtime context for executing test code based on
     whether the expected result is an exception or not.
@@ -70,7 +72,9 @@ def get_context(expected, **kws):
 
 
 def check_skymodels_equal(
-    left_filename, right_filename, check_patch_names_sizes=True
+    left_filename: PathLike,
+    right_filename: PathLike,
+    check_patch_names_sizes: bool = True,
 ):
     """
     Compares the contents of two skymodels to check for equality.
@@ -98,7 +102,9 @@ def check_skymodels_equal(
     )
 
 
-def check_columns_equal(left, right, check_patch_names_sizes):
+def check_columns_equal(
+    left: SkyModel, right: SkyModel, check_patch_names_sizes: bool
+):
     """
     Checks the columns of two skymodels for equality.
 
@@ -137,7 +143,9 @@ def check_columns_equal(left, right, check_patch_names_sizes):
     return True
 
 
-def check_patches_equal(left, right, check_patch_names_sizes):
+def check_patches_equal(
+    left: SkyModel, right: SkyModel, check_patch_names_sizes: bool
+):
     """
     Checks the patches of two skymodels for equality.
 
@@ -183,7 +191,7 @@ def check_patches_equal(left, right, check_patch_names_sizes):
 # Utilities for generating random skymodel data
 
 
-def uniform_range(a, b):
+def uniform_range(a: float, b: float):
     """
     Return a frozen uniform distribution with the specified range.
 
@@ -208,14 +216,15 @@ class Constant:
     API.
     """
 
-    def __init__(self, value):
+    def __init__(self, value: float):
         self.value = value
 
-    def rvs(self, n, *_, **__):
+    def rvs(self, n: int, *_, **__):
         return np.full(n, self.value)
 
 
-RVType = rv_frozen | Constant | None
+RandomState = Optional[int | np.random.RandomState | np.random.Generator]
+RandomVariate = Optional[rv_frozen | Constant]
 
 
 @dataclass
@@ -234,47 +243,53 @@ class SkyModelGenerator:
 
     Attributes
     ----------
-    ra : RVType
+    ra : RandomVariate
         Distribution for Right ascension (in degrees). Default: uniform(0, 360).
-    dec : RVType
+    dec : RandomVariate
         Distribution for Declination (in degrees). Default: uniform(-90, 90).
-    i : RVType
+    i : RandomVariate
         Distribution for Stokes I flux (in Jy). Default: uniform(0.001, 20).
-    q : RVType
+    q : RandomVariate
         Distribution for Stokes Q flux (in Jy). Default: constant(0).
-    u : RVType
+    u : RandomVariate
         Distribution for Stokes U flux (in Jy). Default: constant(0).
-    v : RVType
+    v : RandomVariate
         Distribution for Stokes V flux (in Jy). Default: constant(0).
-    reference_frequency : RVType
+    reference_frequency : RandomVariate
         Distribution for Reference frequency (in Hz). Default: constant(1.44e8).
-    spectral_index : RVType
+    spectral_index : RandomVariate
         Distribution for Spectral index. Default: uniform(-1, 0).
-    rotation_measure : RVType
+    rotation_measure : RandomVariate
         Distribution for Rotation measure. Default: constant(0).
-    major_axis : RVType
+    major_axis : RandomVariate
         Distribution for Major axis in arcsec. Default: uniform(0.01, 20).
-    minor_axis : RVType
+    minor_axis : RandomVariate
         Distribution for Minor axis as a fraction of major axis. Default:
         uniform(0, 1).
-    orientation : RVType
+    orientation : RandomVariate
         Position angle in degrees. Default: uniform(0, 180).
     """
 
-    ra: RVType = uniform_range(0, 360)
-    dec: RVType = uniform_range(-90, 90)
-    i: RVType = uniform_range(0.001, 20)
-    q: RVType = Constant(0)
-    u: RVType = Constant(0)
-    v: RVType = Constant(0)
-    reference_frequency: RVType = Constant(1.44e8)
-    spectral_index: RVType = uniform_range(-1, 0)
-    rotation_measure: RVType = Constant(0)
-    major_axis: RVType = uniform_range(0.01, 20)
-    minor_axis: RVType = uniform_range(0, 1)
-    orientation: RVType = uniform_range(0, 180)
+    ra: RandomVariate = uniform_range(0, 360)
+    dec: RandomVariate = uniform_range(-90, 90)
+    i: RandomVariate = uniform_range(0.001, 20)
+    q: RandomVariate = Constant(0)
+    u: RandomVariate = Constant(0)
+    v: RandomVariate = Constant(0)
+    reference_frequency: RandomVariate = Constant(1.44e8)
+    spectral_index: RandomVariate = uniform_range(-1, 0)
+    rotation_measure: RandomVariate = Constant(0)
+    major_axis: RandomVariate = uniform_range(0.01, 20)
+    minor_axis: RandomVariate = uniform_range(0, 1)
+    orientation: RandomVariate = uniform_range(0, 180)
 
-    def __call__(self, n_sources, n_patches=None, random_state=None, **kws):
+    def __call__(
+        self,
+        n_sources: int,
+        n_patches: Optional[int] = None,
+        random_state: RandomState = None,
+        **kws,
+    ):
         """
         Generate a random skymodel.
 
@@ -310,7 +325,13 @@ class SkyModelGenerator:
         }
         return samples, patches
 
-    def sample(self, n_sources, n_patches=None, random_state=None, **kws):
+    def sample(
+        self,
+        n_sources: int,
+        n_patches=None,
+        random_state: RandomState = None,
+        **kws,
+    ):
         """
         Generate a random sample of sources from the specified distributions,
         returning a dictionary with parameter names as keys and arrays of
@@ -354,7 +375,7 @@ class SkyModelGenerator:
 
         return samples, patch_defs
 
-    def get_coords(self, samples):
+    def get_coords(self, samples: dict):
         """
         Generate the RA and Dec coordinates for the sources in the skymodel.
 
@@ -370,7 +391,7 @@ class SkyModelGenerator:
         """
         return format_coordinates(samples["ra"], samples["dec"], pad=True)
 
-    def get_names(self, samples):
+    def get_names(self, samples: dict):
         """
         Generate unique source names for the specified number of sources.
 
@@ -398,7 +419,7 @@ class SkyModelGenerator:
             ),
         )
 
-    def get_types(self, samples):
+    def get_types(self, samples: dict):
         """
         Generate source types for the specified number of sources.
 
@@ -418,7 +439,7 @@ class SkyModelGenerator:
         n_sources = len(samples["ra"])
         return np.full(n_sources, "GAUSSIAN")
 
-    def get_patches(self, samples, n_patches):
+    def get_patches(self, samples: dict, n_patches):
         """
         Get the patch definitions and the patch column for the given samples.
 
@@ -468,7 +489,7 @@ class SkyModelGenerator:
 
         return patch_defs, patch_col
 
-    def get_minor_axis(self, samples):
+    def get_minor_axis(self, samples: dict):
         """
         Generate values for the minor axis of the sources, ensuring that they
         are smaller than the corresponding major axis values.
@@ -486,7 +507,7 @@ class SkyModelGenerator:
         major_axis = samples["major_axis"]
         return major_axis * self.minor_axis.rvs(len(major_axis))
 
-    def get_header(self, samples):
+    def get_header(self, samples: dict):
         """
         Generate the makesourcedb format string for the header.
 
@@ -505,7 +526,12 @@ class SkyModelGenerator:
         )
 
     def to_file(
-        self, filename, n_sources, n_patches=None, random_state=None, **kws
+        self,
+        filename: PathLike,
+        n_sources: int,
+        n_patches: Optional[int] = None,
+        random_state: RandomState = None,
+        **kws,
     ):
         """
         Generate a random skymodel and save it to a file.
