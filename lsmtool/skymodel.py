@@ -229,7 +229,7 @@ class SkyModel(object):
                 # position
                 self.log.warning(
                     "No sources found for the given VO query parameters "
-                    "(%s  with vo_position = %s and vo_radius = %s). "
+                    "(%s with vo_position = %s and vo_radius = %s). "
                     "Returning an empty %s instance.",
                     service,
                     vo_position,
@@ -281,7 +281,7 @@ class SkyModel(object):
         """
         with self._load_context(None, "input dict"):
             # Create header
-            format_string = f"#FORMAT = {', '.join(columns)}"
+            format_string = f"#FORMAT = {', '.join(columns.keys())}"
 
             # Process the header
             col_names, has_patches, col_defaults, meta_dict = (
