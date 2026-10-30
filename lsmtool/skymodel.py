@@ -155,7 +155,7 @@ class SkyModel(object):
         Parameters
         ----------
         filename : str or Path
-            _description_
+            Sky model file name.
 
         Returns
         -------
