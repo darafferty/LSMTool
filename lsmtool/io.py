@@ -7,7 +7,7 @@ import numbers
 import os
 import tempfile
 from pathlib import Path
-from typing import Sequence, Union
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
@@ -21,7 +21,7 @@ TRIAL_TMP_PATHS = [tempfile.gettempdir()]
 
 # Type aliases for paths-like objects
 PathLike = Union[str, Path]
-PathLikeOptional = Union[PathLike, None]
+PathLikeOptional = Optional[PathLike]
 ListOfPathLike = Sequence[PathLike]
 ListOfPathLikeOptional = Union[ListOfPathLike, None]
 PathLikeOrListOptional = Union[PathLikeOptional, ListOfPathLike]
