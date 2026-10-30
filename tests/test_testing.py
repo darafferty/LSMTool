@@ -10,8 +10,8 @@ from scipy.stats.distributions import uniform
 from lsmtool import load
 from lsmtool.testing import (
     SkyModelGenerator,
+    Uniform,
     check_skymodels_equal,
-    uniform_range,
 )
 
 # ---------------------------------------------------------------------------- #
@@ -231,7 +231,7 @@ class TestSkyModelGenerator:
         params=[
             pytest.param({}, id="default"),
             pytest.param(
-                {"ra": uniform_range(0, 45), "dec": uniform_range(-45, 45)},
+                {"ra": Uniform(0, 45), "dec": Uniform(-45, 45)},
                 id="custom",
             ),
         ],
