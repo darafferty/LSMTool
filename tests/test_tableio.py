@@ -12,11 +12,11 @@ from lsmtool.operations_lib import normalize_ra_dec
 from lsmtool.skymodel import SkyModel
 from lsmtool.tableio import (
     RADec2Angle,
+    coneSearch,
     loadAstropyTableFromLSM,
     loadTableFromLSM,
     skyModelReader,
     validateLSMFormat,
-    coneSearch,
 )
 
 _EXPECTED_LSM_COLUMN_NAMES = [
