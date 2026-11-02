@@ -344,9 +344,7 @@ def test_sexagesimal_invalid_input_still_raises(ra, dec):
         RADec2Angle(ra, dec)
 
 
-def test_cone_search_pyvo_exception(
-    mocker
-):
+def test_cone_search_pyvo_exception(mocker):
     """
     Verifies that a VO cone search raises ConnectionError on pyvo exceptions.
     """
