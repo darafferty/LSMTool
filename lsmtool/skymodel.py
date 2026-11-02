@@ -107,6 +107,13 @@ class SkyModel(object):
             else:
                 # If filename does not point to a VO query, assume it points to
                 # a local file.
+                if str(filename).lower() in tableio.ALLOWED_REMOTE_SERVICES:
+                    self.log.warning(
+                        "It appears from the filename that you may be trying to"
+                        " query a VO service. If so, you must provide values "
+                        "for both vo_position and vo_radius."
+                    )
+
                 self.table = self.load_from_file(filename)
 
         elif isinstance(filename, dict):
@@ -168,13 +175,6 @@ class SkyModel(object):
         if tableio.validateLSMFormat(filename):
             with self._load_context(filename, f"LSM file {filename!r}"):
                 return tableio.loadTableFromLSM(filename)
-
-        if str(filename).lower() in tableio.ALLOWED_REMOTE_SERVICES:
-            self.log.warning(
-                "It appears from the filename that you may be trying to query a"
-                " VO service. If so, you must provide values for both "
-                "vo_position and vo_radius."
-            )
 
         with self._load_context(filename, f"file {filename}"):
             return Table.read(filename, format="makesourcedb")
