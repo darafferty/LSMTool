@@ -163,7 +163,6 @@ class SkyModel(object):
         -------
         astropy.table.Table
             Table containing the source catalog returned by the remote service.
-
         """
 
         if tableio.validateLSMFormat(filename):
@@ -247,12 +246,14 @@ class SkyModel(object):
             "Attempting to load %s from %s.", self.__class__.__name__, service
         )
 
-        # Control flow goes back to the caller to perform the actual loading of
-        # the model during the yield block
         try:
             self._filename = filename
             yield
+            # Control flow goes back to the caller to perform the actual loading
+            # of the model during the yield block.
         except:
+            # If an exception occurs during the loading process, set the
+            # filename to None, and re-raise the exception.
             self._filename = None
             raise
         else:
