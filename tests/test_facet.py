@@ -25,7 +25,7 @@ from lsmtool.facet import (
 from lsmtool.io import load
 from lsmtool.operations_lib import make_wcs
 from lsmtool.skymodel import SkyModel
-from lsmtool.testing import SkyModelGenerator, get_context, uniform_range
+from lsmtool.testing import SkyModelGenerator, Uniform, get_context
 
 # ---------------------------------------------------------------------------- #
 
@@ -1071,8 +1071,8 @@ class TestFilterSkymodel:
                     vertices=[(5, 5), (15, 5), (15, -5), (5, -5)],
                 ),
                 {
-                    "ra": uniform_range(5, 15),
-                    "dec": uniform_range(-5, 5),
+                    "ra": Uniform(5, 15),
+                    "dec": Uniform(-5, 5),
                     "extra_sources": [
                         (
                             "TEST_SOURCE",
@@ -1102,8 +1102,8 @@ class TestFilterSkymodel:
                     width=10,
                 ),
                 {
-                    "ra": uniform_range(250, 260),
-                    "dec": uniform_range(50, 60),
+                    "ra": Uniform(250, 260),
+                    "dec": Uniform(50, 60),
                     "extra_sources": [
                         (
                             "TEST_SOURCE",
@@ -1134,8 +1134,8 @@ class TestFilterSkymodel:
                     wcs=make_wcs(22.5, 22.5, 0.1),  # degrees per pixel
                 ),
                 {
-                    "ra": uniform_range(0, 45),
-                    "dec": uniform_range(0, 45),
+                    "ra": Uniform(0, 45),
+                    "dec": Uniform(0, 45),
                     "extra_sources": [
                         (
                             "TEST_SOURCE",
@@ -1166,8 +1166,8 @@ class TestFilterSkymodel:
                     wcs=make_wcs(0, 0, 0.1),  # degrees per pixel
                 ),
                 {
-                    "ra": uniform_range(0, 90),
-                    "dec": uniform_range(0, 45),
+                    "ra": Uniform(0, 90),
+                    "dec": Uniform(0, 45),
                     "extra_sources": [
                         (
                             "TEST_SOURCE",
@@ -1198,8 +1198,8 @@ class TestFilterSkymodel:
                     wcs=make_wcs(90, 30, 0.1),  # degrees per pixel
                 ),
                 {
-                    "ra": uniform_range(0, 180),
-                    "dec": uniform_range(0, 60),
+                    "ra": Uniform(0, 180),
+                    "dec": Uniform(0, 60),
                     "extra_sources": [
                         (
                             "TEST_SOURCE",
@@ -1230,8 +1230,8 @@ class TestFilterSkymodel:
                     wcs=make_wcs(90, 30, 0.1),  # degrees per pixel
                 ),
                 {
-                    "ra": uniform_range(0, 180),
-                    "dec": uniform_range(0, 90),
+                    "ra": Uniform(0, 180),
+                    "dec": Uniform(0, 90),
                     "extra_sources": [
                         (
                             "TEST_SOURCE",
@@ -1314,8 +1314,8 @@ class TestFilterSkymodel:
                     vertices=[(15, 10), (15.1, 10), (15.1, 10.1), (15, 10.1)],
                 ),
                 {
-                    "ra": uniform_range(0, 360),
-                    "dec": uniform_range(-90, 90),
+                    "ra": Uniform(0, 360),
+                    "dec": Uniform(-90, 90),
                     "n_sources": 10_000,
                     "extra_sources": [
                         (
