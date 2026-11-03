@@ -220,7 +220,7 @@ class TestSkyModelGenerator:
             orientation=None,
         )
         # check that we can write and read the skymodel without errors
-        path = tmp_path / "test_skymodel_generator.txt"
+        path = tmp_path / "test_skymodel_generator_minimal.txt"
         generator.to_file(path, 10, random_state=rng)
 
         skymodel = load(path)
