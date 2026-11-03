@@ -377,7 +377,7 @@ class SkyModelGenerator(Sampler):
 
     Attributes
     ----------
-    # ra : RandomVariate
+    ra : RandomVariate
         Distribution for Right ascension (in degrees). Default: uniform(0, 360).
     dec : RandomVariate
         Distribution for Declination (in degrees). Default: uniform(-90, 90).
