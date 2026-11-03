@@ -5,7 +5,7 @@ Utility functions used for testing.
 import contextlib
 import io
 import itertools as itt
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -225,8 +225,56 @@ RandomState = Optional[int | np.random.RandomState | np.random.Generator]
 RandomVariate = Optional[rv_frozen | Constant]
 
 
+class Sampler:
+    """
+    Mixin class for sampling random variables defined as dataclass fields.
+    """
+
+    def sample(
+        self,
+        size: int,
+        random_state: RandomState = None,
+        ignore: list[str] = None,
+        **kws,
+    ):
+        """
+        Generate samples for the distributions defined by the dataclass fields.
+
+        Parameters
+        ----------
+        size : int
+            The number of samples to generate.
+        random_state : int, RandomState instance or None, optional
+            The random state to use for reproducibility.
+        ignore : list of str, optional
+            Parameter names to omit from sampling.
+        **kws
+            Additional keyword arguments passed to custom sampler methods.
+
+        Returns
+        -------
+        dict[str, numpy.ndarray]
+            Sampled arrays keyed by field name.
+        """
+        samples = {}
+        fields = list(self.__dataclass_fields__)
+        for name in sorted(set(fields) - set(ignore or []), key=fields.index):
+            dist = getattr(self, name)
+            if dist is None:
+                continue
+
+            samples[name] = dist.rvs(size=size, random_state=random_state)
+
+            if sampler := getattr(self, f"get_{name}", None):
+                # Custom sampler method defined for variable, use it to update
+                # the sample
+                samples[name] = sampler(samples, **kws)
+
+        return samples
+
+
 @dataclass
-class SkyModelGenerator:
+class SkyModelGenerator(Sampler):
     """
     Class for generating random skymodel data for testing purposes.
 
@@ -351,18 +399,9 @@ class SkyModelGenerator:
         patches : np.ndarray
             The patch definitions as a (n, 5) array of strings.
         """
-        samples = {}
-        for name, dist in asdict(self).items():
-            if dist is None:
-                continue
-
-            if dist := getattr(self, name):
-                samples[name] = dist.rvs(
-                    size=n_sources, random_state=random_state
-                )
-
-            if sampler := getattr(self, f"get_{name}", None):
-                samples[name] = sampler(samples, **kws)
+        samples = Sampler.sample(
+            self, n_sources, random_state=random_state, **kws
+        )
 
         if n_patches:
             # Get patch definitions
