@@ -13,7 +13,8 @@ import numpy as np
 import pytest
 from astropy.coordinates import Angle
 from scipy.stats import binned_statistic_2d
-from scipy.stats.distributions import rv_frozen, uniform
+from scipy.stats._distn_infrastructure import rv_sample
+from scipy.stats.distributions import rv_continuous, rv_frozen, uniform
 
 from .io import PathLike, load
 from .skymodel import SkyModel
@@ -191,36 +192,33 @@ def check_patches_equal(
 # Utilities for generating random skymodel data
 
 
-def uniform_range(a: float, b: float):
+class Constant(rv_sample):
     """
-    Return a frozen uniform distribution with the specified range.
-
-    Parameters
-    ----------
-    a : float
-        The lower bound of the uniform distribution.
-    b : float
-        The upper bound of the uniform distribution.
-
-    Returns
-    -------
-    rv_frozen
-        A frozen uniform distribution object.
-    """
-    return uniform(loc=a, scale=b - a)
-
-
-class Constant:
-    """
-    A frozen constant distribution that emulates the `scipy.stats.distributions`
-    API.
+    A frozen constant distribution that always returns the same value.
     """
 
     def __init__(self, value: float):
-        self.value = value
+        super().__init__(values=([value], [1]))
 
-    def rvs(self, n: int, *_, **__):
-        return np.full(n, self.value)
+
+class Uniform(rv_continuous):
+    def __new__(cls, a: float, b: float):
+        """
+        Return a frozen uniform distribution with the specified range.
+
+        Parameters
+        ----------
+        a : float
+            The lower bound of the uniform distribution.
+        b : float
+            The upper bound of the uniform distribution.
+
+        Returns
+        -------
+        rv_frozen
+            A frozen uniform distribution object.
+        """
+        return uniform(loc=a, scale=b - a)
 
 
 RandomState = Optional[int | np.random.RandomState | np.random.Generator]
@@ -270,18 +268,18 @@ class SkyModelGenerator:
         Position angle in degrees. Default: uniform(0, 180).
     """
 
-    ra: RandomVariate = uniform_range(0, 360)
-    dec: RandomVariate = uniform_range(-90, 90)
-    i: RandomVariate = uniform_range(0.001, 20)
+    ra: RandomVariate = Uniform(0, 360)
+    dec: RandomVariate = Uniform(-90, 90)
+    i: RandomVariate = Uniform(0.001, 20)
     q: RandomVariate = Constant(0)
     u: RandomVariate = Constant(0)
     v: RandomVariate = Constant(0)
     reference_frequency: RandomVariate = Constant(1.44e8)
-    spectral_index: RandomVariate = uniform_range(-1, 0)
+    spectral_index: RandomVariate = Uniform(-1, 0)
     rotation_measure: RandomVariate = Constant(0)
-    major_axis: RandomVariate = uniform_range(0.01, 20)
-    minor_axis: RandomVariate = uniform_range(0, 1)
-    orientation: RandomVariate = uniform_range(0, 180)
+    major_axis: RandomVariate = Uniform(0.01, 20)
+    minor_axis: RandomVariate = Uniform(0, 1)
+    orientation: RandomVariate = Uniform(0, 180)
 
     def __call__(
         self,
@@ -359,7 +357,9 @@ class SkyModelGenerator:
                 continue
 
             if dist := getattr(self, name):
-                samples[name] = dist.rvs(n_sources, random_state=random_state)
+                samples[name] = dist.rvs(
+                    size=n_sources, random_state=random_state
+                )
 
             if sampler := getattr(self, f"get_{name}", None):
                 samples[name] = sampler(samples, **kws)
@@ -505,7 +505,7 @@ class SkyModelGenerator:
             An array of values for the minor axis of the sources.
         """
         major_axis = samples["major_axis"]
-        return major_axis * self.minor_axis.rvs(len(major_axis))
+        return major_axis * self.minor_axis.rvs(size=len(major_axis))
 
     def get_header(self, samples: dict):
         """
