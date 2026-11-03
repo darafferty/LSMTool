@@ -1429,7 +1429,9 @@ def coneSearch(VOService, position, radius):
         raise ValueError("VO query radius not understood.")
     try:
         VOcatalog = vo.conesearch(url, position, radius=radius)
-    except (vo.dal.exceptions.DALQueryError, vo.dal.DALServiceError) as e:
+    except vo.dal.exceptions.DALAccessError as e:
+        # DALAccessError is the base class for all PyVO exceptions,
+        # so catching it should catch all of them
         raise ConnectionError(
             "Problem communicating with the VO service: {0}".format(e)
         )
