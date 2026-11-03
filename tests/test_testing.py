@@ -343,3 +343,26 @@ class TestSkyModelGenerator:
             for patch_name in skymodel.table.meta
         ]
         assert sum(n_sources_per_patch) == n_sources
+
+    def test_sample_reordering(self, rng):
+        """
+        Test that reordering the samples does not change the header or array.
+        """
+
+        # Arrange
+        generator = SkyModelGenerator()
+        samples, _ = generator.sample(n_sources=100, random_state=rng)
+        items = list(samples.items())
+
+        indices = np.arange(len(samples))
+        np.random.shuffle(indices)
+        samples_reordered = dict((items[i] for i in indices))
+
+        # Assert that the header and array remains the same after reordering the
+        # samples
+        assert generator.get_header(samples) == generator.get_header(
+            samples_reordered
+        )
+        np.testing.assert_array_equal(
+            generator.to_array(samples), generator.to_array(samples_reordered)
+        )
