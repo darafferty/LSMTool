@@ -6,6 +6,7 @@ Defines astropy.table reader and writer functions for the following formats
 """
 
 import io
+import sys
 import logging
 import numbers
 import os
@@ -28,6 +29,7 @@ from astropy.table import Column, MaskedColumn, Table
 from packaging.version import Version
 
 from .operations_lib import normalize_ra_dec
+
 
 # Define the valid columns here as dictionaries. The entry key is the lower-case
 # name of the column, the entry value is the key used in the astropy table of the
@@ -125,6 +127,9 @@ ALLOWED_VO_SERVICES = {
     "wenss": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;",
     "vlssr": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/97&amp;",
 }
+ALLOWED_SURVEYS = {"lotss": "LoTSS", "tgss": "TGSS", "gsm": "GSM", }
+ALLOWED_REMOTE_SERVICES = {*ALLOWED_VO_SERVICES, *ALLOWED_SURVEYS}
+
 
 # Define the various non-VO URLs used for downloading sky models
 TGSS_URL = "http://tgssadr.strw.leidenuniv.nl/cgi-bin/gsmv5.cgi"
@@ -612,7 +617,7 @@ def processLine(line, metaDict, colNames):
     line = line.strip("\n")
     a = re.search(r"\[.*\]", line)
     if a is not None:
-        b = line[a.start() : a.end()]
+        b = line[a.start(): a.end()]
         c = b.strip("[]")
         if "," in c:
             c = c.replace(",", ";")
@@ -683,16 +688,20 @@ def _parse_sexagesimal(values, hourangle=False):
     for i, value in enumerate(values):
         if not isinstance(value, str):
             return None
+
         match = _SEXAGESIMAL.fullmatch(value)
         if match is None or (hourangle and match[2] != ":"):
             return None
+
         first = float(match[1])
         if hourangle and abs(first) >= 24:
             return None
+
         seconds = float(match[4])
         if seconds >= 60:
             # Decimal values just below 60 can round to 60 in float64.
             return None
+
         components[:, i] = first, float(match[3]), seconds
 
     first, minutes, seconds = components
@@ -1886,6 +1895,44 @@ def getLoTSS(position, radius):
 
     return table
 
+
+
+def get_survey(survey, position, radius):
+    """
+    Query a remote astronomical survey for sources within a specified region and
+    return the results as an astropy Table.
+
+    Parameters
+    ----------
+    survey : str
+        Name of the survey to query (e.g.,'LOTSS', 'NVSS' or 'TGSS').
+    position :  list of floats
+        A list specifying a position as [RA, Dec] in either makesourcedb
+        format (e.g., ['12:23:43.21', '+22.34.21.2']) or in degrees (e.g.,
+        [123.2312, 23.3422]).
+    radius : float or str
+        Radius in degrees (if float) or 'value unit' (if str; e.g., '30 arcsec')
+        for cone search region.
+
+
+    Returns
+    -------
+    Table
+        Catalog of sources within the specified region.
+
+    Raises
+    ------
+    ValueError
+        If the specified survey is not recognized. 
+    """
+    
+    if survey := ALLOWED_SURVEYS.get(survey.lower()):
+        query_method = getattr(sys.modules[__name__], f"get{survey}")
+        return query_method(position, radius)
+
+    raise ValueError(
+            f"Survey {survey} is not recognized. Allowed surveys are: "
+            f"{ALLOWED_SURVEYS}")
 
 def makeEmptyTable():
     """
