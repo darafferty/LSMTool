@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import pyvo
 from astropy.coordinates import Angle
 from astropy.table import Table
 
@@ -11,6 +12,7 @@ from lsmtool.operations_lib import normalize_ra_dec
 from lsmtool.skymodel import SkyModel
 from lsmtool.tableio import (
     RADec2Angle,
+    coneSearch,
     loadAstropyTableFromLSM,
     loadTableFromLSM,
     skyModelReader,
@@ -340,3 +342,16 @@ def test_sexagesimal_random_coordinates_match_astropy(monkeypatch):
 def test_sexagesimal_invalid_input_still_raises(ra, dec):
     with pytest.raises(ValueError, match="not understood"):
         RADec2Angle(ra, dec)
+
+
+def test_cone_search_pyvo_exception(mocker):
+    """
+    Verifies that a VO cone search raises ConnectionError on pyvo exceptions.
+    """
+    mocker.patch(
+        "pyvo.conesearch",
+        side_effect=pyvo.dal.exceptions.DALFormatError("network error"),
+    )
+
+    with pytest.raises(ConnectionError):
+        _ = coneSearch("nvss", [123.2312, 23.3422], 1.0)

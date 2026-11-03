@@ -243,7 +243,7 @@ def download_skymodel_panstarrs(cone_params, skymodel_path):
                 f.writelines(out_lines)
             return True
         return False
-    except (pyvo.dal.exceptions.DALQueryError, pyvo.dal.DALServiceError) as exc:
+    except pyvo.dal.exceptions.DALAccessError as exc:
         logger.warning("Pan-STARRS request failed: %s", exc)
         return False
 
