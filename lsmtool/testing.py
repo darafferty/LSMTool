@@ -234,6 +234,7 @@ class Uniform(rv_continuous):
 RandomState = Optional[int | np.random.RandomState | np.random.Generator]
 RandomVariate = Optional[rv_frozen | Constant]
 
+
 class Sampler:
     """
     Mixin class for sampling random variables defined as dataclass fields.
@@ -740,7 +741,7 @@ class CovarianceMatrixGenerator(ConditionalSampler):
 
     std_ra: RandomVariate = Uniform(0.5, 1)
     std_dec: RandomVariate = Uniform(0.5, 1)
-    cor: RandomVariate = cosine(-1, 1)
+    cor: RandomVariate = cosine(scale=1 / np.pi)
 
     def validate(self, sample: dict, _samples: dict):
         sigma = self.get_matrix(**sample)
@@ -1235,8 +1236,7 @@ class SourceClusters:
         ]
         self.probabilities = probabilities
 
-    @property
-    def n_clusters(self):
+    def __len__(self):
         return len(self.clusters)
 
     def get_names(self, prefix="Patch"):
@@ -1286,9 +1286,9 @@ class SourceClusters:
         coords = np.empty((size, 2))
         labels = np.empty(size, dtype=int)
         cluster_indices = random_state.choice(
-            self.n_clusters,
+            len(self),
             p=self.probabilities,
-            size=n,
+            size=size,
         )
         index = 0
         for cluster_index, n_points in zip(
@@ -1444,7 +1444,7 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
 
     def get_patches(self, samples: dict, _n_patches=None):
 
-        patch_names = self.clusters.get_names(prefix=prefix)
+        patch_names = self.clusters.get_names()
         ra, dec = self.get_coords(
             {
                 "ra": self.clusters.positions[:, 0],
@@ -1456,7 +1456,7 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
         patch_defs[:, 0] = " "
         patch_defs[:, 1] = ""
         patch_defs[:, 2] = patch_names
-        patch_defs[:, 3] = ra_patch
-        patch_defs[:, 4] = dec_patch
+        patch_defs[:, 3] = ra
+        patch_defs[:, 4] = dec
 
         return patch_defs, patch_names
