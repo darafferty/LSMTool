@@ -5,10 +5,12 @@ Utility functions used for testing.
 import contextlib
 import io
 import itertools as itt
+import numbers
 import warnings
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, TypeAlias, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -29,6 +31,31 @@ from scipy.stats.distributions import (
 from .io import PathLike, load
 from .skymodel import SkyModel
 from .utils import format_coordinates
+
+# ---------------------------------------------------------------------------- #
+# Type aliases
+
+ST = TypeVar("ST")
+ArrayLike1D: TypeAlias = Sequence[ST]
+ArrayLike2D: TypeAlias = Sequence[ArrayLike1D]
+ArrayLike3D: TypeAlias = Sequence[ArrayLike2D]
+
+
+Array1D: TypeAlias = np.ndarray[tuple[int], np.dtype[ST]]
+Array2D: TypeAlias = np.ndarray[tuple[int, int], np.dtype[ST]]
+Array3D: TypeAlias = np.ndarray[tuple[int, int, int], np.dtype[ST]]
+
+RandomVariate: TypeAlias = Optional[rv_frozen | rv_sample]
+RandomState: TypeAlias = Optional[
+    numbers.Integral | np.random.RandomState | np.random.Generator
+]
+SampleDict: TypeAlias = dict[str, np.ndarray]
+SampleSize: TypeAlias = numbers.Integral | tuple[numbers.Integral, ...]
+
+PatchDefinitions: TypeAlias = Optional[Array2D[str]]
+
+
+# ---------------------------------------------------------------------------- #
 
 
 def get_context(expected: Exception | object, **kws):
@@ -86,7 +113,7 @@ def check_skymodels_equal(
     left_filename: PathLike,
     right_filename: PathLike,
     check_patch_names_sizes: bool = True,
-):
+) -> bool:
     """
     Compares the contents of two skymodels to check for equality.
 
@@ -115,7 +142,7 @@ def check_skymodels_equal(
 
 def check_columns_equal(
     left: SkyModel, right: SkyModel, check_patch_names_sizes: bool
-):
+) -> bool:
     """
     Checks the columns of two skymodels for equality.
 
@@ -156,7 +183,7 @@ def check_columns_equal(
 
 def check_patches_equal(
     left: SkyModel, right: SkyModel, check_patch_names_sizes: bool
-):
+) -> bool:
     """
     Checks the patches of two skymodels for equality.
 
@@ -207,20 +234,24 @@ class Constant(rv_sample):
     A frozen constant distribution that always returns the same value.
     """
 
-    def __init__(self, value: float):
+    def __init__(self, value: numbers.Real):
         super().__init__(values=([value], [1]))
 
 
 class Uniform(rv_continuous):
-    def __new__(cls, a: float, b: float):
+    """
+    A frozen uniform distribution over a specified range.
+    """
+
+    def __new__(cls, a: numbers.Real, b: numbers.Real):
         """
         Return a frozen uniform distribution with the specified range.
 
         Parameters
         ----------
-        a : float
+        a : numbers.Real
             The lower bound of the uniform distribution.
-        b : float
+        b : numbers.Real
             The upper bound of the uniform distribution.
 
         Returns
@@ -231,10 +262,6 @@ class Uniform(rv_continuous):
         return uniform(loc=a, scale=(b - a))
 
 
-RandomState = Optional[int | np.random.RandomState | np.random.Generator]
-RandomVariate = Optional[rv_frozen | Constant]
-
-
 class Sampler:
     """
     Mixin class for sampling random variables defined as dataclass fields.
@@ -242,11 +269,11 @@ class Sampler:
 
     def sample(
         self,
-        size: int,
+        size: SampleSize,
         random_state: RandomState = None,
         ignore: list[str] = None,
         **kws,
-    ):
+    ) -> SampleDict:
         """
         Generate samples for the distributions defined by the dataclass fields.
 
@@ -284,7 +311,7 @@ class Sampler:
         return samples
 
 
-def _squeeze(samples):
+def _squeeze(samples: SampleDict) -> SampleDict:
     return {key: np.squeeze(datum) for key, datum in samples.items()}
 
 
@@ -296,11 +323,11 @@ class ConditionalSampler(Sampler):
 
     def sample(
         self,
-        size: int,
-        max_rejections: int = 100,
+        size: SampleSize,
+        max_rejections: numbers.Integral = 100,
         random_state: RandomState = None,
         **kws,
-    ):
+    ) -> SampleDict:
 
         if isinstance(random_state, int):
             # Need to deal with integer random states here since we will reuse
@@ -353,12 +380,14 @@ class ConditionalSampler(Sampler):
         # convert to dict
         return {key: samples[key] for key in self.__dataclass_fields__}
 
-    def dtype(self, **dtypes):
+    def dtype(
+        self, **dtypes: dict[str, np.typing.DTypeLike]
+    ) -> list[tuple[str, type]]:
         return [
             (key, dtypes.get(key, float)) for key in self.__dataclass_fields__
         ]
 
-    def validate(self, _sample, _samples):
+    def validate(self, _sample: SampleDict, _samples: SampleDict) -> bool:
         return True
 
 
@@ -419,7 +448,7 @@ class SkyModelGenerator(Sampler):
     orientation: RandomVariate = Uniform(0, 180)
 
     @property
-    def column_order(self):
+    def column_order(self) -> list[str]:
         """
         Return the order of the fields, including name, type, and patch first.
         """
@@ -427,10 +456,10 @@ class SkyModelGenerator(Sampler):
 
     def __call__(
         self,
-        n_sources: int,
+        n_sources: numbers.Integral,
         n_patches: Optional[int] = None,
         **kws,
-    ):
+    ) -> tuple[SampleDict, PatchDefinitions]:
         """
         Generate a random skymodel.
 
@@ -463,10 +492,10 @@ class SkyModelGenerator(Sampler):
 
     def sample(
         self,
-        n_sources: int,
-        n_patches: Optional[int] = None,
+        n_sources: numbers.Integral,
+        n_patches: Optional[numbers.Integral] = None,
         **kws,
-    ):
+    ) -> tuple[SampleDict, PatchDefinitions]:
         """
         Generate a random sample of sources from the specified distributions,
         returning a dictionary with parameter names as keys and arrays of
@@ -498,7 +527,9 @@ class SkyModelGenerator(Sampler):
 
         return samples, patch_defs
 
-    def get_coords(self, samples: dict):
+    def get_coords(
+        self, samples: SampleDict
+    ) -> tuple[Array1D[str], Array1D[str]]:
         """
         Generate the RA and Dec coordinates for the sources in the skymodel.
 
@@ -514,7 +545,7 @@ class SkyModelGenerator(Sampler):
         """
         return format_coordinates(samples["ra"], samples["dec"], pad=True)
 
-    def get_names(self, samples: dict):
+    def get_names(self, samples: SampleDict) -> np.ndarray[str]:
         """
         Generate unique source names for the specified number of sources.
 
@@ -542,7 +573,7 @@ class SkyModelGenerator(Sampler):
             ),
         )
 
-    def get_types(self, samples: dict):
+    def get_types(self, samples: SampleDict) -> Array1D[str]:
         """
         Generate source types for the specified number of sources.
 
@@ -562,7 +593,9 @@ class SkyModelGenerator(Sampler):
         n_sources = len(samples["ra"])
         return np.full(n_sources, "GAUSSIAN")
 
-    def get_patches(self, samples: dict, n_patches):
+    def get_patches(
+        self, samples: SampleDict, n_patches: numbers.Integral
+    ) -> tuple[PatchDefinitions, Array1D[str]]:
         """
         Get the patch definitions and the patch column for the given samples.
 
@@ -606,7 +639,13 @@ class SkyModelGenerator(Sampler):
 
         return patch_defs, patch_col
 
-    def _patch_definitions(self, n_patches, patch_names, ra, dec):
+    def _patch_definitions(
+        self,
+        n_patches: numbers.Integral,
+        patch_names: Array1D[str],
+        ra: Array1D[str],
+        dec: Array1D[str],
+    ) -> PatchDefinitions:
         patch_defs = np.empty((n_patches, 5), object)
         patch_defs[:, 0] = " "
         patch_defs[:, 1] = ""
@@ -615,7 +654,7 @@ class SkyModelGenerator(Sampler):
         patch_defs[:, 4] = dec
         return patch_defs
 
-    def get_minor_axis(self, samples: dict):
+    def get_minor_axis(self, samples: SampleDict) -> Array1D[float]:
         """
         Generate values for the minor axis of the sources, ensuring that they
         are smaller than the corresponding major axis values.
@@ -633,7 +672,7 @@ class SkyModelGenerator(Sampler):
         major_axis = samples["major_axis"]
         return major_axis * self.minor_axis.rvs(size=major_axis.size)
 
-    def get_header(self, samples: dict):
+    def get_header(self, samples: SampleDict) -> str:
         """
         Generate the makesourcedb format string for the header.
 
@@ -652,7 +691,7 @@ class SkyModelGenerator(Sampler):
             np.char.replace(np.char.title(keys), "_", "")
         )
 
-    def to_array(self, samples: dict):
+    def to_array(self, samples: SampleDict) -> Array2D[object]:
         """
         Convert the samples dictionary to a numpy array by stacking the columns
         in the correct order.
@@ -676,11 +715,11 @@ class SkyModelGenerator(Sampler):
     def to_file(
         self,
         filename: PathLike,
-        n_sources: int,
+        n_sources: numbers.Integral,
         n_patches: Optional[int] = None,
         random_state: RandomState = None,
         **kws,
-    ):
+    ) -> None:
         """
         Generate a random skymodel and save it to a file.
 
@@ -743,11 +782,16 @@ class CovarianceMatrixGenerator(ConditionalSampler):
     std_dec: RandomVariate = Uniform(0.5, 1)
     cor: RandomVariate = cosine(scale=1 / np.pi)
 
-    def validate(self, sample: dict, _samples: dict):
+    def validate(self, sample: SampleDict, _samples: SampleDict):
         sigma = self.get_matrix(**sample)
         return np.linalg.det(sigma) != 0
 
-    def get_matrix(self, std_ra, std_dec, cor):
+    def get_matrix(
+        self,
+        std_ra: ArrayLike1D[float],
+        std_dec: ArrayLike1D[float],
+        cor: ArrayLike1D[float],
+    ) -> Array2D[float] | Array3D[float]:
 
         cov = cor * std_ra * std_dec
         sigma = np.squeeze([[std_ra**2, cov], [cov, std_dec**2]])
@@ -757,13 +801,17 @@ class CovarianceMatrixGenerator(ConditionalSampler):
 
         return sigma
 
-    def rvs(self, size: int, *args, **kws):
+    def rvs(self, size: SampleSize, *args, **kws) -> Array3D[float]:
         samples = super().sample(size, *args, **kws)
         # All information is contained in the covariance matrix
         return self.get_matrix(**samples)
 
 
-def mahalanobis_distance(pos, positions, covariances):
+def mahalanobis_distance(
+    pos: Array1D[float],
+    positions: Array2D[float],
+    covariances: Array2D[float],
+) -> Array1D[float]:
     """
     Fast computation of the Mahalanobis distances from point to a set of
     reference poistions (cluster centres), given their covariance matrices.
@@ -773,7 +821,7 @@ def mahalanobis_distance(pos, positions, covariances):
     pos : array-like
         Coordinate position (RA, Dec) as array-like of size 2.
     positions : array-like
-        Reference positions (RA, DEc) as array-like of size (N, 2).
+        Reference positions (RA, Dec) as array-like of size (N, 2).
     covariances : array-like
         Covariance matrices as array-like of of size (N, 2, 2).
 
@@ -804,15 +852,15 @@ class ClusterGenerator(ConditionalSampler):
     dec: RandomVariate = Uniform(-90, 90)
     cov: RandomVariate = field(default_factory=CovarianceMatrixGenerator)
 
-    def sample(self, n: int, *args, **kws):
-        samples = super().sample(n, *args, **kws)
+    def sample(self, size: SampleSize, *args, **kws) -> SampleDict:
+        samples = super().sample(size, *args, **kws)
         samples["pos"] = np.array([samples.pop("ra"), samples.pop("dec")]).T
         return samples
 
-    def dtype(self):
+    def dtype(self) -> list[tuple[str, type]]:
         return super().dtype(cov=(float, (2, 2)))
 
-    def validate(self, sample: dict, samples: dict):
+    def validate(self, sample: SampleDict, samples: SampleDict) -> bool:
         # ensure cluster centres are far enough appart
         positions = np.array([samples["ra"], samples["dec"]]).T
         not_yet_generated = np.isnan(positions).any(1)
@@ -855,7 +903,13 @@ class Cluster:
     }
 
     @classmethod
-    def from_shape_parameters(cls, pos, a, b, theta=0):
+    def from_shape_parameters(
+        cls,
+        pos: Array2D,
+        a: numbers.Real,
+        b: numbers.Real,
+        theta: numbers.Real = 0.0,
+    ) -> "Cluster":
         """
         Initialize a `Cluster` object from the shape parameters of the
         covariance ellipse.
@@ -865,11 +919,11 @@ class Cluster:
         pos : array-like
             Position (RA, Dec) of the cluster centre as an array-like object of
             shape (2,).
-        a : float
+        a : numbers.Real
             Semi-major axis of the covariance ellipse. For uncorrellated
             variables, this corresponds to the larger standard deviation of the
             two variables.
-        b : float
+        b : numbers.Real
             Semi-minor axis of the covariance ellipse. For uncorrellated
             variables, this corresponds to the smaller standard deviation of the
             two variables.
@@ -889,7 +943,7 @@ class Cluster:
 
         return cls(pos, covariance_matrix)
 
-    def __init__(self, pos, cov):
+    def __init__(self, pos: ArrayLike1D[float], cov: ArrayLike2D[float]):
         """
         Initialize the `Cluster` source generator.
 
@@ -908,12 +962,12 @@ class Cluster:
         self.covariance = np.array(cov)
 
     @property
-    def position(self):
+    def position(self) -> Array1D[float]:
         """The position of the cluster centre in RA, Dec coordinates."""
         return self._position
 
     @position.setter
-    def position(self, position):
+    def position(self, position: ArrayLike1D[numbers.Real]):
         position = np.array(position)
         if position.shape != (2,):
             raise ValueError("Position must be a 2-element array.")
@@ -923,12 +977,12 @@ class Cluster:
         del self.distribution
 
     @property
-    def covariance(self):
+    def covariance(self) -> Array2D[float]:
         """The 2x2 covariance matrix of the source distribution."""
         return self._sigma
 
     @covariance.setter
-    def covariance(self, sigma):
+    def covariance(self, sigma: ArrayLike2D[numbers.Real]):
         # Check tht the covaraince matrix is valid. If it is valid, et the
         # `_sigma` attribute and invalidate the cached properties derived from
         # it.
@@ -948,16 +1002,18 @@ class Cluster:
         del self.angle
 
     @lazyproperty
-    def precision(self):
+    def precision(self) -> Array2D[float]:
         """Precision matrix for the source distribution."""
         return np.linalg.inv(self.covariance)
 
     @lazyproperty
-    def distribution(self):
+    def distribution(self) -> rv_continuous:
         """The multivariate normal distribution representing the cluster."""
         return multivariate_normal(mean=self.position, cov=self.covariance)
 
-    def rvs(self, size, random_state=None):
+    def rvs(
+        self, size: SampleSize, random_state: RandomState = None
+    ) -> np.ndarray[float]:
         if size <= 0:
             return np.ndarray((0, 2), float)
 
@@ -971,22 +1027,22 @@ class Cluster:
         return np.array([ra, dec]).T
 
     @property
-    def var_ra(self):
+    def var_ra(self) -> numbers.Real:
         """Variance of the RA coordinate for all clusters."""
         return self.covariance[0, 0]
 
     @property
-    def var_dec(self):
+    def var_dec(self) -> numbers.Real:
         """Variance of the Dec coordinate for all clusters."""
         return self.covariance[1, 1]
 
     @property
-    def cov(self):
+    def cov(self) -> numbers.Real:
         """Covariance between the RA and Dec coordinates for all clusters."""
         return self.covariance[0, 1]
 
     @lazyproperty
-    def semi_axes(self):
+    def semi_axes(self) -> tuple[numbers.Real, numbers.Real]:
         """
         Compute the semi-major and semi-minor axes of the ellipses
         representing the clusters based on their covariance matrices.
@@ -1010,7 +1066,7 @@ class Cluster:
         return a, b
 
     @property
-    def semi_major_axis(self):
+    def semi_major_axis(self) -> numbers.Real:
         """
         The semi-major axes of the iso-probability ellipse of the source
         distribution. This is defined as the larger of the two standard
@@ -1020,7 +1076,7 @@ class Cluster:
         return a
 
     @property
-    def semi_minor_axis(self):
+    def semi_minor_axis(self) -> numbers.Real:
         """
         The semi-minr axes of the iso-probability ellipse of the source
         distribution. This is defined as the smaller of the two standard
@@ -1030,7 +1086,7 @@ class Cluster:
         return b
 
     @lazyproperty
-    def angle(self):
+    def angle(self) -> numbers.Real:
         """
         Rotation angle of the the iso-probability ellipse of the source
         distribution. This is the counter-clockwise angle from the positive
@@ -1042,11 +1098,11 @@ class Cluster:
 
     def plot(
         self,
-        axes=None,
-        n_sigma: float = 3.0,
+        axes: plt.Axes = None,
+        n_sigma: numbers.Real = 3.0,
         mark_centre: Optional[bool | dict] = None,
         **kws,
-    ):
+    ) -> tuple[Ellipse, Optional[plt.Line2D]]:
         """
         Plot the covariance ellipse of the cluster and optionally mark the
         centre position.
@@ -1081,7 +1137,7 @@ class Cluster:
             if mark_centre in (True, None):
                 mark_centre = {}
 
-            centre_mark = axes.plot(
+            (centre_mark,) = axes.plot(
                 *self.position.T,
                 **(
                     self._plot_style_defaults["centre"]
@@ -1103,7 +1159,7 @@ class Cluster:
         return ellipse, centre_mark
 
 
-def _normalize_plot_kws(kws):
+def _normalize_plot_kws(kws: dict[str, Any]) -> dict[str, Any]:
     remap = {
         "c": "color",
         "ec": "edgecolor",
@@ -1119,13 +1175,28 @@ def _normalize_plot_kws(kws):
 
 class AttrVector:
     """
-    Descriptor class for vectorised attribute lookup.
+    Descriptor class for vectorised attribute lookup on a collection of objects.
+
+    Example
+    -------
+    ... class Named:
+    ...    def __init__(self, name: str):
+    ...        self.name = name
+    ...
+    ... class ObjectSequence(list):
+    ...    names = AttrVector("name")
+    ...
+    ... seq = ObjectSequence([Named('hello'), Named('world')])
+    ... print(seq.names)
+    ['hello', 'world']
     """
 
     def __init__(self, name: str):
         self.name = name
 
-    def __get__(self, instance: Optional["SourceClusters"], _):
+    def __get__(
+        self, instance: Optional["SourceClusters"], _owner: type = None
+    ):
         if instance is None:
             return self
 
@@ -1139,6 +1210,8 @@ class SourceClusters:
     A class representing clustered sky coordinates.
     """
 
+    # Vectorized attribute lookup on `Cluster` objects stored in the list at the
+    # `clusters` attribute
     positions = AttrVector("position")
     covariances = AttrVector("covariance")
     precisions = AttrVector("precision")
@@ -1146,6 +1219,7 @@ class SourceClusters:
     semi_minor_axes = AttrVector("semi_minor_axis")
     angles = AttrVector("angle")
 
+    # Default plot style for the source clusters visualization
     _plot_style_defaults = {
         "centre": {
             "color": "k",
@@ -1161,11 +1235,11 @@ class SourceClusters:
     @classmethod
     def generate(
         cls,
-        n_clusters: int,
-        probabilities=None,
+        n_clusters: numbers.Integral,
+        probabilities: Optional[Sequence[float]] = None,
         random_state: RandomState = None,
         **config,
-    ):
+    ) -> "SourceClusters":
         """
         Generates a random set of clusters using the `ClusterGenerator` class,
         and initializes a `SourceClusters` instance with the generated cluster
@@ -1199,7 +1273,12 @@ class SourceClusters:
             probabilities=probabilities,
         )
 
-    def __init__(self, positions, covariances, probabilities=None):
+    def __init__(
+        self,
+        positions: ArrayLike2D[float],
+        covariances: ArrayLike3D[float],
+        probabilities: Optional[ArrayLike1D[float]] = None,
+    ):
         """
         Initialize the clustered coordinates with centres and covariances.
 
@@ -1239,7 +1318,7 @@ class SourceClusters:
     def __len__(self):
         return len(self.clusters)
 
-    def get_names(self, prefix="Patch"):
+    def get_names(self, prefix: str = "Patch") -> Array1D[str]:
         """
         Generate names for each cluster based on the given prefix.
 
@@ -1255,7 +1334,9 @@ class SourceClusters:
         """
         return np.char.add(prefix, np.arange(len(self)).astype(str))
 
-    def sample(self, size: int, random_state: RandomState = None, **_kws):
+    def sample(
+        self, size: SampleSize, random_state: RandomState = None, **_kws
+    ) -> SampleDict:
         """
         Generate random samples for the clustered sources.
 
@@ -1312,10 +1393,10 @@ class SourceClusters:
     def plot(
         self,
         axes: Optional[plt.Axes] = None,
-        n_sigma: float = 3.0,
+        n_sigma: numbers.Real = 3.0,
         mark_centres: Optional[bool | dict] = None,
         **kws,
-    ):
+    ) -> plt.Figure:
         """
         Plot the covariance ellipses of the clusters and optionally mark the
         cluster centres.
@@ -1405,9 +1486,9 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
 
     def sample(
         self,
-        n_sources: int,
+        n_sources: numbers.Integral,
         **kws,
-    ):
+    ) -> tuple[SampleDict, PatchDefinitions]:
         """
         Generate a random sample of sources (with clustered positions),
         returning a dictionary with parameter names as keys and arrays of
@@ -1442,7 +1523,9 @@ class ClusteredSkyModelGenerator(SkyModelGenerator):
 
         return samples, patch_defs
 
-    def get_patches(self, samples: dict, _n_patches=None):
+    def get_patches(
+        self, _samples: SampleDict, _n_patches: int = None
+    ) -> tuple[PatchDefinitions, Array1D[str]]:
 
         patch_names = self.clusters.get_names()
         ra, dec = self.get_coords(
