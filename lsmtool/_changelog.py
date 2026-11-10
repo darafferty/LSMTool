@@ -12,7 +12,7 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
-    Unreleased
+    2026/11/10 - Version 1.10.0
 
         Speed up coordinate and patch handling
             Vectorize coordinate normalization and batch patch positions
