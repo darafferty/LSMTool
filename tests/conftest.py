@@ -24,7 +24,7 @@ TEST_PATH = Path(__file__).parent
 TEST_DATA_PATH = TEST_PATH / "resources"
 
 # Path to the LOFAR HBA mock measurement set
-#LOFAR_HBA_URL = "https://support.astron.nl/software/ci_data/EveryBeam/L258627-one-timestep.tar.bz2"
+# LOFAR_HBA_URL = "https://support.astron.nl/software/ci_data/EveryBeam/L258627-one-timestep.tar.bz2"
 LOFAR_HBA_URL = "https://users.astron.nl/dijkema/software/ci_data/EveryBeam/L258627-one-timestep.tar.bz2"
 
 # Random number generator seed for reproducibility
