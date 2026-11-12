@@ -56,6 +56,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+sofia = [ "sofia2 @ git+https://gitlab.com/SoFiA-Admin/SoFiA-2.git@b10ab4ef" ]
 docs = [ "setuptools-scm", "sphinx>=7.1", "sphinx-rtd-theme>=0.4.3" ]
 tests = [
     "pytest",
@@ -82,6 +83,7 @@ convert_oskar_skymodel = "lsmtool.convert_oskar_skymodel:main"
 [dependency-groups]
 dev = [ "pyproject-fmt", "ruff" ]
 docs = [ "lsmtool[docs]" ]
+sofia = [ "lsmtool[sofia]" ]
 tests = [ "lsmtool[tests]" ]
 
 # ============================================================================ #
