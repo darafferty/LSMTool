@@ -240,7 +240,6 @@ class TestSkyModelGenerator:
         return request.param
 
     def test_skymodel_generator_samples(self, config, rng):
-
         # create skymodel generator and draw a random sample of sources
         generator = SkyModelGenerator(**config)
         samples, _ = generator.sample(n_sources=1_000, random_state=rng)
@@ -268,7 +267,6 @@ class TestSkyModelGenerator:
 
     @pytest.mark.parametrize("n_sources", [1, 1000])
     def test_read_write(self, tmp_path, config, n_sources, rng):
-
         # create skymodel generator and draw a random sample of sources
         generator = SkyModelGenerator(**config)
         generator.to_file(
