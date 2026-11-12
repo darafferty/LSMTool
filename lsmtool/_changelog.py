@@ -12,6 +12,34 @@ def changelog():
     LSMTool Changelog.
     -----------------------------------------------
 
+    2026/11/10 - Version 1.10.0
+
+        Speed up coordinate and patch handling
+            Vectorize coordinate normalization and batch patch positions
+                (RD/LSMTool!154)
+            Reduce redundant coordinate conversions and reuse WCS objects
+                (GEC-605, RD/LSMTool!155; GEC-606, RD/LSMTool!176)
+            Speed up patch lookups and column aggregation
+                (GEC-606, RD/LSMTool!175, RD/LSMTool!166)
+
+        Improve skymodel robustness and maintainability
+            Apply beam attenuation consistently to aggregated flux columns
+                (GEC-606, RD/LSMTool!170)
+            Fix PyVO cone search exceptions not being caught
+                (fix_pyvo_exception_not_caught, RD/LSMTool!180)
+            Simplify SkyModel initialization and remove legacy Python 2 code
+                (GEC-681, RD/LSMTool!173; GEC-605, RD/LSMTool!156)
+
+        Extend testing and development support
+            Add patch definitions to SkyModelGenerator and use SciPy
+            distribution base classes for its custom distributions
+                (GEC-605, RD/LSMTool!160; GEC-606, RD/LSMTool!178)
+            Add sky-model benchmarks and expand coordinate and aggregation tests
+                (GEC-605, RD/LSMTool!161, RD/LSMTool!157;
+                 GEC-606, RD/LSMTool!168)
+            Add Python 3.14 tests and enforce linting in CI
+                (RD/LSMTool!167; GEC-620, RD/LSMTool!158)
+
     2026/09/25 - Version 1.9.0
 
         Improve faceting and region handling
