@@ -651,6 +651,19 @@ def prepare_points_for_tessellate(cal_coords, bounding_box):
 
     return points_centre, points
 
+def split_large_facets(facet_points, facet_polys, sky_model):
+
+    import shapely
+    polys = [shapely.Polygon(facet_coords) for facet_coords in facet_polys]
+    areas = [p.area for p in polys]
+    median_area = np.median(areas)
+    area_factors = [a/median_area for a in areas]
+    area_factor_threshold = 1.4
+    large_area_mask = [f > area_factor_threshold for f in area_factors]
+    breakpoint()
+
+    return facet_points, facet_polys
+
 
 def in_box(cal_coords, bounding_box):
     """
