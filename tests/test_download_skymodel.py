@@ -316,9 +316,7 @@ def test_download_skymodel_panstarrs(cone_params, tmp_path, mocker):
         return [{"objID": "1", "RAJ2000": 10.75, "DEJ2000": 5.34}]
 
     mock_response.to_table = mock_to_table
-    mocker.patch(
-        "lsmtool.tableio.vo.conesearch", return_value=mock_response
-    )
+    mocker.patch("lsmtool.tableio.vo.conesearch", return_value=mock_response)
 
     # Act
     download_skymodel_panstarrs(cone_params, str(skymodel_path))
@@ -341,9 +339,7 @@ def test_download_skymodel_panstarrs_not_ok(cone_params, tmp_path, mocker):
     mock_response = mocker.Mock()
     mock_response.status = ["NOT_OK"]
     mock_response.to_table = [{}]
-    mocker.patch(
-        "lsmtool.tableio.vo.conesearch", return_value=mock_response
-    )
+    mocker.patch("lsmtool.tableio.vo.conesearch", return_value=mock_response)
 
     # Act
     success = download_skymodel_panstarrs(cone_params, str(skymodel_path))
