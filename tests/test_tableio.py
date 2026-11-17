@@ -17,6 +17,7 @@ from lsmtool.tableio import (
     loadTableFromLSM,
     skyModelReader,
     validateLSMFormat,
+    vizierConeSearch,
 )
 
 _EXPECTED_LSM_COLUMN_NAMES = [
@@ -355,3 +356,33 @@ def test_cone_search_pyvo_exception(mocker):
 
     with pytest.raises(ConnectionError):
         _ = coneSearch("nvss", [123.2312, 23.3422], 1.0)
+
+
+def test_vizier_cone_search_falls_back_to_mirror(mocker):
+    """
+    Verifies that a VizieR cone search tries the next server on failure.
+    """
+    result = mocker.Mock()
+    mock_conesearch = mocker.patch(
+        "pyvo.conesearch",
+        side_effect=[pyvo.dal.exceptions.DALServiceError("down"), result],
+    )
+
+    assert vizierConeSearch("/path", [1.0, 2.0], 0.5) is result
+    assert [call.args[0] for call in mock_conesearch.call_args_list] == [
+        server + "/path" for server in tableio.VIZIER_SERVERS[:2]
+    ]
+
+
+def test_vizier_cone_search_all_servers_fail(mocker):
+    """
+    Verifies that a VizieR cone search raises if all servers fail.
+    """
+    mock_conesearch = mocker.patch(
+        "pyvo.conesearch",
+        side_effect=pyvo.dal.exceptions.DALServiceError("down"),
+    )
+
+    with pytest.raises(pyvo.dal.exceptions.DALServiceError):
+        vizierConeSearch("/path", [1.0, 2.0], 0.5)
+    assert mock_conesearch.call_count == len(tableio.VIZIER_SERVERS)

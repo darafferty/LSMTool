@@ -291,7 +291,7 @@ def test_get_panstarrs_request():
 
     # Arrange
     expected_url = (
-        "https://vizier.cds.unistra.fr/viz-bin/conesearch/"
+        "/viz-bin/conesearch/"
         "II/389/ps1_dr2&amp;-out.max=100000&amp;"
         "-out=objID RAJ2000 DEJ2000&amp;Nd=8&amp;"
     )
@@ -317,7 +317,7 @@ def test_download_skymodel_panstarrs(cone_params, tmp_path, mocker):
 
     mock_response.to_table = mock_to_table
     mocker.patch(
-        "lsmtool.download_skymodel.pyvo.conesearch", return_value=mock_response
+        "lsmtool.tableio.vo.conesearch", return_value=mock_response
     )
 
     # Act
@@ -342,7 +342,7 @@ def test_download_skymodel_panstarrs_not_ok(cone_params, tmp_path, mocker):
     mock_response.status = ["NOT_OK"]
     mock_response.to_table = [{}]
     mocker.patch(
-        "lsmtool.download_skymodel.pyvo.conesearch", return_value=mock_response
+        "lsmtool.tableio.vo.conesearch", return_value=mock_response
     )
 
     # Act
@@ -362,7 +362,7 @@ def test_download_skymodel_panstarrs_request_exception(
     skymodel_path = tmp_path / "panstarrs.sky"
 
     mocker.patch(
-        "lsmtool.download_skymodel.pyvo.conesearch",
+        "lsmtool.tableio.vo.conesearch",
         side_effect=pyvo.dal.exceptions.DALServiceError("network error"),
     )
     mock_warning = mocker.patch("lsmtool.download_skymodel.logger.warning")

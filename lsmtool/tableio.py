@@ -122,10 +122,19 @@ ALLOWED_COLUMN_DEFAULTS = {
 
 REQUIRED_COLUMN_NAMES = ["Name", "Type", "Ra", "Dec", "I"]
 
+# VizieR servers, tried in order until one succeeds. The first is the main
+# CDS server, the others are official mirrors
+VIZIER_SERVERS = [
+    "https://vizier.cds.unistra.fr",
+    "https://vizier.cfa.harvard.edu",
+    "https://vizier.idia.ac.za",
+]
+
+# VizieR query paths for the VO services (relative to the VizieR server URL)
 ALLOWED_VO_SERVICES = {
-    "nvss": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/65&amp;",
-    "wenss": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/62A&amp;",
-    "vlssr": "http://vizier.u-strasbg.fr/viz-bin/votable/-A?-source=VIII/97&amp;",
+    "nvss": "/viz-bin/votable/-A?-source=VIII/65&amp;",
+    "wenss": "/viz-bin/votable/-A?-source=VIII/62A&amp;",
+    "vlssr": "/viz-bin/votable/-A?-source=VIII/97&amp;",
 }
 ALLOWED_SURVEYS = {"lotss": "LoTSS", "tgss": "TGSS", "gsm": "GSM", }
 ALLOWED_REMOTE_SERVICES = {*ALLOWED_VO_SERVICES, *ALLOWED_SURVEYS}
@@ -1408,7 +1417,7 @@ def coneSearch(VOService, position, radius):
     }
 
     if VOService.lower() in ALLOWED_VO_SERVICES:
-        url = ALLOWED_VO_SERVICES[VOService.lower()]
+        query_path = ALLOWED_VO_SERVICES[VOService.lower()]
     else:
         raise ValueError(
             "VO query service not known. Allowed services are: {0}".format(
@@ -1428,7 +1437,7 @@ def coneSearch(VOService, position, radius):
     except TypeError:
         raise ValueError("VO query radius not understood.")
     try:
-        VOcatalog = vo.conesearch(url, position, radius=radius)
+        VOcatalog = vizierConeSearch(query_path, position, radius)
     except vo.dal.exceptions.DALAccessError as e:
         # DALAccessError is the base class for all PyVO exceptions,
         # so catching it should catch all of them
@@ -1451,6 +1460,44 @@ def coneSearch(VOService, position, radius):
     )
 
     return table
+
+
+def vizierConeSearch(query_path, position, radius):
+    """
+    Performs a VO cone search on VizieR, falling back to mirror servers.
+
+    Each server in VIZIER_SERVERS is tried in turn until one succeeds.
+
+    Parameters
+    ----------
+    query_path : str
+        Query path relative to the VizieR server URL (e.g.,
+        '/viz-bin/votable/-A?-source=VIII/65&amp;')
+    position : list of floats
+        A list specifying a position as [RA, Dec] in degrees
+    radius : float
+        Radius in degrees for cone search region
+
+    Returns
+    -------
+    result : pyvo.dal.SCSResults
+        Result of the cone search
+
+    Raises
+    ------
+    pyvo.dal.exceptions.DALAccessError
+        If the query fails on all servers. The error from the last server
+        tried is raised.
+    """
+    log = logging.getLogger("LSMTool.Load")
+
+    for server in VIZIER_SERVERS:
+        try:
+            return vo.conesearch(server + query_path, position, radius=radius)
+        except vo.dal.exceptions.DALAccessError as e:
+            log.warning("VizieR query to %s failed: %s", server, e)
+            last_error = e
+    raise last_error
 
 
 def convertExternalTable(table, columnMapping, catalogProperties):

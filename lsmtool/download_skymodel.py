@@ -15,6 +15,7 @@ import requests
 
 import lsmtool
 from lsmtool.skymodel import SkyModel
+from lsmtool.tableio import vizierConeSearch
 
 logger = logging.getLogger("LSMTool")
 
@@ -178,7 +179,7 @@ def download_skymodel_catalog(cone_params, catalog, skymodel_path):
 
 def get_panstarrs_request():
     """
-    Create a Pan-STARRS VO URL.
+    Create a Pan-STARRS VO query path, relative to the VizieR server URL.
 
     See https://vizier.cds.unistra.fr/doc/asu-summary.htx for details
     of how the URL is constructed.
@@ -186,9 +187,9 @@ def get_panstarrs_request():
     Returns
     -------
     url : str
-        The Pan-STARRS VO URL.
+        The Pan-STARRS VO query path.
     """
-    url = "https://vizier.cds.unistra.fr/viz-bin/conesearch/"  # VO service URL
+    url = "/viz-bin/conesearch/"  # VO service path
     url += "II/389/ps1_dr2&amp;"  # Pan-STARRS DR2 catalog
     url += "-out.max=100000&amp;"  # up to 100000 output lines
     url += "-out=objID RAJ2000 DEJ2000&amp;"  # output objID, RA, Dec columns
@@ -218,7 +219,7 @@ def download_skymodel_panstarrs(cone_params, skymodel_path):
     logger.info("Downloading skymodel from Pan-STARRS into %s", skymodel_path)
     try:
         url = get_panstarrs_request()
-        result = pyvo.conesearch(
+        result = vizierConeSearch(
             url, [cone_params["ra"], cone_params["dec"]], cone_params["radius"]
         )
         if result.status[0] == "OK":
