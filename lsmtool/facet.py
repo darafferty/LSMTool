@@ -653,30 +653,6 @@ def prepare_points_for_tessellate(cal_coords, bounding_box):
 
     return points_centre, points
 
-
-def _facet_pca_directions(polygon):
-    """
-    Return the minor and major principal-axis directions of a polygon.
-
-    Parameters
-    ----------
-    polygon : shapely.geometry.Polygon
-        Polygon in a local planar coordinate system.
-
-    Returns
-    -------
-    minor_direction : numpy.ndarray
-        Unit vector along the minor axis of the polygon.
-    major_direction : numpy.ndarray
-        Unit vector along the major axis of the polygon.
-    """
-    vertices = np.asarray(polygon.exterior.coords)[:-1]
-    centered = vertices - vertices.mean(axis=0)
-    covariance = np.cov(centered.T)
-    _, eigenvectors = np.linalg.eigh(covariance)
-    return eigenvectors[:, 0], eigenvectors[:, 1]
-
-
 def _split_polygon_at_line(polygon, point, direction):
     """
     Split a polygon with an infinite line through a point.
@@ -742,7 +718,7 @@ def _polygon_to_sky_vertices(polygon, wcs):
         vertices = np.vstack((vertices, vertices[0]))
     return vertices
 
-def _split_facet(  # noqa: PLR0913, PLR0917
+def _split_facet(
     facet_point,
     facet_vertices,
     facet_source_mask,
@@ -826,12 +802,17 @@ def _split_facet(  # noqa: PLR0913, PLR0917
     x_vertices, y_vertices = wcs.world_to_pixel_values(
         vertices[:, 0], vertices[:, 1]
     )
-    polygon = shapely.Polygon(np.column_stack((x_vertices, y_vertices)))
+    poly_coords = np.column_stack((x_vertices, y_vertices))
+    polygon = shapely.Polygon(poly_coords)
     if not polygon.is_valid or polygon.area <= 0:
         log.debug("Facet polygon is invalid; not splitting it.")
         return None
 
-    minor_direction, major_direction = _facet_pca_directions(polygon)
+    # Determine polygon orientation
+    centered = poly_coords - poly_coords.mean(axis=0)
+    covariance = np.cov(centered.T)
+    _, eigenvectors = np.linalg.eigh(covariance)
+    minor_direction, major_direction = eigenvectors[:, 0], eigenvectors[:, 1]
 
     # Project all eligible sources onto the major axis. The sources are
     # sorted by increasing flux, so the brightest source is the last one.
@@ -908,9 +889,9 @@ def _split_facet(  # noqa: PLR0913, PLR0917
     return new_points, new_polys
 
 
-def split_large_facets(  # noqa: PLR0913
-    facet_points,
-    facet_polys,
+def split_large_facets(
+    facet_points_orig,
+    facet_polys_orig,
     sky_model,
     flux_threshold,
     *,
@@ -921,7 +902,7 @@ def split_large_facets(  # noqa: PLR0913
     """
     Split large facets so that both new facets have a bright source.
 
-    A facet is considered large when its area exceeds
+    A facet is considered large when its area is larger than
     `area_factor_threshold` times the median facet area. Each large facet is
     split at most once. The split line runs along the minor axis through the
     midpoint, along the major axis, between the brightest source and a
@@ -930,9 +911,9 @@ def split_large_facets(  # noqa: PLR0913
 
     Parameters
     ----------
-    facet_points : array-like
+    facet_points_orig : array-like
         Facet reference positions in degrees, with shape (n, 2).
-    facet_polys : list of numpy.ndarray
+    facet_polys_orig : list of numpy.ndarray
         Facet polygon vertices in (RA, Dec) degrees.
     sky_model : lsmtool.skymodel.SkyModel
         Sky model containing the source positions and fluxes.
@@ -956,24 +937,26 @@ def split_large_facets(  # noqa: PLR0913
         Facet polygon vertices after splitting.
     """
     log = logging.getLogger(__name__)
-    if len(facet_polys) == 0:
-        return facet_points, facet_polys
 
-    polys = [shapely.Polygon(facet_coords) for facet_coords in facet_polys]
+    # Early returns
+    if len(facet_polys_orig) == 0:
+        return facet_points_orig, facet_polys_orig
+
+    polys = [shapely.Polygon(facet_coords) for facet_coords in facet_polys_orig]
     areas = np.asarray([poly.area for poly in polys], dtype=float)
     median_area = float(np.median(areas))
     if not np.isfinite(median_area) or median_area <= 0:
-        return facet_points, facet_polys
+        return facet_points_orig, facet_polys_orig
 
     large_area_mask = areas > (area_factor_threshold * median_area)
     if not large_area_mask.any():
-        return facet_points, facet_polys
+        return facet_points_orig, facet_polys_orig
 
     source_ra = np.asarray(sky_model.getColValues("Ra"), dtype=float)
     source_dec = np.asarray(sky_model.getColValues("Dec"), dtype=float)
     source_flux = np.asarray(sky_model.getColValues("I"), dtype=float)
     if source_ra.size == 0:
-        return facet_points, facet_polys
+        return facet_points_orig, facet_polys_orig
 
     # Find the sources that lie in each facet. A MOC is used for the
     # containment test so that facets that cross the RA = 0 meridian or
@@ -985,22 +968,23 @@ def split_large_facets(  # noqa: PLR0913
             SkyCoord(*np.asarray(facet_coords).T, unit="deg"),
             max_depth=20,
         ).contains_skycoords(source_coords)
-        for facet_coords in facet_polys
+        for facet_coords in facet_polys_orig
     ]
 
+    # Loop over facets and split them if nesecary
     new_points = []
     new_polys = []
     number_split = 0
-    for index, facet_point in enumerate(facet_points):
-        if not large_area_mask[index]:
-            new_points.append(facet_point)
-            new_polys.append(facet_polys[index])
+    for i_facet in range(len(facet_points_orig)):
+        if not large_area_mask[i_facet]:
+            new_points.append(facet_points_orig[i_facet])
+            new_polys.append(facet_polys_orig[i_facet])
             continue
 
         result = _split_facet(
-            facet_point,
-            facet_polys[index],
-            facet_sources[index],
+            facet_points_orig[i_facet],
+            facet_polys_orig[i_facet],
+            facet_sources[i_facet],
             source_ra,
             source_dec,
             source_flux,
@@ -1009,8 +993,8 @@ def split_large_facets(  # noqa: PLR0913
             min_separation_fraction=min_separation_fraction,
         )
         if result is None:
-            new_points.append(facet_point)
-            new_polys.append(facet_polys[index])
+            new_points.append(facet_points_orig[i_facet])
+            new_polys.append(facet_polys_orig[i_facet])
         else:
             split_points, split_polys = result
             new_points.extend(split_points)
@@ -1026,7 +1010,7 @@ def split_large_facets(  # noqa: PLR0913
         len(areas),
         area_factor_threshold,
     )
-    if isinstance(facet_points, np.ndarray):
+    if isinstance(facet_points_orig, np.ndarray):
         new_points = np.asarray(new_points)
     return new_points, new_polys
 
