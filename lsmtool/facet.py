@@ -653,6 +653,7 @@ def prepare_points_for_tessellate(cal_coords, bounding_box):
 
     return points_centre, points
 
+
 def _split_polygon_at_line(polygon, point, direction):
     """
     Split a polygon with an infinite line through a point.
@@ -717,6 +718,7 @@ def _polygon_to_sky_vertices(polygon, wcs):
     if not np.array_equal(vertices[0], vertices[-1]):
         vertices = np.vstack((vertices, vertices[0]))
     return vertices
+
 
 def _split_facet(
     facet_point,
@@ -839,13 +841,9 @@ def _split_facet(
     for index in range(anchor_index - 1, -1, -1):
         if separations[index] < min_separation:
             continue
-        cut_projection = 0.5 * (
-            projections[anchor_index] + projections[index]
-        )
+        cut_projection = 0.5 * (projections[anchor_index] + projections[index])
         cut_point = centroid + cut_projection * major_direction
-        pieces = _split_polygon_at_line(
-            polygon, cut_point, minor_direction
-        )
+        pieces = _split_polygon_at_line(polygon, cut_point, minor_direction)
         if pieces is None:
             continue
         if min(piece.area for piece in pieces) < min_area:
@@ -856,8 +854,7 @@ def _split_facet(
 
     if split_pieces is None:
         log.debug(
-            "No candidate source gives an acceptable split; not splitting "
-            "it."
+            "No candidate source gives an acceptable split; not splitting it."
         )
         return None
 
