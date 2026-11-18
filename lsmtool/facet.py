@@ -10,11 +10,13 @@ from pathlib import Path
 
 import numpy as np
 import scipy
+import shapely
 from astropy.coordinates import Angle, SkyCoord
 from astropy.wcs import WCS
 from matplotlib import patches
 from mocpy import MOC
 from shapely.geometry import Polygon
+from shapely.ops import split as split_shape
 
 from . import tableio
 from .constants import WCS_ORIGIN, WCS_PIXEL_SCALE
@@ -651,18 +653,474 @@ def prepare_points_for_tessellate(cal_coords, bounding_box):
 
     return points_centre, points
 
-def split_large_facets(facet_points, facet_polys, sky_model):
 
-    import shapely
+def _facet_pca_directions(polygon):
+    """
+    Return the minor and major principal-axis directions of a polygon.
+
+    Parameters
+    ----------
+    polygon : shapely.geometry.Polygon
+        Polygon in a local planar coordinate system.
+
+    Returns
+    -------
+    minor_direction : numpy.ndarray
+        Unit vector along the minor axis of the polygon.
+    major_direction : numpy.ndarray
+        Unit vector along the major axis of the polygon.
+    """
+    vertices = np.asarray(polygon.exterior.coords)[:-1]
+    centered = vertices - vertices.mean(axis=0)
+    covariance = np.cov(centered.T)
+    _, eigenvectors = np.linalg.eigh(covariance)
+    return eigenvectors[:, 0], eigenvectors[:, 1]
+
+
+def _split_polygon_at_line(polygon, point, direction):
+    """
+    Split a polygon with an infinite line through a point.
+
+    Parameters
+    ----------
+    polygon : shapely.geometry.Polygon
+        Polygon to split.
+    point : array-like
+        Point on the splitting line.
+    direction : array-like
+        Direction of the splitting line.
+
+    Returns
+    -------
+    list of shapely.geometry.Polygon or None
+        The two resulting polygon pieces, or None if the split did not
+        produce exactly two polygons.
+    """
+    min_x, min_y, max_x, max_y = polygon.bounds
+    diagonal = np.hypot(max_x - min_x, max_y - min_y)
+    if diagonal <= 0:
+        return None
+
+    half_length = 2.0 * diagonal + 1.0
+    point = np.asarray(point, dtype=float)
+    direction = np.asarray(direction, dtype=float)
+    line = shapely.LineString(
+        [
+            point - half_length * direction,
+            point + half_length * direction,
+        ]
+    )
+    pieces = [
+        piece
+        for piece in split_shape(polygon, line).geoms
+        if piece.geom_type == "Polygon" and piece.area > 0
+    ]
+    return pieces if len(pieces) == 2 else None
+
+
+def _polygon_to_sky_vertices(polygon, wcs):
+    """
+    Convert a polygon in pixel coordinates to an array of sky vertices.
+
+    Parameters
+    ----------
+    polygon : shapely.geometry.Polygon
+        Polygon in pixel coordinates.
+    wcs : astropy.wcs.WCS
+        WCS object used for the conversion.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of (RA, Dec) vertices in degrees. The polygon is closed.
+    """
+    coordinates = np.asarray(polygon.exterior.coords)
+    ra, dec = wcs.pixel_to_world_values(coordinates[:, 0], coordinates[:, 1])
+    ra, dec = normalize_ra_dec(ra, dec)
+    vertices = np.column_stack((ra, dec))
+    if not np.array_equal(vertices[0], vertices[-1]):
+        vertices = np.vstack((vertices, vertices[0]))
+    return vertices
+
+
+def _find_best_facet_split(  # noqa: PLR0913
+    polygon,
+    source_xy,
+    source_flux,
+    anchor_index,
+    candidate_mask,
+    *,
+    min_area_fraction,
+):
+    """
+    Find the best offset cut that separates the anchor from a candidate.
+
+    The polygon is cut along its minor axis. The line is first placed through
+    the polygon centroid and is then swept along the major axis. Candidate
+    sources are limited to the sources selected by `candidate_mask`.
+
+    Parameters
+    ----------
+    polygon : shapely.geometry.Polygon
+        Polygon in a local planar coordinate system.
+    source_xy : numpy.ndarray
+        Source positions in the same local coordinate system, with shape
+        (n, 2).
+    source_flux : numpy.ndarray
+        Stokes I fluxes of the sources in Jy.
+    anchor_index : int
+        Index of the original facet source in `source_xy`.
+    candidate_mask : numpy.ndarray
+        Boolean array indicating which sources can be used as the new facet
+        source.
+    min_area_fraction : float
+        Minimum allowed area of either new facet as a fraction of the
+        original facet area.
+
+    Returns
+    -------
+    tuple or None
+        Tuple of (score, candidate_index, anchor_piece, other_piece), or
+        None if no valid split was found.
+    """
+    minor_direction, major_direction = _facet_pca_directions(polygon)
+    centroid = np.asarray(polygon.centroid.coords[0], dtype=float)
+    vertices = np.asarray(polygon.exterior.coords)[:-1]
+    projections = (vertices - centroid) @ major_direction
+    projection_min = float(np.min(projections))
+    projection_max = float(np.max(projections))
+    span = projection_max - projection_min
+    if span <= 0:
+        return None
+
+    # Try the centroid cut first, then cuts at one-third and two-thirds of
+    # the facet extent (and a few intermediate positions).
+    offsets = [
+        0.0,
+        *(
+            projection_min + fraction * span
+            for fraction in (
+                1.0 / 3.0,
+                2.0 / 5.0,
+                1.0 / 2.0,
+                3.0 / 5.0,
+                2.0 / 3.0,
+            )
+        ),
+    ]
+
+    source_x = source_xy[:, 0]
+    source_y = source_xy[:, 1]
+    best = None
+    for offset in offsets:
+        cut_point = centroid + offset * major_direction
+        pieces = _split_polygon_at_line(polygon, cut_point, minor_direction)
+        if pieces is None:
+            continue
+
+        piece_a, piece_b = pieces
+        area_a = piece_a.area
+        area_b = piece_b.area
+        if min(area_a, area_b) < min_area_fraction * polygon.area:
+            continue
+
+        contains_a = shapely.contains_xy(piece_a, source_x, source_y)
+        contains_b = shapely.contains_xy(piece_b, source_x, source_y)
+        if contains_a[anchor_index]:
+            anchor_piece, other_piece = piece_a, piece_b
+            other_contains = contains_b
+        elif contains_b[anchor_index]:
+            anchor_piece, other_piece = piece_b, piece_a
+            other_contains = contains_a
+        else:
+            continue
+
+        valid_candidates = np.flatnonzero(candidate_mask & other_contains)
+        if valid_candidates.size == 0:
+            continue
+
+        candidate_index = int(
+            valid_candidates[np.argmax(source_flux[valid_candidates])]
+        )
+        score = min(area_a, area_b) / polygon.area
+        if (
+            best is None
+            or score > best[0]
+            or (
+                np.isclose(score, best[0])
+                and source_flux[candidate_index] > source_flux[best[1]]
+            )
+        ):
+            best = (score, candidate_index, anchor_piece, other_piece)
+
+    return best
+
+
+def _split_facet(  # noqa: PLR0913, PLR0917
+    facet_point,
+    facet_vertices,
+    facet_source_mask,
+    source_ra,
+    source_dec,
+    source_flux,
+    *,
+    flux_threshold,
+    min_area_fraction,
+    min_separation_fraction,
+):
+    """
+    Try to split a single large facet using bright sources.
+
+    Parameters
+    ----------
+    facet_point : array-like
+        Reference position of the facet in degrees.
+    facet_vertices : numpy.ndarray
+        Facet polygon vertices in (RA, Dec) degrees.
+    facet_source_mask : numpy.ndarray
+        Boolean mask marking the sources contained in the facet.
+    source_ra, source_dec : numpy.ndarray
+        Source positions in degrees.
+    source_flux : numpy.ndarray
+        Source Stokes I fluxes in Jy.
+    flux_threshold : float
+        Minimum Stokes I flux in Jy for a source to be used.
+    min_area_fraction : float
+        Minimum area of each new facet as a fraction of the original area.
+    min_separation_fraction : float
+        Minimum separation between the original source and a candidate,
+        relative to the square root of the facet area.
+
+    Returns
+    -------
+    tuple or None
+        Tuple of (new_points, new_polygons), or None if the facet could not
+        be split.
+    """
+    log = logging.getLogger(__name__)
+    valid_sources = (
+        np.isfinite(source_ra)
+        & np.isfinite(source_dec)
+        & np.isfinite(source_flux)
+    )
+    contained_sources = np.flatnonzero(facet_source_mask & valid_sources)
+    if contained_sources.size < 2:
+        log.debug("Facet has fewer than two sources; not splitting it.")
+        return None
+
+    eligible_sources = contained_sources[
+        source_flux[contained_sources] >= flux_threshold
+    ]
+    if eligible_sources.size < 2:
+        log.debug(
+            "Facet has fewer than two sources above the flux threshold; "
+            "not splitting it."
+        )
+        return None
+
+    # Preserve the original facet source when it is bright enough. If it is
+    # not, fall back to the brightest eligible source in the facet.
+    delta_ra = (
+        source_ra[contained_sources] - facet_point[0] + 180.0
+    ) % 360.0 - 180.0
+    distances = np.hypot(
+        delta_ra * np.cos(np.deg2rad(facet_point[1])),
+        source_dec[contained_sources] - facet_point[1],
+    )
+    nearest_source = int(contained_sources[np.argmin(distances)])
+    if source_flux[nearest_source] >= flux_threshold:
+        anchor_index = nearest_source
+    else:
+        anchor_index = int(
+            eligible_sources[np.argmax(source_flux[eligible_sources])]
+        )
+
+    wcs = make_wcs(
+        float(facet_point[0]), float(facet_point[1]), WCS_PIXEL_SCALE
+    )
+    vertices = np.asarray(facet_vertices, dtype=float)
+    x_vertices, y_vertices = wcs.world_to_pixel_values(
+        vertices[:, 0], vertices[:, 1]
+    )
+    polygon = shapely.Polygon(np.column_stack((x_vertices, y_vertices)))
+    if not polygon.is_valid or polygon.area <= 0:
+        log.debug("Facet polygon is invalid; not splitting it.")
+        return None
+
+    source_x, source_y = wcs.world_to_pixel_values(
+        source_ra[eligible_sources], source_dec[eligible_sources]
+    )
+    source_xy = np.column_stack((source_x, source_y))
+    anchor_local = int(np.flatnonzero(eligible_sources == anchor_index)[0])
+    anchor_xy = source_xy[anchor_local]
+    separation = np.hypot(
+        source_xy[:, 0] - anchor_xy[0],
+        source_xy[:, 1] - anchor_xy[1],
+    )
+    candidate_mask = separation >= (
+        min_separation_fraction * np.sqrt(polygon.area)
+    )
+    candidate_mask[anchor_local] = False
+    if not candidate_mask.any():
+        log.debug(
+            "No source is far enough from the original facet source; "
+            "not splitting it."
+        )
+        return None
+
+    result = _find_best_facet_split(
+        polygon,
+        source_xy,
+        source_flux[eligible_sources],
+        anchor_local,
+        candidate_mask,
+        min_area_fraction=min_area_fraction,
+    )
+    if result is None:
+        log.debug(
+            "No offset cut leaves a bright source in both halves; "
+            "not splitting it."
+        )
+        return None
+
+    _, candidate_local, anchor_piece, other_piece = result
+    candidate_index = int(eligible_sources[candidate_local])
+
+    new_points = [
+        (float(source_ra[anchor_index]), float(source_dec[anchor_index])),
+        (
+            float(source_ra[candidate_index]),
+            float(source_dec[candidate_index]),
+        ),
+    ]
+    new_polys = [
+        _polygon_to_sky_vertices(anchor_piece, wcs),
+        _polygon_to_sky_vertices(other_piece, wcs),
+    ]
+    return new_points, new_polys
+
+
+def split_large_facets(  # noqa: PLR0913
+    facet_points,
+    facet_polys,
+    sky_model,
+    flux_threshold,
+    *,
+    area_factor_threshold=1.4,
+    min_area_fraction=0.2,
+    min_separation_fraction=0.05,
+):
+    """
+    Split large facets so that both new facets have a bright source.
+
+    A facet is considered large when its area exceeds
+    `area_factor_threshold` times the median facet area. Each large facet is
+    split at most once. The split line is aligned with the minor axis of the
+    facet polygon and is swept across the facet until both halves contain a
+    source with Stokes I flux of at least `flux_threshold`.
+
+    Parameters
+    ----------
+    facet_points : array-like
+        Facet reference positions in degrees, with shape (n, 2).
+    facet_polys : list of numpy.ndarray
+        Facet polygon vertices in (RA, Dec) degrees.
+    sky_model : lsmtool.skymodel.SkyModel
+        Sky model containing the source positions and fluxes.
+    flux_threshold : float
+        Minimum Stokes I flux in Jy for a source to be used.
+    area_factor_threshold : float, optional
+        Minimum facet area, relative to the median facet area, for a facet to
+        be split. Default is 1.4.
+    min_area_fraction : float, optional
+        Minimum area of each new facet as a fraction of the original area.
+        Default is 0.2.
+    min_separation_fraction : float, optional
+        Minimum separation between the original source and a candidate,
+        relative to the square root of the facet area. Default is 0.05.
+
+    Returns
+    -------
+    facet_points : numpy.ndarray or list
+        Facet reference positions after splitting.
+    facet_polys : list of numpy.ndarray
+        Facet polygon vertices after splitting.
+    """
+    log = logging.getLogger(__name__)
+    if len(facet_polys) == 0:
+        return facet_points, facet_polys
+
     polys = [shapely.Polygon(facet_coords) for facet_coords in facet_polys]
-    areas = [p.area for p in polys]
-    median_area = np.median(areas)
-    area_factors = [a/median_area for a in areas]
-    area_factor_threshold = 1.4
-    large_area_mask = [f > area_factor_threshold for f in area_factors]
-    breakpoint()
+    areas = np.asarray([poly.area for poly in polys], dtype=float)
+    median_area = float(np.median(areas))
+    if not np.isfinite(median_area) or median_area <= 0:
+        return facet_points, facet_polys
 
-    return facet_points, facet_polys
+    large_area_mask = areas > area_factor_threshold * median_area
+    if not large_area_mask.any():
+        return facet_points, facet_polys
+
+    source_ra = np.asarray(sky_model.getColValues("Ra"), dtype=float)
+    source_dec = np.asarray(sky_model.getColValues("Dec"), dtype=float)
+    source_flux = np.asarray(sky_model.getColValues("I"), dtype=float)
+    if source_ra.size == 0:
+        return facet_points, facet_polys
+
+    # Find the sources that lie in each facet. A MOC is used for the
+    # containment test so that facets that cross the RA = 0 meridian or
+    # contain a pole are handled correctly. A high MOC depth is used to keep
+    # the test accurate close to the facet boundaries.
+    source_coords = SkyCoord(source_ra, source_dec, unit="deg")
+    facet_sources = [
+        MOC.from_polygon_skycoord(
+            SkyCoord(*np.asarray(facet_coords).T, unit="deg"),
+            max_depth=20,
+        ).contains_skycoords(source_coords)
+        for facet_coords in facet_polys
+    ]
+
+    facet_points_array = np.asarray(facet_points, dtype=float)
+    new_points = []
+    new_polys = []
+    number_split = 0
+    for index, facet_point in enumerate(facet_points_array):
+        if not large_area_mask[index]:
+            new_points.append(facet_point)
+            new_polys.append(facet_polys[index])
+            continue
+
+        result = _split_facet(
+            facet_point,
+            facet_polys[index],
+            facet_sources[index],
+            source_ra,
+            source_dec,
+            source_flux,
+            flux_threshold=flux_threshold,
+            min_area_fraction=min_area_fraction,
+            min_separation_fraction=min_separation_fraction,
+        )
+        if result is None:
+            new_points.append(facet_point)
+            new_polys.append(facet_polys[index])
+            continue
+
+        split_points, split_polys = result
+        new_points.extend(split_points)
+        new_polys.extend(split_polys)
+        number_split += 1
+
+    if number_split == 0:
+        return facet_points, facet_polys
+
+    log.info(
+        "Split %d of %d large facets.",
+        number_split,
+        int(np.count_nonzero(large_area_mask)),
+    )
+    if isinstance(facet_points, np.ndarray):
+        new_points = np.asarray(new_points)
+    return new_points, new_polys
 
 
 def in_box(cal_coords, bounding_box):

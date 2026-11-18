@@ -108,6 +108,15 @@ def parse_args():
         ),
     )
     parser.add_argument(
+        "--flux-threshold",
+        type=float,
+        default=0.01,
+        help=(
+            "Minimum Stokes I flux in Jy for a source to be used when "
+            "splitting large facets."
+        ),
+    )
+    parser.add_argument(
         "--bbox-pad",
         type=float,
         default=0.2,
@@ -185,7 +194,7 @@ def get_seeds(lsm, seed):
     return SkyCoord(ra, dec, unit="deg"), names
 
 
-def make_facets(lsm, seed, bbox_pad):
+def make_facets(lsm, seed, bbox_pad, flux_threshold):
     """Generate facets around the selected seed positions and refine them."""
     seeds, seed_names = get_seeds(lsm, seed)
 
@@ -211,7 +220,7 @@ def make_facets(lsm, seed, bbox_pad):
     # Refine the tessellation by splitting any facets that are too large.
     print("Splitting large facets ...")
     facet_points, facet_polys = split_large_facets(
-        facet_points, facet_polys, lsm
+        facet_points, facet_polys, lsm, flux_threshold
     )
     print(f"Refined to {len(facet_points)} facets")
 
@@ -500,7 +509,9 @@ def main():
     if args.seed == "patch":
         group_sources(lsm, args.target_flux, args.keep_patches)
 
-    facets = make_facets(lsm, args.seed, args.bbox_pad)
+    facets = make_facets(
+        lsm, args.seed, args.bbox_pad, args.flux_threshold
+    )
     plot_map(
         lsm,
         facets,
