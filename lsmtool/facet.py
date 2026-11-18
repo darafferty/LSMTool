@@ -866,14 +866,18 @@ def _split_facet(  # noqa: PLR0913, PLR0917
     *,
     flux_threshold,
     min_area_fraction,
+    min_separation_fraction,
 ):
     """
     Try to split a single large facet using bright sources.
 
     The facet is split perpendicular to its major axis, midway between the
-    brightest source and a second source. If either new facet would be
-    smaller than `min_area_fraction` times the original area, the next
-    brightest source is tried, and so on.
+    brightest source and a second source. Candidate sources that are closer
+    to the brightest source than `min_separation_fraction` times the square
+    root of the facet area are ignored, so that a source and its side-lobe
+    are not chosen as the two anchors. If either new facet would be smaller
+    than `min_area_fraction` times the original area, the next brightest
+    candidate source is tried, and so on.
 
     Parameters
     ----------
@@ -891,6 +895,10 @@ def _split_facet(  # noqa: PLR0913, PLR0917
         Minimum Stokes I flux in Jy for a source to be used.
     min_area_fraction : float
         Minimum area of each new facet as a fraction of the original area.
+    min_separation_fraction : float
+        Minimum separation between the brightest source and a candidate
+        source, relative to the square root of the facet area. Candidates
+        closer than this are ignored.
 
     Returns
     -------
@@ -949,13 +957,21 @@ def _split_facet(  # noqa: PLR0913, PLR0917
     projections = (source_xy - centroid) @ major_direction
 
     # Split midway between the brightest source and a candidate source,
-    # trying candidates in order of decreasing brightness. Keep the first
-    # split for which both halves are large enough.
+    # trying candidates in order of decreasing brightness. Candidates too
+    # close to the brightest source (e.g. its side-lobes) are ignored. Keep
+    # the first split for which both halves are large enough.
     anchor_index = len(source_xy) - 1
+    min_separation = min_separation_fraction * np.sqrt(polygon.area)
+    separations = np.hypot(
+        source_xy[:, 0] - source_xy[anchor_index, 0],
+        source_xy[:, 1] - source_xy[anchor_index, 1],
+    )
     min_area = min_area_fraction * polygon.area
     split_pieces = None
     candidate_index = None
     for index in range(anchor_index - 1, -1, -1):
+        if separations[index] < min_separation:
+            continue
         cut_projection = 0.5 * (
             projections[anchor_index] + projections[index]
         )
@@ -1104,6 +1120,7 @@ def split_large_facets(  # noqa: PLR0913
             source_flux,
             flux_threshold=flux_threshold,
             min_area_fraction=min_area_fraction,
+            min_separation_fraction=min_separation_fraction,
         )
         if result is None:
             new_points.append(facet_point)
