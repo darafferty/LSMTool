@@ -11,7 +11,8 @@ The script:
    the individual sources with ``--seed source``) using
    :func:`lsmtool.facet.tessellate`;
 4. refines the facets by splitting any that are too large using :func:`lsmtool.facet.split_large_facets`
-5. plots the facets, sources and patch centres over a FITS background image
+5. plots the facets, sources, patch centres and any new facet centres created
+   by splitting over a FITS background image
    (default: ``tests/resources/test_image.fits``).
 
 Examples
@@ -194,6 +195,21 @@ def get_seeds(lsm, seed):
     return SkyCoord(ra, dec, unit="deg"), names
 
 
+def find_new_centres(points, original_points, atol=1e-8):
+    """Return the points that are not present in the original positions."""
+    points = np.asarray(points, dtype=float)
+    original_points = np.asarray(original_points, dtype=float)
+    if len(points) == 0 or len(original_points) == 0:
+        return points
+
+    known = np.isclose(
+        points[:, None, 0], original_points[None, :, 0], atol=atol
+    ) & np.isclose(
+        points[:, None, 1], original_points[None, :, 1], atol=atol
+    )
+    return points[~known.any(axis=1)]
+
+
 def make_facets(lsm, seed, bbox_pad, flux_threshold):
     """Generate facets around the selected seed positions and refine them."""
     seeds, seed_names = get_seeds(lsm, seed)
@@ -217,13 +233,21 @@ def make_facets(lsm, seed, bbox_pad, flux_threshold):
     facet_points, facet_polys = tessellate(seeds, centre, (width, width))
     print(f"Generated {len(facet_points)} facets")
 
+    # Keep the original facet centres so that the new centres introduced by
+    # the splitting step can be identified afterwards.
+    initial_points = np.asarray(facet_points, dtype=float)
+
     # Refine the tessellation by splitting any facets that are too large.
     print("Splitting large facets ...")
     facet_points, facet_polys = split_large_facets(
-        facet_points, facet_polys, lsm, flux_threshold
+        facet_points, facet_polys, lsm, flux_threshold/10, area_factor_threshold=1.3,
     )
     print(f"Refined to {len(facet_points)} facets")
 
+    facet_points = np.asarray(facet_points, dtype=float)
+    split_centres = find_new_centres(facet_points, initial_points)
+    if len(split_centres) > 0:
+        print(f"Added {len(split_centres)} new facet centre(s) by splitting.")
 
     # Match each facet back to the nearest seed so that it gets the right
     # name (and therefore the same colour as its sources).
@@ -238,7 +262,7 @@ def make_facets(lsm, seed, bbox_pad, flux_threshold):
         )
     ]
     print(f"Generated {len(facets)} facets.")
-    return facets
+    return facets, split_centres
 
 
 def load_background(image_path):
@@ -273,6 +297,7 @@ def make_blank_wcs(centre, width):
 def plot_map(
     lsm,
     facets,
+    split_centres,
     *,
     image_path,
     output,
@@ -283,7 +308,11 @@ def plot_map(
     model_name,
     seed,
 ):
-    """Plot the background image, sources, patch centres and facets."""
+    """Plot the background image, sources, patch centres and facets.
+
+    Any facet centres introduced by splitting large facets are highlighted
+    with a separate marker.
+    """
     import matplotlib
 
     if not os.environ.get("DISPLAY") and not os.environ.get(
@@ -441,9 +470,28 @@ def plot_map(
                     zorder=7,
                 )
 
+    # Show the facet centres that were created when large facets were split.
+    x_split = []
+    y_split = []
+    if len(split_centres) > 0:
+        split_centres = np.asarray(split_centres, dtype=float)
+        x_split, y_split = wcs.world_to_pixel(
+            SkyCoord(split_centres[:, 0], split_centres[:, 1], unit="deg")
+        )
+        ax.scatter(
+            x_split,
+            y_split,
+            marker="*",
+            s=90,
+            c="magenta",
+            edgecolors="black",
+            linewidths=0.6,
+            zorder=6,
+        )
+
     # Zoom to the area containing sources, patch centres and facets.
-    all_x = [*x_sources, *facet_x, *x_patches]
-    all_y = [*y_sources, *facet_y, *y_patches]
+    all_x = [*x_sources, *facet_x, *x_patches, *x_split]
+    all_y = [*y_sources, *facet_y, *y_patches, *y_split]
     x_pad = 0.08 * (np.max(all_x) - np.min(all_x))
     y_pad = 0.08 * (np.max(all_y) - np.min(all_y))
     ax.set_xlim(np.min(all_x) - x_pad, np.max(all_x) + x_pad)
@@ -485,6 +533,19 @@ def plot_map(
                 label="patch centres",
             )
         )
+    if len(x_split) > 0:
+        handles.append(
+            Line2D(
+                [],
+                [],
+                marker="*",
+                linestyle="",
+                markersize=8,
+                markerfacecolor="magenta",
+                markeredgecolor="black",
+                label="new facet centres (split)",
+            )
+        )
     ax.legend(handles=handles, loc="upper right", framealpha=0.9)
 
     fig.suptitle(f"Voronoi facets from {model_name} ({len(facets)} facets)")
@@ -509,12 +570,13 @@ def main():
     if args.seed == "patch":
         group_sources(lsm, args.target_flux, args.keep_patches)
 
-    facets = make_facets(
+    facets, split_centres = make_facets(
         lsm, args.seed, args.bbox_pad, args.flux_threshold
     )
     plot_map(
         lsm,
         facets,
+        split_centres,
         image_path=args.image,
         output=args.output,
         dpi=args.dpi,
