@@ -52,7 +52,7 @@ dependencies = [
     "python-casacore",
     "pyvo",
     "scipy>=0.11",
-    "shapely",
+    "shapely>=2",
 ]
 
 [project.optional-dependencies]
