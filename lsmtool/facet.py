@@ -720,7 +720,7 @@ def _polygon_to_sky_vertices(polygon, wcs):
     return vertices
 
 
-def _split_facet(
+def _split_facet(  # noqa: PLR0913, PLR0917
     facet_point,
     facet_vertices,
     facet_source_mask,
@@ -729,19 +729,14 @@ def _split_facet(
     source_flux,
     *,
     flux_threshold,
-    min_area_fraction,
-    min_separation_fraction,
 ):
     """
-    Try to split a single large facet using bright sources.
+    Try to split a single large facet in half along its major axis.
 
-    The facet is split perpendicular to its major axis, midway between the
-    brightest source and a second source. Candidate sources that are closer
-    to the brightest source than `min_separation_fraction` times the square
-    root of the facet area are ignored, so that a source and its side-lobe
-    are not chosen as the two anchors. If either new facet would be smaller
-    than `min_area_fraction` times the original area, the next brightest
-    candidate source is tried, and so on.
+    The facet is split through its centroid, perpendicular to its major axis.
+    For each new facet, the source above `flux_threshold` closest to that
+    facet's centroid is used as the facet point. If either new facet contains
+    no source above the threshold, the facet is not split.
 
     Parameters
     ----------
@@ -757,12 +752,6 @@ def _split_facet(
         Source Stokes I fluxes in Jy.
     flux_threshold : float
         Minimum Stokes I flux in Jy for a source to be used.
-    min_area_fraction : float
-        Minimum area of each new facet as a fraction of the original area.
-    min_separation_fraction : float
-        Minimum separation between the brightest source and a candidate
-        source, relative to the square root of the facet area. Candidates
-        closer than this are ignored.
 
     Returns
     -------
@@ -786,15 +775,9 @@ def _split_facet(
         )
         return None
 
-    # Work only with sources above the specified flux threshold, sorted by
-    # increasing flux so that the brightest source is last.
+    # Work only with sources above the specified flux threshold.
     source_ra_facet = source_ra[facet_source_mask][eligible_sources_mask]
     source_dec_facet = source_dec[facet_source_mask][eligible_sources_mask]
-    source_flux_facet = source_flux_facet[eligible_sources_mask]
-
-    sorted_ids = np.argsort(source_flux_facet)
-    source_ra_facet_sorted = source_ra_facet[sorted_ids]
-    source_dec_facet_sorted = source_dec_facet[sorted_ids]
 
     # Turn polygon coordinates into Shapely Polygon
     wcs = make_wcs(
@@ -814,75 +797,43 @@ def _split_facet(
     centered = poly_coords - poly_coords.mean(axis=0)
     covariance = np.cov(centered.T)
     _, eigenvectors = np.linalg.eigh(covariance)
-    minor_direction, major_direction = eigenvectors[:, 0], eigenvectors[:, 1]
-
-    # Project all eligible sources onto the major axis. The sources are
-    # sorted by increasing flux, so the brightest source is the last one.
-    source_x, source_y = wcs.world_to_pixel_values(
-        source_ra_facet_sorted, source_dec_facet_sorted
-    )
-    source_xy = np.column_stack((source_x, source_y))
+    minor_direction = eigenvectors[:, 0]
     centroid = np.asarray(polygon.centroid.coords[0], dtype=float)
-    projections = (source_xy - centroid) @ major_direction
 
-    # Split midway between the brightest source and a candidate source,
-    # trying candidates in order of decreasing brightness. Candidates too
-    # close to the brightest source (e.g. its side-lobes) are ignored. Keep
-    # the first split for which both halves are large enough.
-    anchor_index = len(source_xy) - 1
-    min_separation = min_separation_fraction * np.sqrt(polygon.area)
-    separations = np.hypot(
-        source_xy[:, 0] - source_xy[anchor_index, 0],
-        source_xy[:, 1] - source_xy[anchor_index, 1],
-    )
-    min_area = min_area_fraction * polygon.area
-    split_pieces = None
-    candidate_index = None
-    for index in range(anchor_index - 1, -1, -1):
-        if separations[index] < min_separation:
-            continue
-        cut_projection = 0.5 * (projections[anchor_index] + projections[index])
-        cut_point = centroid + cut_projection * major_direction
-        pieces = _split_polygon_at_line(polygon, cut_point, minor_direction)
-        if pieces is None:
-            continue
-        if min(piece.area for piece in pieces) < min_area:
-            continue
-        split_pieces = pieces
-        candidate_index = index
-        break
-
-    if split_pieces is None:
-        log.debug(
-            "No candidate source gives an acceptable split; not splitting it."
-        )
+    # Split polygon down the centroid, in direction of minor axis
+    pieces = _split_polygon_at_line(polygon, centroid, minor_direction)
+    if pieces is None:
+        log.debug("Failed to split facet down the middle, not splitting it.")
         return None
 
-    # Order the polygons to match the anchor and candidate source positions.
-    anchor_in_first_piece = shapely.contains_xy(
-        split_pieces[0],
-        source_xy[anchor_index, 0],
-        source_xy[anchor_index, 1],
+    # Use the source closest to each new facet's centroid as its facet point.
+    sources_x, sources_y = wcs.world_to_pixel_values(
+        source_ra_facet, source_dec_facet
     )
-    if anchor_in_first_piece:
-        anchor_piece, candidate_piece = split_pieces
-    else:
-        candidate_piece, anchor_piece = split_pieces
+    new_points = []
+    new_polys = []
+    for piece in pieces:
+        contained = shapely.contains_xy(piece, sources_x, sources_y)
+        if not contained.any():
+            log.debug(
+                "New facet has no sources above the flux threshold, not "
+                "splitting it."
+            )
+            return None
+        piece_centroid = np.asarray(piece.centroid.coords[0], dtype=float)
+        distances = np.hypot(
+            sources_x[contained] - piece_centroid[0],
+            sources_y[contained] - piece_centroid[1],
+        )
+        source_index = int(np.flatnonzero(contained)[np.argmin(distances)])
+        new_points.append(
+            (
+                float(source_ra_facet[source_index]),
+                float(source_dec_facet[source_index]),
+            )
+        )
+        new_polys.append(_polygon_to_sky_vertices(piece, wcs))
 
-    new_polys = [
-        _polygon_to_sky_vertices(anchor_piece, wcs),
-        _polygon_to_sky_vertices(candidate_piece, wcs),
-    ]
-    new_points = [
-        (
-            float(source_ra_facet_sorted[anchor_index]),
-            float(source_dec_facet_sorted[anchor_index]),
-        ),
-        (
-            float(source_ra_facet_sorted[candidate_index]),
-            float(source_dec_facet_sorted[candidate_index]),
-        ),
-    ]
     return new_points, new_polys
 
 
@@ -893,18 +844,15 @@ def split_large_facets(
     flux_threshold,
     *,
     area_factor_threshold=1.4,
-    min_area_fraction=0.2,
-    min_separation_fraction=0.05,
 ):
     """
     Split large facets so that both new facets have a bright source.
 
     A facet is considered large when its area is larger than
     `area_factor_threshold` times the median facet area. Each large facet is
-    split at most once. The split line runs along the minor axis through the
-    midpoint, along the major axis, between the brightest source and a
-    candidate source. Candidates are tried in order of decreasing brightness
-    until both halves are at least `min_area_fraction` of the original area.
+    split at most once, perpendicular to its major axis through its centroid.
+    For each new facet, the source above `flux_threshold` closest to its
+    centroid is used as the facet point.
 
     Parameters
     ----------
@@ -919,12 +867,6 @@ def split_large_facets(
     area_factor_threshold : float, optional
         Minimum facet area, relative to the median facet area, for a facet to
         be split. Default is 1.4.
-    min_area_fraction : float, optional
-        Minimum area of each new facet as a fraction of the original area.
-        Default is 0.2.
-    min_separation_fraction : float, optional
-        Minimum separation between the original source and a candidate,
-        relative to the square root of the facet area. Default is 0.05.
 
     Returns
     -------
@@ -986,8 +928,6 @@ def split_large_facets(
             source_dec,
             source_flux,
             flux_threshold=flux_threshold,
-            min_area_fraction=min_area_fraction,
-            min_separation_fraction=min_separation_fraction,
         )
         if result is None:
             new_points.append(facet_points_orig[i_facet])

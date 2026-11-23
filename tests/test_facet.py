@@ -1456,14 +1456,15 @@ class TestFilterSkymodel:
             assert list(skymodel.table["Name"]) == ["TEST_SOURCE"]
 
 
-def test_split_large_facets_splits_facet_between_bright_sources(tmp_path):
-    """Split a large facet so both halves contain a bright source."""
+def test_split_large_facets_uses_sources_closest_to_facet_centroids(tmp_path):
+    """Split a large facet and choose the source nearest each facet centroid."""
     skymodel = make_split_test_skymodel(
         tmp_path,
         [
-            ("SOURCE_A", 9.9, 0.0, 1.0),
-            ("SOURCE_B", 10.1, 0.0, 0.5),
-            ("SOURCE_C", 10.21, 0.0, 1.0),
+            ("SOURCE_A", 9.85, 0.0, 10.0),
+            ("SOURCE_B", 9.95, 0.0, 0.5),
+            ("SOURCE_C", 10.15, 0.0, 0.4),
+            ("SOURCE_D", 10.21, 0.0, 1.0),
         ],
     )
     points, polygons = make_split_test_facets()
@@ -1474,7 +1475,7 @@ def test_split_large_facets_splits_facet_between_bright_sources(tmp_path):
 
     assert len(new_points) == 3
     assert len(new_polygons) == 3
-    assert np.allclose(np.sort(new_points[:2, 0]), [9.9, 10.1])
+    assert np.allclose(np.sort(new_points[:2, 0]), [9.95, 10.15])
 
     for point, polygon in zip(new_points[:2], new_polygons[:2], strict=True):
         facet = Facet("test_split", point[0], point[1], polygon)
@@ -1510,12 +1511,12 @@ def test_split_large_facets_requires_two_bright_sources(tmp_path):
         assert_array_equal(new_polygon, polygon)
 
 
-def test_split_large_facets_requires_separated_sources(tmp_path):
-    """Do not split using a source too close to the original source."""
+def test_split_large_facets_requires_source_in_each_half(tmp_path):
+    """Do not split a facet if all bright sources are in the same half."""
     skymodel = make_split_test_skymodel(
         tmp_path,
         [
-            ("SOURCE_A", 9.955, 0.0, 1.0),
+            ("SOURCE_A", 9.95, 0.0, 1.0),
             ("SOURCE_B", 9.96, 0.0, 1.0),
             ("SOURCE_C", 10.21, 0.0, 1.0),
         ],
