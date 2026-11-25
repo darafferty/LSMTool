@@ -720,7 +720,7 @@ def _polygon_to_sky_vertices(polygon, wcs):
     return vertices
 
 
-def _split_facet(  # noqa: PLR0913, PLR0917
+def _split_facet(
     facet_point,
     facet_vertices,
     facet_source_mask,
@@ -793,6 +793,11 @@ def _split_facet(  # noqa: PLR0913, PLR0917
         log.debug("Facet polygon is invalid; not splitting it.")
         return None
 
+    # Represent facet_point as shapely geom in pixel space to compare with facets
+    facet_point_px = shapely.Point(
+        wcs.world_to_pixel_values([facet_point])[0]
+    )
+
     # Determine polygon orientation
     centered = poly_coords - poly_coords.mean(axis=0)
     covariance = np.cov(centered.T)
@@ -813,25 +818,25 @@ def _split_facet(  # noqa: PLR0913, PLR0917
     new_points = []
     new_polys = []
     for piece in pieces:
-        contained = shapely.contains_xy(piece, sources_x, sources_y)
-        if not contained.any():
-            log.debug(
-                "New facet has no sources above the flux threshold, not "
-                "splitting it."
+        if piece.contains(facet_point_px):
+            point = facet_point
+        else:
+            contained = shapely.contains_xy(piece, sources_x, sources_y)
+            if not contained.any():
+                log.debug(
+                    "New facet has no sources above the flux threshold, not "
+                    "splitting it."
+                )
+                return None
+            piece_centroid = np.asarray(piece.centroid.coords[0], dtype=float)
+            distances = np.hypot(
+                sources_x[contained] - piece_centroid[0],
+                sources_y[contained] - piece_centroid[1],
             )
-            return None
-        piece_centroid = np.asarray(piece.centroid.coords[0], dtype=float)
-        distances = np.hypot(
-            sources_x[contained] - piece_centroid[0],
-            sources_y[contained] - piece_centroid[1],
-        )
-        source_index = int(np.flatnonzero(contained)[np.argmin(distances)])
-        new_points.append(
-            (
-                float(source_ra_facet[source_index]),
-                float(source_dec_facet[source_index]),
-            )
-        )
+            source_index = int(np.flatnonzero(contained)[np.argmin(distances)])
+            point = (float(source_ra_facet[source_index]), float(source_dec_facet[source_index]))
+
+        new_points.append(point)
         new_polys.append(_polygon_to_sky_vertices(piece, wcs))
 
     return new_points, new_polys
