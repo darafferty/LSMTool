@@ -720,7 +720,7 @@ def _polygon_to_sky_vertices(polygon, wcs):
     return vertices
 
 
-def _split_facet(
+def _split_facet(  # noqa: PLR0913, PLR0917
     facet_point,
     facet_vertices,
     facet_source_mask,
@@ -793,10 +793,8 @@ def _split_facet(
         log.debug("Facet polygon is invalid; not splitting it.")
         return None
 
-    # Represent facet_point as shapely geom in pixel space to compare with facets
-    facet_point_px = shapely.Point(
-        wcs.world_to_pixel_values([facet_point])[0]
-    )
+    # Represent facet_point as shapely geom in px space to compare with facets
+    facet_point_px = shapely.Point(wcs.world_to_pixel_values([facet_point])[0])
 
     # Determine polygon orientation
     centered = poly_coords - poly_coords.mean(axis=0)
@@ -834,7 +832,10 @@ def _split_facet(
                 sources_y[contained] - piece_centroid[1],
             )
             source_index = int(np.flatnonzero(contained)[np.argmin(distances)])
-            point = (float(source_ra_facet[source_index]), float(source_dec_facet[source_index]))
+            point = (
+                float(source_ra_facet[source_index]),
+                float(source_dec_facet[source_index]),
+            )
 
         new_points.append(point)
         new_polys.append(_polygon_to_sky_vertices(piece, wcs))
