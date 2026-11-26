@@ -19,6 +19,7 @@ from lsmtool.facet import (
     prepare_points_for_tessellate,
     read_ds9_region_file,
     read_from_skymodel,
+    split_large_facets,
     tessellate,
     voronoi,
 )
@@ -34,6 +35,41 @@ def all_close(a, b, rtol=1.0e-5, atol=1.0e-8):
     if isinstance(a, SkyCoord):
         return np.all(a.separation(b).deg < atol)
     return np.allclose(a, b, rtol, atol)
+
+
+def make_split_test_skymodel(tmp_path, sources):
+    """Make a minimal sky model for testing facet splitting."""
+    lines = ["FORMAT = Name, Type, Ra, Dec, I"]
+    lines.extend(
+        f"{name}, POINT, {ra}, {dec}, {flux}" for name, ra, dec, flux in sources
+    )
+    path = tmp_path / "split_large_facets.sky"
+    path.write_text("\n".join(lines) + "\n")
+    return load(path)
+
+
+def make_split_test_facets():
+    """Make a large facet and a small facet for split tests."""
+    large_poly = np.array(
+        [
+            [9.8, -0.05],
+            [10.2, -0.05],
+            [10.2, 0.05],
+            [9.8, 0.05],
+            [9.8, -0.05],
+        ]
+    )
+    small_poly = np.array(
+        [
+            [10.2, -0.05],
+            [10.22, -0.05],
+            [10.22, 0.05],
+            [10.2, 0.05],
+            [10.2, -0.05],
+        ]
+    )
+    points = np.array([[10.0, 0.0], [10.21, 0.0]])
+    return points, [large_poly, small_poly]
 
 
 # ---------------------------------------------------------------------------- #
@@ -1418,3 +1454,66 @@ class TestFilterSkymodel:
             assert "TEST_SOURCE" not in skymodel.table["Name"]
         else:
             assert list(skymodel.table["Name"]) == ["TEST_SOURCE"]
+
+
+def test_split_large_facets_requires_two_bright_sources(tmp_path):
+    """Do not split a facet with only one source above the threshold."""
+    skymodel = make_split_test_skymodel(
+        tmp_path,
+        [
+            ("SOURCE_A", 9.9, 0.0, 1.0),
+            ("SOURCE_B", 10.1, 0.0, 0.01),
+            ("SOURCE_C", 10.21, 0.0, 1.0),
+        ],
+    )
+    points, polygons = make_split_test_facets()
+
+    new_points, new_polygons = split_large_facets(
+        points, polygons, skymodel, 0.1
+    )
+
+    assert_array_equal(new_points, points)
+    for new_polygon, polygon in zip(new_polygons, polygons, strict=True):
+        assert_array_equal(new_polygon, polygon)
+
+
+def test_split_large_facets_handles_ra_wrap(tmp_path):
+    """Split a facet that crosses the RA = 0 meridian."""
+    skymodel = make_split_test_skymodel(
+        tmp_path,
+        [
+            ("SOURCE_A", 359.95, 0.0, 1.0),
+            ("SOURCE_B", 0.05, 0.0, 1.0),
+            ("SOURCE_C", 0.11, 0.0, 1.0),
+        ],
+    )
+    large_polygon = np.array(
+        [
+            [359.9, -0.05],
+            [0.1, -0.05],
+            [0.1, 0.05],
+            [359.9, 0.05],
+            [359.9, -0.05],
+        ]
+    )
+    small_polygon = np.array(
+        [
+            [0.1, -0.05],
+            [0.12, -0.05],
+            [0.12, 0.05],
+            [0.1, 0.05],
+            [0.1, -0.05],
+        ]
+    )
+    points = np.array([[0.0, 0.0], [0.11, 0.0]])
+
+    new_points, new_polygons = split_large_facets(
+        points, [large_polygon, small_polygon], skymodel, 0.1
+    )
+
+    assert len(new_points) == 3
+    for point, polygon in zip(new_points[:2], new_polygons[:2], strict=True):
+        facet = Facet("test_split", point[0], point[1], polygon)
+        assert facet.moc.contains_skycoords(
+            SkyCoord(point[0], point[1], unit="deg")
+        )[0]
